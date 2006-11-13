@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2006.11.06 16:44:33.312.bdsgroup,C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Borland Studio-Projekte\ProjectGroup1.bdsgroup=C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\Andorr.bdsgroup</Transaction>
+  </Transactions>
+	<Default.Personality>
+		<Projects ActiveProject="AndorraApp.exe"/>
+	</Default.Personality>
+</BorlandProject>
