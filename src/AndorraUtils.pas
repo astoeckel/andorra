@@ -41,7 +41,7 @@ type TAdDestroyApplication = TAdProcedure;
 type TAdSetTextureQuality = procedure (Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;
 type TAdClearScene = procedure (Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
 type TAdImage = procedure(Img:TAndorraImage);stdcall;
-type TAdImageDraw = procedure(Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
+type TAdImageDraw = procedure(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
   RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);stdcall;
 type TAdImageLoadTexture = procedure(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
 type TAdConstructor = function(Appl:TAndorraApplication):TAndorraImage;stdcall;

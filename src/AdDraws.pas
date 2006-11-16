@@ -13,7 +13,7 @@ unit AdDraws;
 
 interface
 
-uses Windows, Classes, AndorraUtils, Andorra;
+uses Windows, Classes, AndorraUtils, Andorra, Graphics;
 
 type
 
@@ -32,7 +32,6 @@ type
   private
 
     FParent:HWND;
-    FDisplay:TAdDrawDisplay;
     FOptions:TAdDrawModes;
     FDllName:string;
     FFinalize:TNotifyEvent;
@@ -41,13 +40,15 @@ type
 
     procedure SetDllName(val : string);
 
-    procedure SetUpThings;
+    procedure SetupThings;
 
   protected
     AdAppl:TAndorraApplication;
     AdDllLoader : TAndorraDllLoader;
 
   public
+    Display:TAdDrawDisplay;
+
     constructor Create(AParent : HWND);
     destructor Destroy; override;
 
@@ -57,8 +58,13 @@ type
     procedure Finalize;
     function Restore: boolean;
 
+    procedure ClearSurface(Color:TColor);
+    procedure BeginScene;
+    procedure EndScene;
+    procedure Flip;
+
+    function CanDraw:boolean;
   published
-    property Display : TAdDrawDisplay read FDisplay write FDisplay;
     property Options : TAdDrawModes read FOptions write FOptions;
     property DllName : string read FDllName write SetDllName;
     property Initialized : boolean read FInitialized;
@@ -75,17 +81,15 @@ constructor TAdDraw.Create(AParent : HWND);
 begin
 	inherited Create;
   FParent := AParent;
-  AdDllLoader.Create;
+  AdDllLoader := TAndorraDllLoader.Create;
 
-  AdAppl := AdDllLoader.CreateApplication;
-
-  SetUpThings;
+  SetupThings;
 end;
 
-procedure TAdDraw.SetUpThings;
+procedure TAdDraw.SetupThings;
 begin
   //Initialize all Parameters
-  with FDisplay do
+  with Display do
   begin
     Width := 800;
     Height := 600;
@@ -97,10 +101,12 @@ end;
 
 destructor TAdDraw.Destroy;
 begin
-
-  //Free all memory
-  AdDllLoader.DestroyApplication(AdAppl);
-
+  //Free all loaded objects
+  if AdAppl <> nil then
+  begin
+    AdDllLoader.DestroyApplication(AdAppl);
+  end;
+  
   AdDllLoader.Destroy;
 	inherited Destroy;
 end;
@@ -114,12 +120,22 @@ begin
 
     FDllName := val;
 
+    //Free old Application
+    if AdAppl <> nil then
+    begin
+      AdDllLoader.DestroyApplication(AdAppl);
+    end;
+
     //Load the new Library
     AdDllLoader.LoadLibrary(val);
+
+    //Create the new Application
+    AdAppl := AdDllLoader.CreateApplication;
   end;
 end;
 
 function TAdDraw.Initialize: boolean;
+var ARect:TRect;
 begin
 
   result := false;
@@ -133,8 +149,23 @@ begin
   if (AdAppl <> nil) and (FParent <> 0) and (AdDllLoader.LibraryLoaded) then
   begin
     //Initialize Andorra 2D
-    result := AdDllLoader.InitDisplay(AdAppl,FParent, doHardware in FOptions,
-          doFullscreen in FOptions, FDisplay.BitCount, FDisplay.Width, FDisplay.Height);
+    if doFullscreen in FOptions then
+    begin
+      //Set a new window position and change the borderstyle to WS_POPUP = bsNone
+      SetWindowPos(FParent,HWND_TOPMOST,0,0,Display.Width,Display.Height,SWP_SHOWWINDOW);
+      SetWindowLong(FParent,GWL_STYLE,WS_POPUP);
+
+      result := AdDllLoader.InitDisplay(AdAppl,FParent, doHardware in FOptions,
+            doFullscreen in FOptions, Display.BitCount, Display.Width, Display.Height);
+    end
+    else
+    begin
+      //Get the rect of the window
+      GetWindowRect(FParent,ARect);
+
+      result := AdDllLoader.InitDisplay(AdAppl,FParent, doHardware in FOptions,
+            doFullscreen in FOptions, Display.BitCount, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top);
+    end;
   end;
 end;
 
@@ -148,7 +179,34 @@ end;
 
 function TAdDraw.Restore: boolean;
 begin
-  //Nothing
+  result := true;
+  //Nothing, has to be implemented in the DLL
+end;
+
+procedure TAdDraw.ClearSurface(Color:TColor);
+begin
+  AdDllLoader.ClearScene(AdAppl,Ad_RGB(GetRValue(Color),GetGValue(Color),GetBValue(Color)));
+end;
+
+procedure TAdDraw.BeginScene;
+begin
+  AdDllLoader.BeginScene(AdAppl);
+end;
+
+procedure TAdDraw.EndScene;
+begin
+  AdDllLoader.EndScene(AdAppl);
+end;
+
+procedure TAdDraw.Flip;
+begin
+  AdDllLoader.Flip(AdAppl);
+end;
+
+function TAdDraw.CanDraw:boolean;
+begin
+  //Only for compatibility
+  result := true;
 end;
 
 end.

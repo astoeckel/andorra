@@ -29,6 +29,7 @@ type TAndorraDllLoader = class
     ClearScene:TAdClearScene;
     BeginScene:TAdProcedure;
     EndScene:TAdProcedure;
+    Flip:TAdProcedure;
     SetupScene:TAdSetupScene;
     SetTextureQuality:TAdSetTextureQuality;
 
@@ -98,6 +99,7 @@ begin
       @SetTextureQuality := GetProcAddress(DllHandle, 'SetTextureQuality');
       @SetImageColor := GetProcAddress(DllHandle, 'SetImageColor');
       @GetImageInfo := GetProcAddress(DllHandle, 'GetImageInfo');
+      @Flip := GetProcAddress(DllHandle,'Flip');
     end;
   end;
 end;

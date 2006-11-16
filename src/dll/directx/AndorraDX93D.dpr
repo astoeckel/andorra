@@ -26,6 +26,7 @@ exports
   GetLastError,
   BeginScene,
   EndScene,
+  Flip,
   ClearScene,
   CreateImage,
   DestroyImage,

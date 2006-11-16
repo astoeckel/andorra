@@ -14,8 +14,8 @@
       <Projects Name="Targets">AndorraApp.exe AndorraDX93D.dll</Projects>
     </Projects>
     <Dependencies>
-      <Dependency GUID="{594A5828-07B0-4BDA-BE50-D6368A35A1C0}">
-        <Dependency GUID="{DA74F857-3BD7-47D5-989C-57B52E9B5C2A}"/>
+      <Dependency GUID="{DA74F857-3BD7-47D5-989C-57B52E9B5C2A}">
+        <Dependency GUID="{594A5828-07B0-4BDA-BE50-D6368A35A1C0}"/>
       </Dependency>
     </Dependencies>
   </Default.Personality>

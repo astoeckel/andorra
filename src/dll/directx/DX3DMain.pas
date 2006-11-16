@@ -46,7 +46,7 @@ type TAndorraImageItem = class
     function SetupBuffer:HRESULT; 
   public
     constructor Create(Appl:TAndorraApplication);
-    procedure Draw(DestRect,SourceRect:TRect;Rotation:integer;RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);
+    procedure Draw(DestApp:TAndorraApplication;DestRect,SourceRect:TRect;Rotation:integer;RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);
     procedure LoadTexture(ATexture:TAndorraTexture);
     procedure SetColor(AColor:TAndorraColor);
     destructor Destroy;override;
@@ -68,10 +68,11 @@ procedure BeginScene(Appl:TAndorraApplication);stdcall;
 procedure EndScene(Appl:TAndorraApplication);stdcall;
 procedure ClearScene(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
 procedure SetupScene(Appl:TAndorraApplication;AWidth,AHeight:integer);stdcall;
+procedure Flip(Appl:TAndorraApplication);stdcall;
 
 //SpriteControl
 function CreateImage(Appl:TAndorraApplication):TAndorraImage;stdcall;
-procedure DrawImage(Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
+procedure DrawImage(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
   RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);stdcall;
 procedure DestroyImage(Img:TAndorraImage);stdcall;
 procedure ImageLoadTexture(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
@@ -201,12 +202,12 @@ begin
             (Rect1.Bottom = Rect2.Bottom);
 end;
 
-procedure TAndorraImageItem.Draw(DestRect,SourceRect:TRect;Rotation:integer;
+procedure TAndorraImageItem.Draw(DestApp:TAndorraApplication;DestRect,SourceRect:TRect;Rotation:integer;
   RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);
 var matTrans1,matTrans2:TD3DXMatrix;
     curx,cury:single;
 begin
-  with TAndorraApplicationItem(FAppl) do
+  with TAndorraApplicationItem(DestApp) do
   begin
     if (FWidth > 0) and (FHeight > 0) and (FImage <> nil) then
     begin
@@ -453,6 +454,16 @@ begin
     with TAndorraApplicationItem(Appl) do
     begin
       Direct3D9Device.EndScene;
+    end;
+  end;
+end;
+
+procedure Flip(Appl:TAndorraApplication);
+begin
+  if Appl <> nil then
+  begin
+    with TAndorraApplicationItem(Appl) do
+    begin
       Direct3D9Device.Present(nil, nil, 0, nil);
     end;
   end;
@@ -520,12 +531,12 @@ begin
   end;
 end;
 
-procedure DrawImage(Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
+procedure DrawImage(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
   RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);
 begin
   if Img <> nil then
   begin
-    TAndorraImageItem(Img).Draw(DestRect,SourceRect,Rotation,RotCenterX,RotCenterY,Blendmode);
+    TAndorraImageItem(Img).Draw(DestApp,DestRect,SourceRect,Rotation,RotCenterX,RotCenterY,Blendmode);
   end;
 end;
 
