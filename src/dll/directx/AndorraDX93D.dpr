@@ -40,7 +40,7 @@ exports
   AddTextureAlphaChannel,
   SetTextureQuality,
   SetImageColor,
-  GetImageInfo;
+  GetTextureInfo;
 
 begin
 end.

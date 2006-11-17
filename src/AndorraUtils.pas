@@ -9,6 +9,7 @@
 * Comment: Unit used by the DLL and the application for data exchange 
 }
 
+{ This unit contains types used by the Dll and the Main Application }
 unit AndorraUtils;
 
 interface
@@ -24,6 +25,7 @@ end;
 
 type TImageInfo = packed record
   Width,Height:integer;
+  BaseRect:TRect;
 end;
 
 type TAndorraTextureQuality = (tqNone,tqLinear,tqAnisotropic);
@@ -52,7 +54,7 @@ type TAdTextureFromFileEx = function(Appl:TAndorraApplication;AFile:PChar;AWidth
 type TAdFreeTexture = procedure(ATexture:TAndorraTexture);stdcall;
 type TAdAddAlpha = procedure (ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 type TAdSetImageColor = procedure(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
-type TAdGetImageInfo = function(Img:TAndorraImage):TImageInfo;stdcall;
+type TAdGetTextureInfo = function(Tex:TAndorraTexture):TImageInfo;stdcall;
 
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;

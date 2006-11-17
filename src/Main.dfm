@@ -2,8 +2,8 @@ object FmMain: TFmMain
   Left = 0
   Top = 0
   Caption = 'Main'
-  ClientHeight = 307
-  ClientWidth = 434
+  ClientHeight = 600
+  ClientWidth = 800
   Color = clBlack
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

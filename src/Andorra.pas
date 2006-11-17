@@ -9,6 +9,8 @@
 * Comment: Contains the DLL Loader 
 }
 
+{ Contains the DLL Loader. This unit can also be used without using the classes in AdDraws.pas,
+e.g. for nonVCL Applications. }
 unit Andorra;
 
 interface
@@ -39,7 +41,6 @@ type TAndorraDllLoader = class
     DrawImage:TAdImageDraw;
     ImageLoadTexture:TAdImageLoadTexture;
     SetImageColor:TAdSetImageColor;
-    GetImageInfo:TAdGetImageInfo;
 
     //Texture Creation
     LoadTextureFromBitmap:TAdTextureFromBitmap;
@@ -47,6 +48,7 @@ type TAndorraDllLoader = class
     LoadTextureFromFileEx:TAdTextureFromFileEx;
     FreeTexture:TAdFreeTexture;
     AddTextureAlphaChannel:TAdAddAlpha;
+    GetTextureInfo:TAdGetTextureInfo;
 
     procedure LoadLibrary(afile:string);
     procedure UnLoadLibrary;
@@ -98,7 +100,7 @@ begin
       @AddTextureAlphaChannel := GetProcAddress(DllHandle, 'AddTextureAlphaChannel');
       @SetTextureQuality := GetProcAddress(DllHandle, 'SetTextureQuality');
       @SetImageColor := GetProcAddress(DllHandle, 'SetImageColor');
-      @GetImageInfo := GetProcAddress(DllHandle, 'GetImageInfo');
+      @GetTextureInfo := GetProcAddress(DllHandle, 'GetTextureInfo');
       @Flip := GetProcAddress(DllHandle,'Flip');
     end;
   end;

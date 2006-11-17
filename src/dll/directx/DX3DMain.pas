@@ -13,7 +13,7 @@ unit DX3DMain;
 
 interface
 
-uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics;
+uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics, Math;
 
 type TAndorraApplicationItem = class
   public
@@ -28,7 +28,8 @@ type TAndorraTextureItem = class
     AAppl:TAndorraApplication;
     ATexWidth,ATexHeight:integer;
     AFormat:TD3DFormat;
-    ATexture:IDirect3DTexture9;
+    ATextureImg:IDirect3DTexture9;
+    ABaseRect:TRect;
     destructor Destroy;override;
 end;
 
@@ -77,7 +78,6 @@ procedure DrawImage(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,Sourc
 procedure DestroyImage(Img:TAndorraImage);stdcall;
 procedure ImageLoadTexture(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
 procedure SetImageColor(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
-function GetImageInfo(Img:TAndorraImage):TImageInfo;stdcall;
 
 //Texture Creation
 function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
@@ -85,6 +85,7 @@ function LoadTextureFromFileEx(Appl:TAndorraApplication;AFile:PChar;AWidth,AHeig
 function LoadTextureFromBitmap(Appl:TAndorraApplication;ABitmap:Pointer;AColorDepth:byte):TAndorraTexture;stdcall;
 procedure FreeTexture(ATexture:TAndorraTexture);stdcall;
 procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
+function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
 
 //Our Vertex and the definition of the flexible vertex format (FVF)
 type TD3DLVertex = record
@@ -105,10 +106,10 @@ implementation
 //The Andorra Texture
 destructor TAndorraTextureItem.Destroy;
 begin
-  if ATexture <> nil then
+  if ATextureImg <> nil then
   begin
-    ATexture._Release;
-    ATexture := nil;
+    ATextureImg._Release;
+    ATextureImg := nil;
   end;
   inherited Destroy;
 end;
@@ -274,7 +275,7 @@ procedure TAndorraImageItem.LoadTexture(ATexture:TAndorraTexture);
 begin
   with TAndorraTextureItem(ATexture) do
   begin
-    FImage := ATexture;
+    FImage := ATextureImg;
     FWidth := ATexWidth;
     FHeight := ATexHeight;
     FSrcRect.Left   := 0;
@@ -411,7 +412,6 @@ begin
       Direct3D9Device.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
     end;
   end;
-
   result := true;
 end;
 
@@ -561,11 +561,16 @@ begin
   end;
 end;
 
-function GetImageInfo(Img:TAndorraImage):TImageInfo;
+function GetTextureInfo(Tex:TAndorraImage):TImageInfo;
 begin
-  if Img <> nil then
+  if Tex <> nil then
   begin
-    result := TAndorraImageItem(Img).GetImageInfo;
+    with Result do
+    begin
+      Width := TAndorraTextureItem(Tex).ATexWidth;
+      Height := TAndorraTextureItem(Tex).ATexHeight;
+      BaseRect := TAndorraTextureItem(Tex).ABaseRect;
+    end;
   end;
 end;
 
@@ -580,12 +585,20 @@ begin
     with TAndorraTextureItem(result) do
     begin
       AAppl := Appl;
-      D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, D3DX_DEFAULT, D3DX_DEFAULT,
+      if D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, D3DX_DEFAULT, D3DX_DEFAULT,
           0, 0, D3DFMT_UNKNOWN, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
-          AdColorToD3DColor_ARGB(ATransparentColor) , Info, nil, ATexture);
-      ATexWidth := Info.Width;
-      ATexHeight := Info.Height;
-      AFormat := Info.Format;
+          AdColorToD3DColor_ARGB(ATransparentColor) , Info, nil, ATextureImg) = D3D_OK then
+      begin
+        ATexWidth := Info.Width;
+        ATexHeight := Info.Height;
+        ABaseRect := Rect(0,0,ATexWidth,ATexHeight);
+        AFormat := Info.Format;
+      end
+      else
+      begin
+        Free;
+        result := nil;
+      end;
     end;
   end;
 end;
@@ -608,9 +621,10 @@ begin
       end;
       D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, AWidth,AHeight,
           0, 0, Format, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
-          AdColorToD3DColor_ARGB(ATransparentColor) ,Info, nil, ATexture);
+          AdColorToD3DColor_ARGB(ATransparentColor) ,Info, nil, ATextureImg);
       ATexWidth := Info.Width;
       ATexHeight := Info.Height;
+      ABaseRect := Rect(0,0,ATexWidth,ATexHeight);
       AFormat := Info.Format;
     end;
   end;
@@ -624,7 +638,7 @@ type PRGBRec = ^TRGBRec;
 
 procedure FreeTexture(ATexture:TAndorraTexture);
 begin
-  IDirect3DTexture9(ATexture)._Release;
+  IDirect3DTexture9(TAndorraTextureItem(ATexture).ATextureImg)._Release;
 end;
 
 
@@ -642,12 +656,19 @@ begin
                         or R8ToR4(b);
 end;
 
+function IsPowerOfTwo(Value: Cardinal): Boolean;
+begin
+  Result := (Value > 0) and (Value and (Value -1) = 0);
+end;
+
 function LoadTextureFromBitmap(Appl:TAndorraApplication;ABitmap:Pointer;AColorDepth:byte):TAndorraTexture;
 var d3dlr: TD3DLocked_Rect;
     Cursor32: pLongWord;
     Cursor16: pWord;
     BitCur: PRGBRec;
-    x,y:integer;  
+    x,y:integer;
+    a:byte;
+    tr,tg,tb:byte;
 begin
   //Set Result to nil
   result := TAndorraTextureItem.Create;
@@ -658,6 +679,19 @@ begin
     begin
       with TAndorraTextureItem(Result) do
       begin
+        ABaseRect := Rect(0,0,Width,Height);
+        //Scale the bitmap to a size power two
+        if not IsPowerOfTwo(Height) then
+        begin
+          Width := 1 shl round(log2(Width));
+        end;
+
+        if not IsPowerOfTwo(Height) then
+        begin
+          Height := 1 shl round(log2(Height));
+        end;
+
+        
         AAppl := Appl;
         //Set the Textures Pixel Format
         case AColorDepth of
@@ -672,10 +706,13 @@ begin
         //Set the Pixel Format of the Bitmap to 24 Bit
         PixelFormat := pf24Bit;
 
+        tr := GetRValue(TColor(TBitmap(ABitmap).TransparentColor));
+        tg := GetGValue(TColor(TBitmap(ABitmap).TransparentColor));
+        tb := GetBValue(TColor(TBitmap(ABitmap).TransparentColor));
         //Create the Texture
-        if D3DXCreateTexture(Direct3D9Device, Width, Height, 0, 0, AFormat, D3DPOOL_MANAGED, ATexture) = D3D_OK then
+        if D3DXCreateTexture(Direct3D9Device, Width, Height, 0, 0, AFormat, D3DPOOL_MANAGED, ATextureImg) = D3D_OK then
         begin
-          ATexture.LockRect(0, d3dlr, nil, 0);
+          ATextureImg.LockRect(0, d3dlr, nil, 0);
 
           if (AFormat = D3DFMT_A8R8G8B8) then
           begin
@@ -686,7 +723,18 @@ begin
               BitCur := Scanline[y];
               for x := 0 to Width-1 do
               begin
-                Cursor32^ := D3DColor_ARGB(255,BitCur^.b,BitCur^.g,BitCur^.r);
+                if TBitmap(ABitmap).Transparent and
+                   (BitCur^.r = tb) and
+                   (BitCur^.g = tg) and
+                   (BitCur^.b = tr) then
+                begin
+                  a := 0;
+                end
+                else
+                begin
+                  a := 255;
+                end;
+                Cursor32^ := D3DColor_ARGB(a,BitCur^.b,BitCur^.g,BitCur^.r);
                 inc(BitCur);
                 inc(Cursor32);
               end;
@@ -701,14 +749,25 @@ begin
               BitCur := Scanline[y];
               for x := 0 to Width-1 do
               begin
-                Cursor16^ := RGBTo16Bit(255,BitCur^.b,BitCur^.g,BitCur^.r);
+                if TBitmap(ABitmap).Transparent and
+                   (BitCur^.r = tb) and
+                   (BitCur^.g = tg) and
+                   (BitCur^.b = tr) then
+                begin
+                  a := 0;
+                end
+                else
+                begin
+                  a := 255;
+                end;
+                Cursor16^ := RGBTo16Bit(a,BitCur^.b,BitCur^.g,BitCur^.r);
                 inc(BitCur);
                 inc(Cursor16);
               end;
             end;
           end;
         end;
-        ATexture.UnlockRect(0);
+        ATextureImg.UnlockRect(0);
       end;
     end;
   end;
@@ -732,7 +791,7 @@ begin
         //Set the Pixel Format of the Bitmap to 24 Bit
         PixelFormat := pf24Bit;
 
-        ATexture.LockRect(0, d3dlr, nil, 0);
+        ATextureImg.LockRect(0, d3dlr, nil, 0);
 
         if AFormat = D3DFMT_A8R8G8B8 then
         begin
@@ -764,7 +823,7 @@ begin
           end;
         end;
       end;
-      ATexture.UnlockRect(0);
+      ATextureImg.UnlockRect(0);
     end;
   end;
 end;
