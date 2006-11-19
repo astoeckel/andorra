@@ -55,10 +55,13 @@ type TAdFreeTexture = procedure(ATexture:TAndorraTexture);stdcall;
 type TAdAddAlpha = procedure (ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 type TAdSetImageColor = procedure(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
 type TAdGetTextureInfo = function(Tex:TAndorraTexture):TImageInfo;stdcall;
+type TAdSetTextureAlpha = procedure (Tex:TAndorraTexture;AValue:Byte);stdcall;
 
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 function Ad_RGB(r,g,b:byte):TAndorraColor;
+
+function CompareColors(col1,col2:TAndorraColor):boolean;
 
 implementation
 
@@ -73,6 +76,14 @@ end;
 function Ad_RGB(r,g,b:byte):TAndorraColor;
 begin
   result := Ad_ARGB(255,r,g,b);
+end;
+
+function CompareColors(col1,col2:TAndorraColor):boolean;
+begin
+  result := (col1.a = col2.a) and
+            (col1.r = col2.r) and
+            (col1.g = col2.g) and
+            (col1.b = col2.b);
 end;
 
 end.

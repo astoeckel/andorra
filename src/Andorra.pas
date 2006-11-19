@@ -49,6 +49,7 @@ type TAndorraDllLoader = class
     FreeTexture:TAdFreeTexture;
     AddTextureAlphaChannel:TAdAddAlpha;
     GetTextureInfo:TAdGetTextureInfo;
+    SetTextureAlpha:TAdSetTextureAlpha;
 
     procedure LoadLibrary(afile:string);
     procedure UnLoadLibrary;
@@ -102,6 +103,7 @@ begin
       @SetImageColor := GetProcAddress(DllHandle, 'SetImageColor');
       @GetTextureInfo := GetProcAddress(DllHandle, 'GetTextureInfo');
       @Flip := GetProcAddress(DllHandle,'Flip');
+      @SetTextureAlpha := GetProcAddress(DllHandle,'SetTextureAlpha');
     end;
   end;
 end;

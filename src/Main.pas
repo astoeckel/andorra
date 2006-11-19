@@ -33,6 +33,7 @@ implementation
 {$R *.dfm}
 
 procedure TFmMain.FormCreate(Sender: TObject);
+var bmp:TBitmap;
 begin
   Application.OnIdle := ApplicationIdle;
 
@@ -44,14 +45,16 @@ begin
     Application.Terminate;
   end;
   AdImage := TPictureCollectionItem.Create(AdDraw1);
-  AdImage.Texture.LoadFromFile('figur.bmp',true,clWhite);
+  bmp := TBitmap.Create;
+  bmp.LoadFromFile('texture.bmp');
+  AdImage.Texture.LoadFromBitmap(bmp);
+  AdImage.Texture.AddAlphaChannel(bmp);
+  bmp.Free;
   AdImage.Restore;
-  AdImage.PatternWidth := 100;
-  AdImage.PatternHeight := 150;
+  AdImage.Color := clYellow;
 
-
-  sx := 0.1;
-  sy := 0.1;
+  sx := 0.2;
+  sy := 0.05;
 
   cw := ClientWidth;
   ch := ClientHeight;
@@ -69,7 +72,6 @@ begin
 end;
 
 procedure TFmMain.ApplicationIdle(Sender: TObject; var Done: Boolean);
-var r,g,b:integer;
 begin
   tg := tg+(GetTickCount-lt);
   lt := GetTickCount;
@@ -82,15 +84,16 @@ begin
   end;
   AdDraw1.BeginScene;
   AdDraw1.ClearSurface(clBlack);
-  i := i + 0.002;
-  if i > AdImage.PatternCount-1 then i := 0;  
-  AdImage.Draw(AdDraw1,round(ax),round(ay),round(i));
+  i := i + 0.05;
+  if i > 360 then i := 0;
+  AdImage.Draw(AdDraw1,round(ax),round(ay),0);
+  AdImage.Draw(AdDraw1,cw-round(ax)-128,ch-round(ay)-128,0);
 
   ax := ax + sx;
   ay := ay + sy;
-  if (ax + AdImage.PatternWidth > cw) or (ax < 0) then
+  if (ax + AdImage.Width > cw) or (ax < 0) then
     sx := -sx;
-  if (ay + AdImage.PatternHeight > ch) or (ay < 0) then
+  if (ay + AdImage.Height > ch) or (ay < 0) then
     sy := -sy;
 
   AdDraw1.EndScene;

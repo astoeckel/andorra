@@ -86,6 +86,7 @@ function LoadTextureFromBitmap(Appl:TAndorraApplication;ABitmap:Pointer;AColorDe
 procedure FreeTexture(ATexture:TAndorraTexture);stdcall;
 procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
+procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);stdcall;
 
 //Our Vertex and the definition of the flexible vertex format (FVF)
 type TD3DLVertex = record
@@ -161,19 +162,19 @@ begin
 
   Vertices[0].position := D3DXVector3(0,0,0);
   Vertices[0].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[0].textur1 := D3DXVector2(FSrcRect.Left/FWidth,FSrcRect.Top/FHeight);
+  Vertices[0].textur1 := D3DXVector2((FSrcRect.Left)/FWidth,FSrcRect.Top/FHeight);
 
   Vertices[1].position := D3DXVector3(0,FHeight,0);
   Vertices[1].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[1].textur1 := D3DXVector2(FSrcRect.Left/FWidth,FSrcRect.Bottom/FHeight);
+  Vertices[1].textur1 := D3DXVector2((FSrcRect.Left)/FWidth,FSrcRect.Bottom/FHeight);
 
   Vertices[2].position := D3DXVector3(FWidth,0,0);
   Vertices[2].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[2].textur1 := D3DXVector2(FSrcRect.Right/FWidth,FSrcRect.Top/FHeight);
+  Vertices[2].textur1 := D3DXVector2((FSrcRect.Right)/FWidth,FSrcRect.Top/FHeight);
 
   Vertices[3].position := D3DXVector3(FWidth,FHeight,0);
   Vertices[3].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[3].textur1 := D3DXVector2(FSrcRect.Right/FWidth,FSrcRect.Bottom/FHeight);
+  Vertices[3].textur1 := D3DXVector2((FSrcRect.Right)/FWidth,FSrcRect.Bottom/FHeight);
 
   //Create Vertexbuffer and store the vertices
   with TAndorraApplicationItem(FAppl) do
@@ -225,10 +226,10 @@ begin
       //Set Blendmode
       if BlendMode = bmAdd then
       begin
-        Direct3D9Device.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+        Direct3D9Device.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
+        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_SRCALPHA);
       end;
- 
+
       //Scale the Box
       D3DXMatrixScaling(matTrans1,(DestRect.Right-DestRect.Left)/FWidth,
         (DestRect.Bottom-DestRect.Top)/FHeight,0);
@@ -266,7 +267,7 @@ begin
       begin
         Direct3D9Device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
         Direct3D9Device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-      end;
+      end;  
     end;
   end;
 end;
@@ -325,7 +326,6 @@ var
   dtype:TD3DDevType;
   hvp:boolean;
   vp : Integer;
-  total:LongWord;
 begin
   result := false;
   if Appl <> nil then
@@ -706,9 +706,14 @@ begin
         //Set the Pixel Format of the Bitmap to 24 Bit
         PixelFormat := pf24Bit;
 
-        tr := GetRValue(TColor(TBitmap(ABitmap).TransparentColor));
-        tg := GetGValue(TColor(TBitmap(ABitmap).TransparentColor));
-        tb := GetBValue(TColor(TBitmap(ABitmap).TransparentColor));
+        if Transparent then
+        begin
+          tr := GetRValue(TransparentColor);
+          tg := GetGValue(TransparentColor);
+          tb := GetBValue(TransparentColor);
+        end;
+
+
         //Create the Texture
         if D3DXCreateTexture(Direct3D9Device, Width, Height, 0, 0, AFormat, D3DPOOL_MANAGED, ATextureImg) = D3D_OK then
         begin
@@ -723,7 +728,7 @@ begin
               BitCur := Scanline[y];
               for x := 0 to Width-1 do
               begin
-                if TBitmap(ABitmap).Transparent and
+                if Transparent and
                    (BitCur^.r = tb) and
                    (BitCur^.g = tg) and
                    (BitCur^.b = tr) then
@@ -749,7 +754,7 @@ begin
               BitCur := Scanline[y];
               for x := 0 to Width-1 do
               begin
-                if TBitmap(ABitmap).Transparent and
+                if Transparent and
                    (BitCur^.r = tb) and
                    (BitCur^.g = tg) and
                    (BitCur^.b = tr) then
@@ -779,7 +784,6 @@ var d3dlr: TD3DLocked_Rect;
     Cursor16: pWord;
     BitCur: PRGBRec;
     x,y:integer;
-    temp:Word;
 begin
   //Set Result to nil
   with TAndorraTextureItem(ATexture) do
@@ -828,10 +832,54 @@ begin
   end;
 end;
 
+procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);
+var d3dlr: TD3DLocked_Rect;
+    Cursor32: pLongWord;
+    Cursor16: pWord;
+    x,y:integer;
+begin
+  //Set Result to nil
+  with TAndorraTextureItem(Tex) do
+  begin
+    with TAndorraApplicationItem(AAppl) do
+    begin
+      ATextureImg.LockRect(0, d3dlr, nil, 0);
+
+      if AFormat = D3DFMT_A8R8G8B8 then
+      begin
+        Cursor32 := d3dlr.Bits;
+        for y := 0 to ATexHeight-1 do
+        begin
+          for x := 0 to ATexWidth-1 do
+          begin
+            Cursor32^ := (AValue shl 24) or (Cursor32^ and $00FFFFFF); 
+            inc(Cursor32);
+          end;
+        end;
+      end;
+
+      if AFormat = D3DFMT_A4R4G4B4 then
+      begin
+        Cursor16 := d3dlr.Bits;
+        for y := 0 to ATexHeight-1 do
+        begin
+          for x := 0 to ATexWidth-1 do
+          begin
+            Cursor16^ := (AValue shl 12) or (Cursor16^ and $0FFF);
+            inc(Cursor16);
+          end;
+        end;
+      end;
+    end;
+    ATextureImg.UnlockRect(0);
+  end;
+end;
+
+
 initialization
   ErrorLog := TStringList.Create;
 
 finalization
   ErrorLog.Free;
-  
+
 end.

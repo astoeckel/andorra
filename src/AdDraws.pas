@@ -125,8 +125,9 @@ type
       FBaseRect:TRect;
       function GetLoaded:boolean;
     protected
-      AdTexture:TAndorraTexture;
     public
+      {Link to the Andorra Texture.}
+      AdTexture:TAndorraTexture;
       {This is a constructor. AADraw defines the parent andorra application.}
       constructor Create(AAdDraw:TAdDraw);
       destructor Destroy;override;
@@ -162,28 +163,51 @@ type
       FParent:TAdDraw;
       FWidth,FHeight:integer;
       FPatternWidth,FPatternHeight:integer;
+      FSkipWidth,FSkipHeight:integer;
       FTexture:TAdTexture;
+      FColor:TColor;
+      FLastColor:TAndorraColor;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
+      procedure SetSkipWidth(AValue:integer);
+      procedure SetSkipHeight(AValue:integer);
       function GetPatternCount:integer;
+      function GetWidth:integer;
+      function GetHeight:integer;
+      procedure SetCurrentColor(Alpha:byte);
     protected
       Rects:TRectList;
       procedure CreatePatternRects;
     public
       AdImage:TAndorraImage;
       constructor Create(AAdDraw:TAdDraw);
-      destructor Destroy;
-      procedure Draw(ASurface:TAdDraw;X,Y,PatternIndex:integer);
+      destructor Destroy;override;
+      procedure Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
+      procedure StretchDraw(Dest:TAdDraw;const DestRect:TRect;PatternIndex:integer);
+      procedure DrawAdd(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
+        Alpha: Integer);
+      procedure DrawAlpha(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
+        Alpha: Integer);
+      procedure DrawRotate(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
+        CenterX, CenterY: Double; Angle: Integer);
+      procedure DrawRotateAdd(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
+        CenterX, CenterY: Double; Angle: Integer;
+        Alpha: Integer);
+      procedure DrawRotateAlpha(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
+        CenterX, CenterY: Double; Angle: Integer;
+        Alpha: Integer);
       procedure Restore;
       function GetPatternRect(ANr:integer):TRect;
       property Parent:TAdDraw read FParent write FParent;
-      property Width:integer read FWidth;
-      property Height:integer read FHeight;
+      property Width:integer read GetWidth;
+      property Height:integer read GetHeight;
       property PatternWidth:integer read FPatternWidth write SetPatternWidth;
       property PatternHeight:integer read FPatternHeight write SetPatternHeight;
-
+      property SkipWidth:integer read FSkipWidth write SetSkipWidth;
+      property SkipHeight:integer read FSkipHeight write SetSkipHeight;
       property Texture:TAdTexture read FTexture;
       property PatternCount:integer read GetPatternCount;
+      property Color:TColor read FColor write FColor;
   end;
 
 implementation
@@ -406,7 +430,10 @@ end;
 
 procedure TAdTexture.SetAlphaValue(AValue:byte);
 begin
-  //
+  if AdTexture <> nil then
+  begin
+    FParent.AdDllLoader.SetTextureAlpha(AdTexture,AValue);
+  end;
 end;
 
 procedure TAdTexture.FreeTexture;
@@ -433,11 +460,10 @@ begin
 end;
 
 procedure TRectList.Clear;
-var i:integer;
 begin
   while Count > 0 do
   begin
-    FreeMem(inherited Items[0]);
+    Dispose(inherited Items[0]);
     Delete(0);
   end;
 end;
@@ -462,6 +488,7 @@ begin
   FParent := AAdDraw;
   AdImage := FParent.AdDllLoader.CreateImage(AAdDraw.AdAppl);
   Rects := TRectList.Create;
+  FColor := clWhite;
 end;
 
 destructor TPictureCollectionItem.Destroy;
@@ -480,12 +507,13 @@ begin
   begin
     if (FPatternWidth <> 0) and (FPatternHeight <> 0) then
     begin
-      for ay := 0 to (Bottom div PatternHeight) - 1 do
+      for ay := 0 to ((Bottom+FSkipHeight) div (PatternHeight+FSkipHeight)) - 1 do
       begin
-        for ax := 0 to (Right div PatternWidth) - 1 do
+        for ax := 0 to ((Right+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
         begin
-          Rects.Add(Rect(ax*PatternWidth,ay*PatternHeight,
-            (ax+1)*PatternWidth,(ay+1)*PatternHeight));
+          Rects.Add(Bounds(
+            ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
+            Width,Height));
         end;
       end;
     end
@@ -496,18 +524,89 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.Draw(ASurface:TAdDraw;X,Y,PatternIndex:integer);
+procedure TPictureCollectionItem.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
 begin
-  if (FPatternWidth <> 0) and (FPatternHeight <> 0) then
+  if Texture.Loaded then
   begin
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,Rect(X,Y,X+PatternWidth,Y+PatternHeight),Rects[PatternIndex],
-      0,0,0,bmAlpha);
-  end
-  else
-  begin
+    SetCurrentColor(255);
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
+      0,0,0,bmAlpha);
+  end;
+end;
+
+procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
+  PatternIndex, Alpha: Integer);
+var CurCol:TAndorraColor;
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(Alpha);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
+      0,0,0,bmAdd);    
+  end;
+end;
+
+procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
+  PatternIndex, Alpha: Integer);
+var CurCol:TAndorraColor;
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(Alpha);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
+      0,0,0,bmAlpha);
+  end;
+end;
+
+procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
+  PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(255);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
+      Angle,CenterX,CenterY,bmAlpha);
+  end;
+end;
+
+procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
+  Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
+  Alpha: Integer);
+var CurCol:TAndorraColor;
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(Alpha);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
+      Angle,CenterX,CenterY,bmAdd);
+  end;
+end;
+
+procedure TPictureCollectionItem.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
+  Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
+  Alpha: Integer);
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(Alpha);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
+      Angle,CenterX,CenterY,bmAlpha);
+  end;
+end;
+
+procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(255);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmAlpha);
   end;
 end;
@@ -532,10 +631,50 @@ begin
   CreatePatternRects;
 end;
 
+procedure TPictureCollectionItem.SetSkipHeight(AValue: integer);
+begin
+  FSkipHeight := AValue;
+  CreatePatternRects;
+end;
+
+procedure TPictureCollectionItem.SetSkipWidth(AValue: integer);
+begin
+  FSkipWidth := AValue;
+  CreatePatternRects;
+end;
+
+procedure TPictureCollectionItem.SetCurrentColor(Alpha: byte);
+var CurCol:TAndorraColor;
+begin
+  if Texture.Loaded then
+  begin
+    CurCol := Ad_ARGB(Alpha,GetRValue(FColor),GetGValue(FColor),GetBValue(FColor));
+    if not CompareColors(CurCol,FLastColor) then
+    begin
+      FParent.AdDllLoader.SetImageColor(AdImage,CurCol);
+      FLastColor := CurCol;
+    end;
+  end;
+end;
+
 procedure TPictureCollectionItem.SetPatternHeight(AValue: Integer);
 begin
   FPatternHeight := AValue;
   CreatePatternRects;
+end;
+
+function TPictureCollectionItem.GetHeight: integer;
+begin
+  Result := FPatternHeight;
+  if (Result<=0) then
+    Result := FHeight;
+end;
+
+function TPictureCollectionItem.GetWidth: integer;
+begin
+  Result := FPatternWidth;
+  if (Result<=0) then
+    Result := FWidth;
 end;
 
 function TPictureCollectionItem.GetPatternCount: integer;
@@ -547,6 +686,8 @@ function TPictureCollectionItem.GetPatternRect(ANr: Integer):TRect;
 begin
   result := Rects[ANr];
 end;
+
+
 
 
 end.
