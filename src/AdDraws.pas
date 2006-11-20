@@ -237,14 +237,14 @@ type
      	function GetItem(AIndex:integer):TPictureCollectionItem;
      	procedure SetItem(AIndex:integer;AItem:TPictureCollectionItem);
     protected
-      procedure Notify(Ptr: Pointer; Action: TListNotification); overload;
+      procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
      	property Items[AIndex:integer]:TPictureCollectionItem read GetItem write SetItem;default;
       function Add(AName:string):TPictureCollectionItem;
       function Find(AName:string):TPictureCollectionItem;
       procedure Restore;
       constructor Create(AAdDraw:TAdDraw);
-      destructor Destroy;
+      destructor Destroy;override;
       property Parent:TAdDraw read FParent;
     published
   end;
@@ -569,6 +569,8 @@ begin
   if Texture.Loaded then
   begin
     SetCurrentColor(255);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       0,0,0,bmAlpha);
@@ -577,24 +579,26 @@ end;
 
 procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
-var CurCol:TAndorraColor;
 begin
   if Texture.Loaded then
   begin
     SetCurrentColor(Alpha);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
-      0,0,0,bmAdd);    
+      0,0,0,bmAdd);
   end;
 end;
 
 procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
-var CurCol:TAndorraColor;
 begin
   if Texture.Loaded then
   begin
     SetCurrentColor(Alpha);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmAlpha);
@@ -607,6 +611,8 @@ begin
   if Texture.Loaded then
   begin
     SetCurrentColor(255);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAlpha);
@@ -616,11 +622,12 @@ end;
 procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
-var CurCol:TAndorraColor;
 begin
   if Texture.Loaded then
   begin
     SetCurrentColor(Alpha);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAdd);
@@ -634,6 +641,8 @@ begin
   if Texture.Loaded then
   begin
     SetCurrentColor(Alpha);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAlpha);
@@ -645,6 +654,8 @@ begin
   if Texture.Loaded then
   begin
     SetCurrentColor(255);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmAlpha);
@@ -752,6 +763,7 @@ end;
 function TPictureCollection.Find(AName: string): TPictureCollectionItem;
 var i:integer;
 begin
+  result := nil;
   for i := 0 to Count - 1 do
   begin
     if Items[i].Name = AName then

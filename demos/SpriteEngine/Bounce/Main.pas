@@ -26,9 +26,10 @@ type
 
   TWall = class(TImageSprite);
 
-  TBall = class(TImageSprite)
+  TBall = class(TImageSpriteEx)
     private
       Falling:boolean;
+      WillDie:boolean;
     public
       SX,SY:double;
       SourceX,SourceY:integer;
@@ -89,15 +90,18 @@ begin
   Application.OnIdle := ApplicationIdle;
   AdDraw := TAdDraw.Create(Handle);
   AdDraw.DllName := 'AndorraDX93D.dll';
-  AdDraw.Options := AdDraw.Options;
+  AdDraw.Options := AdDraw.Options+[doFullscreen];
   AdDraw.Initialize;
 
   AdPictureCollection := TPictureCollection.Create(AdDraw);
   AdPictureCollection.Add('wall').Texture.LoadFromFile(path+'texture.bmp',false,clWhite);
+  AdPictureCollection.Add('wallgras').Texture.LoadFromFile(path+'texture2.bmp',false,clWhite);
   with AdPictureCollection.Add('ball') do
   begin
     Texture.LoadFromFile(path+'ball.bmp',true,clYellow);
-    Color := RGB(Random(256),Random(256),Random(256));
+    Color := RGB(Random(128)+128,Random(128)+128,Random(128)+128);
+    PatternWidth := 32;
+    PatternHeight := 32;
   end;
   AdPictureCollection.Restore;
   
@@ -116,6 +120,15 @@ begin
           with TWall.Create(AdSpriteEngine) do
           begin
             Image := AdPictureCollection.Find('wall');
+            x := ax*128;
+            y := ay*128;
+          end;
+        end;
+        'X':
+        begin
+          with TWall.Create(AdSpriteEngine) do
+          begin
+            Image := AdPictureCollection.Find('wallgras');
             x := ax*128;
             y := ay*128;
           end;
@@ -190,7 +203,7 @@ end;
 
 procedure TBall.Coll;
 begin
-  Dead;
+  WillDie := true;
   with TBall.Create(Engine) do
   begin
     Image := self.Image;
@@ -199,6 +212,7 @@ begin
     sourcex := round(x);
     sourcey := round(y);
   end;
+  CanDoCollisions := false;
 end;
 
 constructor TBall.Create(AParent: TSprite);
@@ -208,6 +222,9 @@ begin
   sy := 128;
   if random(2) = 0 then sx := -128 else sx := 128;
 
+  AnimSpeed := 4;
+
+  Alpha := 0;
 end;
 
 procedure TBall.DoCollision(Sprite: TSprite; var Done: boolean);
@@ -240,22 +257,44 @@ begin
   begin
     Coll;
     TBall(Sprite).Coll;
+    Done := true;
   end;
 end;
 
 procedure TBall.DoMove(TimeGap: double);
 begin
-  falling := true;
-  Collision;
-  
-  if falling then
+  if not WillDie then
   begin
-    SY := SY + SY * 0.0001;
-    Y := Y + SY*TimeGap;
+    inherited DoMove(TimeGap);
+
+    if Alpha < 255 then
+    begin
+      Alpha := Alpha + 1000*TimeGap;
+    end
+    else
+    begin
+      Alpha := 255;
+    end;
+
+    falling := true;
+    Collision;
+
+    if falling then
+    begin
+      SY := SY + SY * 0.0001;
+      Y := Y + SY*TimeGap;
+    end
+    else
+    begin
+      Angle := Angle + 360*(SX/abs(SX))*TimeGap;
+      if Angle > 360 then Angle := 0;
+      X := X + SX*TimeGap;
+    end;
   end
   else
   begin
-    X := X + SX*TimeGap;
+    Alpha := Alpha - 1000*TimeGap;
+    if Alpha <= 1 then Dead;    
   end;
 end;
 

@@ -115,12 +115,44 @@ type
   TImageSprite = class(TSprite)
     private
       FImage:TPictureCollectionItem;
+      FAnimLoop: Boolean;
+      FAnimPos: Double;
+      FAnimSpeed: Double;
+      FAnimStart: Integer;
+      FAnimStop: Integer;
+      FAnimActive: Boolean;
       procedure SetImage(AValue:TPictureCollectionItem);
+      function GetAnimCount:integer;
+      procedure SetAnimStart(AValue:integer);
+      procedure SetAnimStop(AValue:integer);
     protected
-    public
+      constructor Create(AParent:TSprite);override;
       procedure DoDraw;override;
+      procedure DoMove(TimeGap:double);override;
+    public
       property Image:TPictureCollectionItem read FImage write SetImage;
     published
+      property AnimCount:Integer read GetAnimCount;
+      property AnimStart:Integer read FAnimStart write SetAnimStart;
+      property AnimStop:Integer read FAnimStop write SetAnimStop;
+      property AnimPos:double read FAnimPos write FAnimPos;
+      property AnimLoop:boolean read FAnimLoop write FAnimLoop;
+      property AnimActive:boolean read FAnimActive write FAnimActive;
+      //The animation speed in frames per second.
+      property AnimSpeed:double read FAnimSpeed write FAnimSpeed;
+    end;
+
+  TImageSpriteEx = class(TImageSprite)
+    private
+      FAngle:double;
+      FAlpha:double;
+    protected
+    public
+      constructor Create(AParent:TSprite);override;
+      procedure DoDraw;override;
+    published
+      property Alpha:double read FAlpha write FAlpha;
+      property Angle:double read FAngle write FAngle;
   end;
 
 implementation
@@ -426,21 +458,129 @@ end;
 
 { TImageSprite }
 
+constructor TImageSprite.Create(AParent: TSprite);
+begin
+  inherited Create(AParent);
+  FAnimActive := true;
+  FAnimSpeed := 25;
+  FAnimLoop := true;
+end;
+
 procedure TImageSprite.DoDraw;
 begin
   if FImage <> nil then
   begin
-    FImage.StretchDraw(Engine.Surface,BoundsRect,0);
+    FImage.StretchDraw(Engine.Surface,BoundsRect,Trunc(AnimPos));
   end;
+end;
+
+procedure TImageSprite.DoMove(TimeGap: double);
+begin
+  if AnimActive then
+  begin
+    AnimPos := AnimPos + AnimSpeed*TimeGap;
+    if trunc(AnimPos) > AnimStop then
+    begin
+      if AnimLoop then
+      begin
+        AnimPos := AnimStart;
+      end
+      else
+      begin
+        AnimActive := False;
+      end;
+    end;
+  end;
+end;
+
+function TImageSprite.GetAnimCount: integer;
+begin
+  result := 0;
+  if FImage <> nil then
+  begin
+    result := FImage.PatternCount;
+  end;
+end;
+
+procedure TImageSprite.SetAnimStart(AValue: integer);
+begin
+  if AValue >= AnimCount then
+  begin
+    AValue := AnimCount-1;
+  end;
+  if AValue > AnimStop then
+  begin
+    AValue := AnimStop;
+  end;
+  FAnimStart := AValue;
+end;
+
+procedure TImageSprite.SetAnimStop(AValue: integer);
+begin
+  if Abs(AValue) >= AnimCount then
+  begin
+    AValue := AnimCount-1;
+  end;
+  if Abs(AValue) < AnimStart then
+  begin
+    AValue := AnimStart;
+  end;
+  FAnimStop := Abs(AValue);
 end;
 
 procedure TImageSprite.SetImage(AValue: TPictureCollectionItem);
 begin
+  if AValue <> nil then
+  begin
+    Width := AValue.Width;
+    Height := AValue.Height;
+    if FImage = nil then
+    begin
+      FAnimStart := 0;
+      FAnimStop := AValue.PatternCount-1;
+    end;
+  end;
   FImage := AValue;
+end;
+
+{ TImageSpriteEx }
+
+constructor TImageSpriteEx.Create(AParent: TSprite);
+begin
+  inherited Create(AParent);
+  FAlpha := 255;
+end;
+
+procedure TImageSpriteEx.DoDraw;
+begin
   if FImage <> nil then
   begin
-    Width := FImage.Width;
-    Height := FImage.Height;
+    if Alpha <> 255 then
+    begin
+      if Angle <> 0 then
+      begin
+        FImage.DrawRotateAlpha(Engine.Surface,BoundsRect.Left,BoundsRect.Top,
+          BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
+          Trunc(AnimPos),0.5,0.5,Round(Angle),Round(Alpha));
+      end
+      else
+      begin
+        FImage.DrawAlpha(Engine.Surface,BoundsRect,Trunc(AnimPos),Round(Alpha));
+      end;
+    end
+    else
+    begin
+      if Angle <> 0 then
+      begin
+        FImage.DrawRotate(Engine.Surface,BoundsRect.Left,BoundsRect.Top,
+          BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
+          Trunc(AnimPos),0.5,0.5,Round(Angle));
+      end
+      else
+      begin
+        FImage.StretchDraw(Engine.Surface,BoundsRect,Trunc(AnimPos));
+      end;
+    end;
   end;
 end;
 
