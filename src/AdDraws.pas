@@ -60,6 +60,7 @@ type
     FInitialize:TNotifyEvent;
     FInitialized:boolean;
     FDisplay:TAdDrawDisplay;
+    FDisplayRect:TRect;
 
     procedure SetDllName(val : string);
 
@@ -82,6 +83,9 @@ type
     //Here you can read the parent value, you've set in the constructor.
     property Parent : HWND read FParent;
 
+    //The Rect the Displaing takes place
+    property DisplayRect:TRect read FDisplayRect;
+
     //Initialize the application with all parameters set in "options". Returns false if the operation failed.
     function Initialize: boolean;
     //Finalize the application
@@ -102,7 +106,7 @@ type
     function CanDraw:boolean;
   published
     //This property contains the diplay settings (width, height and bitcount)
-    property Display: TAdDrawDisplay read FDisplay write FDisplay;
+    property Display : TAdDrawDisplay read FDisplay write FDisplay;
     //This property contains the options (see TAdDrawMode)
     property Options : TAdDrawModes read FOptions write FOptions;
     //Set this value to load a library
@@ -130,30 +134,44 @@ type
       AdTexture:TAndorraTexture;
       {This is a constructor. AADraw defines the parent andorra application.}
       constructor Create(AAdDraw:TAdDraw);
+      {A destructor. What did you think?}
       destructor Destroy;override;
+      {Creates a new andorra texture from a file. The old one will be flushed.}
       procedure LoadFromFile(afile:string;ATransparent:boolean;ATransparentColor:TColor);
+      {Creates a new andorra texture from a bitmap. The old one will be flushed.}
       procedure LoadFromBitmap(ABitmap:TBitmap);
+      {Add an alphachannel to the current texture. The bitmap has to have the same size as the loaded one.}
       procedure AddAlphaChannel(ABitmap:TBitmap);
+      {Overide the alpha channel. 255 to make the texture completly opac.}
       procedure SetAlphaValue(AValue:byte);
+      {Flush the texture.}
       procedure FreeTexture;
 
-      property Parent:TAdDraw read FParent write FParent;
+      {The parent TAdDraw.}
+      property Parent:TAdDraw read FParent;
+      {Returns weather a texture is loaded.}
       property Loaded:boolean read GetLoaded;
+      {Returns the width of the texture. Use BaseRect.Right instead.}
       property Width:integer read FWidth;
+      {Returns the height of the texture. Use BaseRect.Bottom instead.}
       property Height:integer read FHeight;
       {If a loaded texture has a size which sizes are not power of two, it will be resized.
       To keep the original image size it will be stored into BaseRect.}
       property BaseRect:TRect read FBaseRect;
   end;
 
+  {A list which is able to contain TRects}
   type TRectList = class(TList)
     private
      	function GetItem(AIndex:integer):TRect;
      	procedure SetItem(AIndex:integer;AItem:TRect);
       protected
     public
+      {Read/Write acess to the rectangles.}
      	property Items[AIndex:integer]:TRect read GetItem write SetItem;default;
+      {Add a rectangle.}
       procedure Add(ARect:TRect);
+      {Clear the list and all used memory.}
       procedure Clear;override;
     published
   end;
@@ -167,6 +185,8 @@ type
       FTexture:TAdTexture;
       FColor:TColor;
       FLastColor:TAndorraColor;
+      FName:string;
+      FAddedByList:boolean;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -208,6 +228,25 @@ type
       property Texture:TAdTexture read FTexture;
       property PatternCount:integer read GetPatternCount;
       property Color:TColor read FColor write FColor;
+      property Name:string read FName write FName;
+  end;
+
+  TPictureCollection = class(TList)
+    private
+      FParent:TAdDraw;
+     	function GetItem(AIndex:integer):TPictureCollectionItem;
+     	procedure SetItem(AIndex:integer;AItem:TPictureCollectionItem);
+    protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification); overload;
+    public
+     	property Items[AIndex:integer]:TPictureCollectionItem read GetItem write SetItem;default;
+      function Add(AName:string):TPictureCollectionItem;
+      function Find(AName:string):TPictureCollectionItem;
+      procedure Restore;
+      constructor Create(AAdDraw:TAdDraw);
+      destructor Destroy;
+      property Parent:TAdDraw read FParent;
+    published
   end;
 
 implementation
@@ -299,6 +338,7 @@ begin
         result := AdDllLoader.InitDisplay(AdAppl,FParent, doHardware in FOptions,
               doFullscreen in FOptions, FDisplay.BitCount, DisplayWidth, DisplayHeight);
       end;
+      FDisplayRect := Rect(0,0,DisplayWidth,DisplayHeight);
       AdDllLoader.SetTextureQuality(AdAppl,tqNone);
       Setup2DScene;
     end;
@@ -685,6 +725,74 @@ end;
 function TPictureCollectionItem.GetPatternRect(ANr: Integer):TRect;
 begin
   result := Rects[ANr];
+end;
+
+
+{TPictureCollection}
+
+function TPictureCollection.Add(AName: string): TPictureCollectionItem;
+begin
+  result := TPictureCollectionItem.Create(FParent);
+  result.Name := AName;
+  result.FAddedByList := true;
+  inherited Add(result);
+end;
+
+constructor TPictureCollection.Create(AAdDraw: TAdDraw);
+begin
+  inherited Create;
+  FParent := AAdDraw;
+end;
+
+destructor TPictureCollection.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TPictureCollection.Find(AName: string): TPictureCollectionItem;
+var i:integer;
+begin
+  for i := 0 to Count - 1 do
+  begin
+    if Items[i].Name = AName then
+    begin
+      result := Items[i];
+      break;
+    end;
+  end;
+end;
+
+function TPictureCollection.GetItem(AIndex:integer):TPictureCollectionItem;
+begin
+ result := inherited Items[AIndex];
+end;
+
+procedure TPictureCollection.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  if Action = lnDeleted then
+  begin
+    with TPictureCollectionItem(Ptr) do
+    begin
+      if FAddedByList then
+      begin
+        Free;
+      end;
+    end;
+  end;
+end;
+
+procedure TPictureCollection.Restore;
+var i:integer;
+begin
+  for i := 0 to Count - 1 do
+  begin
+    Items[i].Restore;
+  end;
+end;
+
+procedure TPictureCollection.SetItem(AIndex:integer;AItem:TPictureCollectionItem);
+begin
+ inherited Items[AIndex] := AItem;
 end;
 
 

@@ -21,6 +21,7 @@ type TAndorraApplicationItem = class
     Direct3d9Device:IDirect3dDevice9;
     SizeX,SizeY:integer;
     TextureFilter:TD3DTextureFilterType;
+    LastTexture:IDirect3dTexture9;
 end;
 
 type TAndorraTextureItem = class
@@ -256,7 +257,8 @@ begin
 
       with Direct3D9Device do
       begin
-        SetTexture(0,FImage);
+        if FImage <> LastTexture then SetTexture(0,FImage);
+        LastTexture := FImage;
         SetTransform(D3DTS_WORLD, matTrans2);
         SetStreamSource(0, FVertexbuffer, 0, SizeOf(TD3DLVertex));
         SetFVF(D3DFVF_TD3DLVertex);

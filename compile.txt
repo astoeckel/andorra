@@ -4,5 +4,7 @@ to compile the Direct3D DLL you'll need the Direct3D headers for Delphi.
 You can get them here:
 http://www.delphidev.de/header.php (Watch out, the website is in german...)
 
+To run the samples you probably also need the Direct3D Dlls also available on this website.
+
 I hope you'll get it compiled now...
 Andreas Stöckel
