@@ -18,6 +18,8 @@ uses Windows, Classes, AndorraUtils, Andorra, Graphics;
 
 type
 
+  TTextureMode = (tmWrap,tmMirror,tmClamp);
+
 
   TAdDrawBitCount = byte;
 
@@ -33,21 +35,6 @@ type
     //The Bitcount of the Display (May be 16 or 32 (and normaly 24, but this is, whyever, very buggy...) )
     BitCount:TAdDrawBitCount;
   end;
-
-  {Specifies the options the application is created with.
-
-  If you change these settings while running, simply call the "restore" function of TAdDraw.}
-  TAdDrawMode = (
-    doFullscreen,  //< Specifies weather the application should run in the fullscreen mode or not
-    doWaitVBlank, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
-    doStretch, //< Should the picture be stretched when the window resizes?
-    doHardware,//< Run in hardware mode? (WARNING: Should be set!)
-    doZBuffer, //< The ZBuffer has to be used if you are using 3D Objects in your scene
-    doAntialias,//< should Antialiasing be used
-    doSystemMemory//< use system memory instead of video memory for textures?
-  );
-  {Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
-  TAdDrawModes = set of TAdDrawMode;
 
   {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
   TAdDraw = class
@@ -65,6 +52,8 @@ type
     procedure SetDllName(val : string);
 
     procedure SetupThings;
+
+    procedure SetOptions(AValue:TAdDrawModes);
 
   protected
     DisplayWidth,DisplayHeight:integer;
@@ -108,7 +97,7 @@ type
     //This property contains the diplay settings (width, height and bitcount)
     property Display : TAdDrawDisplay read FDisplay write FDisplay;
     //This property contains the options (see TAdDrawMode)
-    property Options : TAdDrawModes read FOptions write FOptions;
+    property Options : TAdDrawModes read FOptions write SetOptions;
     //Set this value to load a library
     property DllName : string read FDllName write SetDllName;
     //Returns weather the application is initialized
@@ -187,6 +176,8 @@ type
       FLastColor:TAndorraColor;
       FName:string;
       FAddedByList:boolean;
+      FTextureXMode:TTextureMode;
+      FTextureYMode:TTextureMode;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -195,6 +186,8 @@ type
       function GetWidth:integer;
       function GetHeight:integer;
       procedure SetCurrentColor(Alpha:byte);
+      procedure SetTextureXMode(AValue:TTextureMode);
+      procedure SetTextureYMode(AValue:TTextureMode);
     protected
       Rects:TRectList;
       procedure CreatePatternRects;
@@ -216,6 +209,8 @@ type
       procedure DrawRotateAlpha(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
+      procedure StretchBltAlpha(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
+      procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
       procedure Restore;
       function GetPatternRect(ANr:integer):TRect;
       property Parent:TAdDraw read FParent write FParent;
@@ -229,6 +224,8 @@ type
       property PatternCount:integer read GetPatternCount;
       property Color:TColor read FColor write FColor;
       property Name:string read FName write FName;
+      property TextureXMode:TTextureMode read FTextureXMode write SetTextureXMode;
+      property TextureYMode:TTextureMode read FTextureYMode write SetTextureYMode;
   end;
 
   TPictureCollection = class(TList)
@@ -301,6 +298,15 @@ begin
   end;
 end;
 
+procedure TAdDraw.SetOptions(AValue:TAdDrawModes);
+begin
+  FOptions := AValue;
+  if Initialized then
+  begin
+    AdDllLoader.SetOptions(AdAppl,Options);
+  end;
+end;
+
 function TAdDraw.Initialize: boolean;
 var ARect:TRect;
 begin
@@ -324,8 +330,8 @@ begin
         DisplayWidth := FDisplay.Width;
         DisplayHeight := FDisplay.Height;
 
-        result := AdDllLoader.InitDisplay(AdAppl,FParent, doHardware in FOptions,
-              doFullscreen in FOptions, FDisplay.BitCount, FDisplay.Width, Display.Height);
+        result := AdDllLoader.InitDisplay(AdAppl,FParent, Options,
+          FDisplay.BitCount, FDisplay.Width, Display.Height);
       end
       else
       begin
@@ -335,8 +341,8 @@ begin
         DisplayWidth := ARect.Right-ARect.Left;
         DisplayHeight := ARect.Bottom-ARect.Top;
 
-        result := AdDllLoader.InitDisplay(AdAppl,FParent, doHardware in FOptions,
-              doFullscreen in FOptions, FDisplay.BitCount, DisplayWidth, DisplayHeight);
+        result := AdDllLoader.InitDisplay(AdAppl,FParent, Options,
+         FDisplay.BitCount, DisplayWidth, DisplayHeight);
       end;
       FDisplayRect := Rect(0,0,DisplayWidth,DisplayHeight);
       AdDllLoader.SetTextureQuality(AdAppl,tqNone);
@@ -649,6 +655,30 @@ begin
   end;
 end;
 
+procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
+  DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(Alpha);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,DestRect,SourceRect,
+      Angle,CenterX,CenterY,bmAdd);
+  end;
+end;
+
+procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
+  DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
+begin
+  if Texture.Loaded then
+  begin
+    SetCurrentColor(Alpha);
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,DestRect,SourceRect,
+      Angle,CenterX,CenterY,bmAlpha);
+  end;
+end;
+
 procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
 begin
   if Texture.Loaded then
@@ -692,6 +722,32 @@ procedure TPictureCollectionItem.SetSkipWidth(AValue: integer);
 begin
   FSkipWidth := AValue;
   CreatePatternRects;
+end;
+
+procedure TPictureCollectionItem.SetTextureXMode(AValue: TTextureMode);
+begin
+  if AValue <> FTextureXMode then
+  begin
+    case AValue of
+      tmWrap: FParent.AdDllLoader.SetTextureXMode(AdImage,amWrap);
+      tmMirror: FParent.AdDllLoader.SetTextureXMode(AdImage,amMirror);
+      tmClamp: FParent.AdDllLoader.SetTextureXMode(AdImage,amClamp);
+    end;
+    FTextureXMode := AValue;
+  end;
+end;
+
+procedure TPictureCollectionItem.SetTextureYMode(AValue: TTextureMode);
+begin
+  if AValue <> FTextureYMode then
+  begin
+    case AValue of
+      tmWrap: FParent.AdDllLoader.SetTextureYMode(AdImage,amWrap);
+      tmMirror: FParent.AdDllLoader.SetTextureYMode(AdImage,amMirror);
+      tmClamp: FParent.AdDllLoader.SetTextureYMode(AdImage,amClamp);
+    end;
+    FTextureYMode := AValue;
+  end;
 end;
 
 procedure TPictureCollectionItem.SetCurrentColor(Alpha: byte);

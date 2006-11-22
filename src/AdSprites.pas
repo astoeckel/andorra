@@ -126,10 +126,10 @@ type
       procedure SetAnimStart(AValue:integer);
       procedure SetAnimStop(AValue:integer);
     protected
-      constructor Create(AParent:TSprite);override;
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
     public
+      constructor Create(AParent:TSprite);override;
       property Image:TPictureCollectionItem read FImage write SetImage;
     published
       property AnimCount:Integer read GetAnimCount;
@@ -147,12 +147,35 @@ type
       FAngle:double;
       FAlpha:double;
     protected
+      procedure DoDraw;override;
     public
       constructor Create(AParent:TSprite);override;
-      procedure DoDraw;override;
     published
       property Alpha:double read FAlpha write FAlpha;
       property Angle:double read FAngle write FAngle;
+  end;
+
+  TBackgroundSprite = class(TSprite)
+    private
+      FImage:TPictureCollectionItem;
+      FTile:boolean;
+      FDepth:single;
+      FXTiles,FYTiles:integer;
+      FCenter:boolean;
+      procedure SetDepth(AValue:single);
+    protected
+      function GetBoundsRect:TRect;override;
+      procedure DoDraw;override;
+    public
+      constructor Create(AParent:TSprite);override;
+    published
+      {The virtual distance from the viewer. (May be a value bigger 0)}
+      property Depth:single read FDepth write SetDepth;
+      property Tiled:boolean read FTile write FTile;
+      property Image:TPictureCollectionItem read FImage write FImage;
+      property XTiles:integer read FXTiles write FXTiles;
+      property YTiles:integer read FYTiles write FYTiles;
+      property Center:boolean read FCenter write FCenter;
   end;
 
 implementation
@@ -581,6 +604,73 @@ begin
         FImage.StretchDraw(Engine.Surface,BoundsRect,Trunc(AnimPos));
       end;
     end;
+  end;
+end;
+
+{ TBackgroundSprite }
+
+constructor TBackgroundSprite.Create(AParent: TSprite);
+begin
+  inherited Create(AParent);
+  FCenter := true;
+  FTile := true;
+  FDepth := 1;
+  FXTiles := 1;
+  FYTiles := 1;
+end;
+
+procedure TBackgroundSprite.DoDraw;
+var SourceRect:TRect;
+    amx,amy:integer;
+    ax,ay:double;
+  procedure MoveRect(mx,my:integer;var ARect:TRect);
+  begin
+    ARect.Left := mx+ARect.Left;
+    ARect.Top := my+ARect.Top;
+    ARect.Right := mx+ARect.Right;
+    ARect.Bottom := my+ARect.Bottom;
+  end;
+begin
+  if FImage <> nil then
+  begin
+    if FTile then
+    begin
+      SourceRect := Engine.SurfaceRect;
+    end
+    else
+    begin
+      SourceRect := bounds(0,0,Image.Width*XTiles,Image.Height*YTiles);
+    end;
+
+    ax := Engine.X;
+    ay := Engine.Y;
+
+    //Calculate Depth
+    amx := round((-round(ax) mod round(Image.Width*Depth)) * (1/Depth));
+    amy := round((-round(ay) mod round(Image.Height*Depth))* (1/Depth));
+
+    if FCenter then
+    begin
+      amx := amx-(SourceRect.Right-SourceRect.Left) div 2 + Image.Width div 2;
+      amy := amy-(SourceRect.Bottom-SourceRect.Top) div 2 + Image.Height div 2;
+    end;
+
+    MoveRect(amx,amy,SourceRect);
+
+    Image.StretchBltAlpha(Engine.Surface,SourceRect,Engine.SurfaceRect,0,0,0,255);
+  end;
+end;
+
+function TBackgroundSprite.GetBoundsRect: TRect;
+begin
+  result := Engine.SurfaceRect;
+end;      
+
+procedure TBackgroundSprite.SetDepth(AValue: single);
+begin
+  if AValue > 0 then
+  begin
+    FDepth := AValue;
   end;
 end;
 

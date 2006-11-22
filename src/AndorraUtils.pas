@@ -19,6 +19,25 @@ type TAndorraApplication = pointer;
 type TAndorraImage = pointer;
 type TAndorraTexture = pointer;
 
+{Specifies the options the application is created with.
+
+If you change these settings while running, simply call the "restore" function of TAdDraw.}
+TAdDrawMode = (
+  doFullscreen,  //< Specifies weather the application should run in the fullscreen mode or not
+  doWaitVBlank, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
+  doStretch, //< Should the picture be stretched when the window resizes?
+  doHardware,//< Run in hardware mode? (WARNING: Should be set!)
+  doZBuffer, //< The ZBuffer has to be used if you are using 3D Objects in your scene
+  doAntialias,//< should Antialiasing be used
+  doSystemMemory,//< use system memory instead of video memory for textures?
+  doLights//Turn lights off/on.
+);
+{Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
+TAdDrawModes = set of TAdDrawMode;
+
+
+type TAndorraTextureMode = (amWrap,amMirror,amClamp);
+
 type TAndorraColor = packed record
   a,r,g,b:integer;
 end;
@@ -34,9 +53,8 @@ type TAndorraBlendMode = (bmAlpha,bmAdd);
 const adnone = 0;
 
 type TAdProcedure = procedure(Appl:TAndorraApplication);stdcall;
-type TAdInitDisplay = function (Appl:TAndorraApplication; AWindow:hWnd; doHardware:boolean=true;
-                     fullscreen:boolean=false; bitcount:byte=32;
-                     resx:integer=0; resy:integer=0):boolean;stdcall;
+type TAdInitDisplay = function (Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
+                     bitcount:byte=32;resx:integer=0; resy:integer=0):boolean;stdcall;
 type TAdGetLastError = function:Pchar;stdcall;
 type TAdCreateApplication = function:TAndorraApplication;stdcall;
 type TAdDestroyApplication = TAdProcedure;
@@ -56,6 +74,9 @@ type TAdAddAlpha = procedure (ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 type TAdSetImageColor = procedure(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
 type TAdGetTextureInfo = function(Tex:TAndorraTexture):TImageInfo;stdcall;
 type TAdSetTextureAlpha = procedure (Tex:TAndorraTexture;AValue:Byte);stdcall;
+type TAdSetTextureMode = procedure(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
+type TAdSetOptions = procedure(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
+type TAdSetAmbientLightColor = procedure(Appl:TAndorraApplication;Color:TAndorraColor);stdcall;
 
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;

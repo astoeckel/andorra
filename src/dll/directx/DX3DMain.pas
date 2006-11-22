@@ -22,6 +22,7 @@ type TAndorraApplicationItem = class
     SizeX,SizeY:integer;
     TextureFilter:TD3DTextureFilterType;
     LastTexture:IDirect3dTexture9;
+    LastXTextureMode,LastYTextureMode:TAndorraTextureMode;
 end;
 
 type TAndorraTextureItem = class
@@ -42,6 +43,7 @@ type TAndorraImageItem = class
     FWidth,FHeight:integer;
     FColor:TAndorraColor;
     FSrcRect:TRect;
+    FXTextureMode,FYTextureMode:TAndorraTextureMode;
     procedure SetSourceRect(ARect:TRect);
     function CompRects(Rect1,Rect2:TRect):boolean;
   protected
@@ -53,6 +55,8 @@ type TAndorraImageItem = class
     procedure SetColor(AColor:TAndorraColor);
     destructor Destroy;override;
     function GetImageInfo:TImageInfo;
+    procedure SetXTextureMode(AMode:TAndorraTextureMode);
+    procedure SetYTextureMode(AMode:TAndorraTextureMode);
 end;
 
 
@@ -60,8 +64,7 @@ end;
 function CreateApplication:TAndorraApplication;stdcall;
 procedure DestroyApplication(Appl:TAndorraApplication);stdcall;
 function GetLastError:PChar;stdcall;
-function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; doHardware:boolean=true;
-                     fullscreen:boolean=false; bitcount:byte=32;
+function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes; bitcount:byte=32;
                      resx:integer=0; resy:integer=0):boolean;stdcall;
 procedure SetTextureQuality(Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;
 
@@ -71,6 +74,7 @@ procedure EndScene(Appl:TAndorraApplication);stdcall;
 procedure ClearScene(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
 procedure SetupScene(Appl:TAndorraApplication;AWidth,AHeight:integer);stdcall;
 procedure Flip(Appl:TAndorraApplication);stdcall;
+procedure SetOptions(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
 
 //SpriteControl
 function CreateImage(Appl:TAndorraApplication):TAndorraImage;stdcall;
@@ -79,6 +83,8 @@ procedure DrawImage(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,Sourc
 procedure DestroyImage(Img:TAndorraImage);stdcall;
 procedure ImageLoadTexture(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
 procedure SetImageColor(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
+procedure SetTextureXMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
+procedure SetTextureYMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
 
 //Texture Creation
 function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
@@ -92,12 +98,13 @@ procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);stdcall;
 //Our Vertex and the definition of the flexible vertex format (FVF)
 type TD3DLVertex = record
   position: TD3DXVector3;
+  normale: TD3DXVector3;
   diffuse: TD3DColor;
   textur1: TD3DXVector2;
 end;
 
 const
-  D3DFVF_TD3DLVertex = D3DFVF_XYZ or D3DFVF_DIFFUSE or D3DFVF_TEX1;
+  D3DFVF_TD3DLVertex = D3DFVF_XYZ or D3DFVF_NORMAL or D3DFVF_DIFFUSE or D3DFVF_TEX1;
 
 //Stores error messages
 var
@@ -164,18 +171,22 @@ begin
   Vertices[0].position := D3DXVector3(0,0,0);
   Vertices[0].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
   Vertices[0].textur1 := D3DXVector2((FSrcRect.Left)/FWidth,FSrcRect.Top/FHeight);
+  Vertices[0].normale := D3DXVector3(0,0,-1);
 
   Vertices[1].position := D3DXVector3(0,FHeight,0);
   Vertices[1].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
   Vertices[1].textur1 := D3DXVector2((FSrcRect.Left)/FWidth,FSrcRect.Bottom/FHeight);
+  Vertices[1].normale := D3DXVector3(0,FHeight,-1);
 
   Vertices[2].position := D3DXVector3(FWidth,0,0);
   Vertices[2].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
   Vertices[2].textur1 := D3DXVector2((FSrcRect.Right)/FWidth,FSrcRect.Top/FHeight);
+  Vertices[2].normale := D3DXVector3(FWidth,0,-1);
 
   Vertices[3].position := D3DXVector3(FWidth,FHeight,0);
   Vertices[3].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
   Vertices[3].textur1 := D3DXVector2((FSrcRect.Right)/FWidth,FSrcRect.Bottom/FHeight);
+  Vertices[3].normale := D3DXVector3(FWidth,FHeight,-1);
 
   //Create Vertexbuffer and store the vertices
   with TAndorraApplicationItem(FAppl) do
@@ -195,6 +206,16 @@ begin
 
     result := fvertexbuffer.Unlock;
   end;
+end;
+
+procedure TAndorraImageItem.SetXTextureMode(AMode: TAndorraTextureMode);
+begin
+  FXTextureMode := AMode;
+end;
+
+procedure TAndorraImageItem.SetYTextureMode(AMode: TAndorraTextureMode);
+begin
+  FYTextureMode := AMode;
 end;
 
 function TAndorraImageItem.CompRects(Rect1,Rect2:TRect):boolean;
@@ -219,6 +240,29 @@ begin
       begin
         SetSourceRect(SourceRect);
       end;
+
+      //Set the texture addressing mode.
+      if FXTextureMode <> LastXTextureMode then
+      begin
+        case FXTextureMode of
+          amWrap: Direct3D9Device.SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP );
+          amMirror: Direct3D9Device.SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_MIRROR );
+          amClamp: Direct3D9Device.SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP );
+        end;
+        LastXTextureMode := FXTextureMode;
+      end;
+
+      if FYTextureMode <> LastYTextureMode then
+      begin
+        case FYTextureMode of
+          amWrap: Direct3D9Device.SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP );
+          amMirror: Direct3D9Device.SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_MIRROR );
+          amClamp: Direct3D9Device.SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP );
+        end;
+        LastYTextureMode := FYTextureMode;
+      end;
+
+      
 
       //Initialize "The Matrix"
       matTrans1 := D3DXMatrixIdentity;
@@ -319,8 +363,16 @@ begin
   end;
 end;
 
-function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; doHardware:boolean;
-  fullscreen:boolean; bitcount:byte; resx:integer; resy:integer):boolean;
+function D3DColorValue(a,r,g,b:single):TD3DColorValue;
+begin
+  result.a := a;
+  result.r := r;
+  result.g := g;
+  result.b := b;
+end;
+
+function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
+   bitcount:byte; resx:integer; resy:integer):boolean;
 var
   d3dpp:TD3DPresent_Parameters;
   d3ddm:TD3DDisplayMode;
@@ -344,12 +396,12 @@ begin
       Fillchar(d3dpp,sizeof(d3dpp),0);
       with d3dpp do
       begin
-        Windowed := not fullscreen;
+        Windowed := not (doFullscreen in AOptions);
         SwapEffect := D3DSWAPEFFECT_DISCARD;
         FullScreen_PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
 
         //Set Presentation Parameters
-        if Fullscreen then
+        if doFullscreen in AOptions then
         begin
           BackBufferWidth := ResX;
           BackBufferHeight := ResY;
@@ -386,7 +438,7 @@ begin
         vp := D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 
       //Set weather to use HAL
-      if doHardware then
+      if doHardware in AOptions then
         dtype := D3DDEVTYPE_HAL
       else
         dtype := D3DDEVTYPE_REF;
@@ -401,8 +453,13 @@ begin
       SizeX := ResX;
       SizeY := ResY;
 
-      //No lighting
-      Direct3D9Device.SetRenderState(D3DRS_LIGHTING, 0);
+      //Set lighting
+      SetOptions(Appl,AOptions);
+      Direct3D9Device.SetRenderState(D3DRS_AMBIENT, $00AAAAFF);
+
+      //Setup Material
+      Direct3D9Device.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
+      Direct3D9Device.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
 
       //No culling
       Direct3D9Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -518,6 +575,14 @@ begin
   end;
 end;
 
+procedure SetOptions(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
+begin
+  with TAndorraApplicationItem(Appl) do
+  begin
+    Direct3D9Device.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AOptions));    
+  end;
+end;
+
 //Image Controls
 
 function CreateImage(Appl:TAndorraApplication):TAndorraImage;
@@ -562,6 +627,22 @@ begin
     TAndorraImageItem(Img).SetColor(AColor);
   end;
 end;
+
+procedure SetTextureXMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
+begin
+  if Img <> nil then
+  begin
+    TAndorraImageItem(Img).SetXTextureMode(AMode);
+  end;
+end;
+
+procedure SetTextureYMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
+begin
+  if Img <> nil then
+  begin
+    TAndorraImageItem(Img).SetYTextureMode(AMode);
+  end;
+end;       
 
 function GetTextureInfo(Tex:TAndorraImage):TImageInfo;
 begin
@@ -708,6 +789,10 @@ begin
         //Set the Pixel Format of the Bitmap to 24 Bit
         PixelFormat := pf24Bit;
 
+        tr := 0;
+        tg := 0;
+        tb := 0;
+        
         if Transparent then
         begin
           tr := GetRValue(TransparentColor);

@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites;
+  Dialogs, AdDraws, AdSprites, AndorraUtils;
 
 type
   TForm1 = class(TForm)
@@ -33,6 +33,8 @@ type
     public
       SX,SY:double;
       SourceX,SourceY:integer;
+      Color:TColor;
+      procedure DoDraw;override;
       constructor Create(AParent:TSprite);override;
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var Done:boolean);override;
@@ -90,16 +92,20 @@ begin
   Application.OnIdle := ApplicationIdle;
   AdDraw := TAdDraw.Create(Handle);
   AdDraw.DllName := 'AndorraDX93D.dll';
-  AdDraw.Options := AdDraw.Options+[doFullscreen];
+  AdDraw.Options := AdDraw.Options+[doLights];
   AdDraw.Initialize;
 
   AdPictureCollection := TPictureCollection.Create(AdDraw);
   AdPictureCollection.Add('wall').Texture.LoadFromFile(path+'texture.bmp',false,clWhite);
   AdPictureCollection.Add('wallgras').Texture.LoadFromFile(path+'texture2.bmp',false,clWhite);
+  with AdPictureCollection.Add('sky') do
+  begin
+    Texture.LoadFromFile(path+'sky.png',false,clBlack);
+    Color := clSkyBlue;
+  end;
   with AdPictureCollection.Add('ball') do
   begin
     Texture.LoadFromFile(path+'ball.bmp',true,clYellow);
-    Color := RGB(Random(128)+128,Random(128)+128,Random(128)+128);
     PatternWidth := 32;
     PatternHeight := 32;
   end;
@@ -110,6 +116,15 @@ begin
 
   level := TStringList.Create;
   level.LoadFromFile(path+'level.txt');
+
+  with TBackgroundSprite.Create(AdSpriteEngine) do
+  begin
+    Z := -10;
+    Image := AdPictureCollection.Find('sky');
+    Tiled := true;
+    Depth := 10;
+  end;  
+
   for ay := 0 to level.Count - 1 do
   begin
     for ax := 1 to length(level[ay]) do
@@ -211,6 +226,7 @@ begin
     y := self.sourcey;
     sourcex := round(x);
     sourcey := round(y);
+    Color := self.Color;
   end;
   CanDoCollisions := false;
 end;
@@ -219,12 +235,14 @@ constructor TBall.Create(AParent: TSprite);
 begin
   inherited Create(AParent);
 
-  sy := 128;
-  if random(2) = 0 then sx := -128 else sx := 128;
+  sy := 200;
+  if random(2) = 0 then sx := -200 else sx := 200;
 
   AnimSpeed := 4;
 
   Alpha := 0;
+
+  Color := RGB(random(255),random(255),random(255));
 end;
 
 procedure TBall.DoCollision(Sprite: TSprite; var Done: boolean);
@@ -261,6 +279,12 @@ begin
   end;
 end;
 
+procedure TBall.DoDraw;
+begin
+  Image.Color := Color;
+  inherited DoDraw;
+end;
+
 procedure TBall.DoMove(TimeGap: double);
 begin
   if not WillDie then
@@ -281,7 +305,7 @@ begin
 
     if falling then
     begin
-      SY := SY + SY * 0.0001;
+      //SY := SY + SY * 0.000005;
       Y := Y + SY*TimeGap;
     end
     else

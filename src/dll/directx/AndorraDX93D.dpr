@@ -41,7 +41,10 @@ exports
   SetTextureQuality,
   SetImageColor,
   GetTextureInfo,
-  SetTextureAlpha;
+  SetTextureAlpha,
+  SetTextureXMode,
+  SetTextureYMode,
+  SetOptions;
 
 begin
 end.
