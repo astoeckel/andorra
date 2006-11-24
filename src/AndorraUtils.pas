@@ -18,6 +18,7 @@ uses SysUtils,Windows;
 type TAndorraApplication = pointer;
 type TAndorraImage = pointer;
 type TAndorraTexture = pointer;
+type TAndorraLight = pointer;
 
 {Specifies the options the application is created with.
 
@@ -47,6 +48,13 @@ type TImageInfo = packed record
   BaseRect:TRect;
 end;
 
+type TLight = packed record
+  X1,Y1:integer;
+  Color:TAndorraColor;
+  Range:single;
+  Falloff:single;
+end;
+
 type TAndorraTextureQuality = (tqNone,tqLinear,tqAnisotropic);
 type TAndorraBlendMode = (bmAlpha,bmAdd);
 
@@ -64,6 +72,7 @@ type TAdImage = procedure(Img:TAndorraImage);stdcall;
 type TAdImageDraw = procedure(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
   RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);stdcall;
 type TAdImageLoadTexture = procedure(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
+type TAdSetImageDetail = procedure(Img:TAndorraImage;ADetail:integer);stdcall;
 type TAdConstructor = function(Appl:TAndorraApplication):TAndorraImage;stdcall;
 type TAdSetupScene = procedure(Appl:TAndorraApplication;AWidth,AHeight:integer);stdcall;
 type TAdTextureFromBitmap = function(Appl:TAndorraApplication;ABitmap:Pointer;AColorDepth:byte):TAndorraTexture;stdcall;
@@ -76,8 +85,10 @@ type TAdGetTextureInfo = function(Tex:TAndorraTexture):TImageInfo;stdcall;
 type TAdSetTextureAlpha = procedure (Tex:TAndorraTexture;AValue:Byte);stdcall;
 type TAdSetTextureMode = procedure(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
 type TAdSetOptions = procedure(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
-type TAdSetAmbientLightColor = procedure(Appl:TAndorraApplication;Color:TAndorraColor);stdcall;
-
+type TAdSetAmbientLight = procedure(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
+type TAdLightProc = procedure(ALight:TAndorraLight);stdcall;
+type TAdCreateLight = function(AAppl:TAndorraApplication):TAndorraLight;stdcall;
+type TAdRestoreLight = procedure(ALight:TAndorraLight;Data:TLight);stdcall;
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 function Ad_RGB(r,g,b:byte):TAndorraColor;

@@ -15,7 +15,7 @@ unit AdSprites;
 
 interface
 
-uses Types,SysUtils,Classes,AdDraws,AndorraUtils;
+uses Types,SysUtils,Classes,AdDraws,AndorraUtils,Graphics;
 
 type
   TSprite = class;
@@ -57,6 +57,8 @@ type
       procedure DoMove(TimeGap:double);virtual;
       procedure DoDraw;virtual;
       procedure DoCollision(Sprite: TSprite; var Done: Boolean); virtual;
+      procedure SetX(AValue:double);virtual;
+      procedure SetY(AValue:double);virtual;
     public
       constructor Create(AParent:TSprite);virtual;
       destructor Destroy;override;
@@ -70,8 +72,8 @@ type
       function Collision:integer;
       procedure Collision2;
     published
-      property X:double read FX write FX;
-      property Y:double read FY write FY;
+      property X:double read FX write SetX;
+      property Y:double read FY write SetY;
       property Z:integer read FZ write SetZ;
       property Width:double read FWidth write FWidth;
       property Height:double read FHeight write FHeight;
@@ -178,6 +180,27 @@ type
       property Center:boolean read FCenter write FCenter;
   end;
 
+  TLightSprite = class(TSprite)
+    private
+      FRange:double;
+      FFalloff:double;
+      FColor:TColor;
+      procedure SetRange(AValue:double);
+      procedure SetFalloff(AValue:double);
+      procedure SetColor(AValue:TColor);
+    protected
+      Light:TAdLight;
+      procedure DoDraw;override;
+      function GetBoundsRect:TRect;override;
+    public
+      constructor Create(AParent:TSprite);override;
+      destructor Destroy;override;
+    published
+      property Range:double read FRange write SetRange;
+      property Falloff:double read FFalloff write SetFalloff;
+      property Color:TColor read FColor write SetColor;
+  end;
+
 implementation
 
 
@@ -259,7 +282,12 @@ begin
 end;
 
 destructor TSprite.Destroy;
+var i:integer;
 begin
+  for i := 0 to FList.Count - 1 do
+  begin
+    FList[i].Free;
+  end;    
   FList.Free;
   inherited Create;
 end;
@@ -428,6 +456,16 @@ begin
     FParent := nil;
     FEngine := nil;
   end;
+end;
+
+procedure TSprite.SetX(AValue: double);
+begin
+  FX := AValue;
+end;
+
+procedure TSprite.SetY(AValue: double);
+begin
+  FY := AValue;
 end;
 
 procedure TSprite.SetZ(AValue: integer);
@@ -672,6 +710,66 @@ begin
   begin
     FDepth := AValue;
   end;
+end;
+
+{ TLightSprite }
+
+constructor TLightSprite.Create(AParent: TSprite);
+begin
+  inherited Create(AParent);
+  Light := TAdLight.Create(Engine.Surface);
+  Light.Data.X1 := 0;
+  Light.Data.Y1 := 0;
+  Light.Data.Range := 100;
+  Light.Data.Color := Ad_RGB(255,255,255);
+  Light.Data.Falloff := 2;
+  Light.Restore;
+  FColor := clWhite;
+  FRange := 100;
+  CanDoCollisions := false;
+end;
+
+destructor TLightSprite.Destroy;
+begin
+  Light.Free;
+  inherited Destroy;
+end;
+
+procedure TLightSprite.DoDraw;
+begin
+  Light.Data.X1 := round(X+Engine.X);
+  Light.Data.Y1 := round(Y+Engine.Y);
+  Light.Restore;
+  Light.Enable;
+end;
+
+function TLightSprite.GetBoundsRect: TRect;
+var r:integer;
+begin
+  r := round(FRange);
+  result := rect(round(x+Engine.X)-r,round(y+Engine.Y)-r,
+                 round(x+Engine.X)+r,round(y+Engine.Y)+r);
+end;
+
+procedure TLightSprite.SetColor(AValue: TColor);
+begin
+  FColor := AValue;
+  Light.Data.Color := Ad_RGB(AValue, (AValue shr 8) and 255, (AValue shr 16) and 255);
+  Light.Restore;
+end;
+
+procedure TLightSprite.SetFalloff(AValue: double);
+begin
+  FFalloff := AValue;
+  Light.Data.Falloff := AValue;
+  Light.Restore;
+end;
+
+procedure TLightSprite.SetRange(AValue: double);
+begin
+  FRange := AValue;
+  Light.Data.Range := AValue;
+  Light.Restore;
 end;
 
 end.

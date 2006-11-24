@@ -49,11 +49,14 @@ type
     FDisplay:TAdDrawDisplay;
     FDisplayRect:TRect;
 
+    FAmbientColor:TColor;
+
     procedure SetDllName(val : string);
 
     procedure SetupThings;
 
     procedure SetOptions(AValue:TAdDrawModes);
+    procedure SetAmbientColor(AValue:TColor);
 
   protected
     DisplayWidth,DisplayHeight:integer;
@@ -102,11 +105,29 @@ type
     property DllName : string read FDllName write SetDllName;
     //Returns weather the application is initialized
     property Initialized : boolean read FInitialized;
+    //Set the ambient light color here
+    property AmbientColor:TColor read FAmbientColor write SetAmbientColor;
 
     //Event is called before the application is finalized
     property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
     //Event is called after the application is initialized
     property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
+  end;
+
+  {TAdLight is the representation of a light in your game. Before using lights
+  be sure that you've turned on "doLights" in the options. You can only use 8 Lights in a scene by one time.}
+  TAdLight = class
+    private
+      FParent:TAdDraw;
+    protected
+    public
+      AdLight:TAndorraLight;
+      Data:TLight;
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;override;
+      procedure Restore;
+      procedure Enable;
+      procedure Disable;
   end;
 
   {TAdTexture basicly loads a texture from a bitmap or a file into the video memory}
@@ -178,6 +199,7 @@ type
       FAddedByList:boolean;
       FTextureXMode:TTextureMode;
       FTextureYMode:TTextureMode;
+      FDetail:integer;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -188,6 +210,7 @@ type
       procedure SetCurrentColor(Alpha:byte);
       procedure SetTextureXMode(AValue:TTextureMode);
       procedure SetTextureYMode(AValue:TTextureMode);
+      procedure SetDetail(AValue:integer);
     protected
       Rects:TRectList;
       procedure CreatePatternRects;
@@ -226,6 +249,7 @@ type
       property Name:string read FName write FName;
       property TextureXMode:TTextureMode read FTextureXMode write SetTextureXMode;
       property TextureYMode:TTextureMode read FTextureYMode write SetTextureYMode;
+      property Detail:integer read FDetail write SetDetail;
   end;
 
   TPictureCollection = class(TList)
@@ -254,6 +278,7 @@ constructor TAdDraw.Create(AParent : HWND);
 begin
 	inherited Create;
   FParent := AParent;
+  FAmbientColor := clWhite;
   AdDllLoader := TAndorraDllLoader.Create;
 
   SetupThings;
@@ -282,6 +307,16 @@ begin
   
   AdDllLoader.Destroy;
 	inherited Destroy;
+end;
+
+procedure TAdDraw.SetAmbientColor(AValue: TColor);
+begin
+  if Initialized then
+  begin
+    FAmbientColor := AValue;
+    AdDllLoader.SetAmbientLight(AdAppl,AD_RGB(GetRValue(AValue),GetGValue(AValue),
+      GetBValue(AValue)));
+  end;
 end;
 
 procedure TAdDraw.SetDllName(val : string);
@@ -764,6 +799,15 @@ begin
   end;
 end;
 
+procedure TPictureCollectionItem.SetDetail(AValue: integer);
+begin
+  if AValue > 0 then
+  begin
+    FDetail := AValue;
+    FParent.AdDllLoader.SetImageDetail(AdImage,AValue);
+  end;
+end;
+
 procedure TPictureCollectionItem.SetPatternHeight(AValue: Integer);
 begin
   FPatternHeight := AValue;
@@ -861,9 +905,36 @@ end;
 procedure TPictureCollection.SetItem(AIndex:integer;AItem:TPictureCollectionItem);
 begin
  inherited Items[AIndex] := AItem;
+end;    
+
+{ TAdLight }
+
+constructor TAdLight.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+  AdLight := AParent.AdDllLoader.CreateLight(AParent.AdAppl);
 end;
 
+destructor TAdLight.Destroy;
+begin
+  FParent.AdDllLoader.DestroyLight(AdLight);
+  inherited Destroy;
+end;
 
+procedure TAdLight.Disable;
+begin
+  FParent.AdDllLoader.DisableLight(AdLight);
+end;
 
+procedure TAdLight.Enable;
+begin
+  FParent.AdDllLoader.EnableLight(AdLight);
+end;
+
+procedure TAdLight.Restore;
+begin
+  FParent.AdDllLoader.RestoreLight(AdLight,Data);
+end;
 
 end.

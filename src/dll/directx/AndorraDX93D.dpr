@@ -44,7 +44,14 @@ exports
   SetTextureAlpha,
   SetTextureXMode,
   SetTextureYMode,
-  SetOptions;
+  SetOptions,
+  SetAmbientLight,
+  CreateLight,
+  DestroyLight,
+  RestoreLight,
+  SetImageDetail,
+  DisableLight,
+  EnableLight;
 
 begin
 end.

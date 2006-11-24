@@ -34,6 +34,7 @@ type TAndorraDllLoader = class
     Flip:TAdProcedure;
     SetupScene:TAdSetupScene;
     SetTextureQuality:TAdSetTextureQuality;
+    SetAmbientLight:TAdSetAmbientLight;
 
     //Image Control
     CreateImage:TAdConstructor;
@@ -44,6 +45,7 @@ type TAndorraDllLoader = class
     SetTextureXMode:TAdSetTextureMode;
     SetTextureYMode:TAdSetTextureMode;
     SetOptions:TAdSetOptions;
+    SetImageDetail:TAdSetImageDetail;
 
     //Texture Creation
     LoadTextureFromBitmap:TAdTextureFromBitmap;
@@ -53,6 +55,13 @@ type TAndorraDllLoader = class
     AddTextureAlphaChannel:TAdAddAlpha;
     GetTextureInfo:TAdGetTextureInfo;
     SetTextureAlpha:TAdSetTextureAlpha;
+
+    //Lights
+    CreateLight:TAdCreateLight;
+    DestroyLight:TAdLightProc;
+    RestoreLight:TAdRestoreLight;
+    EnableLight:TAdLightProc;
+    DisableLight:TAdLightProc;
 
     procedure LoadLibrary(afile:string);
     procedure UnLoadLibrary;
@@ -110,6 +119,13 @@ begin
       @SetTextureXMode := GetProcAddress(DllHandle,'SetTextureXMode');
       @SetTextureYMode := GetProcAddress(DllHandle,'SetTextureYMode');
       @SetOptions := GetProcAddress(DllHandle,'SetOptions');
+      @SetAmbientLight := GetProcAddress(DllHandle,'SetAmbientLight');
+      @CreateLight := GetProcAddress(DllHandle,'CreateLight');
+      @DestroyLight := GetProcAddress(DllHandle,'DestroyLight');
+      @RestoreLight := GetProcAddress(DllHandle,'RestoreLight');
+      @SetImageDetail := GetProcAddress(DllHandle,'SetImageDetail');
+      @EnableLight := GetProcAddress(DllHandle,'EnableLight');
+      @DisableLight := GetProcAddress(DllHandle,'DisableLight');
     end;
   end;
 end;

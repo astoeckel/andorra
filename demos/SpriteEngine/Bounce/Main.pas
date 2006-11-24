@@ -34,8 +34,10 @@ type
       SX,SY:double;
       SourceX,SourceY:integer;
       Color:TColor;
+      Light:TLightSprite;
       procedure DoDraw;override;
       constructor Create(AParent:TSprite);override;
+      procedure Dead;override;
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var Done:boolean);override;
       procedure Coll;
@@ -70,7 +72,7 @@ begin
     timegap := 0;
     framecount := 0;
   end;
-  
+
   AdDraw.BeginScene;
   AdDraw.ClearSurface(clSkyBlue);
   AdSpriteEngine.Move(tg/1000);
@@ -89,20 +91,34 @@ var
 begin
   Randomize;
 
-  Application.OnIdle := ApplicationIdle;
   AdDraw := TAdDraw.Create(Handle);
   AdDraw.DllName := 'AndorraDX93D.dll';
   AdDraw.Options := AdDraw.Options+[doLights];
+  if Application.MessageBox('Do you want to run in the fullscreen mode?','Fullscreen',MB_YESNO) = ID_YES then
+  begin
+    AdDraw.Options := AdDraw.Options+[doFullscreen];
+  end;
+  
   AdDraw.Initialize;
 
+  AdDraw.AmbientColor := RGB(64,64,64);
+
   AdPictureCollection := TPictureCollection.Create(AdDraw);
-  AdPictureCollection.Add('wall').Texture.LoadFromFile(path+'texture.bmp',false,clWhite);
-  AdPictureCollection.Add('wallgras').Texture.LoadFromFile(path+'texture2.bmp',false,clWhite);
+  with AdPictureCollection.Add('wall')do
+  begin
+    Texture.LoadFromFile(path+'texture.bmp',false,clWhite);
+    Detail := 16;
+  end;
+  with AdPictureCollection.Add('wallgras')do
+  begin
+    Texture.LoadFromFile(path+'texture2.bmp',false,clWhite);
+    Detail := 16;
+  end;
   with AdPictureCollection.Add('sky') do
   begin
     Texture.LoadFromFile(path+'sky.png',false,clBlack);
-    Color := clSkyBlue;
-  end;
+    Color := rgb(200,200,255);
+  end;    
   with AdPictureCollection.Add('ball') do
   begin
     Texture.LoadFromFile(path+'ball.bmp',true,clYellow);
@@ -123,7 +139,7 @@ begin
     Image := AdPictureCollection.Find('sky');
     Tiled := true;
     Depth := 10;
-  end;  
+  end;
 
   for ay := 0 to level.Count - 1 do
   begin
@@ -164,6 +180,8 @@ begin
   end;
   level.Free;
   lasttime := GetTickCount;
+
+  Application.OnIdle := ApplicationIdle;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -243,6 +261,21 @@ begin
   Alpha := 0;
 
   Color := RGB(random(255),random(255),random(255));
+
+  Light := TLightSprite.Create(Engine);
+  with Light do
+  begin
+    Z := -9;
+    Range := 200;
+    Falloff := 5;
+  end;           
+end;
+
+
+procedure TBall.Dead;
+begin
+  Light.Dead;
+  inherited Dead;
 end;
 
 procedure TBall.DoCollision(Sprite: TSprite; var Done: boolean);
@@ -305,7 +338,7 @@ begin
 
     if falling then
     begin
-      //SY := SY + SY * 0.000005;
+      SY := SY + SY * 0.1*TimeGap;
       Y := Y + SY*TimeGap;
     end
     else
@@ -318,8 +351,12 @@ begin
   else
   begin
     Alpha := Alpha - 1000*TimeGap;
-    if Alpha <= 1 then Dead;    
+    Light.Color  := RGB(round(Alpha),round(Alpha),round(Alpha));
+    if Alpha <= 2 then Dead;    
   end;
+
+  Light.X := X+Width / 2;
+  Light.Y := Y+Height / 2;
 end;
 
 end.

@@ -13,9 +13,11 @@ unit DX3DMain;
 
 interface
 
-uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics, Math;
+uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics, Math,Dialogs, SysUtils;
 
 type TAndorraApplicationItem = class
+  private
+    FLights:Array[0..1023] of Boolean;
   public
     Direct3d9:IDirect3D9;
     Direct3d9Device:IDirect3dDevice9;
@@ -23,7 +25,20 @@ type TAndorraApplicationItem = class
     TextureFilter:TD3DTextureFilterType;
     LastTexture:IDirect3dTexture9;
     LastXTextureMode,LastYTextureMode:TAndorraTextureMode;
+    function GetFreeLight:integer;
+    procedure ReleaseLight(alight:integer);
 end;
+
+type TAndorraLightItem = class
+  public
+    AAppl:TAndorraApplication;
+    AOptions:TLight;
+    ALight:integer;
+    AVisible:boolean;
+    constructor Create(Appl:TAndorraApplication);
+    destructor Destroy;override;
+end;
+
 
 type TAndorraTextureItem = class
   public
@@ -39,11 +54,14 @@ type TAndorraImageItem = class
   private
     FAppl:TAndorraApplication;
     FVertexBuffer:IDirect3DVertexBuffer9;
+    FIndexBuffer:IDirect3DIndexBuffer9;
     FImage:IDirect3DTexture9;
     FWidth,FHeight:integer;
     FColor:TAndorraColor;
     FSrcRect:TRect;
     FXTextureMode,FYTextureMode:TAndorraTextureMode;
+    FDetails:integer;
+    FUseIndexBuffer:boolean;
     procedure SetSourceRect(ARect:TRect);
     function CompRects(Rect1,Rect2:TRect):boolean;
   protected
@@ -57,6 +75,7 @@ type TAndorraImageItem = class
     function GetImageInfo:TImageInfo;
     procedure SetXTextureMode(AMode:TAndorraTextureMode);
     procedure SetYTextureMode(AMode:TAndorraTextureMode);
+    procedure SetDetails(ADetail:integer);
 end;
 
 
@@ -75,6 +94,7 @@ procedure ClearScene(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
 procedure SetupScene(Appl:TAndorraApplication;AWidth,AHeight:integer);stdcall;
 procedure Flip(Appl:TAndorraApplication);stdcall;
 procedure SetOptions(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
+procedure SetAmbientLight(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
 
 //SpriteControl
 function CreateImage(Appl:TAndorraApplication):TAndorraImage;stdcall;
@@ -85,6 +105,7 @@ procedure ImageLoadTexture(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
 procedure SetImageColor(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
 procedure SetTextureXMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
 procedure SetTextureYMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
+procedure SetImageDetail(Img:TAndorraImage;ADetail:integer);stdcall;
 
 //Texture Creation
 function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
@@ -94,6 +115,14 @@ procedure FreeTexture(ATexture:TAndorraTexture);stdcall;
 procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
 procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);stdcall;
+
+//Lights
+function CreateLight(Appl:TAndorraApplication):TAndorraLight;stdcall;
+procedure DestroyLight(ALight:TAndorraLight);stdcall;
+procedure RestoreLight(ALight:TAndorraLight;Data:TLight);stdcall;
+procedure EnableLight(ALight:TAndorraLight);stdcall;
+procedure DisableLight(ALight:TAndorraLight);stdcall;
+
 
 //Our Vertex and the definition of the flexible vertex format (FVF)
 type TD3DLVertex = record
@@ -131,6 +160,7 @@ begin
   begin
     FAppl := Appl;
     FColor := Ad_ARGB(255,255,255,255);
+    FDetails := 1;
   end
   else
   begin
@@ -154,57 +184,100 @@ begin
   SetupBuffer;
 end;
 
+procedure TAndorraImageItem.SetDetails(ADetail: integer);
+begin
+  if ADetail > 0 then
+  begin
+    FDetails := ADetail;
+  end;
+end;
+
 function TAndorraImageItem.SetupBuffer;
 var
-  Vertices: Array[0..3] of TD3DLVertex;
-  pVertices: Pointer;
+  Vertices: Array of TD3DLVertex;
+  Indices: Array of Word;
+  pVertices,pIndices: Pointer;
+  Vertexcount,Indexcount:integer;
+  i,x,y:integer;
+  ax,ay:double;
+  w,h:integer;
 begin
-  //Create Plane
+  Vertexcount := (FDetails+1)*(FDetails+1);
+  Indexcount := FDetails*FDetails*6;
+
+  SetLength(Vertices,Vertexcount);
+  SetLength(Indices,Indexcount);
+
+  FUseIndexBuffer := FDetails > 1;
 
 
-  //0-----2
-  //|    /|
-  //|  /  |
-  //|/    |
-  //1-----3
+  i := 0;
 
-  Vertices[0].position := D3DXVector3(0,0,0);
-  Vertices[0].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[0].textur1 := D3DXVector2((FSrcRect.Left)/FWidth,FSrcRect.Top/FHeight);
-  Vertices[0].normale := D3DXVector3(0,0,-1);
+  w := FSrcRect.Right - FSrcRect.Left;
+  h := FSrcRect.Bottom - FSrcRect.Top;
 
-  Vertices[1].position := D3DXVector3(0,FHeight,0);
-  Vertices[1].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[1].textur1 := D3DXVector2((FSrcRect.Left)/FWidth,FSrcRect.Bottom/FHeight);
-  Vertices[1].normale := D3DXVector3(0,FHeight,-1);
+  for y := 0 to FDetails do
+  begin
+    for x := 0 to FDetails do
+    begin
+      ay := y*fheight/FDetails;
+      ax := x*fwidth/FDetails;
+      Vertices[i].position := D3DXVector3(ax,ay,0);
+      Vertices[i].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
+      Vertices[i].textur1 := D3DXVector2((FSrcRect.Left + w/FDetails*x)/FWidth,(FSrcRect.Top + h/FDetails*y)/FHeight);
+      Vertices[i].normale := D3DXVector3(0,0,-1);
+      i := i + 1;
+    end;
+  end;
 
-  Vertices[2].position := D3DXVector3(FWidth,0,0);
-  Vertices[2].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[2].textur1 := D3DXVector2((FSrcRect.Right)/FWidth,FSrcRect.Top/FHeight);
-  Vertices[2].normale := D3DXVector3(FWidth,0,-1);
+  if FUseIndexBuffer then
+  begin
+    i := 0;
+    for y := 0 to FDetails - 1 do
+    begin
+      for x := 0 to FDetails - 1 do
+      begin
+        Indices[i] :=   y     * (FDetails+1) + x + 1;
+        Indices[i+1] := (y+1) * (FDetails+1) + x;
+        Indices[i+2] := y     * (FDetails+1) + x;
+        Indices[i+3] := y     * (FDetails+1) + x + 1;
+        Indices[i+4] := (y+1) * (FDetails+1) + x + 1;
+        Indices[i+5] := (y+1) * (FDetails+1) + x;
+        i := i + 6;
+      end;
+    end;
 
-  Vertices[3].position := D3DXVector3(FWidth,FHeight,0);
-  Vertices[3].diffuse := D3DColor_ARGB(FColor.a,FColor.r,FColor.g,FColor.b);
-  Vertices[3].textur1 := D3DXVector2((FSrcRect.Right)/FWidth,FSrcRect.Bottom/FHeight);
-  Vertices[3].normale := D3DXVector3(FWidth,FHeight,-1);
+  end;
 
-  //Create Vertexbuffer and store the vertices
+  //Create Vertexbuffer and store the vertices/indices
   with TAndorraApplicationItem(FAppl) do
   begin
+    //Free the buffers
+    FVertexBuffer := nil;
+    FIndexBuffer := nil;
+
     //Create Vertexbuffer
-    result := Direct3D9Device.CreateVertexBuffer(Sizeof(TD3DLVertex)*3,
+    Direct3D9Device.CreateVertexBuffer(Sizeof(TD3DLVertex)*Vertexcount,
       D3DUSAGE_WRITEONLY, D3DFVF_TD3DLVertex, D3DPOOL_DEFAULT,
-      fvertexbuffer, nil);
-    if result <> D3D_OK then exit;
+      FVertexBuffer, nil);
 
-    //Lock the buffer
-    result := fvertexbuffer.Lock(0,SizeOf(TD3DLVertex)*3, pVertices, 0);
-    if result <> D3D_OK then exit;
+    //Lock the vertexbuffer
+    FVertexBuffer.Lock(0,Sizeof(TD3DLVertex)*Vertexcount, pVertices, 0);
+    Move(Vertices[0], pVertices^, Sizeof(TD3DLVertex)*Vertexcount);
+    FVertexBuffer.Unlock;
 
-    //Move the Vertices into the buffer
-    Move(Vertices, pVertices^, Sizeof(Vertices));
+    if FUseIndexBuffer then
+    begin
+      //Create Indexbuffer
+      Direct3D9Device.CreateIndexBuffer(Sizeof(Word)*IndexCount,
+        D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT,
+        FIndexBuffer,nil);
 
-    result := fvertexbuffer.Unlock;
+      //Lock the indexbuffer
+      FIndexBuffer.Lock(0,Sizeof(Word)*IndexCount, pIndices, 0);
+      Move(Indices[0], pIndices^, Sizeof(Word)*IndexCount);
+      FIndexBuffer.Unlock;
+    end;
   end;
 end;
 
@@ -306,7 +379,16 @@ begin
         SetTransform(D3DTS_WORLD, matTrans2);
         SetStreamSource(0, FVertexbuffer, 0, SizeOf(TD3DLVertex));
         SetFVF(D3DFVF_TD3DLVertex);
-        DrawPrimitive(D3DPT_TRIANGLESTRIP,0,2);
+        if not FUseIndexBuffer then
+        begin
+          DrawPrimitive(D3DPT_TRIANGLESTRIP,0,2);
+        end
+        else
+        begin
+          SetIndices(FIndexBuffer);
+          DrawIndexedPrimitive( d3dpt_trianglelist, 0, 0, (FDetails+1)*(FDetails+1), 0, FDetails*FDetails*2);
+        end;
+
       end;
       
       if BlendMode <> bmAlpha then
@@ -380,6 +462,7 @@ var
   dtype:TD3DDevType;
   hvp:boolean;
   vp : Integer;
+  i:integer;
 begin
   result := false;
   if Appl <> nil then
@@ -455,11 +538,12 @@ begin
 
       //Set lighting
       SetOptions(Appl,AOptions);
-      Direct3D9Device.SetRenderState(D3DRS_AMBIENT, $00AAAAFF);
+      Direct3D9Device.SetRenderState(D3DRS_AMBIENT, $00FFFFFF);
 
       //Setup Material
       Direct3D9Device.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
       Direct3D9Device.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+      Direct3D9Device.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_COLOR1);
 
       //No culling
       Direct3D9Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -469,6 +553,11 @@ begin
       Direct3D9Device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
       Direct3D9Device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       Direct3D9Device.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+
+      for i := 0 to 1023 do
+      begin
+        FLights[i] := false;
+      end;
     end;
   end;
   result := true;
@@ -507,11 +596,24 @@ begin
 end;
 
 procedure EndScene(Appl:TAndorraApplication);
+var ares:cardinal;
+    i:integer;
 begin
   if Appl <> nil then
   begin
     with TAndorraApplicationItem(Appl) do
     begin
+      Direct3D9Device.GetRenderState(D3DRS_LIGHTING,ares);
+      if ares = Cardinal(true) then
+      begin
+        for i := 0 to 1023 do
+        begin
+          if FLights[i] then
+          begin
+            Direct3D9Device.LightEnable(i,false);
+          end;
+        end;
+      end;                                             
       Direct3D9Device.EndScene;
     end;
   end;
@@ -579,7 +681,16 @@ procedure SetOptions(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
 begin
   with TAndorraApplicationItem(Appl) do
   begin
-    Direct3D9Device.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AOptions));    
+    Direct3D9Device.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AOptions));
+  end;
+end;
+
+procedure SetAmbientLight(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
+begin
+  with TAndorraApplicationItem(Appl) do
+  begin
+    Direct3D9Device.SetRenderState(D3DRS_AMBIENT, D3DColor_ARGB(AColor.a,AColor.r,
+      AColor.g,AColor.b));
   end;
 end;
 
@@ -642,7 +753,7 @@ begin
   begin
     TAndorraImageItem(Img).SetYTextureMode(AMode);
   end;
-end;       
+end;
 
 function GetTextureInfo(Tex:TAndorraImage):TImageInfo;
 begin
@@ -654,6 +765,14 @@ begin
       Height := TAndorraTextureItem(Tex).ATexHeight;
       BaseRect := TAndorraTextureItem(Tex).ABaseRect;
     end;
+  end;
+end;
+
+procedure SetImageDetail(Img:TAndorraImage;ADetail:integer);
+begin
+  if img <> nil then
+  begin
+    TAndorraImageItem(Img).SetDetails(ADetail);
   end;
 end;
 
@@ -961,6 +1080,114 @@ begin
     ATextureImg.UnlockRect(0);
   end;
 end;
+
+
+{ TAndorraApplicationItem }
+
+function TAndorraApplicationItem.GetFreeLight: integer;
+var i:integer;
+begin
+  result := -1;
+  for i := 0 to 1023 do
+  begin
+    if not FLights[i] then
+    begin
+      result := i;
+      FLights[i] := true;
+      break;
+    end;
+  end;
+end;
+
+procedure TAndorraApplicationItem.ReleaseLight(alight: integer);
+begin
+  if (alight > 0) and (alight < 1024) then
+  begin
+    Direct3D9Device.LightEnable(Alight,false);
+    FLights[alight] := false;
+  end;
+end;
+
+{ TAndorraLightItem }
+
+constructor TAndorraLightItem.Create(Appl: TAndorraApplication);
+begin
+  inherited Create;
+  Alight := TAndorraApplicationItem(Appl).GetFreeLight;
+  AAppl := Appl;
+end;
+
+destructor TAndorraLightItem.Destroy;
+begin
+  TAndorraApplicationItem(AAppl).ReleaseLight(ALight);
+  inherited Destroy;
+end;
+
+function CreateLight(Appl:TAndorraApplication):TAndorraLight;
+begin
+  result := TAndorraLightItem.Create(Appl);
+end;
+
+procedure DestroyLight(ALight:TAndorraLight);
+begin
+  TAndorraLightItem(ALight).Destroy;
+end;
+
+procedure RestoreLight(ALight:TAndorraLight;Data:TLight);
+var settings:TD3DLight9;
+begin
+  if ALight <> nil then
+  begin
+    with TAndorraLightItem(ALight) do
+    begin
+      if ALight <> -1 then
+      begin
+        with TAndorraApplicationItem(AAppl) do
+        begin
+          with Settings do
+          begin
+            _Type := D3DLIGHT_POINT;
+            Ambient := D3DColorValue(0,Data.Color.R/255,Data.Color.G/255,Data.Color.B/255);
+            Position := D3DXVector3(Data.X1,Data.Y1,0);
+            Range := Data.Range;
+            Attenuation0 := 0;
+            Attenuation1 := Data.Falloff/(Range);
+            Attenuation2 := 0;
+          end;
+          Direct3D9Device.SetLight(alight,Settings);
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure EnableLight(ALight:TAndorraLight);
+begin
+  if Alight <> nil then
+  begin
+    with TAndorraLightItem(ALight) do
+    begin
+      with TAndorraApplicationItem(AAppl) do
+      begin
+        Direct3D9Device.LightEnable(Alight,true);
+      end;
+    end;
+  end;
+end;
+
+procedure DisableLight(ALight:TAndorraLight);
+begin
+  if Alight <> nil then
+  begin
+    with TAndorraLightItem(ALight) do
+    begin
+      with TAndorraApplicationItem(AAppl) do
+      begin
+        Direct3D9Device.LightEnable(Alight,false);
+      end;
+    end;
+  end;
+end;   
 
 
 initialization

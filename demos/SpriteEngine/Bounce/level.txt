@@ -1,11 +1,11 @@
 XXXXXXXXXXXXX
 x--bxxxxxxxxx
-x-XXxbx----xx
-x---x-x--bbxx
-xXX-x-x--XXxx
-x---x-x--xb-x
+x-XXx-bx---xx
+x-b-x-Xx-bbxx
+xXX-x-xx-XXxx
+x--bx-xx-xb-x
 x-XXx-x--xX-x
-x-b-x-x--xx-x
+x---x-x--xx-x
 xXX-x-x--xx-x
 xxx---------x
 xxxXXXXXXXXXx
