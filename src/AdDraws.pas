@@ -14,7 +14,7 @@ unit AdDraws;
 
 interface
 
-uses Windows, Classes, AndorraUtils, Andorra, Graphics;
+uses Controls, Types, SysUtils, Classes, AndorraUtils, Andorra, Graphics, Dialogs;
 
 type
 
@@ -36,11 +36,37 @@ type
     BitCount:TAdDrawBitCount;
   end;
 
+  //A record for adding a new log entry into the log system
+  type TAdLogMessage = record
+    Text:string;
+    Sender:string;
+    Typ:string;
+  end;
+
+  //The log system class
+  type TAdLog = class
+    private
+      Items:TStringList;
+    public
+      //This specifies an file the log is automaticly saved to. May be '' for no auto saving.
+      FileName:string;
+      //A constructor.
+      constructor Create;
+      //Wow. A destructor.
+      destructor Destroy;override;
+      //Load an old logfile
+      procedure LoadFromFile(AFile:string);
+      //Save the current logfile. Happens automaticly if FileName is set.
+      procedure SaveToFile(AFile:string);
+      //Adds an TAdLog Message Record to the log system.
+      procedure AddMessage(AMessage:TAdLogMessage);
+  end;
+
   {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
   TAdDraw = class
   private
 
-    FParent:HWND;
+    FParent:TWinControl;
     FOptions:TAdDrawModes;
     FDllName:string;
     FFinalize:TNotifyEvent;
@@ -51,6 +77,10 @@ type
 
     FAmbientColor:TColor;
 
+    FLog:TAdLog;
+    FLogFileName:string;
+    FAutoLoadLog:boolean;
+
     procedure SetDllName(val : string);
 
     procedure SetupThings;
@@ -58,8 +88,11 @@ type
     procedure SetOptions(AValue:TAdDrawModes);
     procedure SetAmbientColor(AValue:TColor);
 
+    procedure SetAutoLoadLog(AValue:boolean);
+
+    function GetDisplayRect:TRect;
+
   protected
-    DisplayWidth,DisplayHeight:integer;
   public
     {The Andorra Dll Loader. You can use this class to get direct control over
     the engine.}
@@ -68,12 +101,12 @@ type
     AdAppl:TAndorraApplication;
 
     //Create the class. AParent is the handle of the control, where displaying should take place.
-    constructor Create(AParent : HWND);
+    constructor Create(AParent : TWinControl);
     //This is a destroctor.
     destructor Destroy; override;
 
     //Here you can read the parent value, you've set in the constructor.
-    property Parent : HWND read FParent;
+    property Parent : TWinControl read FParent;
 
     //The Rect the Displaing takes place
     property DisplayRect:TRect read FDisplayRect;
@@ -96,6 +129,9 @@ type
 
     //Returns weather Andorra is ready to draw
     function CanDraw:boolean;
+
+    //Used internally
+    procedure LogProc(LogItem:TAdLogItem);
   published
     //This property contains the diplay settings (width, height and bitcount)
     property Display : TAdDrawDisplay read FDisplay write FDisplay;
@@ -112,6 +148,13 @@ type
     property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
     //Event is called after the application is initialized
     property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
+
+    //The log system
+    property Log : TAdLog read FLog;
+    //Specifies weather the log should automaticly be loaded at startup and saved at shutdown.
+    property AutoLoadLog: boolean read FAutoLoadLog write SetAutoLoadLog;
+    //The name of the logfile.
+    property LogFileName:string read FLogFileName write FLogFileName;
   end;
 
   {TAdLight is the representation of a light in your game. Before using lights
@@ -121,12 +164,21 @@ type
       FParent:TAdDraw;
     protected
     public
+      //Link to Andorras Light
       AdLight:TAndorraLight;
+      //Contains information about the light.
       Data:TLight;
+      //A constructor
       constructor Create(AParent:TAdDraw);
+      //A destructor
       destructor Destroy;override;
+      //Push the settings you've made in "data" into the engine.
       procedure Restore;
+      {Enables the light. Note that most graphic boards can only display 8 Lights a time.
+
+      All lights are automaticly disabled in the "EndScene" routine.}
       procedure Enable;
+      //Disable a light manually.
       procedure Disable;
   end;
 
@@ -186,6 +238,7 @@ type
     published
   end;
 
+  //This represents one image in an ImageList.
   TPictureCollectionItem = class
     private
       FParent:TAdDraw;
@@ -215,43 +268,72 @@ type
       Rects:TRectList;
       procedure CreatePatternRects;
     public
+      //Contains the link to Andorras Image
       AdImage:TAndorraImage;
+      //A Constructor
       constructor Create(AAdDraw:TAdDraw);
+      //A Destructor
       destructor Destroy;override;
+      //Draws the image at a specified position. If you've set "PatternWidth" and "PatternHeight", this will draw the pattern you've specified in PatternIndex.
       procedure Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
+      //The same as Draw, but you can stretch the Image.
       procedure StretchDraw(Dest:TAdDraw;const DestRect:TRect;PatternIndex:integer);
+      //Draw a sprite with additive blending.
       procedure DrawAdd(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
         Alpha: Integer);
+      //Draw a sprite with alpha blending.
       procedure DrawAlpha(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
         Alpha: Integer);
+      //Draw a sprite rotated. CenterX and CenterY specify the center of the rotation - May be a value between 0 and 1. Rotation is a value between 0 and 360.
       procedure DrawRotate(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer);
+      //The same as DrawRotate, just with additive blending.
       procedure DrawRotateAdd(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
+      //The same as DrawRotate, just with alpha blending.
       procedure DrawRotateAlpha(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
+      //Draw only specified part from the image. Alpha blending.
       procedure StretchBltAlpha(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
+      //Draw only specified part from the image. Additive blending.
       procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
+      //If you've set the color or a new texture you have to call this function to see your changes.
       procedure Restore;
+      //Returns the rect of one pattern.
       function GetPatternRect(ANr:integer):TRect;
+      //Returns the parent you've set in the constructor
       property Parent:TAdDraw read FParent write FParent;
+      //Returns the width of the image.
       property Width:integer read GetWidth;
+      //Returns the height of the image.
       property Height:integer read GetHeight;
+      //Set the width of one pattern.
       property PatternWidth:integer read FPatternWidth write SetPatternWidth;
+      //Set the height of one pattern.
       property PatternHeight:integer read FPatternHeight write SetPatternHeight;
+      //The horizontal space between the patterns.
       property SkipWidth:integer read FSkipWidth write SetSkipWidth;
+      //The vertical space between the patterns.
       property SkipHeight:integer read FSkipHeight write SetSkipHeight;
+      //The texture which will be painted.
       property Texture:TAdTexture read FTexture;
+      //Returns the count of the patterns.
       property PatternCount:integer read GetPatternCount;
+      //Here you can dye an image.
       property Color:TColor read FColor write FColor;
+      //Name of the image in the imagelist.
       property Name:string read FName write FName;
+      //Set the mode of the texture.
       property TextureXMode:TTextureMode read FTextureXMode write SetTextureXMode;
+      //Set the mode of the texture.
       property TextureYMode:TTextureMode read FTextureYMode write SetTextureYMode;
+      //Important for using lights: How many boxes dows the image have.
       property Detail:integer read FDetail write SetDetail;
   end;
 
+  //Administrates the images
   TPictureCollection = class(TList)
     private
       FParent:TAdDraw;
@@ -260,28 +342,49 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
+      //Returns you an item
      	property Items[AIndex:integer]:TPictureCollectionItem read GetItem write SetItem;default;
+      //Add a new image to the list.
       function Add(AName:string):TPictureCollectionItem;
+      //Find an image in the list.
       function Find(AName:string):TPictureCollectionItem;
+      //Call the restore function of every item in the list.
       procedure Restore;
+      //A constructor
       constructor Create(AAdDraw:TAdDraw);
+      //A destructor
       destructor Destroy;override;
+      //The parent you've specified in the constructor.
       property Parent:TAdDraw read FParent;
     published
   end;
 
 implementation
 
+procedure GlobLogProc(LogItem:TAdLogItem;AAppl:Pointer);stdcall;
+begin
+  TAdDraw(AAppl).LogProc(LogItem);
+end;
+
 { TAdDraw }
 
-constructor TAdDraw.Create(AParent : HWND);
+constructor TAdDraw.Create(AParent : TWinControl);
+var amsg:TAdLogMessage;
 begin
 	inherited Create;
   FParent := AParent;
   FAmbientColor := clWhite;
   AdDllLoader := TAndorraDllLoader.Create;
-
   SetupThings;
+
+  FLog := TAdLog.Create;
+  FLogFileName := 'adlog.txt';
+  AutoLoadLog := true;
+
+  amsg.Text := 'AdDraw was created: '+TimeToStr(Time);
+  amsg.Sender := self.ClassName;
+  amsg.Typ := 'Info';
+  FLog.AddMessage(amsg);
 end;
 
 procedure TAdDraw.SetupThings;
@@ -306,6 +409,13 @@ begin
   end;
   
   AdDllLoader.Destroy;
+
+  if FAutoLoadLog then
+  begin
+    Log.SaveToFile(FLogFileName);
+  end;
+  FLog.Free;
+  
 	inherited Destroy;
 end;
 
@@ -316,6 +426,23 @@ begin
     FAmbientColor := AValue;
     AdDllLoader.SetAmbientLight(AdAppl,AD_RGB(GetRValue(AValue),GetGValue(AValue),
       GetBValue(AValue)));
+  end;
+end;
+
+procedure TAdDraw.SetAutoLoadLog(AValue: boolean);
+begin
+  FAutoLoadLog := AValue;
+  if FAutoLoadLog then
+  begin
+    if FileExists(FLogFileName) then
+    begin
+      FLog.LoadFromFile(FLogFileName);
+      FLog.FileName := FLogFileName;
+    end;
+  end
+  else
+  begin
+    FLog.FileName := '';
   end;
 end;
 
@@ -344,6 +471,7 @@ end;
 
 function TAdDraw.Initialize: boolean;
 var ARect:TRect;
+    amsg:TAdLogMessage;
 begin
 
   result := false;
@@ -352,36 +480,24 @@ begin
   begin
     //Create the new Application
     AdAppl := AdDllLoader.CreateApplication;
-
-    if (AdAppl <> nil) and (FParent <> 0) and (AdDllLoader.LibraryLoaded) then
+    if (AdAppl <> nil) and (FParent <> nil) and (AdDllLoader.LibraryLoaded) then
     begin
-      //Initialize Andorra 2D
-      if doFullscreen in FOptions then
-      begin
-        //Set a new window position and change the borderstyle to WS_POPUP = bsNone
-        SetWindowPos(FParent,HWND_TOPMOST,0,0,FDisplay.Width,FDisplay.Height,SWP_SHOWWINDOW);
-        SetWindowLong(FParent,GWL_STYLE,WS_POPUP);
+      //Give the Plugin the possibility to send logs
+      AdDllLoader.SetLogProc(AdAppl,GlobLogProc,Self);
 
-        DisplayWidth := FDisplay.Width;
-        DisplayHeight := FDisplay.Height;
+      FDisplayRect := GetDisplayRect;
 
-        result := AdDllLoader.InitDisplay(AdAppl,FParent, Options,
-          FDisplay.BitCount, FDisplay.Width, Display.Height);
-      end
-      else
-      begin
-        //Get the rect of the window
-        GetClientRect(FParent,ARect);
+      result := AdDllLoader.InitDisplay(AdAppl,FParent.Handle,Options,FDisplay.BitCount,DisplayRect.Right,DisplayRect.Bottom);
 
-        DisplayWidth := ARect.Right-ARect.Left;
-        DisplayHeight := ARect.Bottom-ARect.Top;
-
-        result := AdDllLoader.InitDisplay(AdAppl,FParent, Options,
-         FDisplay.BitCount, DisplayWidth, DisplayHeight);
-      end;
-      FDisplayRect := Rect(0,0,DisplayWidth,DisplayHeight);
       AdDllLoader.SetTextureQuality(AdAppl,tqNone);
       Setup2DScene;
+    end
+    else
+    begin
+      amsg.Text := 'Unable to initialize Andorra 2D. Check weather you have installed the newest driver.';
+      amsg.Sender := 'TAdDraw';
+      amsg.Typ := 'Fatal Error';
+      Log.AddMessage(amsg);
     end;
 
     if Assigned(FInitialize) then
@@ -392,6 +508,21 @@ begin
 
     FInitialized := result;
   end;
+end;
+
+procedure TAdDraw.LogProc(LogItem: TAdLogItem);
+var Temp:TAdLogMessage;
+begin
+  Temp.Sender := self.ClassName;
+  case LogItem.Typ of
+    ltInfo: Temp.Typ := 'Info';
+    ltWarning: Temp.Typ := 'Warning';
+    ltError: Temp.Typ := 'Error';
+    ltFatalError: Temp.Typ := 'Fatal Error';
+    ltNone: Temp.Typ := 'Info';
+  end;
+  Temp.Text := PChar(LogItem.Text);
+  Log.AddMessage(Temp);
 end;
 
 procedure TAdDraw.Finalize;
@@ -434,7 +565,7 @@ procedure TAdDraw.Setup2DScene;
 begin
   if AdAppl <> nil then
   begin
-    AdDllLoader.SetupScene(AdAppl,DisplayWidth,DisplayHeight);
+    AdDllLoader.SetupScene(AdAppl,FDisplayRect.Right,FDisplayRect.Bottom);
   end;
 end;
 
@@ -443,6 +574,18 @@ begin
   if AdAppl <> nil then
   begin
     AdDllLoader.Flip(AdAppl);  
+  end;
+end;
+
+function TAdDraw.GetDisplayRect: TRect;
+begin
+  if dofullscreen in Options then
+  begin
+    result := Bounds(0,0,Display.Width,Display.Height);
+  end
+  else
+  begin
+    result := Bounds(0,0,FParent.ClientWidth,FParent.ClientHeight);
   end;
 end;
 
@@ -607,7 +750,7 @@ end;
 
 procedure TPictureCollectionItem.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -621,7 +764,7 @@ end;
 procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -635,7 +778,7 @@ end;
 procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -649,7 +792,7 @@ end;
 procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -664,7 +807,7 @@ procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -679,7 +822,7 @@ procedure TPictureCollectionItem.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -693,7 +836,7 @@ end;
 procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(Alpha);
     FParent.AdDllLoader.DrawImage(
@@ -705,7 +848,7 @@ end;
 procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(Alpha);
     FParent.AdDllLoader.DrawImage(
@@ -716,7 +859,7 @@ end;
 
 procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
 begin
-  if Texture.Loaded then
+  if (Texture.Loaded) and (Dest.CanDraw) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -935,6 +1078,40 @@ end;
 procedure TAdLight.Restore;
 begin
   FParent.AdDllLoader.RestoreLight(AdLight,Data);
+end;
+
+{ TAdLog }
+
+procedure TAdLog.AddMessage(AMessage: TAdLogMessage);
+begin
+  Items.Add('['+AMessage.Sender+']'+' ['+AMessage.Typ+'] '+AMessage.Text);
+  if FileName <> '' then
+  begin
+    SaveToFile(FileName);
+  end;
+end;
+
+constructor TAdLog.Create;
+begin
+  inherited Create;
+  Items := TStringList.Create;
+end;
+
+destructor TAdLog.Destroy;
+begin
+  Items.Free;
+  inherited Destroy;
+end;
+
+procedure TAdLog.LoadFromFile(AFile: string);
+begin
+  Items.LoadFromFile(AFile);
+  Items.Add('');
+end;
+
+procedure TAdLog.SaveToFile(AFile: string);
+begin
+  Items.SaveToFile(AFile);
 end;
 
 end.

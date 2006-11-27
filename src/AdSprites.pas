@@ -15,7 +15,7 @@ unit AdSprites;
 
 interface
 
-uses Types,SysUtils,Classes,AdDraws,AndorraUtils,Graphics;
+uses Types,SysUtils,Classes,AdDraws,AndorraUtils;
 
 type
   TSprite = class;
@@ -184,10 +184,10 @@ type
     private
       FRange:double;
       FFalloff:double;
-      FColor:TColor;
+      FColor:LongWord;
       procedure SetRange(AValue:double);
       procedure SetFalloff(AValue:double);
-      procedure SetColor(AValue:TColor);
+      procedure SetColor(AValue:LongWord);
     protected
       Light:TAdLight;
       procedure DoDraw;override;
@@ -198,7 +198,7 @@ type
     published
       property Range:double read FRange write SetRange;
       property Falloff:double read FFalloff write SetFalloff;
-      property Color:TColor read FColor write SetColor;
+      property Color:LongWord read FColor write SetColor;
   end;
 
 implementation
@@ -724,7 +724,7 @@ begin
   Light.Data.Color := Ad_RGB(255,255,255);
   Light.Data.Falloff := 2;
   Light.Restore;
-  FColor := clWhite;
+  FColor := $FFFFFF;
   FRange := 100;
   CanDoCollisions := false;
 end;
@@ -751,7 +751,7 @@ begin
                  round(x+Engine.X)+r,round(y+Engine.Y)+r);
 end;
 
-procedure TLightSprite.SetColor(AValue: TColor);
+procedure TLightSprite.SetColor(AValue: LongWord);
 begin
   FColor := AValue;
   Light.Data.Color := Ad_RGB(AValue, (AValue shr 8) and 255, (AValue shr 16) and 255);

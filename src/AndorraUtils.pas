@@ -58,12 +58,18 @@ end;
 type TAndorraTextureQuality = (tqNone,tqLinear,tqAnisotropic);
 type TAndorraBlendMode = (bmAlpha,bmAdd);
 
+type TAdLogTyp = (ltInfo,ltWarning,ltError,ltFatalError,ltNone);
+
+type TAdLogItem = record
+  Text:PChar;
+  Typ:TAdLogTyp;  
+end;
+
 const adnone = 0;
 
 type TAdProcedure = procedure(Appl:TAndorraApplication);stdcall;
 type TAdInitDisplay = function (Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
                      bitcount:byte=32;resx:integer=0; resy:integer=0):boolean;stdcall;
-type TAdGetLastError = function:Pchar;stdcall;
 type TAdCreateApplication = function:TAndorraApplication;stdcall;
 type TAdDestroyApplication = TAdProcedure;
 type TAdSetTextureQuality = procedure (Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;
@@ -89,9 +95,15 @@ type TAdSetAmbientLight = procedure(Appl:TAndorraApplication;AColor:TAndorraColo
 type TAdLightProc = procedure(ALight:TAndorraLight);stdcall;
 type TAdCreateLight = function(AAppl:TAndorraApplication):TAndorraLight;stdcall;
 type TAdRestoreLight = procedure(ALight:TAndorraLight;Data:TLight);stdcall;
+type TAdLogProc = procedure(LogItem:TAdLogItem;AAppl:Pointer);stdcall;
+type TAdSetLogProc = procedure(Appl:TAndorraApplication;ALogProc:TAdLogProc;AAppl:Pointer);
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 function Ad_RGB(r,g,b:byte):TAndorraColor;
+
+function GetRValue(AColor:LongWord):byte;
+function GetGValue(AColor:LongWord):byte;
+function GetBValue(AColor:LongWord):byte;
 
 function CompareColors(col1,col2:TAndorraColor):boolean;
 
@@ -116,6 +128,21 @@ begin
             (col1.r = col2.r) and
             (col1.g = col2.g) and
             (col1.b = col2.b);
+end;
+
+function GetRValue(AColor:LongWord):byte;
+begin
+  result := AColor and 255;
+end;
+
+function GetGValue(AColor:LongWord):byte;
+begin
+  result := (AColor shr 8) and 255;
+end;
+
+function GetBValue(AColor:LongWord):byte;
+begin
+  result := (AColor shr 16) and 255;
 end;
 
 end.

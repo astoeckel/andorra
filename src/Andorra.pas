@@ -23,9 +23,11 @@ type TAndorraDllLoader = class
   public
     //Initialization
     InitDisplay:TAdInitDisplay;
-    GetLastError:TAdGetLastError;
     CreateApplication:TAdCreateApplication;
     DestroyApplication:TAdDestroyApplication;
+
+    //Log System
+    SetLogProc:TAdSetLogProc;
 
     //Render Control
     ClearScene:TAdClearScene;
@@ -95,7 +97,6 @@ begin
     if LibraryLoaded then
     begin
       @InitDisplay := GetProcAddress(DllHandle, 'InitDisplay');
-      @GetLastError := GetProcAddress(DllHandle, 'GetLastError');
       @CreateApplication := GetProcAddress(DllHandle, 'CreateApplication');
       @DestroyApplication := GetProcAddress(DllHandle, 'DestroyApplication');
       @BeginScene := GetProcAddress(DllHandle, 'BeginScene');
@@ -126,6 +127,7 @@ begin
       @SetImageDetail := GetProcAddress(DllHandle,'SetImageDetail');
       @EnableLight := GetProcAddress(DllHandle,'EnableLight');
       @DisableLight := GetProcAddress(DllHandle,'DisableLight');
+      @SetLogProc := GetProcAddress(DllHandle,'SetLogProc');
     end;
   end;
 end;

@@ -23,7 +23,6 @@ exports
   CreateApplication,
   DestroyApplication,
   InitDisplay,
-  GetLastError,
   BeginScene,
   EndScene,
   Flip,
@@ -51,7 +50,8 @@ exports
   RestoreLight,
   SetImageDetail,
   DisableLight,
-  EnableLight;
+  EnableLight,
+  SetLogProc;
 
 begin
 end.

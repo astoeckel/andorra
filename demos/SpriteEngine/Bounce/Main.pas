@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites, AndorraUtils;
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  AdDraws, AdSprites, AndorraUtils, IniFiles;
 
 type
   TForm1 = class(TForm)
@@ -49,6 +49,7 @@ var
   timegap:double;
   lasttime:double;
   framecount:integer;
+  settings:TIniFile;
 
 const
   path='demos\SpriteEngine\Bounce\';
@@ -73,13 +74,16 @@ begin
     framecount := 0;
   end;
 
-  AdDraw.BeginScene;
-  AdDraw.ClearSurface(clSkyBlue);
-  AdSpriteEngine.Move(tg/1000);
-  AdSpriteEngine.Draw;
-  AdSpriteEngine.Dead;
-  AdDraw.EndScene;
-  AdDraw.Flip;
+  if AdDraw.CanDraw then
+  begin
+    AdDraw.BeginScene;
+    AdDraw.ClearSurface(clSkyBlue);
+    AdSpriteEngine.Move(tg/1000);
+    AdSpriteEngine.Draw;
+    AdSpriteEngine.Dead;
+    AdDraw.EndScene;
+    AdDraw.Flip;
+  end;
 
   Done := false;
 end;
@@ -88,13 +92,25 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   ax,ay: Integer;
   level:TStringList;
+  amessage:TAdLogMessage;
 begin
   Randomize;
 
-  AdDraw := TAdDraw.Create(Handle);
+  Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+path+'bounce.ini');
+
+  AdDraw := TAdDraw.Create(self);
   AdDraw.DllName := 'AndorraDX93D.dll';
-  AdDraw.Options := AdDraw.Options+[doLights];
-  if Application.MessageBox('Do you want to run in the fullscreen mode?','Fullscreen',MB_YESNO) = ID_YES then
+
+  amessage.Text := 'Starting Application';
+  amessage.Sender := 'Bounce.exe';
+  amessage.Typ := 'Starting';
+  AdDraw.Log.AddMessage(amessage);
+
+  if Settings.ReadBool('set','light',false) then
+  begin
+    AdDraw.Options := AdDraw.Options+[doLights];
+  end;
+  if Settings.ReadBool('set','fullscreen',false) then
   begin
     AdDraw.Options := AdDraw.Options+[doFullscreen];
   end;
@@ -107,12 +123,12 @@ begin
   with AdPictureCollection.Add('wall')do
   begin
     Texture.LoadFromFile(path+'texture.bmp',false,clWhite);
-    Detail := 16;
+    Detail := Settings.ReadInteger('set','meshdetail',16);
   end;
   with AdPictureCollection.Add('wallgras')do
   begin
     Texture.LoadFromFile(path+'texture2.bmp',false,clWhite);
-    Detail := 16;
+    Detail := Settings.ReadInteger('set','meshdetail',16);
   end;
   with AdPictureCollection.Add('sky') do
   begin
@@ -182,6 +198,8 @@ begin
   lasttime := GetTickCount;
 
   Application.OnIdle := ApplicationIdle;
+
+  Settings.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -268,6 +286,7 @@ begin
     Z := -9;
     Range := 200;
     Falloff := 5;
+    Color := clWhite;
   end;           
 end;
 
@@ -352,7 +371,7 @@ begin
   begin
     Alpha := Alpha - 1000*TimeGap;
     Light.Color  := RGB(round(Alpha),round(Alpha),round(Alpha));
-    if Alpha <= 2 then Dead;    
+    if Alpha <= 20 then Dead;    
   end;
 
   Light.X := X+Width / 2;

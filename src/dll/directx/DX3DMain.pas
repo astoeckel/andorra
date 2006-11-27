@@ -13,7 +13,7 @@ unit DX3DMain;
 
 interface
 
-uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics, Math,Dialogs, SysUtils;
+uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics, Math, SysUtils;
 
 type TAndorraApplicationItem = class
   private
@@ -25,8 +25,13 @@ type TAndorraApplicationItem = class
     TextureFilter:TD3DTextureFilterType;
     LastTexture:IDirect3dTexture9;
     LastXTextureMode,LastYTextureMode:TAndorraTextureMode;
+    LogProc:TAdLogProc;
+    LogAppl:Pointer;
+    CurrentLights:integer;
+    MaxLights:integer;
     function GetFreeLight:integer;
     procedure ReleaseLight(alight:integer);
+    procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
 end;
 
 type TAndorraLightItem = class
@@ -82,7 +87,6 @@ end;
 //Initialization
 function CreateApplication:TAndorraApplication;stdcall;
 procedure DestroyApplication(Appl:TAndorraApplication);stdcall;
-function GetLastError:PChar;stdcall;
 function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes; bitcount:byte=32;
                      resx:integer=0; resy:integer=0):boolean;stdcall;
 procedure SetTextureQuality(Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;
@@ -115,6 +119,7 @@ procedure FreeTexture(ATexture:TAndorraTexture);stdcall;
 procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
 procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);stdcall;
+function CheckTextureMem(Appl:TAndorraApplication):integer;stdcall;
 
 //Lights
 function CreateLight(Appl:TAndorraApplication):TAndorraLight;stdcall;
@@ -122,6 +127,9 @@ procedure DestroyLight(ALight:TAndorraLight);stdcall;
 procedure RestoreLight(ALight:TAndorraLight;Data:TLight);stdcall;
 procedure EnableLight(ALight:TAndorraLight);stdcall;
 procedure DisableLight(ALight:TAndorraLight);stdcall;
+
+//LogSystem
+procedure SetLogProc(Appl:TAndorraApplication;ALogProc:TAdLogProc;AAppl:Pointer);
 
 
 //Our Vertex and the definition of the flexible vertex format (FVF)
@@ -134,10 +142,6 @@ end;
 
 const
   D3DFVF_TD3DLVertex = D3DFVF_XYZ or D3DFVF_NORMAL or D3DFVF_DIFFUSE or D3DFVF_TEX1;
-
-//Stores error messages
-var
-  ErrorLog:TStringList;
 
 implementation
 
@@ -164,7 +168,6 @@ begin
   end
   else
   begin
-    ErrorLog.Add('Application is nil');
     Free;
   end;
 end;
@@ -439,8 +442,8 @@ begin
     Direct3D9 := Direct3DCreate9( D3D_SDK_VERSION );
     if Direct3D9 = nil then
     begin
+      TAndorraApplicationItem(result).Free;
       result := nil;
-      ErrorLog.Add('Can not create Direct3D Interface.');
     end;
   end;
 end;
@@ -458,7 +461,8 @@ function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawMod
 var
   d3dpp:TD3DPresent_Parameters;
   d3ddm:TD3DDisplayMode;
-  D3DCaps9:TD3DCaps9;
+  d3dcaps9:TD3DCaps9;
+  d3ddi:TD3DADAPTER_IDENTIFIER9;
   dtype:TD3DDevType;
   hvp:boolean;
   vp : Integer;
@@ -469,13 +473,20 @@ begin
   begin
     with TAndorraApplicationItem(Appl) do
     begin
+      WriteLog(ltNone,'Initialize Andorra Direct3D 9 Plugin.');
+
       if Direct3D9 = nil then
       begin
-        ErrorLog.Add('Direct3D9 is nil.');
+        WriteLog(ltFatalError,'Direct3D was not initialized.');
         exit;
       end;
 
-      //Clear the Present Parameters Array
+      //Get Information about the graphics card.
+      Direct3D9.GetAdapterIdentifier(D3DADAPTER_DEFAULT,0,d3ddi);
+      WriteLog(ltInfo,PChar('Using card '+d3ddi.Description));
+
+      Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, d3dcaps9);
+
       Fillchar(d3dpp,sizeof(d3dpp),0);
       with d3dpp do
       begin
@@ -495,13 +506,15 @@ begin
             else
               BackBufferFormat := D3DFMT_A8R8G8B8;
           end;
+
+          WriteLog(ltInfo,'Try to create a fullscreen application.');
         end
         else
         begin
           if failed(Direct3D9.GetAdapterDisplayMode(
             D3DADAPTER_DEFAULT, d3ddm)) then
           begin
-            ErrorLog.Add('Error while setting displaymode');
+            WriteLog(ltFatalError,'No acces to the current display device.');
             exit;
           end
           else
@@ -512,7 +525,6 @@ begin
       end;
 
       //Is HardwareVertexProcessing supported?
-      Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DCaps9);
       hvp := D3DCaps9.DevCaps and D3DDEVCAPS_HWTRANSFORMANDLIGHT <> 0;
 
       if hvp then
@@ -529,7 +541,7 @@ begin
       if failed(Direct3D9.CreateDevice(D3DADAPTER_DEFAULT, dtype, awindow,
           vp, d3dpp, Direct3D9Device)) then
       begin
-        Errorlog.Add('Error while creating display (DIRECT3D9DEVICE)');
+        WriteLog(ltFatalError,'Couldn''t create 3D Device.');
         exit;
       end;
 
@@ -540,46 +552,69 @@ begin
       SetOptions(Appl,AOptions);
       Direct3D9Device.SetRenderState(D3DRS_AMBIENT, $00FFFFFF);
 
+      MaxLights := d3dcaps9.MaxActiveLights;
+      WriteLog(ltInfo,PChar('Device supports '+inttostr(MaxLights)+' lights'));
+      
+
+      WriteLog(ltInfo,PChar(Inttostr(Direct3D9Device.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.')); 
+
       //Setup Material
-      Direct3D9Device.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-      Direct3D9Device.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
-      Direct3D9Device.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_COLOR1);
+      if       
+        Failed(Direct3D9Device.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1)) or
+        Failed(Direct3D9Device.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1)) or
+        Failed(Direct3D9Device.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_COLOR1)) then
+      begin
+        WriteLog(ltError,'Can''t set material sources.');
+      end;
 
       //No culling
-      Direct3D9Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+      if Failed(Direct3D9Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE)) then
+      begin
+        WriteLog(ltFatalError,'Can''t turn culling off.');
+        exit;
+      end;
 
       //Enable Texture alphablending
-      Direct3D9Device.SetRenderState(D3DRS_ALPHABLENDENABLE, LongWord(TRUE));
-      Direct3D9Device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-      Direct3D9Device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-      Direct3D9Device.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+      if
+        Failed(Direct3D9Device.SetRenderState(D3DRS_ALPHABLENDENABLE, LongWord(TRUE))) or
+        Failed(Direct3D9Device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA)) or
+        Failed(Direct3D9Device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA)) or
+        Failed(Direct3D9Device.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE)) then
+      begin
+        WriteLog(ltWarning,'Alphablending is disabled');
+      end;
 
       for i := 0 to 1023 do
       begin
         FLights[i] := false;
       end;
+
+      WriteLog(ltInfo,'Initialization complete.');
     end;
   end;
   result := true;
+
 end;
 
 procedure DestroyApplication(Appl:TAndorraApplication);
 begin
   with TAndorraApplicationItem(Appl) do
   begin
+    WriteLog(ltInfo,'Finalize Device.');
     Direct3d9 := nil;
     Direct3d9Device := nil;
+    WriteLog(ltInfo,'Finalization Complete.');
     Free;
   end;
 end;
 
-function GetLastError:PChar;
+//Log System
+procedure SetLogProc(Appl:TAndorraApplication;ALogProc:TAdLogProc;AAppl:Pointer);
 begin
-  //Return last Andorra Error
-  result := '';
-  if ErrorLog.Count > 0 then
+  with TAndorraApplicationItem(Appl) do
   begin
-    result := PChar(ErrorLog[ErrorLog.Count-1]);
+    @LogProc := @ALogProc;
+    LogAppl := AAppl;
   end;
 end;
 
@@ -613,7 +648,8 @@ begin
             Direct3D9Device.LightEnable(i,false);
           end;
         end;
-      end;                                             
+      end;
+      CurrentLights := 0;
       Direct3D9Device.EndScene;
     end;
   end;
@@ -625,7 +661,10 @@ begin
   begin
     with TAndorraApplicationItem(Appl) do
     begin
-      Direct3D9Device.Present(nil, nil, 0, nil);
+      if Failed(Direct3D9Device.Present(nil, nil, 0, nil)) then
+      begin
+        WriteLog(ltFatalError,'Error while flipping.');
+      end;
     end;
   end;
 end;
@@ -658,7 +697,14 @@ begin
       Direct3d9Device.SetTransform(D3DTS_VIEW, matView);
 
       D3DXMatrixOrthoRH( matProj, Awidth, Aheight, 0,100);
-      Direct3d9Device.SetTransform(D3DTS_PROJECTION, matProj);
+      if Failed(Direct3d9Device.SetTransform(D3DTS_PROJECTION, matProj)) then
+      begin
+        WriteLog(ltError,'Error while setting new view matrix.');
+      end
+      else
+      begin
+        WriteLog(ltInfo,'Changed point of view to a 2D Szene.');
+      end;
     end;
   end;
 end;
@@ -672,8 +718,11 @@ begin
       tqLinear: TextureFilter := D3DTEXF_LINEAR;
       tqAnisotropic: TextureFilter := D3DTEXF_ANISOTROPIC;
     end;
-    Direct3D9Device.SetSamplerState(0,D3DSAMP_MAGFILTER, TextureFilter);
-    Direct3D9Device.SetSamplerState(0,D3DSAMP_MINFILTER, TextureFilter);
+    if Failed(Direct3D9Device.SetSamplerState(0,D3DSAMP_MAGFILTER, TextureFilter)) or
+       Failed(Direct3D9Device.SetSamplerState(0,D3DSAMP_MINFILTER, TextureFilter)) then
+    begin
+      WriteLog(ltError,'Error while changing texture quality.')
+    end;
   end;
 end;
 
@@ -778,18 +827,37 @@ end;
 
 
 //Texture Creation
+
+function CheckTextureMem(Appl:TAndorraApplication):integer;stdcall;
+begin
+  with TAndorraApplicationItem(Appl) do
+  begin
+    result := Direct3D9Device.GetAvailableTextureMem;
+    if result > 1024 then
+    begin
+      WriteLog(ltInfo,PChar(Inttostr(result div 1024 div 1024)+' MB Texture Memory Available.'));
+    end
+    else
+    begin
+      WriteLog(ltWarning,PChar('Only '+Inttostr(result div 1024)+' KB Texture Memory Available.'));
+    end;
+  end;
+end;
+
+
 function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;
 var Info:TD3DXImageInfo;
 begin
   result := TAndorraTextureItem.Create;
   with TAndorraApplicationItem(Appl) do
   begin
+    WriteLog(ltInfo,PChar('Load file '+AFile));
     with TAndorraTextureItem(result) do
     begin
       AAppl := Appl;
-      if D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, D3DX_DEFAULT, D3DX_DEFAULT,
+      if not Failed(D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, D3DX_DEFAULT, D3DX_DEFAULT,
           0, 0, D3DFMT_UNKNOWN, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
-          AdColorToD3DColor_ARGB(ATransparentColor) , Info, nil, ATextureImg) = D3D_OK then
+          AdColorToD3DColor_ARGB(ATransparentColor) , Info, nil, ATextureImg)) then
       begin
         ATexWidth := Info.Width;
         ATexHeight := Info.Height;
@@ -798,10 +866,13 @@ begin
       end
       else
       begin
-        Free;
+        WriteLog(ltError,'Error while creating texture from file.');
+        TAndorraTextureItem(result).Free;
         result := nil;
+        Exit;
       end;
     end;
+    CheckTextureMem(Appl);
   end;
 end;
 
@@ -812,6 +883,7 @@ begin
   result := TAndorraTextureItem.Create;
   with TAndorraApplicationItem(Appl) do
   begin
+    WriteLog(ltInfo,PChar('Load file '+AFile));
     with TAndorraTextureItem(result) do
     begin
       AAppl := Appl;
@@ -821,14 +893,24 @@ begin
       else
         Format := D3DFMT_UNKNOWN;
       end;
-      D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, AWidth,AHeight,
+      if not Failed(D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, AWidth,AHeight,
           0, 0, Format, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
-          AdColorToD3DColor_ARGB(ATransparentColor) ,Info, nil, ATextureImg);
-      ATexWidth := Info.Width;
-      ATexHeight := Info.Height;
-      ABaseRect := Rect(0,0,ATexWidth,ATexHeight);
-      AFormat := Info.Format;
+          AdColorToD3DColor_ARGB(ATransparentColor) ,Info, nil, ATextureImg)) then
+      begin
+        ATexWidth := Info.Width;
+        ATexHeight := Info.Height;
+        ABaseRect := Rect(0,0,ATexWidth,ATexHeight);
+        AFormat := Info.Format;
+      end
+      else
+      begin
+        WriteLog(ltError,'Error while creating texture from file (extended).');
+        TAndorraTextureItem(result).Free;
+        result := nil;
+        Exit;
+      end;
     end;
+    CheckTextureMem(Appl);
   end;
 end;
 
@@ -840,7 +922,15 @@ type PRGBRec = ^TRGBRec;
 
 procedure FreeTexture(ATexture:TAndorraTexture);
 begin
-  IDirect3DTexture9(TAndorraTextureItem(ATexture).ATextureImg)._Release;
+  with TAndorraTextureItem(ATexture) do
+  begin
+    with TAndorraApplicationItem(AAppl) do
+    begin
+      WriteLog(ltInfo,PChar('Free texture...'));
+      IDirect3DTexture9(TAndorraTextureItem(ATexture).ATextureImg)._Release;
+      CheckTextureMem(TAndorraTextureItem(ATexture).AAppl);
+    end;
+  end;
 end;
 
 
@@ -977,10 +1067,15 @@ begin
               end;
             end;
           end;
+        end
+        else
+        begin
+          WriteLog(ltError,'Error while locking texture.');
         end;
         ATextureImg.UnlockRect(0);
       end;
     end;
+    CheckTextureMem(Appl);
   end;
 end;
 
@@ -1108,6 +1203,17 @@ begin
   end;
 end;
 
+procedure TAndorraApplicationItem.WriteLog(Typ: TAdLogTyp; Text: PAnsiChar);
+var Temp:TAdLogItem;
+begin
+  if @LogProc <> nil then
+  begin
+    Temp.Typ := Typ;
+    Temp.Text := Text;
+    LogProc(Temp,LogAppl);
+  end;
+end;
+
 { TAndorraLightItem }
 
 constructor TAndorraLightItem.Create(Appl: TAndorraApplication);
@@ -1162,20 +1268,30 @@ begin
 end;
 
 procedure EnableLight(ALight:TAndorraLight);
+var tmp:longbool;
 begin
-  if Alight <> nil then
+  if (Alight <> nil) then
   begin
     with TAndorraLightItem(ALight) do
     begin
       with TAndorraApplicationItem(AAppl) do
       begin
-        Direct3D9Device.LightEnable(Alight,true);
+        if CurrentLights < MaxLights then
+        begin
+          Direct3D9Device.GetLightEnable(Alight,tmp);
+          if not tmp then
+          begin
+            Direct3D9Device.LightEnable(Alight,true);
+            CurrentLights := CurrentLights + 1;
+          end;
+        end;
       end;
     end;
   end;
 end;
 
 procedure DisableLight(ALight:TAndorraLight);
+var tmp:longbool;
 begin
   if Alight <> nil then
   begin
@@ -1183,17 +1299,15 @@ begin
     begin
       with TAndorraApplicationItem(AAppl) do
       begin
-        Direct3D9Device.LightEnable(Alight,false);
+        Direct3D9Device.GetLightEnable(Alight,tmp);
+        if tmp then
+        begin
+          Direct3D9Device.LightEnable(Alight,false);
+          CurrentLights := CurrentLights - 1;
+        end;
       end;
     end;
   end;
 end;   
-
-
-initialization
-  ErrorLog := TStringList.Create;
-
-finalization
-  ErrorLog.Free;
 
 end.
