@@ -15,6 +15,19 @@ unit AndorraUtils;
 interface
 uses SysUtils,Windows;
 
+  {Specifies the dimensions of the display. }
+type TAdDrawDisplay = record
+    //The Width of the Display
+    Width:integer;
+    //The Height of the Display
+    Height:integer;
+    //The Bitcount of the Display (May be 16 or 32 (and normaly 24, but this is, whyever, very buggy...) )
+    BitCount:byte;
+    //The horizontal refresh rate
+    Freq:integer;
+  end;
+
+
 type TAndorraApplication = pointer;
 type TAndorraImage = pointer;
 type TAndorraTexture = pointer;
@@ -25,7 +38,7 @@ type TAndorraLight = pointer;
 If you change these settings while running, simply call the "restore" function of TAdDraw.}
 TAdDrawMode = (
   doFullscreen,  //< Specifies weather the application should run in the fullscreen mode or not
-  doWaitVBlank, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
+  doVSync, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
   doStretch, //< Should the picture be stretched when the window resizes?
   doHardware,//< Run in hardware mode? (WARNING: Should be set!)
   doZBuffer, //< The ZBuffer has to be used if you are using 3D Objects in your scene
@@ -69,7 +82,7 @@ const adnone = 0;
 
 type TAdProcedure = procedure(Appl:TAndorraApplication);stdcall;
 type TAdInitDisplay = function (Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
-                     bitcount:byte=32;resx:integer=0; resy:integer=0):boolean;stdcall;
+                     ADisplay:TAdDrawDisplay):boolean;stdcall;
 type TAdCreateApplication = function:TAndorraApplication;stdcall;
 type TAdDestroyApplication = TAdProcedure;
 type TAdSetTextureQuality = procedure (Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;

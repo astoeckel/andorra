@@ -114,7 +114,24 @@ begin
   begin
     AdDraw.Options := AdDraw.Options+[doFullscreen];
   end;
-  
+
+  AdDraw.Display.Width := Settings.ReadInteger('set','width',800);
+  AdDraw.Display.Height := Settings.ReadInteger('set','height',600);
+  AdDraw.Display.BitCount := Settings.ReadInteger('set','bits',32);
+  AdDraw.Display.Freq := Settings.ReadInteger('set','refrate',0);
+
+  ClientWidth := AdDraw.Display.Width;
+  ClientHeight := AdDraw.Display.Height;
+
+  if doFullscreen in AdDraw.Options then
+  begin
+    Top := 0;
+    Left := 0;
+    ClientWidth := AdDraw.Display.Width;
+    ClientHeight := AdDraw.Display.Height;
+    BorderStyle := bsNone;
+  end;
+
   AdDraw.Initialize;
 
   AdDraw.AmbientColor := RGB(64,64,64);
@@ -169,6 +186,7 @@ begin
             Image := AdPictureCollection.Find('wall');
             x := ax*128;
             y := ay*128;
+            z := 0;
           end;
         end;
         'X':
@@ -178,6 +196,7 @@ begin
             Image := AdPictureCollection.Find('wallgras');
             x := ax*128;
             y := ay*128;
+            z := 0;
           end;
         end;
         'b':
@@ -187,9 +206,10 @@ begin
             Image := AdPictureCollection.Find('ball');
             x := ax*128;
             y := ay*128+128-height;
+            z := 1;
             sourcex := round(x);
             sourcey := round(y);
-          end;
+           end;
         end;
       end;
     end;
@@ -303,6 +323,14 @@ begin
   begin
     falling := false;
     SY := 128;
+    if (Sprite.Y > Y) and (Sprite.X > X) and (Sprite.X+Sprite.Width < Y+Width) and
+       (Sprite.Y+Sprite.Height < Y+Height) then
+    begin
+      Coll;
+      Done := true;
+      exit;
+    end;
+
     if Sprite.Y > Y then
     begin
       Y := Sprite.Y-Height+1;
@@ -321,7 +349,7 @@ begin
         X := Sprite.X-Width-1;
         exit;
       end;
-    end;
+    end;   
   end;
   if Sprite is TBall then
   begin

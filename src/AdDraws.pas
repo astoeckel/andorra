@@ -21,21 +21,6 @@ type
   TTextureMode = (tmWrap,tmMirror,tmClamp);
 
 
-  TAdDrawBitCount = byte;
-
-  {Specifies the dimensions of the display.
-
-  However, remember that this settings will be ignored, when fullscreen isn't turned on.
-  To use fullscreen turn the "doFullscreen" property in the "Options" on.}
-  TAdDrawDisplay = record
-    //The Width of the Display
-    Width:integer;
-    //The Height of the Display
-    Height:integer;
-    //The Bitcount of the Display (May be 16 or 32 (and normaly 24, but this is, whyever, very buggy...) )
-    BitCount:TAdDrawBitCount;
-  end;
-
   //A record for adding a new log entry into the log system
   type TAdLogMessage = record
     Text:string;
@@ -72,7 +57,6 @@ type
     FFinalize:TNotifyEvent;
     FInitialize:TNotifyEvent;
     FInitialized:boolean;
-    FDisplay:TAdDrawDisplay;
     FDisplayRect:TRect;
 
     FAmbientColor:TColor;
@@ -99,6 +83,8 @@ type
     AdDllLoader : TAndorraDllLoader;
     {The Andorra Reference for the DllLoader}
     AdAppl:TAndorraApplication;
+    //This property contains the diplay settings (width, height and bitcount)
+    Display : TAdDrawDisplay;
 
     //Create the class. AParent is the handle of the control, where displaying should take place.
     constructor Create(AParent : TWinControl);
@@ -133,8 +119,6 @@ type
     //Used internally
     procedure LogProc(LogItem:TAdLogItem);
   published
-    //This property contains the diplay settings (width, height and bitcount)
-    property Display : TAdDrawDisplay read FDisplay write FDisplay;
     //This property contains the options (see TAdDrawMode)
     property Options : TAdDrawModes read FOptions write SetOptions;
     //Set this value to load a library
@@ -390,11 +374,12 @@ end;
 procedure TAdDraw.SetupThings;
 begin
   //Initialize all Parameters
-  with FDisplay do
+  with Display do
   begin
     Width := 800;
     Height := 600;
     BitCount := 32;
+    Freq := 0;
   end;
 
   FOptions := [doHardware];
@@ -486,8 +471,10 @@ begin
       AdDllLoader.SetLogProc(AdAppl,GlobLogProc,Self);
 
       FDisplayRect := GetDisplayRect;
+      Display.Width := FDisplayRect.Right;
+      Display.Height := FDisplayRect.Bottom;
 
-      result := AdDllLoader.InitDisplay(AdAppl,FParent.Handle,Options,FDisplay.BitCount,DisplayRect.Right,DisplayRect.Bottom);
+      result := AdDllLoader.InitDisplay(AdAppl,FParent.Handle,Options,Display);
 
       AdDllLoader.SetTextureQuality(AdAppl,tqNone);
       Setup2DScene;

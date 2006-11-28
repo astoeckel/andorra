@@ -87,8 +87,7 @@ end;
 //Initialization
 function CreateApplication:TAndorraApplication;stdcall;
 procedure DestroyApplication(Appl:TAndorraApplication);stdcall;
-function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes; bitcount:byte=32;
-                     resx:integer=0; resy:integer=0):boolean;stdcall;
+function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes; ADisplay:TAdDrawDisplay):boolean;stdcall;
 procedure SetTextureQuality(Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;
 
 //Render Control
@@ -457,7 +456,7 @@ begin
 end;
 
 function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
-   bitcount:byte; resx:integer; resy:integer):boolean;
+   ADisplay:TAdDrawDisplay):boolean;
 var
   d3dpp:TD3DPresent_Parameters;
   d3ddm:TD3DDisplayMode;
@@ -467,6 +466,7 @@ var
   hvp:boolean;
   vp : Integer;
   i:integer;
+
 begin
   result := false;
   if Appl <> nil then
@@ -481,82 +481,96 @@ begin
         exit;
       end;
 
-      //Get Information about the graphics card.
+      //Get information about the graphics card.
       Direct3D9.GetAdapterIdentifier(D3DADAPTER_DEFAULT,0,d3ddi);
       WriteLog(ltInfo,PChar('Using card '+d3ddi.Description));
 
-      Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, d3dcaps9);
+      //Get the device capilities.
+      if failed(Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, d3dcaps9)) then
+      begin
+        WriteLog(ltFatalError,PChar('Error while getting adapter capilities.'));
+        exit;
+      end;
+
+      //Get the current display mode
+      if failed(Direct3D9.GetAdapterDisplayMode(D3DADAPTER_DEFAULT, d3ddm)) then
+      begin
+        WriteLog(ltFatalError,PChar('Error while getting current adapter displaymode.'));
+        exit;
+      end;
 
       Fillchar(d3dpp,sizeof(d3dpp),0);
       with d3dpp do
       begin
         Windowed := not (doFullscreen in AOptions);
         SwapEffect := D3DSWAPEFFECT_DISCARD;
-        FullScreen_PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
 
-        //Set Presentation Parameters
-        if doFullscreen in AOptions then
+        if not (doVSync in AOptions) then
         begin
-          BackBufferWidth := ResX;
-          BackBufferHeight := ResY;
-          case bitcount of
-            16: BackBufferFormat := D3DFMT_R5G6B5;
-            24: BackBufferFormat := D3DFMT_R8G8B8;
-            32: BackBufferFormat := D3DFMT_A8R8G8B8;
-            else
-              BackBufferFormat := D3DFMT_A8R8G8B8;
-          end;
+          Fullscreen_PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
+        end;
 
-          WriteLog(ltInfo,'Try to create a fullscreen application.');
+        if (ADisplay.BitCount = 0) or (Windowed) then
+        begin
+          BackBufferFormat := d3ddm.Format;
         end
         else
         begin
-          if failed(Direct3D9.GetAdapterDisplayMode(
-            D3DADAPTER_DEFAULT, d3ddm)) then
-          begin
-            WriteLog(ltFatalError,'No acces to the current display device.');
-            exit;
-          end
+          case ADisplay.BitCount of
+            16 : BackBufferFormat := D3DFMT_R5G6B5;
+            24 : BackBufferFormat := D3DFMT_R8G8B8;
+            32 : BackBufferFormat := D3DFMT_A8R8G8B8;
           else
+            BackBufferFormat := D3DFMT_A8R8G8B8;
+          end;
+        end;
+        if not Windowed then
+        begin
+          BackBufferWidth := ADisplay.Width;
+          BackBufferHeight := ADisplay.Height;
+          if ADisplay.Freq > 0 then
           begin
-            BackbufferFormat := d3ddm.Format;
+            Fullscreen_RefreshRateInHz := ADisplay.Freq;
           end;
         end;
       end;
-
-      //Is HardwareVertexProcessing supported?
-      hvp := D3DCaps9.DevCaps and D3DDEVCAPS_HWTRANSFORMANDLIGHT <> 0;
 
       if hvp then
         vp := D3DCREATE_HARDWARE_VERTEXPROCESSING
       else
         vp := D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 
-      //Set weather to use HAL
-      if doHardware in AOptions then
+       //Set weather to use HAL
+       if doHardware in AOptions then
         dtype := D3DDEVTYPE_HAL
-      else
+       else
         dtype := D3DDEVTYPE_REF;
 
-      if failed(Direct3D9.CreateDevice(D3DADAPTER_DEFAULT, dtype, awindow,
-          vp, d3dpp, Direct3D9Device)) then
+      //Create device
+      if Failed(Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype, AWindow, vp, d3dpp, Direct3d9Device)) then
       begin
-        WriteLog(ltFatalError,'Couldn''t create 3D Device.');
+        WriteLog(ltFatalError, 'Couldn''t initialize Direct3DDevice!');
         exit;
+      end
+      else
+      begin
+        result := true;
       end;
 
-      SizeX := ResX;
-      SizeY := ResY;
+
+      SizeX := ADisplay.Width;
+      SizeY := ADisplay.Height;
 
       //Set lighting
       SetOptions(Appl,AOptions);
       Direct3D9Device.SetRenderState(D3DRS_AMBIENT, $00FFFFFF);
 
+      //Get the number of lights
       MaxLights := d3dcaps9.MaxActiveLights;
       WriteLog(ltInfo,PChar('Device supports '+inttostr(MaxLights)+' lights'));
-      
 
-      WriteLog(ltInfo,PChar(Inttostr(Direct3D9Device.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.')); 
+
+      WriteLog(ltInfo,PChar(Inttostr(Direct3D9Device.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.'));
 
       //Setup Material
       if       
@@ -570,7 +584,7 @@ begin
       //No culling
       if Failed(Direct3D9Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE)) then
       begin
-        WriteLog(ltFatalError,'Can''t turn culling off.');
+        WriteLog(ltError,'Can''t turn culling off.');
         exit;
       end;
 
@@ -593,7 +607,6 @@ begin
     end;
   end;
   result := true;
-
 end;
 
 procedure DestroyApplication(Appl:TAndorraApplication);
