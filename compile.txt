@@ -1,10 +1,21 @@
-Hello,
+This file will help you to get your version of Andorra compiled.
 
-to compile the Direct3D DLL you'll need the Direct3D headers for Delphi.
-You can get them here:
-http://www.delphidev.de/header.php (Watch out, the website is in german...)
+DirectX Plugin:
+----------------
+If you want to compile the file "AndorraDX93D.dll", you have to download the corresponding headers. You'll get them by visiting the following page:
 
-To run the samples you probably also need the Direct3D Dlls also available on this website.
+http://www.clootie.ru/
 
-I hope you'll get it compiled now...
-Andreas Stöckel
+Note: If you use newer headers, you'll also need to download the new DLL files. (d3dx9_xx.dll)
+
+OpenGL Plugin
+-------------
+
+The OpenGL Plugin is still missing.
+
+ 
+
+If you have any questions, feel free to write an e-mail to:
+andreas.stoeckel@gmx.net
+
+Have a lot of fun!

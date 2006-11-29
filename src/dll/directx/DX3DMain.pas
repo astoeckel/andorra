@@ -13,7 +13,7 @@ unit DX3DMain;
 
 interface
 
-uses d3d9, d3dx9, AndorraUtils, Classes, Windows, Graphics, Math, SysUtils;
+uses d3dx9, Direct3D9, dxerr9, AndorraUtils, Classes, Windows, Graphics, Math, SysUtils;
 
 type TAndorraApplicationItem = class
   private
@@ -340,8 +340,8 @@ begin
       
 
       //Initialize "The Matrix"
-      matTrans1 := D3DXMatrixIdentity;
-      matTrans2 := D3DXMatrixIdentity;
+      D3DXMatrixIdentity(matTrans1);
+      D3DXMatrixIdentity(matTrans2);
 
       //Set Blendmode
       if BlendMode = bmAdd then
@@ -457,6 +457,12 @@ end;
 
 function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
    ADisplay:TAdDrawDisplay):boolean;
+
+type TFormat = record
+    aform:TD3DFormat;
+    adtype:TD3DDevType;
+  end;
+   
 var
   d3dpp:TD3DPresent_Parameters;
   d3ddm:TD3DDisplayMode;
@@ -466,6 +472,37 @@ var
   hvp:boolean;
   vp : Integer;
   i:integer;
+  hasmode:boolean;
+  hr:HRESULT;
+  afmt:TFormat;
+
+  function GetType(aform:TD3DFormat;adtype:TD3DDevType):TFormat;
+  begin
+    result.aform := aform;
+    result.adtype := adtype;
+  end;
+
+  function GetFormat(avalue:integer;bits:byte):TFormat;
+  begin
+    if bits = 16 then
+    begin
+      case avalue of
+        0 : result := GetType(D3DFMT_R5G6B5,D3DDEVTYPE_HAL);
+        1 : result := GetType(D3DFMT_X1R5G5B5,D3DDEVTYPE_HAL);
+        2 : result := GetType(D3DFMT_R5G6B5,D3DDEVTYPE_REF);
+        3 : result := GetType(D3DFMT_X1R5G5B5,D3DDEVTYPE_REF);
+      end;
+    end;
+    if bits = 32 then
+    begin
+      case avalue of
+        0 : result := GetType(D3DFMT_A8R8G8B8,D3DDEVTYPE_HAL);
+        1 : result := GetType(D3DFMT_X8R8G8B8,D3DDEVTYPE_HAL);
+        2 : result := GetType(D3DFMT_A8R8G8B8,D3DDEVTYPE_REF);
+        3 : result := GetType(D3DFMT_X8R8G8B8,D3DDEVTYPE_REF);
+      end;
+    end;
+  end;
 
 begin
   result := false;
@@ -507,21 +544,40 @@ begin
 
         if not (doVSync in AOptions) then
         begin
-          Fullscreen_PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
+          PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
         end;
 
         if (ADisplay.BitCount = 0) or (Windowed) then
         begin
           BackBufferFormat := d3ddm.Format;
+          if doHardware in AOptions then
+          begin
+            dtype := D3DDEVTYPE_HAL;
+          end
+          else
+          begin
+            dtype := D3DDEVTYPE_REF;
+          end;
         end
         else
         begin
-          case ADisplay.BitCount of
-            16 : BackBufferFormat := D3DFMT_R5G6B5;
-            24 : BackBufferFormat := D3DFMT_R8G8B8;
-            32 : BackBufferFormat := D3DFMT_A8R8G8B8;
-          else
-            BackBufferFormat := D3DFMT_A8R8G8B8;
+          hasmode := false;
+          for i := 0 to 3 do
+          begin
+            afmt := GetFormat(i,ADisplay.BitCount);
+            hr := Direct3D9.CheckDeviceType (D3DADAPTER_DEFAULT, afmt.adtype, afmt.aform, afmt.aform, false);
+            if succeeded(hr) then
+            begin
+              BackBufferFormat := afmt.aform;
+              dtype := afmt.adtype;
+              hasmode := true;
+              break;
+            end;            
+          end;
+          if not hasmode then
+          begin
+            WriteLog(ltFatalError,'Couldn''t find a available display format');
+            exit;
           end;
         end;
         if not Windowed then
@@ -535,28 +591,24 @@ begin
         end;
       end;
 
+      hvp := d3dcaps9.DevCaps and D3DDEVCAPS_HWTRANSFORMANDLIGHT <> 0;
+
       if hvp then
         vp := D3DCREATE_HARDWARE_VERTEXPROCESSING
       else
         vp := D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 
-       //Set weather to use HAL
-       if doHardware in AOptions then
-        dtype := D3DDEVTYPE_HAL
-       else
-        dtype := D3DDEVTYPE_REF;
-
       //Create device
-      if Failed(Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype, AWindow, vp, d3dpp, Direct3d9Device)) then
+      hr := Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype, AWindow, vp, @d3dpp, Direct3d9Device);
+      if Failed(hr) then
       begin
-        WriteLog(ltFatalError, 'Couldn''t initialize Direct3DDevice!');
+        WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
         exit;
       end
       else
       begin
         result := true;
-      end;
-
+      end; 
 
       SizeX := ADisplay.Width;
       SizeY := ADisplay.Height;
@@ -870,7 +922,7 @@ begin
       AAppl := Appl;
       if not Failed(D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, D3DX_DEFAULT, D3DX_DEFAULT,
           0, 0, D3DFMT_UNKNOWN, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
-          AdColorToD3DColor_ARGB(ATransparentColor) , Info, nil, ATextureImg)) then
+          AdColorToD3DColor_ARGB(ATransparentColor) , @Info, nil, ATextureImg)) then
       begin
         ATexWidth := Info.Width;
         ATexHeight := Info.Height;
@@ -908,7 +960,7 @@ begin
       end;
       if not Failed(D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, AWidth,AHeight,
           0, 0, Format, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
-          AdColorToD3DColor_ARGB(ATransparentColor) ,Info, nil, ATextureImg)) then
+          AdColorToD3DColor_ARGB(ATransparentColor) ,@Info, nil, ATextureImg)) then
       begin
         ATexWidth := Info.Width;
         ATexHeight := Info.Height;
@@ -1030,7 +1082,7 @@ begin
 
           if (AFormat = D3DFMT_A8R8G8B8) then
           begin
-            Cursor32 := d3dlr.Bits;
+            Cursor32 := d3dlr.pBits;
 
             for y := 0 to Height-1 do
             begin
@@ -1057,7 +1109,7 @@ begin
 
           if AFormat = D3DFMT_A4R4G4B4 then
           begin
-            Cursor16 := d3dlr.Bits;
+            Cursor16 := d3dlr.pBits;
             for y := 0 to Height-1 do
             begin
               BitCur := Scanline[y];
@@ -1113,7 +1165,7 @@ begin
 
         if AFormat = D3DFMT_A8R8G8B8 then
         begin
-          Cursor32 := d3dlr.Bits;
+          Cursor32 := d3dlr.pBits;
           for y := 0 to Height-1 do
           begin
             BitCur := Scanline[y];
@@ -1128,7 +1180,7 @@ begin
 
         if AFormat = D3DFMT_A4R4G4B4 then
         begin
-          Cursor16 := d3dlr.Bits;
+          Cursor16 := d3dlr.pBits;
           for y := 0 to Height-1 do
           begin
             BitCur := Scanline[y];
@@ -1161,12 +1213,12 @@ begin
 
       if AFormat = D3DFMT_A8R8G8B8 then
       begin
-        Cursor32 := d3dlr.Bits;
+        Cursor32 := d3dlr.pBits;
         for y := 0 to ATexHeight-1 do
         begin
           for x := 0 to ATexWidth-1 do
           begin
-            Cursor32^ := (AValue shl 24) or (Cursor32^ and $00FFFFFF); 
+            Cursor32^ := (AValue shl 24) or (Cursor32^ and $00FFFFFF);
             inc(Cursor32);
           end;
         end;
@@ -1174,7 +1226,7 @@ begin
 
       if AFormat = D3DFMT_A4R4G4B4 then
       begin
-        Cursor16 := d3dlr.Bits;
+        Cursor16 := d3dlr.pBits;
         for y := 0 to ATexHeight-1 do
         begin
           for x := 0 to ATexWidth-1 do
