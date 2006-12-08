@@ -31,8 +31,6 @@ object Form1: TForm1
     OnMouseDown = Panel1MouseDown
     OnMouseMove = FormMouseMove
     OnResize = Panel1Resize
-    ExplicitWidth = 449
-    ExplicitHeight = 562
   end
   object Panel2: TPanel
     Left = 0
@@ -42,7 +40,6 @@ object Form1: TForm1
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitHeight = 562
     object PageControl1: TPageControl
       Left = 0
       Top = 0
@@ -51,10 +48,8 @@ object Form1: TForm1
       ActivePage = TabSheet1
       Align = alClient
       TabOrder = 0
-      ExplicitHeight = 562
       object TabSheet1: TTabSheet
         Caption = 'Basics'
-        ExplicitHeight = 534
         object GroupBox1: TGroupBox
           Left = 0
           Top = 0
@@ -302,6 +297,9 @@ object Form1: TForm1
       object TabSheet2: TTabSheet
         Caption = 'Movement'
         ImageIndex = 1
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
         ExplicitHeight = 534
       end
     end

@@ -306,6 +306,7 @@ begin
 
   mx := Panel1.Width div 2;
   my := Panel1.Height div 2;
+  BackgroundColor := ColorToRGB(clBtnFace);
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
