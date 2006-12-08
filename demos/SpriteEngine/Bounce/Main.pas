@@ -52,7 +52,7 @@ var
   settings:TIniFile;
 
 const
-  path='demos\SpriteEngine\Bounce\';
+  path='..\demos\SpriteEngine\Bounce\';
 
 implementation
 
@@ -96,10 +96,10 @@ var
 begin
   Randomize;
 
-  Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+path+'bounce.ini');
+  Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+'settings.ini');
 
   AdDraw := TAdDraw.Create(self);
-  AdDraw.DllName := 'AndorraDX93D.dll';
+  AdDraw.DllName := Settings.ReadString('set','dllname','AndorraDX93D.dll');
 
   amessage.Text := 'Starting Application';
   amessage.Sender := 'Bounce.exe';
@@ -159,7 +159,8 @@ begin
     PatternHeight := 32;
   end;
   AdPictureCollection.Restore;
-  
+  AdPictureCollection.Add('part').Texture.LoadFromFile('particle.bmp',false,0);
+
   AdSpriteEngine := TSpriteEngine.Create(nil);
   AdSpriteEngine.Surface := AdDraw;
 

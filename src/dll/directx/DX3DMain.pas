@@ -347,7 +347,12 @@ begin
       if BlendMode = bmAdd then
       begin
         Direct3D9Device.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
-        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_SRCALPHA);
+        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+      end;
+      if BlendMode = bmMask then
+      begin
+        Direct3D9Device.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
+        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
       end;
 
       //Scale the Box
@@ -550,6 +555,10 @@ begin
         if (ADisplay.BitCount = 0) or (Windowed) then
         begin
           BackBufferFormat := d3ddm.Format;
+          if Windowed then
+          begin
+            BackBufferFormat := D3DFMT_UNKNOWN;
+          end;
           if doHardware in AOptions then
           begin
             dtype := D3DDEVTYPE_HAL;

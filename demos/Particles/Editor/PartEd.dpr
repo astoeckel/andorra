@@ -1,19 +1,19 @@
-program Bounce;
+program PartEd;
 
 uses
   Forms,
   Main in 'Main.pas' {Form1},
-  Andorra in '..\..\..\src\Andorra.pas',
-  AndorraUtils in '..\..\..\src\AndorraUtils.pas',
   AdDraws in '..\..\..\src\AdDraws.pas',
+  AdParticles in '..\..\..\src\AdParticles.pas',
   AdSprites in '..\..\..\src\AdSprites.pas',
-  AdParticles in '..\..\..\src\AdParticles.pas';
+  Andorra in '..\..\..\src\Andorra.pas',
+  AndorraUtils in '..\..\..\src\AndorraUtils.pas';
 
 {$R *.res}
 
 begin
   Application.Initialize;
-  Application.Title := 'Andorra 2D Bounce Demo';
+  Application.Title := 'Explosion';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.

@@ -71,6 +71,8 @@ type
 
       function Collision:integer;
       procedure Collision2;
+      
+      property BoundsRect:TRect read GetBoundsRect;
     published
       property X:double read FX write SetX;
       property Y:double read FY write SetY;
@@ -80,7 +82,7 @@ type
       property WorldX:double read GetWorldX;
       property WorldY:double read GetWorldY;
       property Deaded:boolean read FDead;
-      property BoundsRect:TRect read GetBoundsRect;
+
       //Equal to DelpiX's "Collisioned". Must have been a translation fault.
       property CanDoCollisions:boolean read FDoCollisions write FDoCollisions;
       //Equal to DelphiX's "Moved".
@@ -109,9 +111,9 @@ type
       destructor Destroy;override;
       procedure Dead;override;
 
+      property SurfaceRect:TRect read FSurfaceRect;
     published
       property Surface:TAdDraw read FSurface write SetSurface;
-      property SurfaceRect:TRect read FSurfaceRect;
   end;
 
   TImageSprite = class(TSprite)
@@ -240,7 +242,7 @@ end;
 
 function TSpriteList.GetItem(AIndex:integer):TSprite;
 begin
-  result := inherited Items[AIndex];
+  result := TSprite(inherited Items[AIndex]);
 end;
 
 procedure TSpriteList.Remove(ASprite: TSprite);
@@ -500,7 +502,7 @@ begin
   for i := 0 to FDeadList.Count - 1 do
   begin
     TSprite(FDeadList[i]).Free;
-    Remove(FDeadList[i]);
+    Remove(TSprite(FDeadList[i]));
   end;
   FDeadList.Clear;
 end;

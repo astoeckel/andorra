@@ -53,7 +53,7 @@ TAdDrawModes = set of TAdDrawMode;
 type TAndorraTextureMode = (amWrap,amMirror,amClamp);
 
 type TAndorraColor = packed record
-  a,r,g,b:integer;
+  a,r,g,b:byte;
 end;
 
 type TImageInfo = packed record
@@ -69,7 +69,7 @@ type TLight = packed record
 end;
 
 type TAndorraTextureQuality = (tqNone,tqLinear,tqAnisotropic);
-type TAndorraBlendMode = (bmAlpha,bmAdd);
+type TAndorraBlendMode = (bmAlpha,bmAdd,bmMask);
 
 type TAdLogTyp = (ltInfo,ltWarning,ltError,ltFatalError,ltNone);
 
@@ -113,12 +113,19 @@ type TAdSetLogProc = procedure(Appl:TAndorraApplication;ALogProc:TAdLogProc;AApp
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 function Ad_RGB(r,g,b:byte):TAndorraColor;
+function AdColorToString(AColor:TAndorraColor):string;
+function StringToAdColor(AString:string):TAndorraColor;
+function AdColorToColor(AAdColor:TAndorraColor):LongWord;
 
 function GetRValue(AColor:LongWord):byte;
 function GetGValue(AColor:LongWord):byte;
 function GetBValue(AColor:LongWord):byte;
 
+function RGB(r,g,b:byte):LongWord;
+
 function CompareColors(col1,col2:TAndorraColor):boolean;
+
+function Cut(AValue:integer):byte;
 
 implementation
 
@@ -157,5 +164,49 @@ function GetBValue(AColor:LongWord):byte;
 begin
   result := (AColor shr 16) and 255;
 end;
+
+function AdColorToString(AColor:TAndorraColor):string;
+begin
+  result := FormatFloat('000',AColor.a)+FormatFloat('000',AColor.r)+
+            FormatFloat('000',AColor.g)+FormatFloat('000',AColor.b);
+end;
+
+function StringToAdColor(AString:string):TAndorraColor;
+begin
+  result.a  := StrToInt(Copy(AString,1,3));
+  result.r  := StrToInt(Copy(AString,4,3));
+  result.g  := StrToInt(Copy(AString,7,3));
+  result.b  := StrToInt(Copy(AString,10,3));
+end;
+
+function RGB(r,g,b:byte):LongWord;
+begin
+  result := R + G shl 8 + B shl 16; 
+end;
+
+function Cut(AValue:integer):byte;
+begin
+  if AValue < 255 then
+  begin
+    if AValue < 0 then
+    begin
+      result := 0;
+    end
+    else
+    begin
+      result := AValue;
+    end;
+  end
+  else
+  begin
+    result := 255;
+  end;
+end;
+
+function AdColorToColor(AAdColor:TAndorraColor):LongWord;
+begin
+  result := RGB(AAdColor.r,AAdColor.g,AAdColor.b);
+end;
+
 
 end.

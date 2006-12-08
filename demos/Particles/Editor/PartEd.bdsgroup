@@ -5,15 +5,15 @@
 			<Option Name="Personality">Default.Personality</Option>
 			<Option Name="ProjectType"></Option>
 			<Option Name="Version">1.0</Option>
-			<Option Name="GUID">{E6042F9D-A75E-4985-9E53-F0B690A317A6}</Option>
+			<Option Name="GUID">{9FD0284B-05EC-4BF6-940D-DD92EAE7DB34}</Option>
 		</Option>
 	</PersonalityInfo>
 	<Default.Personality>  <Projects>
-      <Projects Name="Bounce.exe">Bounce.bdsproj</Projects>
-      <Projects Name="Targets">Bounce.exe</Projects>
+      <Projects Name="PartEd.exe">PartEd.bdsproj</Projects>
+      <Projects Name="Targets">PartEd.exe</Projects>
     </Projects>
     <Dependencies>
-      <Dependency GUID="{C8C6B723-824E-4A3B-A852-EF7E1D00D684}">
+      <Dependency GUID="{75A64AA6-D476-485E-9E37-DEDBDDA4FF8F}">
         <Dependency GUID="{594A5828-07B0-4BDA-BE50-D6368A35A1C0}"/>
       </Dependency>
     </Dependencies>

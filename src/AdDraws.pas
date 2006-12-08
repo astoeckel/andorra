@@ -14,7 +14,7 @@ unit AdDraws;
 
 interface
 
-uses Controls, Types, SysUtils, Classes, AndorraUtils, Andorra, Graphics, Dialogs;
+uses Windows, Controls, Types, SysUtils, Classes, AndorraUtils, Andorra, Graphics, Dialogs;
 
 type
 
@@ -233,10 +233,10 @@ type
       FColor:TColor;
       FLastColor:TAndorraColor;
       FName:string;
-      FAddedByList:boolean;
       FTextureXMode:TTextureMode;
       FTextureYMode:TTextureMode;
       FDetail:integer;
+      FOwnTexture:boolean;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -248,10 +248,13 @@ type
       procedure SetTextureXMode(AValue:TTextureMode);
       procedure SetTextureYMode(AValue:TTextureMode);
       procedure SetDetail(AValue:integer);
+      procedure SetTexture(AValue:TAdTexture);
     protected
       Rects:TRectList;
       procedure CreatePatternRects;
     public
+      //True if this item can be freed by the image list
+      FreeByList:boolean;
       //Contains the link to Andorras Image
       AdImage:TAndorraImage;
       //A Constructor
@@ -268,6 +271,9 @@ type
       //Draw a sprite with alpha blending.
       procedure DrawAlpha(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
         Alpha: Integer);
+      //Draw only the mask.
+      procedure DrawMask(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
+        Alpha: Integer);
       //Draw a sprite rotated. CenterX and CenterY specify the center of the rotation - May be a value between 0 and 1. Rotation is a value between 0 and 360.
       procedure DrawRotate(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer);
@@ -277,6 +283,10 @@ type
         Alpha: Integer);
       //The same as DrawRotate, just with alpha blending.
       procedure DrawRotateAlpha(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
+        CenterX, CenterY: Double; Angle: Integer;
+        Alpha: Integer);
+      //The same as DrawRotate, just drawing a the mask.        
+      procedure DrawRotateMask(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
       //Draw only specified part from the image. Alpha blending.
@@ -302,7 +312,7 @@ type
       //The vertical space between the patterns.
       property SkipHeight:integer read FSkipHeight write SetSkipHeight;
       //The texture which will be painted.
-      property Texture:TAdTexture read FTexture;
+      property Texture:TAdTexture read FTexture write SetTexture;
       //Returns the count of the patterns.
       property PatternCount:integer read GetPatternCount;
       //Here you can dye an image.
@@ -341,6 +351,16 @@ type
       //The parent you've specified in the constructor.
       property Parent:TAdDraw read FParent;
     published
+  end;
+
+  TPerformanceCounter = class
+    private
+      lt,th,ffps:integer;
+    public
+      TimeGap:integer;
+      FPS:integer;
+      procedure Calculate;
+      constructor Create;
   end;
 
 implementation
@@ -552,6 +572,7 @@ procedure TAdDraw.Setup2DScene;
 begin
   if AdAppl <> nil then
   begin
+    FDisplayRect := GetDisplayRect;
     AdDllLoader.SetupScene(AdAppl,FDisplayRect.Right,FDisplayRect.Bottom);
   end;
 end;
@@ -700,11 +721,12 @@ begin
   AdImage := FParent.AdDllLoader.CreateImage(AAdDraw.AdAppl);
   Rects := TRectList.Create;
   FColor := clWhite;
+  FOwnTexture := true;
 end;
 
 destructor TPictureCollectionItem.Destroy;
 begin
-  FTexture.Free;
+  if FOwnTexture then FTexture.Free;
   FParent.AdDllLoader.DestroyImage(AdImage);
   Rects.Free;
   inherited Destroy;
@@ -776,6 +798,20 @@ begin
   end;
 end;
 
+procedure TPictureCollectionItem.DrawMask(Dest: TAdDraw; const DestRect: TRect;
+  PatternIndex, Alpha: Integer);
+begin
+  if (Texture.Loaded) and (Dest.CanDraw) then
+  begin
+    SetCurrentColor(Alpha);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
+      0,0,0,bmMask);
+  end;
+end;
+
 procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
@@ -817,6 +853,21 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAlpha);
+  end;
+end;
+
+procedure TPictureCollectionItem.DrawRotateMask(Dest: TAdDraw; X, Y, Width,
+  Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
+  Alpha: Integer);
+begin
+  if (Texture.Loaded) and (Dest.CanDraw) then
+  begin
+    SetCurrentColor(Alpha);
+    if (PatternIndex < 0) then PatternIndex := 0;
+    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
+    FParent.AdDllLoader.DrawImage(
+      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
+      Angle,CenterX,CenterY,bmMask);
   end;
 end;
 
@@ -887,6 +938,16 @@ procedure TPictureCollectionItem.SetSkipWidth(AValue: integer);
 begin
   FSkipWidth := AValue;
   CreatePatternRects;
+end;
+
+procedure TPictureCollectionItem.SetTexture(AValue: TAdTexture);
+begin
+  if FOwnTexture then
+  begin
+    FTexture.Free;
+  end;
+  FOwnTexture := false;
+  FTexture := AValue;
 end;
 
 procedure TPictureCollectionItem.SetTextureXMode(AValue: TTextureMode);
@@ -975,7 +1036,7 @@ function TPictureCollection.Add(AName: string): TPictureCollectionItem;
 begin
   result := TPictureCollectionItem.Create(FParent);
   result.Name := AName;
-  result.FAddedByList := true;
+  result.FreeByList := true;
   inherited Add(result);
 end;
 
@@ -1015,7 +1076,7 @@ begin
   begin
     with TPictureCollectionItem(Ptr) do
     begin
-      if FAddedByList then
+      if FreeByList then
       begin
         Free;
       end;
@@ -1099,6 +1160,33 @@ end;
 procedure TAdLog.SaveToFile(AFile: string);
 begin
   Items.SaveToFile(AFile);
+end;
+
+{ TPerformanceCounter }
+
+procedure TPerformanceCounter.Calculate;
+var t:integer;
+begin
+  t := GetTickCount;
+  timegap := t-lt;
+  th := th + timegap;
+  lt := t;
+  fFPS := fFPS + 1;
+  if th >= 1000 then
+  begin
+    th := 0;
+    FPS := fFPS;
+    fFPS := 0;
+  end;
+end;
+
+constructor TPerformanceCounter.Create;
+begin
+  inherited Create;
+  lt := GetTickCount;
+  th := 0;
+  timegap := 0;
+  fps := 0;
 end;
 
 end.
