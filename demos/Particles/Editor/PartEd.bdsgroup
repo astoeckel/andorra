@@ -8,7 +8,9 @@
 			<Option Name="GUID">{9FD0284B-05EC-4BF6-940D-DD92EAE7DB34}</Option>
 		</Option>
 	</PersonalityInfo>
-	<Default.Personality>  <Projects>
+	<Default.Personality>  
+    
+    <Projects>
       <Projects Name="PartEd.exe">PartEd.bdsproj</Projects>
       <Projects Name="Targets">PartEd.exe</Projects>
     </Projects>

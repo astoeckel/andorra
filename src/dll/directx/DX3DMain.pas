@@ -281,6 +281,7 @@ begin
       FIndexBuffer.Unlock;
     end;
   end;
+  result := D3D_OK;
 end;
 
 procedure TAndorraImageItem.SetXTextureMode(AMode: TAndorraTextureMode);
@@ -354,6 +355,11 @@ begin
         Direct3D9Device.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
         Direct3D9Device.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
       end;
+      if BlendMode = bmAlpha then
+      begin
+        Direct3D9Device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      end;
 
       //Scale the Box
       D3DXMatrixScaling(matTrans1,(DestRect.Right-DestRect.Left)/FWidth,
@@ -395,14 +401,7 @@ begin
           SetIndices(FIndexBuffer);
           DrawIndexedPrimitive( d3dpt_trianglelist, 0, 0, (FDetails+1)*(FDetails+1), 0, FDetails*FDetails*2);
         end;
-
       end;
-      
-      if BlendMode <> bmAlpha then
-      begin
-        Direct3D9Device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-        Direct3D9Device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-      end;  
     end;
   end;
 end;
@@ -540,6 +539,8 @@ begin
         WriteLog(ltFatalError,PChar('Error while getting current adapter displaymode.'));
         exit;
       end;
+
+      dtype := D3DDEVTYPE_REF;
 
       Fillchar(d3dpp,sizeof(d3dpp),0);
       with d3dpp do
