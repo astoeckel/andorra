@@ -25,16 +25,9 @@ type
     Panel2: TPanel;
     MainMenu1: TMainMenu;
     Datei1: TMenuItem;
-    PartikelLaden1: TMenuItem;
-    N1: TMenuItem;
-    Saveparticles1: TMenuItem;
-    Saveparticlesas1: TMenuItem;
-    N2: TMenuItem;
     Close1: TMenuItem;
     Images1: TMenuItem;
     Loadnewimagefile1: TMenuItem;
-    Includeimageinparticlefile1: TMenuItem;
-    N3: TMenuItem;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
@@ -42,7 +35,6 @@ type
     Edit1: TEdit;
     GroupBox2: TGroupBox;
     Button1: TButton;
-    CheckBox1: TCheckBox;
     Image1: TImage;
     ListBox1: TListBox;
     Button2: TButton;
@@ -62,8 +54,6 @@ type
     Button3: TButton;
     Button4: TButton;
     Environment1: TMenuItem;
-    Addparticlesystem1: TMenuItem;
-    N4: TMenuItem;
     Backgroundcolor1: TMenuItem;
     ColorDialog1: TColorDialog;
     OpenPictureDialog1: TOpenPictureDialog;
@@ -74,6 +64,48 @@ type
     Label8: TLabel;
     Edit7: TEdit;
     Label9: TLabel;
+    Button5: TButton;
+    GroupBox4: TGroupBox;
+    Label10: TLabel;
+    Edit8: TEdit;
+    Label11: TLabel;
+    GroupBox5: TGroupBox;
+    Label16: TLabel;
+    Label19: TLabel;
+    Edit11: TEdit;
+    Edit9: TEdit;
+    Edit10: TEdit;
+    Edit12: TEdit;
+    Label18: TLabel;
+    Label15: TLabel;
+    Label17: TLabel;
+    Label12: TLabel;
+    Label14: TLabel;
+    Label13: TLabel;
+    Label20: TLabel;
+    Label21: TLabel;
+    Edit13: TEdit;
+    Label22: TLabel;
+    Edit14: TEdit;
+    Label23: TLabel;
+    Edit15: TEdit;
+    Label24: TLabel;
+    Edit16: TEdit;
+    Label25: TLabel;
+    GroupBox6: TGroupBox;
+    ScrollBar1: TScrollBar;
+    ScrollBar2: TScrollBar;
+    Label26: TLabel;
+    Label27: TLabel;
+    Label28: TLabel;
+    Label29: TLabel;
+    ScrollBar3: TScrollBar;
+    Label30: TLabel;
+    Label31: TLabel;
+    Label32: TLabel;
+    ScrollBar4: TScrollBar;
+    Label33: TLabel;
+    PaintBox1: TPaintBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -92,6 +124,18 @@ type
     procedure Panel1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure Panel1Resize(Sender: TObject);
+    procedure Edit6Change(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
+    procedure Edit7Change(Sender: TObject);
+    procedure Edit8Change(Sender: TObject);
+    procedure Edit9Change(Sender: TObject);
+    procedure Edit11Change(Sender: TObject);
+    procedure Edit13Change(Sender: TObject);
+    procedure ScrollBar2Change(Sender: TObject);
+    procedure FormPaint(Sender: TObject);
+    procedure ScrollBar3Change(Sender: TObject);
+    procedure ComboBox1Change(Sender: TObject);
+    procedure Close1Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -102,9 +146,7 @@ type
     PerCount:TPerformanceCounter;
     PartSys:TAdParticleSystem;
 
-    AdColList:TAdColorList;
-
-    pc:double;
+    pc,pc2:double;
 
     mx,my:integer;
     BackgroundColor:TColor;
@@ -112,6 +154,7 @@ type
     procedure Render;
     procedure DrawColorPreview;
     procedure UpdateControls;
+    procedure DrawAnglePreview;
   end;
 
 var
@@ -204,9 +247,68 @@ begin
   DrawColorPreview;
 end;
 
+procedure TForm1.Button5Click(Sender: TObject);
+begin
+  PartSys.Items.Clear;
+end;
+
 procedure TForm1.CheckBox2Click(Sender: TObject);
 begin
   PartSys.DefaultParticle.DrawMask := CheckBox2.Checked;
+end;
+
+procedure TForm1.Close1Click(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TForm1.ComboBox1Change(Sender: TObject);
+begin
+  case Combobox1.ItemIndex of
+    0:PartSys.DefaultParticle.BlendMode := bmAlpha;
+    1:PartSys.DefaultParticle.BlendMode := bmAdd;
+    2:PartSys.DefaultParticle.BlendMode := bmMask;
+  end;
+end;
+
+procedure TForm1.DrawAnglePreview;
+var p1x,p1y,p2x,p2y:integer;
+    abmp:TBitmap;
+begin
+  abmp := TBitmap.Create;
+  abmp.Width := 100;
+  abmp.Height := 100;
+  with abmp.Canvas do
+  begin
+    Brush.Color := ColorToRgb(clWhite);
+    Pen.Color := Brush.Color;
+    Rectangle(0,0,100,100);
+    Pen.Color := clBlack;
+    Brush.Color := rgb(235,235,255);
+    Ellipse(0,0,100,100);
+    Pen.Color := clGray;
+    Brush.Color := clSkyBlue;
+    with PartSys.DefaultParticle do
+    begin
+      p1x := round(cos((CreationAngle+CreationAngleOpen / 2)*PI/180)*50)+50;
+      p1y := round(sin((CreationAngle+CreationAngleOpen / 2)*PI/180)*50)+50;
+      p2x := round(cos((CreationAngle-CreationAngleOpen / 2)*PI/180)*50)+50;
+      p2y := round(sin((CreationAngle-CreationAngleOpen / 2)*PI/180)*50)+50;
+      Pie(0,0,100,100,p1x,p1y,p2x,p2y);
+      Pen.Color := clSkyBlue;
+      Brush.Color := clSkyBlue;
+      Ellipse(40,40,60,60);
+      Brush.Color := clBlue;
+      Pen.Color := clGray;
+      Pie(40,40,60,60,p1x,p1y,p2x,p2y);
+
+      Pen.Color := clRed;
+      MoveTo(50,50);
+      LineTo(round(50+Force.X/10),round(50+Force.Y/10));
+    end;
+  end;
+  PaintBox1.Canvas.Draw(0,0,abmp);
+  abmp.Free;
 end;
 
 procedure TForm1.DrawColorPreview;
@@ -252,10 +354,48 @@ begin
   end;
 end;
 
+procedure TForm1.Edit11Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.RotStart := StrToFloatDef(Edit11.Text,0);
+  PartSys.DefaultParticle.RotEnd   := StrToFloatDef(Edit12.Text,0);
+end;
+
+procedure TForm1.Edit13Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.SpeedXStart := StrToFloatDef(Edit13.Text,100);
+  PartSys.DefaultParticle.SpeedXEnd := StrToFloatDef(Edit14.Text,100);
+  PartSys.DefaultParticle.SpeedYStart := StrToFloatDef(Edit15.Text,100);
+  PartSys.DefaultParticle.SpeedYEnd := StrToFloatDef(Edit16.Text,100);
+end;
+
+procedure TForm1.Edit6Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.LifeTime := StrToFloatDef(Edit6.Text,1);
+end;
+
+procedure TForm1.Edit7Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.LifeTimeVariation := StrToIntDef(Edit7.Text,0);
+end;
+
+procedure TForm1.Edit8Change(Sender: TObject);
+begin
+  pc := StrToFloatDef(Edit8.Text,1);
+  if pc < 0.1 then pc := 0.1;
+end;
+
+procedure TForm1.Edit9Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.SizeStart := StrToFloatDef(Edit9.Text,1);
+  PartSys.DefaultParticle.SizeEnd   := StrToFloatDef(Edit10.Text,1);
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 var bmp:TBitmap;
     i:integer;
 begin
+  TabSheet2.DoubleBuffered := true;
+
   Randomize;
 
   //Initialize Andorra 2D
@@ -307,6 +447,8 @@ begin
   mx := Panel1.Width div 2;
   my := Panel1.Height div 2;
   BackgroundColor := ColorToRGB(clBtnFace);
+  pc := 1;
+  pc2 := 0;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -326,6 +468,11 @@ begin
     mx := x;
     my := y;
   end;
+end;
+
+procedure TForm1.FormPaint(Sender: TObject);
+begin
+  DrawAnglePreview;
 end;
 
 procedure TForm1.ListBox1Click(Sender: TObject);
@@ -402,12 +549,47 @@ begin
 
   AdDraw1.BeginScene;
   AdDraw1.ClearSurface(BackgroundColor);
-  PartSys.CreateParticles(1,TAdParticle,mx,my);
+  if PerCount.TimeGap < pc then
+  begin
+    pc2 := pc2 + PerCount.TimeGap / pc;
+  end
+  else
+  begin
+    pc2 := PerCount.TimeGap / pc;
+  end;
+  if pc2 >= 1 then
+  begin
+    PartSys.CreateParticles(round(pc2),TAdParticle,mx,my);
+    pc2 := 0;
+  end;
   PartSys.Move(PerCount.TimeGap/1000);
   PartSys.Draw(0,0);
   PartSys.Dead;
   AdDraw1.EndScene;
   AdDraw1.Flip;
+end;
+
+procedure TForm1.ScrollBar2Change(Sender: TObject);
+begin
+  with PartSys.DefaultParticle do
+  begin
+    CreationAngle := Scrollbar2.Position;
+    CreationAngleOpen  := Scrollbar1.Position;
+  end;
+  Label27.Caption := 'Angle: '+inttostr(Scrollbar2.Position)+'°';
+  Label26.Caption := 'Open: '+inttostr(Scrollbar1.Position)+'°';
+  DrawAnglePreview;
+end;
+
+procedure TForm1.ScrollBar3Change(Sender: TObject);
+begin
+  with PartSys.DefaultParticle.Force do
+  begin
+    X := cos(ScrollBar3.Position * PI / 180)*ScrollBar4.Position;
+    Y := sin(ScrollBar3.Position * PI / 180)*ScrollBar4.Position;
+    Label31.Caption := inttostr(Scrollbar3.Position)+'°';
+    Label32.Caption := inttostr(Scrollbar4.Position)+' px/s';
+  end;
 end;
 
 procedure TForm1.UpdateControls;
@@ -425,6 +607,19 @@ begin
     end;
     DrawColorPreview;
     ListBox1.Repaint;
+    CheckBox2.Checked := DrawMask;
+    Edit6.Text := FormatFloat('0.00',LifeTime);
+    Edit7.Text := Inttostr(LifeTimeVariation);
+    Edit9.Text := FormatFloat('0.00',SizeStart);
+    Edit10.Text := FormatFloat('0.00',SizeEnd);
+    Edit11.Text := FormatFloat('0',RotStart);
+    Edit12.Text := FormatFloat('0',RotEnd);
+    Edit13.Text := FormatFloat('0',SpeedXStart);
+    Edit14.Text := FormatFloat('0',SpeedXEnd);
+    Edit15.Text := FormatFloat('0',SpeedYStart);
+    Edit16.Text := FormatFloat('0',SpeedYEnd);
+
+    DrawAnglePreview;
   end;
 end;
 

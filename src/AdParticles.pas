@@ -39,7 +39,7 @@ type
     	function GetItem(AIndex:integer):TAndorraColor;
     	procedure SetItem(AIndex:integer;AItem:TAndorraColor);
     protected
-      procedure Notify(Ptr: Pointer; Action: TListNotification);     
+      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
     	property Items[AIndex:integer]:TAndorraColor read GetItem write SetItem;default;
       function GetColor(Max,Pos:double):TAndorraColor;
@@ -51,13 +51,11 @@ type
 
   TAdParticleSystem = class
     private
-      FForce:TAdVector;
       FTexture:TAdTexture;
       FImages:TPictureCollection;
       FDraw:TAdDraw;
       FParticles:TAdParticleList;
       FDefault:TAdParticle;
-      procedure SetForce(AValue:TAdVector);
       procedure SetTexture(AValue:TAdTexture);
       function GetBoundsRect:TRect;
     protected
@@ -70,7 +68,6 @@ type
       procedure Dead;
       procedure CreateImage(AColor:TAndorraColor);
       function GetImage(AColor:TAndorraColor):TPictureCollectionItem;
-      property Force:TAdVector read FForce write SetForce;
       property Texture:TAdTexture read FTexture write SetTexture;
       property Parent:TAdDraw read FDraw write FDraw;
       property Items:TAdParticleList read FParticles;
@@ -86,13 +83,21 @@ type
       FForce:TAdVector;
       FLifeTime:double;
       FLifedTime:double;
+      FLifeTimeVariation:integer;
       FColors:TAdColorList;
       FDeaded:boolean;
       FSystem:TAdParticleSystem;
       FLastImage:TPictureCollectionItem;
       FDrawMask:boolean;
       FColor:TAndorraColor;
+      FSizeStart,FSizeEnd:double;
+      FRotStart,FRotEnd:double;
+      FSpeedXStart,FSpeedXEnd:double;
+      FSpeedYStart,FSpeedYEnd:double;
+      FCrAngle, FCrAngleOpen:integer;
+      FBlendMode:TAndorraBlendMode;
       function GetBoundsRect:TRect;
+      function GetValue(StartPos,EndPos,Max,Pos:double):double;
     protected
       function GetImage:TPictureCollectionItem;virtual;
     public
@@ -111,7 +116,20 @@ type
       property Dir:TAdVector read FDir write FDir;
       property BoundsRect:TRect read GetBoundsRect;
       property LifeTime:double read FLifeTime write FLifeTime;
+      property LifeTimeVariation:integer read FLifeTimeVariation write FLifeTimeVariation;
       property Colors:TAdColorList read FColors write FColors;
+      property SizeStart:double read FSizeStart write FSizeStart;
+      property SizeEnd:double read FSizeEnd write FSizeEnd;
+      property RotStart:double read FRotStart write FRotStart;
+      property RotEnd:double read FRotEnd write FRotEnd;
+      property SpeedXStart:double read FSpeedXStart write FSpeedXStart;
+      property SpeedYStart:double read FSpeedYStart write FSpeedYStart;
+      property SpeedXEnd:double read FSpeedXEnd write FSpeedXEnd;
+      property SpeedYEnd:double read FSpeedYEnd write FSpeedYEnd;
+      property CreationAngle:integer read FCrAngle write FCrAngle;
+      property CreationAngleOpen:integer read FCrAngleOpen write FCrAngleOpen;
+      property Force:TAdVector read FForce write FForce;
+      property BlendMode:TAndorraBlendMode read FBlendMode write FBlendmode;
   end;
 
 implementation
@@ -314,11 +332,6 @@ begin
   end;
 end;
 
-procedure TAdParticleSystem.SetForce(AValue: TAdVector);
-begin
-  //
-end;
-
 procedure TAdParticleSystem.SetTexture(AValue: TAdTexture);
 begin
   FImages.Clear;
@@ -336,7 +349,20 @@ begin
     FColors.Add(AParticle.Colors[i]);
   end;
   FLifeTime := AParticle.LifeTime;
+  FLifeTimeVariation := AParticle.LifeTimeVariation;
   FDrawMask := AParticle.DrawMask;
+  FSizeStart := AParticle.SizeStart;
+  FSizeEnd := AParticle.SizeEnd;
+  FRotStart := AParticle.RotStart;
+  FRotEnd := AParticle.RotEnd;
+  FSpeedXStart := AParticle.SpeedXStart;
+  FSpeedYStart := AParticle.SpeedYStart;
+  FSpeedXEnd := AParticle.SpeedXEnd;
+  FSpeedYEnd := AParticle.SpeedYEnd;
+  FCrAngle := AParticle.CreationAngle;
+  FCrAngleOpen := AParticle.CreationAngleOpen;
+  FForce := AParticle.Force;
+  FBlendmode := AParticle.BlendMode;
 end;
 
 constructor TAdParticle.Create(ASystem: TAdParticleSystem);
@@ -347,7 +373,21 @@ begin
   FColors.Add(Ad_ARGB(255,255,255,255));
   FColors.Add(Ad_ARGB(0,255,255,255));
   FLifeTime := 1;
+  FLifeTimeVariation := 0;
   FDrawMask := true;
+  FSizeStart := 1;
+  FSizeEnd := 1;
+  FRotStart := 0;
+  FRotEnd := 0;
+  FSpeedXStart := 100;
+  FSpeedYStart := 100;
+  FSpeedXEnd := 100;
+  FSpeedYEnd := 100;
+  FCrAngle := 0;
+  FCrAngleOpen := 360;
+  FForce.X := 0;
+  FForce.Y := 0;
+  FBlendMode := bmAdd;
 end;
 
 procedure TAdParticle.Dead;
@@ -361,49 +401,81 @@ begin
   inherited;
 end;
 
+function MoveRect(ARect:TRect;X,Y:double):TRect;
+begin
+  result := Rect(Round(ARect.Left+X),Round(ARect.Top+Y),
+                 Round(ARect.Right+X),Round(ARect.Bottom+Y));
+end;
+
 procedure TAdParticle.DoDraw(AX, AY: double);
 var aimg:TPictureCollectionItem;
+    arect:TRect;
+    w,h:integer;
 begin
-  if not FDeaded then
+  if (not FDeaded) and (BlendMode <> bmMask) then
   begin
     aimg := Image;
     if aimg <> nil then
     begin
-      aimg.DrawAdd(FSystem.Parent,Rect(round(AX+FX-aimg.Width/2),round(AY+FY-aimg.Height/2),
-                                       round(AX+FX+aimg.Width/2),round(AY+FY+aimg.Height/2)),0,cut(fcolor.a));
+      arect := MoveRect(GetBoundsRect,AX,AY);
+      w := arect.Right-arect.Left;
+      h := arect.Bottom-arect.Top;
+      if BlendMode = bmAdd then
+      begin
+        aimg.DrawRotateAdd(FSystem.Parent,arect.Left,arect.Top,w,h,0,0.5,0.5,
+                           round(GetValue(FRotStart,FRotEnd,LifeTime,FLifedTime)),
+                           cut(fcolor.a));
+      end;
+      if BlendMode = bmAlpha then
+      begin
+        aimg.DrawRotateAlpha(FSystem.Parent,arect.Left,arect.Top,w,h,0,0.5,0.5,
+                           round(GetValue(FRotStart,FRotEnd,LifeTime,FLifedTime)),
+                           cut(fcolor.a));
+      end;
     end;
   end;
 end;
+
+procedure TAdParticle.DoPreDraw(AX, AY: double);
+var aimg:TPictureCollectionItem;
+    arect:TRect;
+    w,h:integer;
+begin
+  if (FDrawMask or (BlendMode = bmMask)) and not FDeaded then
+  begin
+    aimg := Image;
+    if aimg <> nil then
+    begin
+      arect := MoveRect(GetBoundsRect,AX,AY);
+      w := arect.Right-arect.Left;
+      h := arect.Bottom-arect.Top;
+      aimg.DrawRotateMask(FSystem.Parent,arect.Left,arect.Top,w,h,0,0.5,0.5,
+                          round(GetValue(FRotStart,FRotEnd,LifeTime,FLifedTime)),
+                          cut(fcolor.a));
+    end;
+  end;
+end;
+
 
 procedure TAdParticle.DoMove(TimeGap: double);
 begin
   FLifedTime := FLifedTime + 1 * Timegap;
   if FLifedTime > FLifeTime then Dead;
 
-  FX := FX+FDir.X * Timegap;
-  FY := FY+FDir.Y * Timegap;
-end;
-
-procedure TAdParticle.DoPreDraw(AX, AY: double);
-var aimg:TPictureCollectionItem;
-begin
-  if FDrawMask and not FDeaded then
-  begin
-    aimg := Image;
-    if aimg <> nil then
-    begin
-      aimg.DrawMask(FSystem.Parent,Rect(round(AX+FX-aimg.Width/2),round(AY+FY-aimg.Height/2),
-                                        round(AX+FX+aimg.Width/2),round(AY+FY+aimg.Height/2)),0,cut(fcolor.a));
-    end;
-  end;
+  FX := FX+FDir.X * GetValue(FSpeedXStart,FSpeedXEnd,LifeTime,FLifedTime)*
+          Timegap+(FForce.X*FLifedTime)*Timegap;
+  FY := FY+FDir.Y * GetValue(FSpeedYStart,FSpeedYEnd,LifeTime,FLifedTime)*
+          Timegap+(FForce.Y*FLifedTime)*Timegap;
 end;
 
 function TAdParticle.GetBoundsRect: TRect;
+var s:double;
 begin
-  result := Rect(round(FX-Parent.Texture.BaseRect.Right / 2),
-                 round(FY-Parent.Texture.BaseRect.Bottom / 2),
-                 round(FX+Parent.Texture.BaseRect.Right / 2),
-                 round(FY+Parent.Texture.BaseRect.Bottom / 2));
+  s := GetValue(SizeStart,SizeEnd,LifeTime,FLifedTime);
+  result := Rect(round(FX-(Parent.Texture.BaseRect.Right)*s / 2),
+                 round(FY-(Parent.Texture.BaseRect.Bottom)*s / 2),
+                 round(FX+(Parent.Texture.BaseRect.Right)*s / 2),
+                 round(FY+(Parent.Texture.BaseRect.Bottom*s) / 2));
 end;
 
 function TAdParticle.GetImage: TPictureCollectionItem;
@@ -427,16 +499,25 @@ begin
   end;
 end;
 
+function TAdParticle.GetValue(StartPos, EndPos, Max, Pos: double): double;
+begin
+  result := ((EndPos-StartPos)/Max)* Pos + StartPos;
+end;
+
 procedure TAdParticle.SetupMovement;
-var l:double;
+var alpha,max,min,h : double;
 begin
   with FDir do
   begin
-    X := 180-random(360);
-    Y := 180-random(360);
-    l := Sqrt(Sqr(X)+Sqr(Y));
-    X := X / l*100;
-    Y := Y / l*100;
+    max := (CreationAngle+CreationAngleOpen / 2) * PI / 180;
+    min := (CreationAngle-CreationAngleOpen / 2) * PI / 180;
+    Alpha := Random * (max-min)+min;
+    X := cos(Alpha);
+    Y := sin(Alpha);
+  end;
+  if FLifeTimeVariation <> 0 then
+  begin
+    LifeTime := LifeTime + (random(round(FLifeTime*FLifeTimeVariation))/100)-FLifeTime*(FLifeTimeVariation/200);
   end;
 end;
 

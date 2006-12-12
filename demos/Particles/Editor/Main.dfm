@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Explosion'
-  ClientHeight = 552
+  ClientHeight = 590
   ClientWidth = 838
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -16,13 +16,14 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseMove = FormMouseMove
+  OnPaint = FormPaint
   PixelsPerInch = 96
   TextHeight = 13
   object Panel1: TPanel
     Left = 233
     Top = 0
     Width = 605
-    Height = 552
+    Height = 590
     Align = alClient
     BevelOuter = bvLowered
     BorderWidth = 2
@@ -31,25 +32,32 @@ object Form1: TForm1
     OnMouseDown = Panel1MouseDown
     OnMouseMove = FormMouseMove
     OnResize = Panel1Resize
+    ExplicitHeight = 570
   end
   object Panel2: TPanel
     Left = 0
     Top = 0
     Width = 233
-    Height = 552
+    Height = 590
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 1
+    ExplicitHeight = 570
     object PageControl1: TPageControl
       Left = 0
       Top = 0
       Width = 233
-      Height = 552
+      Height = 590
       ActivePage = TabSheet1
       Align = alClient
       TabOrder = 0
+      ExplicitHeight = 570
       object TabSheet1: TTabSheet
         Caption = 'Basics'
+        ExplicitHeight = 542
+        DesignSize = (
+          225
+          562)
         object GroupBox1: TGroupBox
           Left = 0
           Top = 0
@@ -125,20 +133,12 @@ object Form1: TForm1
           end
           object Button1: TButton
             Left = 3
-            Top = 16
+            Top = 39
             Width = 150
             Height = 25
             Caption = 'Load new image file...'
             TabOrder = 0
             OnClick = Button1Click
-          end
-          object CheckBox1: TCheckBox
-            Left = 3
-            Top = 47
-            Width = 150
-            Height = 17
-            Caption = 'Include image in particle file'
-            TabOrder = 1
           end
           object ListBox1: TListBox
             Left = 3
@@ -147,7 +147,7 @@ object Form1: TForm1
             Height = 109
             Style = lbOwnerDrawVariable
             ItemHeight = 13
-            TabOrder = 2
+            TabOrder = 1
             OnClick = ListBox1Click
             OnDblClick = ListBox1DblClick
             OnDrawItem = ListBox1DrawItem
@@ -159,7 +159,7 @@ object Form1: TForm1
             Width = 72
             Height = 25
             Caption = 'Add color'
-            TabOrder = 3
+            TabOrder = 2
             OnClick = Button2Click
           end
           object Edit2: TEdit
@@ -167,7 +167,7 @@ object Form1: TForm1
             Top = 101
             Width = 55
             Height = 21
-            TabOrder = 4
+            TabOrder = 3
             Text = '255'
           end
           object Edit3: TEdit
@@ -175,7 +175,7 @@ object Form1: TForm1
             Top = 128
             Width = 55
             Height = 21
-            TabOrder = 5
+            TabOrder = 4
             Text = '255'
           end
           object Edit4: TEdit
@@ -183,7 +183,7 @@ object Form1: TForm1
             Top = 155
             Width = 55
             Height = 21
-            TabOrder = 6
+            TabOrder = 5
             Text = '255'
           end
           object Edit5: TEdit
@@ -191,7 +191,7 @@ object Form1: TForm1
             Top = 189
             Width = 55
             Height = 21
-            TabOrder = 7
+            TabOrder = 6
             Text = '255'
           end
           object CheckBox2: TCheckBox
@@ -202,7 +202,7 @@ object Form1: TForm1
             Caption = 'Draw background mask'
             Checked = True
             State = cbChecked
-            TabOrder = 8
+            TabOrder = 7
             OnClick = CheckBox2Click
           end
           object ComboBox1: TComboBox
@@ -213,8 +213,9 @@ object Form1: TForm1
             Style = csDropDownList
             ItemHeight = 13
             ItemIndex = 1
-            TabOrder = 9
+            TabOrder = 8
             Text = 'bmAdd'
+            OnChange = ComboBox1Change
             Items.Strings = (
               'bmAlpha'
               'bmAdd'
@@ -227,7 +228,7 @@ object Form1: TForm1
             Height = 25
             Caption = 'Move up'
             Enabled = False
-            TabOrder = 10
+            TabOrder = 9
             OnClick = Button3Click
           end
           object Button4: TButton
@@ -237,7 +238,7 @@ object Form1: TForm1
             Height = 25
             Caption = 'Move down'
             Enabled = False
-            TabOrder = 11
+            TabOrder = 10
             OnClick = Button4Click
           end
         end
@@ -283,6 +284,7 @@ object Form1: TForm1
             Height = 21
             TabOrder = 0
             Text = '1,00'
+            OnChange = Edit6Change
           end
           object Edit7: TEdit
             Left = 139
@@ -291,16 +293,342 @@ object Form1: TForm1
             Height = 21
             TabOrder = 1
             Text = '0'
+            OnChange = Edit7Change
+          end
+        end
+        object Button5: TButton
+          Left = 0
+          Top = 534
+          Width = 222
+          Height = 25
+          Anchors = [akLeft, akBottom]
+          Caption = 'Reset'
+          TabOrder = 3
+          OnClick = Button5Click
+          ExplicitTop = 514
+        end
+        object GroupBox4: TGroupBox
+          Left = 0
+          Top = 447
+          Width = 222
+          Height = 61
+          Caption = 'Particle creation (only for the editor)'
+          TabOrder = 4
+          object Label10: TLabel
+            Left = 3
+            Top = 16
+            Width = 129
+            Height = 13
+            Caption = 'Createa a particle every...'
+          end
+          object Label11: TLabel
+            Left = 63
+            Top = 42
+            Width = 13
+            Height = 13
+            Caption = 'ms'
+          end
+          object Edit8: TEdit
+            Left = 3
+            Top = 35
+            Width = 54
+            Height = 21
+            TabOrder = 0
+            Text = '1,0'
+            OnChange = Edit8Change
           end
         end
       end
       object TabSheet2: TTabSheet
         Caption = 'Movement'
         ImageIndex = 1
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 534
+        ExplicitHeight = 542
+        object GroupBox5: TGroupBox
+          Left = 0
+          Top = 0
+          Width = 223
+          Height = 161
+          Caption = 'Size, Speed and Rotation'
+          TabOrder = 0
+          object Label16: TLabel
+            Left = 3
+            Top = 41
+            Width = 23
+            Height = 13
+            Caption = 'Size:'
+          end
+          object Label19: TLabel
+            Left = 3
+            Top = 73
+            Width = 45
+            Height = 13
+            Caption = 'Rotation:'
+          end
+          object Label18: TLabel
+            Left = 111
+            Top = 73
+            Width = 5
+            Height = 13
+            Caption = #176
+          end
+          object Label15: TLabel
+            Left = 111
+            Top = 46
+            Width = 22
+            Height = 13
+            Caption = 'in %'
+          end
+          object Label17: TLabel
+            Left = 198
+            Top = 73
+            Width = 5
+            Height = 13
+            Caption = #176
+          end
+          object Label12: TLabel
+            Left = 198
+            Top = 46
+            Width = 22
+            Height = 13
+            Caption = 'in %'
+          end
+          object Label14: TLabel
+            Left = 135
+            Top = 19
+            Width = 51
+            Height = 13
+            Caption = 'End Value:'
+          end
+          object Label13: TLabel
+            Left = 48
+            Top = 19
+            Width = 57
+            Height = 13
+            Caption = 'Start value:'
+          end
+          object Label20: TLabel
+            Left = 198
+            Top = 113
+            Width = 21
+            Height = 13
+            Caption = 'px/s'
+          end
+          object Label21: TLabel
+            Left = 111
+            Top = 113
+            Width = 21
+            Height = 13
+            Caption = 'px/s'
+          end
+          object Label22: TLabel
+            Left = 3
+            Top = 113
+            Width = 43
+            Height = 13
+            Caption = 'Speed X:'
+          end
+          object Label23: TLabel
+            Left = 5
+            Top = 140
+            Width = 43
+            Height = 13
+            Caption = 'Speed Y:'
+          end
+          object Label24: TLabel
+            Left = 111
+            Top = 140
+            Width = 21
+            Height = 13
+            Caption = 'px/s'
+          end
+          object Label25: TLabel
+            Left = 198
+            Top = 135
+            Width = 21
+            Height = 13
+            Caption = 'px/s'
+          end
+          object Edit11: TEdit
+            Left = 54
+            Top = 65
+            Width = 51
+            Height = 21
+            TabOrder = 0
+            OnChange = Edit11Change
+          end
+          object Edit9: TEdit
+            Left = 54
+            Top = 38
+            Width = 51
+            Height = 21
+            TabOrder = 1
+            OnChange = Edit9Change
+          end
+          object Edit10: TEdit
+            Left = 139
+            Top = 38
+            Width = 53
+            Height = 21
+            TabOrder = 2
+            OnChange = Edit9Change
+          end
+          object Edit12: TEdit
+            Left = 139
+            Top = 65
+            Width = 53
+            Height = 21
+            TabOrder = 3
+            OnChange = Edit11Change
+          end
+          object Edit13: TEdit
+            Left = 54
+            Top = 105
+            Width = 51
+            Height = 21
+            TabOrder = 4
+            OnChange = Edit13Change
+          end
+          object Edit14: TEdit
+            Left = 139
+            Top = 105
+            Width = 53
+            Height = 21
+            TabOrder = 5
+            OnChange = Edit13Change
+          end
+          object Edit15: TEdit
+            Left = 54
+            Top = 132
+            Width = 51
+            Height = 21
+            TabOrder = 6
+            OnChange = Edit13Change
+          end
+          object Edit16: TEdit
+            Left = 139
+            Top = 132
+            Width = 53
+            Height = 21
+            TabOrder = 7
+            OnChange = Edit13Change
+          end
+        end
+        object GroupBox6: TGroupBox
+          Left = 1
+          Top = 167
+          Width = 222
+          Height = 298
+          Caption = 'Forces and creation angle'
+          TabOrder = 1
+          object Label26: TLabel
+            Left = 109
+            Top = 104
+            Width = 56
+            Height = 13
+            Caption = 'Open: 360'#176
+          end
+          object Label27: TLabel
+            Left = 109
+            Top = 61
+            Width = 45
+            Height = 13
+            Caption = 'Angle: 0'#176
+          end
+          object Label28: TLabel
+            Left = 3
+            Top = 21
+            Width = 74
+            Height = 13
+            Caption = 'Creation angle:'
+          end
+          object Label29: TLabel
+            Left = 3
+            Top = 157
+            Width = 31
+            Height = 13
+            Caption = 'Force:'
+          end
+          object Label30: TLabel
+            Left = 3
+            Top = 176
+            Width = 31
+            Height = 13
+            Caption = 'Angle:'
+          end
+          object Label31: TLabel
+            Left = 159
+            Top = 218
+            Width = 43
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = '0'#176
+          end
+          object Label32: TLabel
+            Left = 24
+            Top = 274
+            Width = 178
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = '0 px/s'
+          end
+          object Label33: TLabel
+            Left = 3
+            Top = 232
+            Width = 34
+            Height = 13
+            Caption = 'Power:'
+          end
+          object PaintBox1: TPaintBox
+            Left = 3
+            Top = 40
+            Width = 100
+            Height = 100
+          end
+          object ScrollBar1: TScrollBar
+            Left = 109
+            Top = 123
+            Width = 110
+            Height = 17
+            Max = 360
+            Min = 2
+            PageSize = 0
+            Position = 359
+            TabOrder = 0
+            OnChange = ScrollBar2Change
+          end
+          object ScrollBar2: TScrollBar
+            Left = 109
+            Top = 80
+            Width = 110
+            Height = 17
+            Max = 359
+            PageSize = 0
+            TabOrder = 1
+            OnChange = ScrollBar2Change
+          end
+          object ScrollBar3: TScrollBar
+            Left = 16
+            Top = 195
+            Width = 186
+            Height = 17
+            Max = 360
+            PageSize = 0
+            TabOrder = 2
+            OnChange = ScrollBar3Change
+          end
+          object ScrollBar4: TScrollBar
+            Left = 16
+            Top = 251
+            Width = 186
+            Height = 17
+            Max = 500
+            PageSize = 0
+            TabOrder = 3
+            OnChange = ScrollBar3Change
+          end
+        end
       end
     end
   end
@@ -314,45 +642,20 @@ object Form1: TForm1
     Top = 16
     object Datei1: TMenuItem
       Caption = 'File'
-      object PartikelLaden1: TMenuItem
-        Caption = 'Load particles...'
-      end
-      object N1: TMenuItem
-        Caption = '-'
-      end
-      object Saveparticles1: TMenuItem
-        Caption = 'Save particles'
-      end
-      object Saveparticlesas1: TMenuItem
-        Caption = 'Save particles as...'
-      end
-      object N2: TMenuItem
-        Caption = '-'
-      end
       object Close1: TMenuItem
         Caption = 'Close'
+        OnClick = Close1Click
       end
     end
     object Images1: TMenuItem
       Caption = 'Images'
       object Loadnewimagefile1: TMenuItem
         Caption = 'Load new image file...'
-      end
-      object N3: TMenuItem
-        Caption = '-'
-      end
-      object Includeimageinparticlefile1: TMenuItem
-        Caption = 'Include image in particle file'
+        OnClick = Button1Click
       end
     end
     object Environment1: TMenuItem
       Caption = 'Environment'
-      object Addparticlesystem1: TMenuItem
-        Caption = 'Add particle system'
-      end
-      object N4: TMenuItem
-        Caption = '-'
-      end
       object Backgroundcolor1: TMenuItem
         Caption = 'Background color...'
         OnClick = Backgroundcolor1Click
