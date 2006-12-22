@@ -1,8 +1,8 @@
 object Form1: TForm1
   Left = 0
   Top = 0
-  Caption = 'Explosion'
-  ClientHeight = 590
+  Caption = 'Particle Editor'
+  ClientHeight = 608
   ClientWidth = 838
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -23,7 +23,7 @@ object Form1: TForm1
     Left = 233
     Top = 0
     Width = 605
-    Height = 590
+    Height = 589
     Align = alClient
     BevelOuter = bvLowered
     BorderWidth = 2
@@ -32,48 +32,44 @@ object Form1: TForm1
     OnMouseDown = Panel1MouseDown
     OnMouseMove = FormMouseMove
     OnResize = Panel1Resize
-    ExplicitHeight = 570
   end
   object Panel2: TPanel
     Left = 0
     Top = 0
     Width = 233
-    Height = 590
+    Height = 589
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitHeight = 570
     object PageControl1: TPageControl
       Left = 0
       Top = 0
       Width = 233
-      Height = 590
+      Height = 589
       ActivePage = TabSheet1
       Align = alClient
       TabOrder = 0
-      ExplicitHeight = 570
       object TabSheet1: TTabSheet
         Caption = 'Basics'
-        ExplicitHeight = 542
         DesignSize = (
           225
-          562)
+          561)
         object GroupBox1: TGroupBox
           Left = 0
           Top = 0
-          Width = 222
+          Width = 153
           Height = 49
           Caption = 'Name'
           TabOrder = 0
           object Edit1: TEdit
             Left = 3
             Top = 16
-            Width = 216
+            Width = 147
             Height = 21
             ParentShowHint = False
             ShowHint = False
             TabOrder = 0
-            Text = 'My Particle'
+            OnChange = Edit1Change
           end
         end
         object GroupBox2: TGroupBox
@@ -130,6 +126,16 @@ object Form1: TForm1
             Width = 92
             Height = 13
             Caption = 'Image blend mode:'
+          end
+          object Label37: TLabel
+            Left = 3
+            Top = 13
+            Width = 151
+            Height = 31
+            AutoSize = False
+            Caption = 'Note: The Image is not included in the saved file.'
+            Transparent = True
+            WordWrap = True
           end
           object Button1: TButton
             Left = 3
@@ -297,57 +303,88 @@ object Form1: TForm1
           end
         end
         object Button5: TButton
-          Left = 0
-          Top = 534
-          Width = 222
+          Left = 165
+          Top = 14
+          Width = 57
           Height = 25
           Anchors = [akLeft, akBottom]
           Caption = 'Reset'
           TabOrder = 3
           OnClick = Button5Click
-          ExplicitTop = 514
         end
         object GroupBox4: TGroupBox
           Left = 0
           Top = 447
-          Width = 222
-          Height = 61
+          Width = 223
+          Height = 112
           Caption = 'Particle creation (only for the editor)'
           TabOrder = 4
-          object Label10: TLabel
-            Left = 3
-            Top = 16
-            Width = 129
-            Height = 13
-            Caption = 'Createa a particle every...'
-          end
           object Label11: TLabel
-            Left = 63
-            Top = 42
+            Left = 71
+            Top = 46
             Width = 13
             Height = 13
             Caption = 'ms'
           end
+          object Label10: TLabel
+            Left = 71
+            Top = 96
+            Width = 40
+            Height = 13
+            Caption = 'Particles'
+          end
           object Edit8: TEdit
-            Left = 3
-            Top = 35
+            Left = 11
+            Top = 38
             Width = 54
             Height = 21
             TabOrder = 0
             Text = '1,0'
             OnChange = Edit8Change
           end
+          object RadioButton1: TRadioButton
+            Left = 3
+            Top = 19
+            Width = 166
+            Height = 17
+            Caption = 'Create a particle every...'
+            Checked = True
+            TabOrder = 1
+            TabStop = True
+            OnClick = Edit8Change
+          end
+          object Edit17: TEdit
+            Left = 11
+            Top = 88
+            Width = 54
+            Height = 21
+            TabOrder = 2
+            Text = '200'
+            OnChange = Edit17Change
+          end
+          object RadioButton2: TRadioButton
+            Left = 3
+            Top = 65
+            Width = 212
+            Height = 17
+            Caption = 'If there are no particles, create'
+            TabOrder = 3
+            OnClick = Edit17Change
+          end
         end
       end
       object TabSheet2: TTabSheet
         Caption = 'Movement'
         ImageIndex = 1
-        ExplicitHeight = 542
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object GroupBox5: TGroupBox
           Left = 0
           Top = 0
           Width = 223
-          Height = 161
+          Height = 209
           Caption = 'Size, Speed and Rotation'
           TabOrder = 0
           object Label16: TLabel
@@ -374,9 +411,9 @@ object Form1: TForm1
           object Label15: TLabel
             Left = 111
             Top = 46
-            Width = 22
+            Width = 27
             Height = 13
-            Caption = 'in %'
+            Caption = 'in x/1'
           end
           object Label17: TLabel
             Left = 198
@@ -386,11 +423,12 @@ object Form1: TForm1
             Caption = #176
           end
           object Label12: TLabel
-            Left = 198
+            Left = 196
             Top = 46
-            Width = 22
+            Width = 27
             Height = 13
-            Caption = 'in %'
+            Caption = 'in x/1'
+            Transparent = True
           end
           object Label14: TLabel
             Left = 135
@@ -428,8 +466,8 @@ object Form1: TForm1
             Caption = 'Speed X:'
           end
           object Label23: TLabel
-            Left = 5
-            Top = 140
+            Left = 3
+            Top = 132
             Width = 43
             Height = 13
             Caption = 'Speed Y:'
@@ -447,6 +485,27 @@ object Form1: TForm1
             Width = 21
             Height = 13
             Caption = 'px/s'
+          end
+          object Label34: TLabel
+            Left = 3
+            Top = 159
+            Width = 79
+            Height = 13
+            Caption = 'Speed variation:'
+          end
+          object Label35: TLabel
+            Left = 111
+            Top = 186
+            Width = 11
+            Height = 13
+            Caption = '%'
+          end
+          object Label36: TLabel
+            Left = 3
+            Top = 186
+            Width = 28
+            Height = 13
+            Caption = 'max.:'
           end
           object Edit11: TEdit
             Left = 54
@@ -512,10 +571,19 @@ object Form1: TForm1
             TabOrder = 7
             OnChange = Edit13Change
           end
+          object Edit18: TEdit
+            Left = 54
+            Top = 178
+            Width = 51
+            Height = 21
+            TabOrder = 8
+            Text = '0'
+            OnChange = Edit18Change
+          end
         end
         object GroupBox6: TGroupBox
-          Left = 1
-          Top = 167
+          Left = 0
+          Top = 215
           Width = 222
           Height = 298
           Caption = 'Forces and creation angle'
@@ -629,8 +697,25 @@ object Form1: TForm1
             OnChange = ScrollBar3Change
           end
         end
+        object Button6: TButton
+          Left = 136
+          Top = 528
+          Width = 75
+          Height = 25
+          Caption = 'Button6'
+          TabOrder = 2
+          OnClick = Button6Click
+        end
       end
     end
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 589
+    Width = 838
+    Height = 19
+    Panels = <>
+    SimplePanel = True
   end
   object Timer1: TTimer
     Interval = 1
@@ -642,6 +727,26 @@ object Form1: TForm1
     Top = 16
     object Datei1: TMenuItem
       Caption = 'File'
+      object Save1: TMenuItem
+        Caption = 'Save'
+        Enabled = False
+        ShortCut = 16467
+        OnClick = Save1Click
+      end
+      object Saveas1: TMenuItem
+        Caption = 'Save as...'
+        OnClick = Saveas1Click
+      end
+      object N2: TMenuItem
+        Caption = '-'
+      end
+      object LoadFile1: TMenuItem
+        Caption = 'Load file...'
+        OnClick = LoadFile1Click
+      end
+      object N1: TMenuItem
+        Caption = '-'
+      end
       object Close1: TMenuItem
         Caption = 'Close'
         OnClick = Close1Click
@@ -675,5 +780,17 @@ object Form1: TForm1
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 368
     Top = 16
+  end
+  object SaveDialog1: TSaveDialog
+    Filter = 'Andorra Particle File (*.apf)|*.apf'
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
+    Left = 240
+    Top = 48
+  end
+  object OpenDialog1: TOpenDialog
+    Filter = 'Andorra Particle File (*.apf)|*.apf|All Files (*.*)|*.*'
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
+    Left = 272
+    Top = 48
   end
 end

@@ -119,6 +119,8 @@ procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdca
 function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
 procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);stdcall;
 function CheckTextureMem(Appl:TAndorraApplication):integer;stdcall;
+procedure GetTextureAsBitmap(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
+procedure GetTextureAlphaChannelAsBitmap(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 
 //Lights
 function CreateLight(Appl:TAndorraApplication):TAndorraLight;stdcall;
@@ -1207,6 +1209,125 @@ begin
     end;
   end;
 end;
+
+procedure GetTextureAsBitmap(ATexture:TAndorraTexture;ABitmap:Pointer);
+var d3dlr: TD3DLocked_Rect;
+    Cursor32: pLongWord;
+    Cursor16: pWord;
+    BitCur: PRGBRec;
+    x,y:integer;
+begin
+  //Set Result to nil
+  with TAndorraTextureItem(ATexture) do
+  begin
+    with TBitmap(ABitmap) do
+    begin
+      with TAndorraApplicationItem(AAppl) do
+      begin
+        ATextureImg.LockRect(0, d3dlr, nil, 0);
+
+        PixelFormat := pf24Bit;
+        Width := ATexWidth;
+        Height := ATexHeight;
+
+        if AFormat = D3DFMT_A8R8G8B8 then
+        begin
+          Cursor32 := d3dlr.pBits;
+          for y := 0 to ATexHeight-1 do
+          begin
+            BitCur := Scanline[y];
+            for x := 0 to ATexWidth-1 do
+            begin
+              BitCur^.b := Cursor32^ shr 16;
+              BitCur^.g := Cursor32^ shr 8;
+              BitCur^.r := Cursor32^;
+              inc(BitCur);
+              inc(Cursor32);
+            end;
+          end;
+        end;
+
+        if AFormat = D3DFMT_A4R4G4B4 then
+        begin
+          Cursor16 := d3dlr.pBits;
+          for y := 0 to ATexHeight-1 do
+          begin
+            BitCur := Scanline[y];
+            for x := 0 to ATexWidth-1 do
+            begin
+              BitCur.r := ($000F and (Cursor16^ shr 8))*16;
+              BitCur.g := ($000F and (Cursor16^ shr 4))*16;
+              BitCur.b := ($000F and Cursor16^)*16;
+              inc(BitCur);
+              inc(Cursor16);
+            end;
+          end;
+        end;
+      end;
+      ATextureImg.UnlockRect(0);
+    end;
+  end;
+end;
+
+procedure GetTextureAlphaChannelAsBitmap(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
+var d3dlr: TD3DLocked_Rect;
+    Cursor32: pLongWord;
+    Cursor16: pWord;
+    BitCur: PRGBRec;
+    x,y:integer;
+begin
+  //Set Result to nil
+  with TAndorraTextureItem(ATexture) do
+  begin
+    with TBitmap(ABitmap) do
+    begin
+      with TAndorraApplicationItem(AAppl) do
+      begin
+        ATextureImg.LockRect(0, d3dlr, nil, 0);
+
+        PixelFormat := pf24Bit;
+        Width := ATexWidth;
+        Height := ATexHeight;
+
+        if AFormat = D3DFMT_A8R8G8B8 then
+        begin
+          Cursor32 := d3dlr.pBits;
+          for y := 0 to ATexHeight-1 do
+          begin
+            BitCur := Scanline[y];
+            for x := 0 to ATexWidth-1 do
+            begin
+              BitCur^.b := Cursor32^ shr 24;
+              BitCur^.g := Cursor32^ shr 24;
+              BitCur^.r := Cursor32^ shr 24;
+              inc(BitCur);
+              inc(Cursor32);
+            end;
+          end;
+        end;
+
+        if AFormat = D3DFMT_A4R4G4B4 then
+        begin
+          Cursor16 := d3dlr.pBits;
+          for y := 0 to ATexHeight-1 do
+          begin
+            BitCur := Scanline[y];
+            for x := 0 to ATexWidth-1 do
+            begin
+              BitCur.r := ($000F and (Cursor16^ shr 12))*16;
+              BitCur.g := ($000F and (Cursor16^ shr 12))*16;
+              BitCur.b := ($000F and (Cursor16^ shr 12))*16;
+              inc(BitCur);
+              inc(Cursor16);
+            end;
+          end;
+        end;
+      end;
+      ATextureImg.UnlockRect(0);
+    end;
+  end;
+end;
+
 
 procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);
 var d3dlr: TD3DLocked_Rect;

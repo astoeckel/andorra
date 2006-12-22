@@ -43,6 +43,8 @@ exports
   SetTextureAlpha,
   SetTextureXMode,
   SetTextureYMode,
+  GetTextureAsBitmap,
+  GetTextureAlphaChannelAsBitmap,
   SetOptions,
   SetAmbientLight,
   CreateLight,

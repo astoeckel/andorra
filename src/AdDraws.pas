@@ -190,6 +190,10 @@ type
       procedure AddAlphaChannel(ABitmap:TBitmap);
       {Overide the alpha channel. 255 to make the texture completly opac.}
       procedure SetAlphaValue(AValue:byte);
+      {Writes the current texture into a bitmap.}
+      procedure SaveToBitmap(ABitmap:TBitmap);
+      {Writes the current texture into a bitmap.}
+      procedure SaveAlphaChannelToBitmap(ABitmap:TBitmap);
       {Flush the texture.}
       procedure FreeTexture;
 
@@ -211,14 +215,13 @@ type
     private
      	function GetItem(AIndex:integer):TRect;
      	procedure SetItem(AIndex:integer;AItem:TRect);
-      protected
+    protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
       {Read/Write acess to the rectangles.}
      	property Items[AIndex:integer]:TRect read GetItem write SetItem;default;
       {Add a rectangle.}
       procedure Add(ARect:TRect);
-      {Clear the list and all used memory.}
-      procedure Clear;override;
     published
   end;
 
@@ -353,13 +356,18 @@ type
     published
   end;
 
+  //Class for calculating the FPS
   TPerformanceCounter = class
     private
       lt,th,ffps:integer;
     public
+      //Time between the frames in ms
       TimeGap:integer;
+      //The current FPS
       FPS:integer;
+      //Calculates the new values
       procedure Calculate;
+      //Creates a new instance of the performance counter
       constructor Create;
   end;
 
@@ -660,6 +668,22 @@ begin
   end;
 end;
 
+procedure TAdTexture.SaveAlphaChannelToBitmap(ABitmap: TBitmap);
+begin
+  if AdTexture <> nil then
+  begin
+    FParent.AdDllLoader.GetTextureAlphaChannelAsBitmap(AdTexture,ABitmap);
+  end;
+end;
+
+procedure TAdTexture.SaveToBitmap(ABitmap: TBitmap);
+begin
+  if AdTexture <> nil then
+  begin
+    FParent.AdDllLoader.GetTextureAsBitmap(AdTexture,ABitmap);
+  end;
+end;
+
 procedure TAdTexture.SetAlphaValue(AValue:byte);
 begin
   if AdTexture <> nil then
@@ -691,18 +715,18 @@ begin
   inherited Add(ar);
 end;
 
-procedure TRectList.Clear;
-begin
-  while Count > 0 do
-  begin
-    Dispose(inherited Items[0]);
-    Delete(0);
-  end;
-end;
-
 function TRectList.GetItem(AIndex:integer):TRect;
 begin
   result := PRect(inherited Items[AIndex])^;
+end;
+
+procedure TRectList.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  if Action = lnDeleted then
+  begin
+    Dispose(Ptr);
+  end;
+  inherited;
 end;
 
 procedure TRectList.SetItem(AIndex:integer;AItem:TRect);

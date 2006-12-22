@@ -16,7 +16,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdParticles, AndorraUtils, ExtCtrls, StdCtrls, Menus, XPMan,
-  ComCtrls, ExtDlgs;
+  ComCtrls, ExtDlgs, Math;
 
 type
   TForm1 = class(TForm)
@@ -66,7 +66,6 @@ type
     Label9: TLabel;
     Button5: TButton;
     GroupBox4: TGroupBox;
-    Label10: TLabel;
     Edit8: TEdit;
     Label11: TLabel;
     GroupBox5: TGroupBox;
@@ -106,6 +105,24 @@ type
     ScrollBar4: TScrollBar;
     Label33: TLabel;
     PaintBox1: TPaintBox;
+    RadioButton1: TRadioButton;
+    Label10: TLabel;
+    Edit17: TEdit;
+    RadioButton2: TRadioButton;
+    Label34: TLabel;
+    Edit18: TEdit;
+    Label35: TLabel;
+    Label36: TLabel;
+    N1: TMenuItem;
+    LoadFile1: TMenuItem;
+    N2: TMenuItem;
+    Save1: TMenuItem;
+    Saveas1: TMenuItem;
+    SaveDialog1: TSaveDialog;
+    OpenDialog1: TOpenDialog;
+    StatusBar1: TStatusBar;
+    Label37: TLabel;
+    Button6: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -136,6 +153,13 @@ type
     procedure ScrollBar3Change(Sender: TObject);
     procedure ComboBox1Change(Sender: TObject);
     procedure Close1Click(Sender: TObject);
+    procedure Edit17Change(Sender: TObject);
+    procedure Edit18Change(Sender: TObject);
+    procedure Edit1Change(Sender: TObject);
+    procedure Saveas1Click(Sender: TObject);
+    procedure Save1Click(Sender: TObject);
+    procedure LoadFile1Click(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -147,9 +171,12 @@ type
     PartSys:TAdParticleSystem;
 
     pc,pc2:double;
+    interval:boolean;
 
     mx,my:integer;
     BackgroundColor:TColor;
+
+    CurrentFileName:string;
     procedure ApplicationIdle(Sender:TObject; var Done:boolean);
     procedure Render;
     procedure DrawColorPreview;
@@ -205,6 +232,7 @@ begin
     AdImg1.Texture.AddAlphaChannel(bmp);
     AdImg1.Color := clWhite;
     AdImg1.Restore;
+    PartSys.Texture.Free;
     PartSys.Texture := AdImg1.Texture;
     Image2.Picture.Bitmap.Assign(bmp);
     bmp.Free;
@@ -252,6 +280,11 @@ begin
   PartSys.Items.Clear;
 end;
 
+procedure TForm1.Button6Click(Sender: TObject);
+begin
+  UpdateControls;
+end;
+
 procedure TForm1.CheckBox2Click(Sender: TObject);
 begin
   PartSys.DefaultParticle.DrawMask := CheckBox2.Checked;
@@ -278,9 +311,11 @@ begin
   abmp := TBitmap.Create;
   abmp.Width := 100;
   abmp.Height := 100;
+  abmp.Transparent := true;
+  abmp.TransparentColor := clWhite;
   with abmp.Canvas do
   begin
-    Brush.Color := ColorToRgb(clWhite);
+    Brush.Color := clWhite;
     Pen.Color := Brush.Color;
     Rectangle(0,0,100,100);
     Pen.Color := clBlack;
@@ -368,6 +403,23 @@ begin
   PartSys.DefaultParticle.SpeedYEnd := StrToFloatDef(Edit16.Text,100);
 end;
 
+procedure TForm1.Edit17Change(Sender: TObject);
+begin
+  RadioButton2.Checked := true;
+  pc := StrToIntDef(Edit17.Text,100);
+  interval := false;
+end;
+
+procedure TForm1.Edit18Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.SpeedVariation := StrToIntDef(Edit18.Text,0);
+end;
+
+procedure TForm1.Edit1Change(Sender: TObject);
+begin
+  PartSys.DefaultParticle.Name:= Edit1.Text;
+end;
+
 procedure TForm1.Edit6Change(Sender: TObject);
 begin
   PartSys.DefaultParticle.LifeTime := StrToFloatDef(Edit6.Text,1);
@@ -380,8 +432,10 @@ end;
 
 procedure TForm1.Edit8Change(Sender: TObject);
 begin
+  RadioButton1.Checked := true;
   pc := StrToFloatDef(Edit8.Text,1);
   if pc < 0.1 then pc := 0.1;
+  interval := true;
 end;
 
 procedure TForm1.Edit9Change(Sender: TObject);
@@ -394,8 +448,6 @@ procedure TForm1.FormCreate(Sender: TObject);
 var bmp:TBitmap;
     i:integer;
 begin
-  TabSheet2.DoubleBuffered := true;
-
   Randomize;
 
   //Initialize Andorra 2D
@@ -447,8 +499,10 @@ begin
   mx := Panel1.Width div 2;
   my := Panel1.Height div 2;
   BackgroundColor := ColorToRGB(clBtnFace);
+
   pc := 1;
   pc2 := 0;
+  interval := true;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -524,6 +578,18 @@ begin
   end;
 end;
 
+procedure TForm1.LoadFile1Click(Sender: TObject);
+begin
+  if OpenDialog1.Execute then
+  begin
+    PartSys.DefaultParticle.LoadFromFile(OpenDialog1.FileName);
+    CurrentFileName := ChangeFileExt(OpenDialog1.FileName,'.apf');
+    Save1.Enabled := true;
+    Caption := 'Particle Editor ['+CurrentFileName+']';
+    UpdateControls;
+  end;
+end;
+
 procedure TForm1.Panel1MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
@@ -545,28 +611,59 @@ end;
 procedure TForm1.Render;
 begin
   PerCount.Calculate;
-  Caption := 'FPS: '+inttostr(PerCount.FPS)+' Particle Count: '+inttostr(PartSys.Items.Count);
+  StatusBar1.SimpleText := 'FPS: '+inttostr(PerCount.FPS)+' Particle Count: '+inttostr(PartSys.Items.Count);
 
   AdDraw1.BeginScene;
   AdDraw1.ClearSurface(BackgroundColor);
-  if PerCount.TimeGap < pc then
+
+  if interval then
   begin
-    pc2 := pc2 + PerCount.TimeGap / pc;
+    if PerCount.TimeGap < pc then
+    begin
+      pc2 := pc2 + PerCount.TimeGap / pc;
+    end
+    else
+    begin
+      pc2 := PerCount.TimeGap / pc;
+    end;
+    if pc2 >= 1 then
+    begin
+      PartSys.CreateParticles(round(pc2),TAdParticle,mx,my);
+      pc2 := 0;
+    end;
   end
   else
   begin
-    pc2 := PerCount.TimeGap / pc;
+    if PartSys.Items.Count = 0 then
+    begin
+      PartSys.CreateParticles(round(pc),TAdParticle,mx,my);
+    end;    
   end;
-  if pc2 >= 1 then
-  begin
-    PartSys.CreateParticles(round(pc2),TAdParticle,mx,my);
-    pc2 := 0;
-  end;
+
   PartSys.Move(PerCount.TimeGap/1000);
   PartSys.Draw(0,0);
   PartSys.Dead;
   AdDraw1.EndScene;
   AdDraw1.Flip;
+end;
+
+procedure TForm1.Save1Click(Sender: TObject);
+begin
+  if CurrentFileName <> '' then
+  begin
+    PartSys.DefaultParticle.SaveToFile(CurrentFileName);
+  end;
+end;
+
+procedure TForm1.Saveas1Click(Sender: TObject);
+begin
+  if SaveDialog1.Execute then
+  begin
+    PartSys.DefaultParticle.SaveToFile(ChangeFileExt(SaveDialog1.FileName,'.apf'));
+    CurrentFileName := ChangeFileExt(SaveDialog1.FileName,'.apf');
+    Save1.Enabled := true;
+    Caption := 'Particle Editor ['+CurrentFileName+']';
+  end;
 end;
 
 procedure TForm1.ScrollBar2Change(Sender: TObject);
@@ -594,6 +691,8 @@ end;
 
 procedure TForm1.UpdateControls;
 var i:integer;
+    nx,ny,l:double;
+    w:integer;
 begin
   with PartSys.DefaultParticle do
   begin
@@ -608,6 +707,7 @@ begin
     DrawColorPreview;
     ListBox1.Repaint;
     CheckBox2.Checked := DrawMask;
+    Edit1.Text := Name;
     Edit6.Text := FormatFloat('0.00',LifeTime);
     Edit7.Text := Inttostr(LifeTimeVariation);
     Edit9.Text := FormatFloat('0.00',SizeStart);
@@ -618,7 +718,26 @@ begin
     Edit14.Text := FormatFloat('0',SpeedXEnd);
     Edit15.Text := FormatFloat('0',SpeedYStart);
     Edit16.Text := FormatFloat('0',SpeedYEnd);
+    Edit18.Text := Inttostr(SpeedVariation);
+    ScrollBar2.Position := CreationAngle;
+    ScrollBar1.Position := CreationAngleOpen;
 
+    l := sqrt(sqr(Force.X)+sqr(Force.Y));
+    if l > 0 then
+    begin
+      nx := Force.X;
+      ny := Force.Y;
+      w := round(radtodeg(arccos(nx/l)));
+      if w < 0 then w := 360 + w;
+      if w > 360 then w := 360 - w;
+           
+      Scrollbar3.Position := w;
+    end
+    else
+    begin
+      ScrollBar3.Position := 0;
+    end;
+    ScrollBar4.Position := round(l);
     DrawAnglePreview;
   end;
 end;

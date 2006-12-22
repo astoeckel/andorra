@@ -19,21 +19,28 @@ uses SysUtils, Types, Classes,AdDraws,AndorraUtils;
 
 type
 
+  //The main particle class
   TAdParticle = class;
 
+  //A list managing the particles. Deleted Particles are automaticly freed.
   TAdParticleList = class(TList)
     private
     	function GetItem(AIndex:integer):TAdParticle;
      	procedure SetItem(AIndex:integer;AItem:TAdParticle);
     protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
+      //The "items" property of a list.
   	  property Items[AIndex:integer]:TAdParticle read GetItem write SetItem;default;
   end;
 
+  //A Vector
   TAdVector = record
-    X,Y:double;
+    X:double;//The X value
+    Y:double;//The Y value
   end;
 
+  //A list containing TAndorraColors and returning
   TAdColorList = class(TList)
     private
     	function GetItem(AIndex:integer):TAndorraColor;
@@ -41,14 +48,22 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
+      //The "items" property of a list
     	property Items[AIndex:integer]:TAndorraColor read GetItem write SetItem;default;
+      //Returns a mixed color value
       function GetColor(Max,Pos:double):TAndorraColor;
+      //Add a color
       procedure Add(AColor:TAndorraColor);
-    published
+      //Save the color list to the stream
+      procedure SaveToStream(AStream:TStream);
+      //Load the color list from a stream
+      procedure LoadFromStream(AStream:TStream);
   end;
 
+  //A class of a particle
   TAdParticleClass = class of TAdParticle;
 
+  //Manages all particles.
   TAdParticleSystem = class
     private
       FTexture:TAdTexture;
@@ -60,10 +75,15 @@ type
       function GetBoundsRect:TRect;
     protected
     public
+      //Creates the particle system
       constructor Create(ADraw:TAdDraw);
+      //Destroys the particle system
       destructor Destroy;override;
+      //Creates an amount of particles of the specified particle class. The new particles get the settings stored in the "Default" particle.
       procedure CreateParticles(ACount:integer;AClass:TAdParticleClass;OffsetX,OffsetY:integer);virtual;
+      //Draws the system at a specified position
       procedure Draw(X,Y:double);
+
       procedure Move(TimeGap:double);
       procedure Dead;
       procedure CreateImage(AColor:TAndorraColor);
@@ -84,6 +104,7 @@ type
       FLifeTime:double;
       FLifedTime:double;
       FLifeTimeVariation:integer;
+      FSpeedVariation:integer;
       FColors:TAdColorList;
       FDeaded:boolean;
       FSystem:TAdParticleSystem;
@@ -96,6 +117,8 @@ type
       FSpeedYStart,FSpeedYEnd:double;
       FCrAngle, FCrAngleOpen:integer;
       FBlendMode:TAndorraBlendMode;
+      FSpeedVar:double;
+      FName:ShortString;
       function GetBoundsRect:TRect;
       function GetValue(StartPos,EndPos,Max,Pos:double):double;
     protected
@@ -109,6 +132,10 @@ type
       procedure Dead;virtual;
       procedure Assign(AParticle:TAdParticle);
       procedure SetupMovement;
+      procedure SaveToStream(AStream:TStream);
+      procedure LoadFromStream(AStream:TStream);
+      procedure SaveToFile(AFile:string);
+      procedure LoadFromFile(AFile:string);
       property DrawMask:boolean read FDrawMask write FDrawMask;
       property Image:TPictureCollectionItem read GetImage;
       property Parent:TAdParticleSystem read FSystem;
@@ -126,10 +153,12 @@ type
       property SpeedYStart:double read FSpeedYStart write FSpeedYStart;
       property SpeedXEnd:double read FSpeedXEnd write FSpeedXEnd;
       property SpeedYEnd:double read FSpeedYEnd write FSpeedYEnd;
+      property SpeedVariation:integer read FSpeedVariation write FSpeedVariation;
       property CreationAngle:integer read FCrAngle write FCrAngle;
       property CreationAngleOpen:integer read FCrAngleOpen write FCrAngleOpen;
       property Force:TAdVector read FForce write FForce;
       property BlendMode:TAndorraBlendMode read FBlendMode write FBlendmode;
+      property Name:ShortString read FName write FName;
   end;
 
 implementation
@@ -139,6 +168,15 @@ implementation
 function TAdParticleList.GetItem(AIndex:integer):TAdParticle;
 begin
   result := inherited Items[AIndex];
+end;
+
+procedure TAdParticleList.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  if ( Action = lnDeleted ) then
+  begin
+    TAdParticle(Ptr).Free;
+  end;
+  Inherited;
 end;
 
 procedure TAdParticleList.SetItem(AIndex:integer;AItem:TAdParticle);
@@ -209,12 +247,40 @@ begin
   result := TAndorraColor(inherited Items[AIndex]^);
 end;
 
+procedure TAdColorList.LoadFromStream(AStream: TStream);
+var c,i:integer;
+    tmp:TAndorraColor;
+begin
+  Clear;
+  AStream.Read(c,sizeof(c));
+  for i := 0 to c-1 do
+  begin
+    AStream.Read(tmp,SizeOf(tmp));
+    Add(tmp);
+  end;
+end;
+
+procedure TAdColorList.SaveToStream(AStream: TStream);
+var i:integer;
+    tmp:TAndorraColor;
+begin
+  i := Count;
+  AStream.Write(i,sizeof(i));
+  for i := 0 to Count - 1 do
+  begin
+    tmp := Items[i];
+    AStream.Write(tmp,SizeOf(TAndorraColor))
+  end;
+end;
+
 procedure TAdColorList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
-  If ( Action = lnDeleted ) Then
+  if ( Action = lnDeleted ) then
+  begin
     Dispose(PAndorraColor(Ptr));
-  Inherited; 
-end;
+  end;
+  Inherited;
+end;        
 
 procedure TAdColorList.SetItem(AIndex:integer;AItem:TAndorraColor);
 begin
@@ -340,31 +406,6 @@ end;
 
 { TAdParticle }
 
-procedure TAdParticle.Assign(AParticle: TAdParticle);
-var i:integer;
-begin
-  FColors.Clear;
-  for i := 0 to AParticle.Colors.Count - 1 do
-  begin
-    FColors.Add(AParticle.Colors[i]);
-  end;
-  FLifeTime := AParticle.LifeTime;
-  FLifeTimeVariation := AParticle.LifeTimeVariation;
-  FDrawMask := AParticle.DrawMask;
-  FSizeStart := AParticle.SizeStart;
-  FSizeEnd := AParticle.SizeEnd;
-  FRotStart := AParticle.RotStart;
-  FRotEnd := AParticle.RotEnd;
-  FSpeedXStart := AParticle.SpeedXStart;
-  FSpeedYStart := AParticle.SpeedYStart;
-  FSpeedXEnd := AParticle.SpeedXEnd;
-  FSpeedYEnd := AParticle.SpeedYEnd;
-  FCrAngle := AParticle.CreationAngle;
-  FCrAngleOpen := AParticle.CreationAngleOpen;
-  FForce := AParticle.Force;
-  FBlendmode := AParticle.BlendMode;
-end;
-
 constructor TAdParticle.Create(ASystem: TAdParticleSystem);
 begin
   inherited Create;
@@ -390,15 +431,25 @@ begin
   FBlendMode := bmAdd;
 end;
 
-procedure TAdParticle.Dead;
-begin
-  FDeaded := true;
-end;
-
 destructor TAdParticle.Destroy;
 begin
   FColors.Free;
   inherited;
+end;
+
+procedure TAdParticle.Assign(AParticle: TAdParticle);
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  AParticle.SaveToStream(ms);
+  ms.Position := 0;
+  LoadFromStream(ms);
+  ms.Free;
+end;
+
+procedure TAdParticle.Dead;
+begin
+  FDeaded := true;
 end;
 
 function MoveRect(ARect:TRect;X,Y:double):TRect;
@@ -458,14 +509,23 @@ end;
 
 
 procedure TAdParticle.DoMove(TimeGap: double);
+var sx,sy:double;
 begin
   FLifedTime := FLifedTime + 1 * Timegap;
   if FLifedTime > FLifeTime then Dead;
 
-  FX := FX+FDir.X * GetValue(FSpeedXStart,FSpeedXEnd,LifeTime,FLifedTime)*
-          Timegap+(FForce.X*FLifedTime)*Timegap;
-  FY := FY+FDir.Y * GetValue(FSpeedYStart,FSpeedYEnd,LifeTime,FLifedTime)*
-          Timegap+(FForce.Y*FLifedTime)*Timegap;
+  sx := GetValue(FSpeedXStart,FSpeedXEnd,LifeTime,FLifedTime) * Timegap;
+  sy := GetValue(FSpeedYStart,FSpeedYEnd,LifeTime,FLifedTime) * Timegap;
+  if FSpeedVariation = 0 then
+  begin
+    FX := FX+FDir.X * sx +(FForce.X*FLifedTime) * Timegap;
+    FY := FY+FDir.Y * sy +(FForce.Y*FLifedTime) * Timegap;
+  end
+  else
+  begin
+    FX := FX+FDir.X * sx * FSpeedVar +(FForce.X*FLifedTime) * Timegap;
+    FY := FY+FDir.Y * sy * FSpeedVar +(FForce.Y*FLifedTime) * Timegap;
+  end;
 end;
 
 function TAdParticle.GetBoundsRect: TRect;
@@ -504,8 +564,73 @@ begin
   result := ((EndPos-StartPos)/Max)* Pos + StartPos;
 end;
 
+procedure TAdParticle.LoadFromFile(AFile: string);
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  ms.LoadFromFile(AFile);
+  ms.Position := 0;
+  LoadFromStream(ms);
+  ms.Free;
+end;
+
+procedure TAdParticle.LoadFromStream(AStream: TStream);
+var i:integer;
+begin
+  FColors.LoadFromStream(AStream);
+  AStream.Read(FLifeTime,SizeOf(FLifeTime));
+  AStream.Read(FLifeTimeVariation,SizeOf(FLifeTimeVariation));
+  AStream.Read(FDrawMask,SizeOf(FDrawMask));
+  AStream.Read(FSizeStart,SizeOf(FSizeStart));
+  AStream.Read(FSizeEnd,SizeOf(FSizeEnd));
+  AStream.Read(FRotStart,SizeOf(FRotStart));
+  AStream.Read(FRotEnd,SizeOf(FRotEnd));
+  AStream.Read(FSpeedXStart,SizeOf(FSpeedXStart));
+  AStream.Read(FSpeedYStart,SizeOf(FSpeedYStart));
+  AStream.Read(FSpeedXEnd,SizeOf(FSpeedXEnd));
+  AStream.Read(FSpeedYEnd,SizeOf(FSpeedYEnd));
+  AStream.Read(FCrAngle,SizeOf(FCrAngle));
+  AStream.Read(FCrAngleOpen,SizeOf(FCrAngleOpen));
+  AStream.Read(FForce,SizeOf(FForce));
+  AStream.Read(FBlendMode,SizeOf(FBlendmode));
+  AStream.Read(FSpeedVariation,SizeOf(FSpeedVariation));
+  AStream.Read(FName,255);
+end;
+
+procedure TAdParticle.SaveToFile(AFile: string);
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.SaveToFile(AFile);
+  ms.Free;
+end;
+
+procedure TAdParticle.SaveToStream(AStream: TStream);
+var i:integer;
+begin
+  FColors.SaveToStream(AStream);
+  AStream.Write(FLifeTime,SizeOf(FLifeTime));
+  AStream.Write(FLifeTimeVariation,SizeOf(FLifeTimeVariation));
+  AStream.Write(FDrawMask,SizeOf(FDrawMask));
+  AStream.Write(FSizeStart,SizeOf(FSizeStart));
+  AStream.Write(FSizeEnd,SizeOf(FSizeEnd));
+  AStream.Write(FRotStart,SizeOf(FRotStart));
+  AStream.Write(FRotEnd,SizeOf(FRotEnd));
+  AStream.Write(FSpeedXStart,SizeOf(FSpeedXStart));
+  AStream.Write(FSpeedYStart,SizeOf(FSpeedYStart));
+  AStream.Write(FSpeedXEnd,SizeOf(FSpeedXEnd));
+  AStream.Write(FSpeedYEnd,SizeOf(FSpeedYEnd));
+  AStream.Write(FCrAngle,SizeOf(FCrAngle));
+  AStream.Write(FCrAngleOpen,SizeOf(FCrAngleOpen));
+  AStream.Write(FForce,SizeOf(FForce));
+  AStream.Write(FBlendMode,SizeOf(FBlendmode));
+  AStream.Write(FSpeedVariation,SizeOf(FSpeedVariation));
+  AStream.Write(FName,255);
+end;
+
 procedure TAdParticle.SetupMovement;
-var alpha,max,min,h : double;
+var alpha,max,min : double;
 begin
   with FDir do
   begin
@@ -517,8 +642,10 @@ begin
   end;
   if FLifeTimeVariation <> 0 then
   begin
-    LifeTime := LifeTime + (random(round(FLifeTime*FLifeTimeVariation))/100)-FLifeTime*(FLifeTimeVariation/200);
+    FLifeTime := FLifeTime + random(round(FLifeTime*FLifeTimeVariation))/100 - FLifeTime*FLifeTimeVariation/100;
   end;
+  if FSpeedVariation > 100 then FSpeedVariation := 100;  
+  FSpeedVar := ((100-random(FSpeedVariation))/100);
 end;
 
 end.

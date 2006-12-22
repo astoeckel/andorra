@@ -12,7 +12,8 @@
     
     <Projects>
       <Projects Name="PartEd.exe">PartEd.bdsproj</Projects>
-      <Projects Name="Targets">PartEd.exe</Projects>
+      <Projects Name="AndorraDX93D.dll">..\..\..\src\dll\directx\AndorraDX93D.bdsproj</Projects>
+      <Projects Name="Targets">PartEd.exe AndorraDX93D.dll</Projects>
     </Projects>
     <Dependencies>
       <Dependency GUID="{75A64AA6-D476-485E-9E37-DEDBDDA4FF8F}">

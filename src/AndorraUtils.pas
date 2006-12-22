@@ -110,6 +110,7 @@ type TAdCreateLight = function(AAppl:TAndorraApplication):TAndorraLight;stdcall;
 type TAdRestoreLight = procedure(ALight:TAndorraLight;Data:TLight);stdcall;
 type TAdLogProc = procedure(LogItem:TAdLogItem;AAppl:Pointer);stdcall;
 type TAdSetLogProc = procedure(Appl:TAndorraApplication;ALogProc:TAdLogProc;AAppl:Pointer);
+type TAdGetTexture = procedure(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 function Ad_RGB(r,g,b:byte):TAndorraColor;

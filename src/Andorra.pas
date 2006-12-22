@@ -53,6 +53,8 @@ type TAndorraDllLoader = class
     LoadTextureFromBitmap:TAdTextureFromBitmap;
     LoadTextureFromFile:TAdTextureFromFile;
     LoadTextureFromFileEx:TAdTextureFromFileEx;
+    GetTextureAsBitmap:TAdGetTexture;
+    GetTextureAlphaChannelAsBitmap:TAdGetTexture;
     FreeTexture:TAdFreeTexture;
     AddTextureAlphaChannel:TAdAddAlpha;
     GetTextureInfo:TAdGetTextureInfo;
@@ -128,6 +130,8 @@ begin
       @EnableLight := GetProcAddress(DllHandle,'EnableLight');
       @DisableLight := GetProcAddress(DllHandle,'DisableLight');
       @SetLogProc := GetProcAddress(DllHandle,'SetLogProc');
+      @GetTextureAsBitmap := GetProcAddress(DllHandle,'GetTextureAsBitmap');
+      @GetTextureAlphaChannelAsBitmap := GetProcAddress(DllHandle,'GetTextureAlphaChannelAsBitmap');
     end;
   end;
 end;
