@@ -53,7 +53,8 @@ exports
   SetImageDetail,
   DisableLight,
   EnableLight,
-  SetLogProc;
+  SetLogProc,
+  RefreshTextureWithBitmap;
 
 begin
 end.

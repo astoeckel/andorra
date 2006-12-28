@@ -114,6 +114,7 @@ procedure SetImageDetail(Img:TAndorraImage;ADetail:integer);stdcall;
 function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
 function LoadTextureFromFileEx(Appl:TAndorraApplication;AFile:PChar;AWidth,AHeight:integer;AColorDepth:byte;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
 function LoadTextureFromBitmap(Appl:TAndorraApplication;ABitmap:Pointer;AColorDepth:byte):TAndorraTexture;stdcall;
+procedure RefreshTextureWithBitmap(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 procedure FreeTexture(ATexture:TAndorraTexture);stdcall;
 procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
 function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
@@ -1199,6 +1200,95 @@ begin
             for x := 0 to Width-1 do
             begin
               Cursor16^ := (((BitCur^.b+BitCur^.g+BitCur^.r) div 48) shl 12) or (Cursor16^ and $0FFF) ;
+              inc(BitCur);
+              inc(Cursor16);
+            end;
+          end;
+        end;
+      end;
+      ATextureImg.UnlockRect(0);
+    end;
+  end;
+end;
+
+procedure RefreshTextureWithBitmap(ATexture:TAndorraTexture;ABitmap:Pointer);
+var d3dlr: TD3DLocked_Rect;
+    Cursor32: pLongWord;
+    Cursor16: pWord;
+    BitCur: PRGBRec;
+    x,y:integer;
+    a:byte;
+    tr,tg,tb:byte;
+begin
+  //Set Result to nil
+  with TAndorraTextureItem(ATexture) do
+  begin
+    with TBitmap(ABitmap) do
+    begin
+      with TAndorraApplicationItem(AAppl) do
+      begin
+        //Set the Pixel Format of the Bitmap to 24 Bit
+        PixelFormat := pf24Bit;
+
+        tr := 0;
+        tg := 0;
+        tb := 0;
+
+        if Transparent then
+        begin
+          tr := GetRValue(TransparentColor);
+          tg := GetGValue(TransparentColor);
+          tb := GetBValue(TransparentColor);
+        end;
+
+        ATextureImg.LockRect(0, d3dlr, nil, 0);
+
+        if AFormat = D3DFMT_A8R8G8B8 then
+        begin
+          Cursor32 := d3dlr.pBits;
+          for y := 0 to Height-1 do
+          begin
+            BitCur := Scanline[y];
+            for x := 0 to Width-1 do
+            begin
+              if Transparent and
+                 (BitCur^.r = tb) and
+                 (BitCur^.g = tg) and
+                 (BitCur^.b = tr) then
+              begin
+                a := 0;
+              end
+              else
+              begin
+                a := 255;
+              end;
+              Cursor32^ := D3DColor_ARGB(a,BitCur^.b,BitCur^.g,BitCur^.r);
+              inc(BitCur);
+              inc(Cursor32);
+            end;
+          end;
+        end;
+
+        if AFormat = D3DFMT_A4R4G4B4 then
+        begin
+          Cursor16 := d3dlr.pBits;
+          for y := 0 to Height-1 do
+          begin
+            BitCur := Scanline[y];
+            for x := 0 to Width-1 do
+            begin
+              if Transparent and
+                 (BitCur^.r = tb) and
+                 (BitCur^.g = tg) and
+                 (BitCur^.b = tr) then
+              begin
+                a := 0;
+              end
+              else
+              begin
+                a := 255;
+              end;
+              Cursor16^ := RGBTo16Bit(a,BitCur^.b,BitCur^.g,BitCur^.r);
               inc(BitCur);
               inc(Cursor16);
             end;

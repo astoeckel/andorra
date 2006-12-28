@@ -764,18 +764,24 @@ procedure TAdTexture.LoadFromBitmap(ABitmap:TBitmap);
 var FColorDepth:byte;
     Info:TImageInfo;
 begin
-  FreeTexture;
-  case ABitmap.PixelFormat of
-    pf16bit: FColorDepth := 16;
-    pf32bit: FColorDepth := 32;
+  if ((ABitmap.Width <> FBaseRect.Right) and (ABitmap.Height <> FBaseRect.Bottom)) or (AdTexture = nil) then
+  begin
+    FreeTexture;
+    case ABitmap.PixelFormat of
+      pf16bit: FColorDepth := 16;
+    else
+      FColorDepth := 32;
+    end;
+    AdTexture := FParent.AdDllLoader.LoadTextureFromBitmap(Fparent.AdAppl,ABitmap,FColorDepth);
+    Info := FParent.AdDllLoader.GetTextureInfo(AdTexture);
+    FWidth := Info.Width;
+    FHeight := Info.Height;
+    FBaseRect := Info.BaseRect;
+  end
   else
-    FColorDepth := 32;
+  begin
+    FParent.AdDllLoader.RefreshTextureWithBitmap(AdTexture,ABitmap);
   end;
-  AdTexture := FParent.AdDllLoader.LoadTextureFromBitmap(Fparent.AdAppl,ABitmap,FColorDepth);
-  Info := FParent.AdDllLoader.GetTextureInfo(AdTexture);
-  FWidth := Info.Width;
-  FHeight := Info.Height;
-  FBaseRect := Info.BaseRect;
 end;
 
 procedure TAdTexture.AddAlphaChannel(ABitmap:TBitmap);
