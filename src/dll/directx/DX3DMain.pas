@@ -933,7 +933,7 @@ begin
     begin
       AAppl := Appl;
       if not Failed(D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, D3DX_DEFAULT, D3DX_DEFAULT,
-          0, 0, D3DFMT_UNKNOWN, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
+          0, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, TextureFilter, TextureFilter,
           AdColorToD3DColor_ARGB(ATransparentColor) , @Info, nil, ATextureImg)) then
       begin
         ATexWidth := Info.Width;
@@ -971,7 +971,7 @@ begin
         Format := D3DFMT_UNKNOWN;
       end;
       if not Failed(D3DXCreateTextureFromFileEx( Direct3D9Device, AFile, AWidth,AHeight,
-          0, 0, Format, D3DPOOL_DEFAULT, TextureFilter, TextureFilter,
+          0, 0, Format, D3DPOOL_MANAGED, TextureFilter, TextureFilter,
           AdColorToD3DColor_ARGB(ATransparentColor) ,@Info, nil, ATextureImg)) then
       begin
         ATexWidth := Info.Width;

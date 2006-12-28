@@ -18,18 +18,40 @@ uses Windows, Controls, Types, SysUtils, Classes, AndorraUtils, Andorra, Graphic
 
 type
 
+  {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
+  TAdDraw = class;
+
+  {Specifies a textures texture state.}
   TTextureMode = (tmWrap,tmMirror,tmClamp);
+  {Specifies the event which called the procedure}
+  TSurfaceEventState = (seInitialize,seFinalize,seInitialized);
+  {The declaration of the surface event handler}
+  TSurfaceEvent = procedure(Sender:TObject;AEvent:TSurfaceEventState) of object;
+  {A pointer on TSurfaceEvent}
+  PSurfaceEvent = ^TSurfaceEvent;
+  {A list which contains the surface events}
+  TSurfaceEventList = class(TList)
+    private
+      function GetItem(AIndex:integer):TSurfaceEvent;
+      procedure SetItem(AIndex:integer;AItem:TSurfaceEvent);
+    protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
+    public
+      property Items[AIndex:integer]:TSurfaceEvent read GetItem write SetItem;default;
+      procedure Add(Item:TSurfaceEvent);
+      procedure Remove(Item:TSurfaceEvent);
+  end;
 
 
   //A record for adding a new log entry into the log system
-  type TAdLogMessage = record
+  TAdLogMessage = record
     Text:string;
     Sender:string;
     Typ:string;
   end;
 
   //The log system class
-  type TAdLog = class
+  TAdLog = class
     private
       Items:TStringList;
     public
@@ -65,6 +87,8 @@ type
     FLogFileName:string;
     FAutoLoadLog:boolean;
 
+    FSurfaceEventList:TSurfaceEventList;
+
     procedure SetDllName(val : string);
 
     procedure SetupThings;
@@ -77,6 +101,7 @@ type
     function GetDisplayRect:TRect;
 
   protected
+    procedure CallNotifyEvent(AEventState:TSurfaceEventState);
   public
     {The Andorra Dll Loader. You can use this class to get direct control over
     the engine.}
@@ -118,7 +143,12 @@ type
 
     //Used internally
     procedure LogProc(LogItem:TAdLogItem);
-  published
+
+    //Register an event that will be called if the surface is finalized or initialized.
+    procedure RegisterNotifyEvent(AProc:TSurfaceEvent);
+    //UnRegister a registered event.
+    procedure UnRegisterNotifyEvent(AProc:TSurfaceEvent);
+
     //This property contains the options (see TAdDrawMode)
     property Options : TAdDrawModes read FOptions write SetOptions;
     //Set this value to load a library
@@ -173,8 +203,11 @@ type
       FWidth:integer;
       FHeight:integer;
       FBaseRect:TRect;
+      FPicture:TBitmap;
+      FPictureAlpha:TBitmap;      
       function GetLoaded:boolean;
     protected
+      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);
     public
       {Link to the Andorra Texture.}
       AdTexture:TAndorraTexture;
@@ -255,6 +288,7 @@ type
     protected
       Rects:TRectList;
       procedure CreatePatternRects;
+      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
       //True if this item can be freed by the image list
       FreeByList:boolean;
@@ -298,6 +332,10 @@ type
       procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
       //If you've set the color or a new texture you have to call this function to see your changes.
       procedure Restore;
+      //Frees all data
+      procedure Finalize;
+      //Restores all freed date
+      procedure Initialize;
       //Returns the rect of one pattern.
       function GetPatternRect(ANr:integer):TRect;
       //Returns the parent you've set in the constructor
@@ -326,7 +364,7 @@ type
       property TextureXMode:TTextureMode read FTextureXMode write SetTextureXMode;
       //Set the mode of the texture.
       property TextureYMode:TTextureMode read FTextureYMode write SetTextureYMode;
-      //Important for using lights: How many boxes dows the image have.
+      //Important for using lights: How many vertices does the image have.
       property Detail:integer read FDetail write SetDetail;
   end;
 
@@ -391,6 +429,9 @@ begin
 
   FLog := TAdLog.Create;
   FLogFileName := 'adlog.txt';
+
+  FSurfaceEventList := TSurfaceEventList.Create;
+
   AutoLoadLog := true;
 
   amsg.Text := 'AdDraw was created: '+TimeToStr(Time);
@@ -413,12 +454,18 @@ begin
   FOptions := [doHardware];
 end;
 
+procedure TAdDraw.UnRegisterNotifyEvent(AProc: TSurfaceEvent);
+begin
+  FSurfaceEventList.Remove(AProc)
+end;
+
 destructor TAdDraw.Destroy;
 begin
   //Free all loaded objects
   if AdAppl <> nil then
   begin
     AdDllLoader.DestroyApplication(AdAppl);
+    AdAppl := nil;
   end;
   
   AdDllLoader.Destroy;
@@ -428,6 +475,8 @@ begin
     Log.SaveToFile(FLogFileName);
   end;
   FLog.Free;
+
+  FSurfaceEventList.Free;
   
 	inherited Destroy;
 end;
@@ -483,8 +532,7 @@ begin
 end;
 
 function TAdDraw.Initialize: boolean;
-var ARect:TRect;
-    amsg:TAdLogMessage;
+var amsg:TAdLogMessage;
 begin
 
   result := false;
@@ -522,6 +570,15 @@ begin
     end;
 
     FInitialized := result;
+
+    if CanDraw then
+    begin
+      CallNotifyEvent(seInitialize);
+    end;
+    if CanDraw then
+    begin
+      CallNotifyEvent(seInitialized);
+    end;
   end;
 end;
 
@@ -540,18 +597,24 @@ begin
   Log.AddMessage(Temp);
 end;
 
+procedure TAdDraw.RegisterNotifyEvent(AProc: TSurfaceEvent);
+begin
+  FSurfaceEventList.Add(AProc);
+end;
+
 procedure TAdDraw.Finalize;
 begin
   if Assigned(FFinalize) then
   begin
     FFinalize(Self);
   end;
-
+  
   if AdAppl <> nil then
   begin
+    FInitialized := false;
+    CallNotifyEvent(seFinalize);
     AdDllLoader.DestroyApplication(AdAppl);
     AdAppl := nil;
-    FInitialized := false;
   end;
 end;
 
@@ -605,6 +668,15 @@ begin
   end;
 end;
 
+procedure TAdDraw.CallNotifyEvent(AEventState: TSurfaceEventState);
+var i:integer;
+begin
+  for i := 0 to FSurfaceEventList.Count - 1 do
+  begin
+    FSurfaceEventList.Items[i](self,AEventState);
+  end;
+end;
+
 function TAdDraw.CanDraw:boolean;
 begin
   result := (AdAppl <> nil) and (Initialized);
@@ -617,11 +689,21 @@ begin
   inherited Create;
   AdTexture := nil;
   FParent := AAdDraw;
+  FParent.RegisterNotifyEvent(Notify);
 end;
 
 destructor TAdTexture.Destroy;
 begin
+  FParent.UnRegisterNotifyEvent(Notify);
   FreeTexture;
+  if Assigned(FPicture) then
+  begin
+    FreeAndNil(FPicture);
+  end;
+  if Assigned(FPictureAlpha) then
+  begin
+    FreeAndNil(FPictureAlpha);
+  end;
   inherited Destroy;
 end;
 
@@ -640,6 +722,42 @@ begin
   FWidth := Info.Width;
   FHeight := Info.Height;
   FBaseRect := Info.BaseRect;
+end;
+
+procedure TAdTexture.Notify(Sender: TObject; AEvent: TSurfaceEventState);
+begin
+  if AEvent = seFinalize then
+  begin
+    if Loaded then
+    begin
+      if Assigned(FPicture) then
+      begin
+        FreeAndNil(FPicture);
+      end;
+      if Assigned(FPictureAlpha) then
+      begin
+        FreeAndNil(FPictureAlpha);
+      end;
+      FPicture := TBitmap.Create;
+      FPictureAlpha := TBitmap.Create;
+      SaveToBitmap(FPicture);
+      SaveAlphaChannelToBitmap(FPictureAlpha);
+    end;
+    FreeTexture;
+  end;
+  if AEvent = seInitialize then
+  begin
+    if not Loaded then
+    begin
+      if Assigned(FPicture) then
+      begin
+        LoadFromBitmap(FPicture);
+        AddAlphaChannel(FPictureAlpha);
+        FreeAndNil(FPicture);
+        FreeAndNil(FPictureAlpha);
+      end;
+    end;
+  end;
 end;
 
 procedure TAdTexture.LoadFromBitmap(ABitmap:TBitmap);
@@ -697,6 +815,7 @@ begin
   if AdTexture <> nil then
   begin
     FParent.AdDllLoader.FreeTexture(AdTexture);
+    AdTexture := nil;
   end;
 end;
 
@@ -742,17 +861,19 @@ begin
   inherited Create;
   FTexture := TAdTexture.Create(AAdDraw);
   FParent := AAdDraw;
-  AdImage := FParent.AdDllLoader.CreateImage(AAdDraw.AdAppl);
+  FParent.RegisterNotifyEvent(Notify);
   Rects := TRectList.Create;
   FColor := clWhite;
   FOwnTexture := true;
+  Initialize;
 end;
 
 destructor TPictureCollectionItem.Destroy;
 begin
   if FOwnTexture then FTexture.Free;
-  FParent.AdDllLoader.DestroyImage(AdImage);
   Rects.Free;
+  FParent.UnRegisterNotifyEvent(Notify);
+  Finalize;
   inherited Destroy;
 end;
 
@@ -783,7 +904,7 @@ end;
 
 procedure TPictureCollectionItem.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -797,7 +918,7 @@ end;
 procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -811,7 +932,7 @@ end;
 procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -825,7 +946,7 @@ end;
 procedure TPictureCollectionItem.DrawMask(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -839,7 +960,7 @@ end;
 procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -854,7 +975,7 @@ procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -869,7 +990,7 @@ procedure TPictureCollectionItem.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -884,7 +1005,7 @@ procedure TPictureCollectionItem.DrawRotateMask(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -898,7 +1019,7 @@ end;
 procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     FParent.AdDllLoader.DrawImage(
@@ -910,7 +1031,7 @@ end;
 procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     FParent.AdDllLoader.DrawImage(
@@ -921,7 +1042,7 @@ end;
 
 procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) then
+  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1041,6 +1162,41 @@ begin
   Result := FPatternWidth;
   if (Result<=0) then
     Result := FWidth;
+end;
+
+procedure TPictureCollectionItem.Initialize;
+begin
+  if AdImage <> nil then
+  begin
+    Finalize;
+  end;
+  AdImage := FParent.AdDllLoader.CreateImage(FParent.AdAppl);
+  FParent.AdDllLoader.SetImageColor(AdImage,FLastColor);
+end;
+
+procedure TPictureCollectionItem.Finalize;
+begin
+  if AdImage <> nil then
+  begin
+    FParent.AdDllLoader.DestroyImage(AdImage);
+    AdImage := nil;
+  end;
+end;
+
+procedure TPictureCollectionItem.Notify(ASender: TObject;AEvent: TSurfaceEventState);
+begin
+  if AEvent = seFinalize then
+  begin
+    Finalize;
+  end;
+  if AEvent = seInitialize then
+  begin
+    Initialize;
+  end;
+  if AEvent = seInitialized then
+  begin
+    Restore;
+  end;
 end;
 
 function TPictureCollectionItem.GetPatternCount: integer;
@@ -1211,6 +1367,50 @@ begin
   th := 0;
   timegap := 0;
   fps := 0;
+end;
+
+{ TSurfaceEventList }
+
+procedure TSurfaceEventList.Add(Item: TSurfaceEvent);
+var Event:PSurfaceEvent;
+begin
+  New(Event);
+  Event^ := Item;
+  inherited Add(Event);
+end;
+
+function TSurfaceEventList.GetItem(AIndex:integer):TSurfaceEvent;
+begin
+  result := PSurfaceEvent(inherited Items[AIndex])^;
+end;
+
+procedure TSurfaceEventList.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  if Action = lnDeleted then
+  begin
+    Dispose(Ptr);
+  end;
+  inherited;
+end;
+
+procedure TSurfaceEventList.Remove(Item: TSurfaceEvent);
+var i:integer;
+begin
+  i := 0;
+  while i < Count do
+  begin
+    if (TMethod(Items[i]).Code = TMethod(Item).Code) and
+       (TMethod(Items[i]).Data = TMethod(Item).Data) then
+    begin
+      Delete(i);
+    end;
+    i := i + 1;
+  end;
+end;
+
+procedure TSurfaceEventList.SetItem(AIndex:integer;AItem:TSurfaceEvent);
+begin
+  inherited Items[AIndex] := @AItem;
 end;
 
 end.

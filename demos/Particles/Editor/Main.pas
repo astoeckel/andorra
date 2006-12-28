@@ -122,7 +122,6 @@ type
     OpenDialog1: TOpenDialog;
     StatusBar1: TStatusBar;
     Label37: TLabel;
-    Button6: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -172,6 +171,7 @@ type
 
     pc,pc2:double;
     interval:boolean;
+    changing:boolean;
 
     mx,my:integer;
     BackgroundColor:TColor;
@@ -297,6 +297,7 @@ end;
 
 procedure TForm1.ComboBox1Change(Sender: TObject);
 begin
+  if changing then exit;
   case Combobox1.ItemIndex of
     0:PartSys.DefaultParticle.BlendMode := bmAlpha;
     1:PartSys.DefaultParticle.BlendMode := bmAdd;
@@ -391,12 +392,14 @@ end;
 
 procedure TForm1.Edit11Change(Sender: TObject);
 begin
+  if changing then exit;
   PartSys.DefaultParticle.RotStart := StrToFloatDef(Edit11.Text,0);
   PartSys.DefaultParticle.RotEnd   := StrToFloatDef(Edit12.Text,0);
 end;
 
 procedure TForm1.Edit13Change(Sender: TObject);
 begin
+  if changing then exit;
   PartSys.DefaultParticle.SpeedXStart := StrToFloatDef(Edit13.Text,100);
   PartSys.DefaultParticle.SpeedXEnd := StrToFloatDef(Edit14.Text,100);
   PartSys.DefaultParticle.SpeedYStart := StrToFloatDef(Edit15.Text,100);
@@ -405,6 +408,7 @@ end;
 
 procedure TForm1.Edit17Change(Sender: TObject);
 begin
+  if changing then exit;
   RadioButton2.Checked := true;
   pc := StrToIntDef(Edit17.Text,100);
   interval := false;
@@ -412,26 +416,31 @@ end;
 
 procedure TForm1.Edit18Change(Sender: TObject);
 begin
+  if changing then exit;
   PartSys.DefaultParticle.SpeedVariation := StrToIntDef(Edit18.Text,0);
 end;
 
 procedure TForm1.Edit1Change(Sender: TObject);
 begin
+  if changing then exit;
   PartSys.DefaultParticle.Name:= Edit1.Text;
 end;
 
 procedure TForm1.Edit6Change(Sender: TObject);
 begin
+  if changing then exit;
   PartSys.DefaultParticle.LifeTime := StrToFloatDef(Edit6.Text,1);
 end;
 
 procedure TForm1.Edit7Change(Sender: TObject);
 begin
+  if changing then exit;
   PartSys.DefaultParticle.LifeTimeVariation := StrToIntDef(Edit7.Text,0);
 end;
 
 procedure TForm1.Edit8Change(Sender: TObject);
 begin
+  if changing then exit;
   RadioButton1.Checked := true;
   pc := StrToFloatDef(Edit8.Text,1);
   if pc < 0.1 then pc := 0.1;
@@ -469,7 +478,7 @@ begin
     Brush.Style := bsClear;
     for i := 0 to 16 do
     begin
-      Pen.Color := RGB(round(255 / 16 * i),round(255 / 16 * i),round(255 / 16 * i));      
+      Pen.Color := RGB(round(255 / 16 * i),round(255 / 16 * i),round(255 / 16 * i));
       Ellipse(i,i,32-i,32-i);
       Ellipse(i,i,32-i-1,32-i-1);
       Ellipse(i,i,32-i-2,32-i-2);
@@ -534,7 +543,7 @@ begin
   if ListBox1.ItemIndex <> -1 then
   begin
     if ListBox1.ItemIndex < ListBox1.Count-1 then Button4.Enabled := true else Button4.Enabled := false;
-    if ListBox1.ItemIndex > 0                then Button3.Enabled := true else Button3.Enabled := false;    
+    if ListBox1.ItemIndex > 0                then Button3.Enabled := true else Button3.Enabled := false;
   end;
 end;
 
@@ -637,7 +646,7 @@ begin
     if PartSys.Items.Count = 0 then
     begin
       PartSys.CreateParticles(round(pc),TAdParticle,mx,my);
-    end;    
+    end;
   end;
 
   PartSys.Move(PerCount.TimeGap/1000);
@@ -668,6 +677,7 @@ end;
 
 procedure TForm1.ScrollBar2Change(Sender: TObject);
 begin
+  if changing then exit;
   with PartSys.DefaultParticle do
   begin
     CreationAngle := Scrollbar2.Position;
@@ -680,6 +690,7 @@ end;
 
 procedure TForm1.ScrollBar3Change(Sender: TObject);
 begin
+  if changing then exit;
   with PartSys.DefaultParticle.Force do
   begin
     X := cos(ScrollBar3.Position * PI / 180)*ScrollBar4.Position;
@@ -694,6 +705,7 @@ var i:integer;
     nx,ny,l:double;
     w:integer;
 begin
+  changing := true;
   with PartSys.DefaultParticle do
   begin
     ListBox1.Clear;
@@ -722,15 +734,22 @@ begin
     ScrollBar2.Position := CreationAngle;
     ScrollBar1.Position := CreationAngleOpen;
 
+    case blendmode of
+      bmAlpha: Combobox1.ItemIndex := 0;
+      bmAdd: Combobox1.ItemIndex := 1;
+      bmMask: Combobox1.ItemIndex := 2;
+    end;
+
     l := sqrt(sqr(Force.X)+sqr(Force.Y));
     if l > 0 then
     begin
       nx := Force.X;
       ny := Force.Y;
       w := round(radtodeg(arccos(nx/l)));
-      if w < 0 then w := 360 + w;
-      if w > 360 then w := 360 - w;
-           
+      if ny < 0 then
+      begin
+        w := 360 - w;
+      end;
       Scrollbar3.Position := w;
     end
     else
@@ -740,6 +759,7 @@ begin
     ScrollBar4.Position := round(l);
     DrawAnglePreview;
   end;
+  changing := false;
 end;
 
 end.

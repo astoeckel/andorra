@@ -51,9 +51,6 @@ object Form1: TForm1
       TabOrder = 0
       object TabSheet1: TTabSheet
         Caption = 'Basics'
-        DesignSize = (
-          225
-          561)
         object GroupBox1: TGroupBox
           Left = 0
           Top = 0
@@ -307,7 +304,6 @@ object Form1: TForm1
           Top = 14
           Width = 57
           Height = 25
-          Anchors = [akLeft, akBottom]
           Caption = 'Reset'
           TabOrder = 3
           OnClick = Button5Click
@@ -376,10 +372,6 @@ object Form1: TForm1
       object TabSheet2: TTabSheet
         Caption = 'Movement'
         ImageIndex = 1
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object GroupBox5: TGroupBox
           Left = 0
           Top = 0
@@ -696,15 +688,6 @@ object Form1: TForm1
             TabOrder = 3
             OnChange = ScrollBar3Change
           end
-        end
-        object Button6: TButton
-          Left = 136
-          Top = 528
-          Width = 75
-          Height = 25
-          Caption = 'Button6'
-          TabOrder = 2
-          OnClick = Button6Click
         end
       end
     end

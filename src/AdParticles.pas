@@ -575,7 +575,6 @@ begin
 end;
 
 procedure TAdParticle.LoadFromStream(AStream: TStream);
-var i:integer;
 begin
   FColors.LoadFromStream(AStream);
   AStream.Read(FLifeTime,SizeOf(FLifeTime));
@@ -607,7 +606,6 @@ begin
 end;
 
 procedure TAdParticle.SaveToStream(AStream: TStream);
-var i:integer;
 begin
   FColors.SaveToStream(AStream);
   AStream.Write(FLifeTime,SizeOf(FLifeTime));
