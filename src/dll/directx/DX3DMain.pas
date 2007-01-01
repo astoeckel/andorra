@@ -1039,6 +1039,7 @@ var d3dlr: TD3DLocked_Rect;
     x,y:integer;
     a:byte;
     tr,tg,tb:byte;
+    w,h:integer;
 begin
   //Set Result to nil
   result := TAndorraTextureItem.Create;
@@ -1050,15 +1051,24 @@ begin
       with TAndorraTextureItem(Result) do
       begin
         ABaseRect := Rect(0,0,Width,Height);
+        
         //Scale the bitmap to a size power two
-        if not IsPowerOfTwo(Height) then
+        if not IsPowerOfTwo(Width) then
         begin
-          Width := 1 shl round(log2(Width));
+          w := 1 shl ceil(log2(Width));
+        end
+        else
+        begin
+          w := Width;
         end;
 
         if not IsPowerOfTwo(Height) then
         begin
-          Height := 1 shl round(log2(Height));
+          h := 1 shl ceil(log2(Height));
+        end
+        else
+        begin
+          h := Height;
         end;
 
         
@@ -1071,8 +1081,8 @@ begin
         else
           AFormat := D3DFMT_A8R8G8B8;
         end;
-        ATexWidth := Width;
-        ATexHeight := Height;
+        ATexWidth := w;
+        ATexHeight := h;
         //Set the Pixel Format of the Bitmap to 24 Bit
         PixelFormat := pf24Bit;
 
@@ -1089,7 +1099,7 @@ begin
 
 
         //Create the Texture
-        if D3DXCreateTexture(Direct3D9Device, Width, Height, 0, 0, AFormat, D3DPOOL_MANAGED, ATextureImg) = D3D_OK then
+        if D3DXCreateTexture(Direct3D9Device, w, h, 0, 0, AFormat, D3DPOOL_MANAGED, ATextureImg) = D3D_OK then
         begin
           ATextureImg.LockRect(0, d3dlr, nil, 0);
 
@@ -1100,21 +1110,24 @@ begin
             for y := 0 to Height-1 do
             begin
               BitCur := Scanline[y];
-              for x := 0 to Width-1 do
+              for x := 0 to ATexWidth-1 do
               begin
-                if Transparent and
-                   (BitCur^.r = tb) and
-                   (BitCur^.g = tg) and
-                   (BitCur^.b = tr) then
+                if (x < Width) then
                 begin
-                  a := 0;
-                end
-                else
-                begin
-                  a := 255;
+                  if Transparent and
+                     (BitCur^.r = tb) and
+                     (BitCur^.g = tg) and
+                     (BitCur^.b = tr) then
+                  begin
+                    a := 0;
+                  end
+                  else
+                  begin
+                    a := 255;
+                  end;
+                  Cursor32^ := D3DColor_ARGB(a,BitCur^.b,BitCur^.g,BitCur^.r);
+                  inc(BitCur);
                 end;
-                Cursor32^ := D3DColor_ARGB(a,BitCur^.b,BitCur^.g,BitCur^.r);
-                inc(BitCur);
                 inc(Cursor32);
               end;
             end;
@@ -1126,21 +1139,24 @@ begin
             for y := 0 to Height-1 do
             begin
               BitCur := Scanline[y];
-              for x := 0 to Width-1 do
+              for x := 0 to ATexWidth-1 do
               begin
-                if Transparent and
-                   (BitCur^.r = tb) and
-                   (BitCur^.g = tg) and
-                   (BitCur^.b = tr) then
+                if (x < Width) then
                 begin
-                  a := 0;
-                end
-                else
-                begin
-                  a := 255;
+                  if Transparent and
+                     (BitCur^.r = tb) and
+                     (BitCur^.g = tg) and
+                     (BitCur^.b = tr) then
+                  begin
+                    a := 0;
+                  end
+                  else
+                  begin
+                    a := 255;
+                  end;
+                  Cursor16^ := RGBTo16Bit(a,BitCur^.b,BitCur^.g,BitCur^.r);
+                  inc(BitCur);
                 end;
-                Cursor16^ := RGBTo16Bit(a,BitCur^.b,BitCur^.g,BitCur^.r);
-                inc(BitCur);
                 inc(Cursor16);
               end;
             end;
@@ -1182,10 +1198,13 @@ begin
           for y := 0 to Height-1 do
           begin
             BitCur := Scanline[y];
-            for x := 0 to Width-1 do
+            for x := 0 to ATexWidth-1 do
             begin
-              Cursor32^ := (((BitCur^.b+BitCur^.g+BitCur^.r) div 3) shl 24) or (Cursor32^ and $00FFFFFF) ;
-              inc(BitCur);
+              if (x < Width) then
+              begin
+                Cursor32^ := (((BitCur^.b+BitCur^.g+BitCur^.r) div 3) shl 24) or (Cursor32^ and $00FFFFFF) ;
+                inc(BitCur);
+              end;
               inc(Cursor32);
             end;
           end;
@@ -1197,10 +1216,13 @@ begin
           for y := 0 to Height-1 do
           begin
             BitCur := Scanline[y];
-            for x := 0 to Width-1 do
+            for x := 0 to ATexWidth-1 do
             begin
-              Cursor16^ := (((BitCur^.b+BitCur^.g+BitCur^.r) div 48) shl 12) or (Cursor16^ and $0FFF) ;
-              inc(BitCur);
+              if (x < Width) then
+              begin
+                Cursor16^ := (((BitCur^.b+BitCur^.g+BitCur^.r) div 48) shl 12) or (Cursor16^ and $0FFF) ;
+                inc(BitCur);
+              end;
               inc(Cursor16);
             end;
           end;
@@ -1249,21 +1271,24 @@ begin
           for y := 0 to Height-1 do
           begin
             BitCur := Scanline[y];
-            for x := 0 to Width-1 do
+            for x := 0 to ATexWidth-1 do
             begin
-              if Transparent and
-                 (BitCur^.r = tb) and
-                 (BitCur^.g = tg) and
-                 (BitCur^.b = tr) then
+              if (x < Width) then
               begin
-                a := 0;
-              end
-              else
-              begin
-                a := 255;
+                if Transparent and
+                   (BitCur^.r = tb) and
+                   (BitCur^.g = tg) and
+                   (BitCur^.b = tr) then
+                begin
+                  a := 0;
+                end
+                else
+                begin
+                  a := 255;
+                end;
+                Cursor32^ := D3DColor_ARGB(a,BitCur^.b,BitCur^.g,BitCur^.r);
+                inc(BitCur);
               end;
-              Cursor32^ := D3DColor_ARGB(a,BitCur^.b,BitCur^.g,BitCur^.r);
-              inc(BitCur);
               inc(Cursor32);
             end;
           end;
@@ -1275,21 +1300,24 @@ begin
           for y := 0 to Height-1 do
           begin
             BitCur := Scanline[y];
-            for x := 0 to Width-1 do
+            for x := 0 to ATexWidth-1 do
             begin
-              if Transparent and
-                 (BitCur^.r = tb) and
-                 (BitCur^.g = tg) and
-                 (BitCur^.b = tr) then
+              if (x < Width) then
               begin
-                a := 0;
-              end
-              else
-              begin
-                a := 255;
+                if Transparent and
+                   (BitCur^.r = tb) and
+                   (BitCur^.g = tg) and
+                   (BitCur^.b = tr) then
+                begin
+                  a := 0;
+                end
+                else
+                begin
+                  a := 255;
+                end;
+                Cursor16^ := RGBTo16Bit(a,BitCur^.b,BitCur^.g,BitCur^.r);
+                inc(BitCur);
               end;
-              Cursor16^ := RGBTo16Bit(a,BitCur^.b,BitCur^.g,BitCur^.r);
-              inc(BitCur);
               inc(Cursor16);
             end;
           end;

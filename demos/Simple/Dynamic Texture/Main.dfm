@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Andorra 2D'
-  ClientHeight = 512
-  ClientWidth = 512
+  ClientHeight = 323
+  ClientWidth = 373
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

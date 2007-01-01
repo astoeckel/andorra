@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws;
+  Dialogs, AdDraws, StdCtrls;
 
 type
   TForm1 = class(TForm)
@@ -34,6 +34,7 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+
   AdDraw1 := TAdDraw.Create(self);
   AdDraw1.DllName := 'AndorraDX93D.dll';
 
@@ -116,7 +117,7 @@ begin
 
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
-    AdImageList1.Items[0].Draw(AdDraw1,0,0,0);
+    AdImageList1.Items[0].DrawRotate(AdDraw1,0,0,Bmp.Width,Bmp.Height,0,0.5,0.5,0);
     AdDraw1.EndScene;
     AdDraw1.Flip;
 
