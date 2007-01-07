@@ -1,38 +1,78 @@
+{
+* This program is licensed under the GNU Lesser General Public License Version 2
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AndorraClasses.pas
+* Comment: Contains all classes and types which are exchanged between the host
+           and the plugin.
+}
+
+//Contains all classes and types which are exchanged between the host and the plugin.
 unit AdClasses;
 
 interface
 
-uses Classes, Graphics;
+uses SysUtils, Classes, Graphics, Types;
 
 type
+  //Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )
   TAndorraColor = record
     r,g,b,a:integer;
   end;
 
+  //A simple vector
   TAdVector2 = record
     x,y:double;
   end;
 
+  //Another simple vector with 3 parameters
   TAdVector3 = record
     x,y,z:double;
   end;
 
+  //Andorras vertex format
   TAdVertex = record
-    Color:TAndorraColor;
     Position:TAdVector3;
+    Color:TAndorraColor;
     Normal:TAdVector3;
     Texture:TAdVector2;
   end;
 
+  //An array of the vertex
   TAdVertexArray = array of TAdVertex;
 
+  //Represtents an index buffer
   TAdIndexArray = array of Word;
 
-  TAdMatrix = record
-    _00,_01,_02,_03:double;
-    _10,_11,_12,_13:double;
-    _20,_21,_22,_23:double;
-    _30,_31,_32,_33:double;
+  //A matrix
+  TAdMatrix = array[0..3] of array[0..3] of double;
+
+  TAdOption = (
+    doFullscreen, //< Specifies weather the application should run in the fullscreen mode or not
+    doVSync, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
+    doStretch, //< Should the picture be stretched when the window resizes?
+    doHardware,//< Run in hardware mode? (WARNING: Should be set!)
+    doZBuffer, //< The ZBuffer has to be used if you are using 3D Objects in your scene
+    doAntialias,//< should Antialiasing be used
+    doLights//Turn lights off/on.
+  );
+
+  {Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
+  TAdOptions = set of TAdOption;
+
+  {Specifies the dimensions of the display. }
+  TAdDisplay = record
+    //The Width of the Display
+    Width:integer;
+    //The Height of the Display
+    Height:integer;
+    //The Bitcount of the Display (May be 16 or 32.)
+    BitCount:byte;
+    //The horizontal refresh rate
+    Freq:integer;
   end;
 
   //A 32-Bit Bitmap
@@ -62,9 +102,120 @@ type
       property Size:int64 read FSize;
   end;
 
-  TAdApplication = class
+  TAdLogTyp = (ltInfo,ltWarning,ltError,ltFatalError,ltNone);
 
+  TAdLogItem = record
+    Text:PChar;
+    Typ:TAdLogTyp;
   end;
+  
+  TAdLogProc = procedure(LogItem:TAdLogItem) of object;
+  
+  //TAdLight = class;
+  TAdTexture = class;
+  //TAdRenderTargetTexture = class;
+  TAdBitmapTexture = class;
+  TAdMesh = class;
+
+  TAdApplication = class
+    private
+      FLogProc:TAdLogProc;
+    protected
+      FOptions:TAdOptions;
+      FWidth:integer;
+      FHeight:integer;
+      FMaxLightCount:integer;
+      procedure SetOptions(AValue:TAdOptions);virtual;
+      procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
+    public
+      constructor Create;virtual;abstract;
+
+      //function CreateLight:TAdLight;virtual;abstract;
+      function CreateBitmapTexture:TAdBitmapTexture;virtual;abstract;
+      //function CreateRenderTargetTexture:TAdRenderTargetTexture;virtual;abstract;
+      function CreateMesh:TAdMesh;virtual;abstract;
+
+      //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);virtual;abstract;
+
+      procedure SetLogProc(ALogProc:TAdLogProc);
+
+      function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
+      procedure Finalize;virtual;abstract;
+
+      procedure ClearSurface(AColor: TAndorraColor);virtual;abstract;
+      procedure BeginScene;virtual;abstract;
+      procedure EndScene;virtual;abstract;
+      procedure Flip;virtual;abstract;
+
+      procedure Setup2DScene(AWidth,AHeight:integer);virtual;abstract;
+
+      property Width:integer read FWidth;
+      property Height:integer read FHeight;
+      property Options:TAdOptions read FOptions write SetOptions;
+      property MaxLights:integer read FMaxLightCount;
+  end;
+
+  TAdTexture = class
+    private
+    protected
+      FWidth:integer;
+      FHeight:integer;
+      FBitCount:byte;
+      FEditable:boolean;
+      FTexture:Pointer;
+      function GetLoaded:boolean;virtual;abstract;      
+    public
+      property Width:integer read FWidth;
+      property Height:integer read FHeight;
+      property BitCount:byte read FBitCount;
+      property Editable:boolean read FEditable;
+      property Loaded:boolean read GetLoaded;
+      property Texture:pointer read FTexture;
+  end;
+
+  TAdMesh = class
+    private
+    protected
+      FVertices:TAdVertexArray;
+      FIndices:TAdIndexArray;
+      FVertexCount:integer;
+      FIndicesCount:integer;
+      FPrimitiveCount:integer;
+      FTexture:TAdTexture;
+      function GetUseIndexBuffer:boolean;
+      procedure SetVertices(AVertices:TAdVertexArray);virtual;abstract;
+      procedure SetIndex(AIndex:TAdIndexArray);virtual;abstract;
+      procedure SetTexture(ATexture:TAdTexture);virtual;
+      function GetLoaded:boolean;virtual;abstract;
+    public
+      procedure Update;virtual;abstract;
+      procedure Draw;virtual;abstract;
+      procedure SetMatrix(AMatrix:TAdMatrix);virtual;abstract;
+      property Loaded:boolean read GetLoaded;
+      property Vertices:TAdVertexArray read FVertices write SetVertices;
+      property IndexBuffer:TAdIndexArray read FIndices write SetIndex;
+      property UseIndexBuffer:boolean read GetUseIndexBuffer;
+      property VertexCount:integer read FVertexCount;
+      property IndicesCount:integer read FIndicesCount;
+      property PrimitiveCount:integer read FPrimitiveCount write FPrimitiveCount;
+      property Texture:TAdTexture read FTexture write SetTexture;
+  end;
+
+  TAdBitmapTexture = class(TAdTexture)
+    private
+    protected
+      FBaseWidth:integer;
+      FBaseHeight:integer;
+    public
+      procedure FlushTexture;virtual;abstract;
+      procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);virtual;abstract;
+      procedure SaveToBitmap(ABmp:TAdBitmap);virtual;abstract;
+      property BaseWidth:integer read FBaseWidth;
+      property BaseHeight:integer read FBaseHeight;
+    end;
+
+
+  TAdCreateApplicationProc = function:TAdApplication;stdcall;
 
   TRGBRec = packed record
     r,g,b:byte;
@@ -76,8 +227,218 @@ type
   end;
   PRGBARec = ^TRGBARec;
 
+function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
+function Ad_RGB(r,g,b:byte):TAndorraColor;
+function AdColorToString(AColor:TAndorraColor):string;
+function StringToAdColor(AString:string):TAndorraColor;
+
+function AdColorToColor(AAdColor:TAndorraColor):LongWord;
+
+function GetRValue(AColor:LongWord):byte;
+function GetGValue(AColor:LongWord):byte;
+function GetBValue(AColor:LongWord):byte;
+
+function RGB(r,g,b:byte):LongWord;
+
+function CompareColors(col1,col2:TAndorraColor):boolean;
+
+function Cut(AValue:integer):byte;
+
+function AdVector3(AX,AY,AZ:double):TAdVector3;
+function AdVector2(AX,AY:double):TAdVector2;
+
+function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
+function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
+function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
+function AdMatrix_RotationX(angle:single):TAdMatrix;
+function AdMatrix_RotationY(angle:single):TAdMatrix;
+function AdMatrix_RotationZ(angle:single):TAdMatrix;
+function AdMatrix_Identity:TAdMatrix;
+function AdMatrix_Clear:TAdMatrix;
 
 implementation
+
+function AdVector3(AX,AY,AZ:double):TAdVector3;
+begin
+  with result do
+  begin
+    x := ax;
+    y := ay;
+    z := az;
+  end;
+end;
+
+function AdVector2(AX,AY:double):TAdVector2;
+begin
+  with result do
+  begin
+    x := ax;
+    y := ay;
+  end;
+end;
+
+function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
+begin
+  result.a := a;
+  result.r := r;
+  result.g := g;
+  result.b := b;
+end;
+
+function Ad_RGB(r,g,b:byte):TAndorraColor;
+begin
+  result := Ad_ARGB(255,r,g,b);
+end;
+
+function CompareColors(col1,col2:TAndorraColor):boolean;
+begin
+  result := (col1.a = col2.a) and
+            (col1.r = col2.r) and
+            (col1.g = col2.g) and
+            (col1.b = col2.b);
+end;
+
+function GetRValue(AColor:LongWord):byte;
+begin
+  result := AColor and 255;
+end;
+
+function GetGValue(AColor:LongWord):byte;
+begin
+  result := (AColor shr 8) and 255;
+end;
+
+function GetBValue(AColor:LongWord):byte;
+begin
+  result := (AColor shr 16) and 255;
+end;
+
+function AdColorToString(AColor:TAndorraColor):string;
+begin
+  result := FormatFloat('000',AColor.a)+FormatFloat('000',AColor.r)+
+            FormatFloat('000',AColor.g)+FormatFloat('000',AColor.b);
+end;
+
+function StringToAdColor(AString:string):TAndorraColor;
+begin
+  result.a  := StrToInt(Copy(AString,1,3));
+  result.r  := StrToInt(Copy(AString,4,3));
+  result.g  := StrToInt(Copy(AString,7,3));
+  result.b  := StrToInt(Copy(AString,10,3));
+end;
+
+function RGB(r,g,b:byte):LongWord;
+begin
+  result := R + G shl 8 + B shl 16; 
+end;
+
+function Cut(AValue:integer):byte;
+begin
+  if AValue < 255 then
+  begin
+    if AValue < 0 then
+    begin
+      result := 0;
+    end
+    else
+    begin
+      result := AValue;
+    end;
+  end
+  else
+  begin
+    result := 255;
+  end;
+end;
+
+function AdColorToColor(AAdColor:TAndorraColor):LongWord;
+begin
+  result := RGB(AAdColor.r,AAdColor.g,AAdColor.b);
+end;
+
+//Matrix functions
+function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
+var x,y:integer;
+begin
+  for x := 0 to 3 do
+  begin
+    for y := 0 to 3 do
+    begin
+      result[x,y] := amat2[0,y]*amat1[x,0] + amat2[1,y]*amat1[x,1] + amat2[2,y]*amat1[x,2] +amat2[3,y]*amat1[x,3];
+    end;
+  end;
+end;
+
+function AdMatrix_Clear:TAdMatrix;
+var x,y:integer;
+begin
+  for x := 0 to 3 do
+  begin
+    for y := 0 to 3 do
+    begin
+      result[x,y] := 0;
+    end;
+  end;
+end;
+
+function AdMatrix_Identity:TAdMatrix;
+begin
+  result := AdMatrix_Clear;
+  result[0,0] := 1;
+  result[1,1] := 1;
+  result[2,2] := 1;
+  result[3,3] := 1;
+end;
+
+function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
+begin
+  result := AdMatrix_Identity;
+  result[3,0] := tx;
+  result[3,1] := ty;
+  result[3,2] := tz;
+end;
+
+function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
+begin
+  result := AdMatrix_Clear;
+  result[0,0] := sx;
+  result[1,1] := sy;
+  result[2,2] := sz;
+  result[3,3] := 1;
+end;
+
+function AdMatrix_RotationX(angle:single):TAdMatrix;
+begin
+  result := AdMatrix_Clear;
+  result[0,0] := 1;
+  result[1,1] := cos(angle);
+  result[1,2] := sin(angle);
+  result[2,1] := -sin(angle);
+  result[2,2] := cos(angle);
+  result[3,3] := 1;
+end;
+
+function AdMatrix_RotationY(angle:single):TAdMatrix;
+begin
+  result := AdMatrix_Clear;
+  result[0,0] := cos(angle);
+  result[0,2] := -sin(angle);
+  result[1,1] := 1;
+  result[2,0] := sin(angle);
+  result[2,2] := cos(angle);
+  result[3,3] := 1;
+end;
+
+function AdMatrix_RotationZ(angle:single):TAdMatrix;
+begin
+  result := AdMatrix_Clear;
+  result[0,0] := cos(angle);
+  result[0,1] := sin(angle);
+  result[1,0] := -sin(angle);
+  result[1,1] := cos(angle);
+  result[2,2] := 1;
+  result[3,3] := 1;
+end;
 
 { TAdBitmap }
 
@@ -273,6 +634,42 @@ begin
   begin
     result := Scanline;
   end;
+end;
+
+{ TAdApplication }
+
+procedure TAdApplication.SetLogProc(ALogProc: TAdLogProc);
+begin
+  TMethod(FLogProc).Code := TMethod(ALogProc).Code;
+  TMethod(FLogProc).Data := TMethod(ALogProc).Data;
+end;
+
+procedure TAdApplication.SetOptions(AValue: TAdOptions);
+begin
+  FOptions := AValue;
+end;
+
+procedure TAdApplication.WriteLog(Typ: TAdLogTyp; Text: PChar);
+var LogItem:TAdLogItem;
+begin
+  if @FLogProc <> nil then
+  begin
+    LogItem.Text := Text;
+    LogItem.Typ := Typ;
+    FLogProc(LogItem);
+  end;
+end;
+
+{ TAdMesh }
+
+function TAdMesh.GetUseIndexBuffer: boolean;
+begin
+  result := FIndices <> nil;
+end;
+
+procedure TAdMesh.SetTexture(ATexture:TAdTexture);
+begin
+  FTexture := ATexture;
 end;
 
 end.
