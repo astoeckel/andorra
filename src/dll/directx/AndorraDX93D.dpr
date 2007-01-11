@@ -10,7 +10,7 @@ uses
 
 {$R *.res}
 
-function CreateApplication:TAdApplication;stdcall;
+function CreateApplication:TAd2DApplication;stdcall;
 begin
   result := TDXApplication.Create;
 end;

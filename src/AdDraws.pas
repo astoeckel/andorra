@@ -111,7 +111,7 @@ type
     the engine.}
     AdDllLoader : TAndorraDllLoader;
     {The Andorra Reference for the DllLoader}
-    AdAppl:TAdApplication;
+    AdAppl:TAd2DApplication;
     //This property contains the diplay settings (width, height and bitcount)
     Display : TAdDisplay;
 
@@ -200,74 +200,7 @@ type
       {procedure Enable;
       //Disable a light manually.
       procedure Disable;
-  end;
-
-  {TAdTexture basicly loads a texture from a bitmap or a file into the video memory}
-  TAdTexture = class
-    private
-      FParent:TAdDraw;
-      FWidth:integer;
-      FHeight:integer;
-      FBaseRect:TRect;
-      FPicture:TBitmap;
-      FPictureAlpha:TBitmap;
-      FPixelFormat:byte;
-      function GetLoaded:boolean;
-    protected
-      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);
-    public
-      {Link to the Andorra Texture.}
-      AdTexture:TAdTexture;
-      {This is a constructor. AADraw defines the parent andorra application.}
-      constructor Create(AAdDraw:TAdDraw);
-      {A destructor. What did you think?}
-      destructor Destroy;override;
-      {Creates a new andorra texture from a file. The old one will be flushed.}
-      procedure LoadFromFile(afile:string;ATransparent:boolean;ATransparentColor:TColor);
-      {Creates a new andorra texture from a bitmap. The old one will only be flushed if the height, width or pixelformat are different}
-      procedure LoadFromBitmap(ABitmap:TBitmap;ABitDepth:byte);overload;
-      {Creates a new andorra texture from a bitmap. The old one will only be flushed if the height, width or pixelformat are different. Selects the PixelFormat automaticly from the bitmap.}
-      procedure LoadFromBitmap(ABitmap:TBitmap);overload;
-      {Add an alphachannel to the current texture. The bitmap has to have the same size as the loaded one.}
-      procedure AddAlphaChannel(ABitmap:TBitmap);
-      {Overide the alpha channel. 255 to make the texture completly opac.}
-      procedure SetAlphaValue(AValue:byte);
-      {Writes the current texture into a bitmap.}
-      procedure SaveToBitmap(ABitmap:TBitmap);
-      {Writes the current texture into a bitmap.}
-      procedure SaveAlphaChannelToBitmap(ABitmap:TBitmap);
-      {Flush the texture.}
-      procedure FreeTexture;
-
-      {The parent TAdDraw.}
-      property Parent:TAdDraw read FParent;
-      {Returns weather a texture is loaded.}
-      property Loaded:boolean read GetLoaded;
-      {Returns the width of the texture. Use BaseRect.Right instead.}
-      property Width:integer read FWidth;
-      {Returns the height of the texture. Use BaseRect.Bottom instead.}
-      property Height:integer read FHeight;
-      {If a loaded texture has a size which sizes are not power of two, it will be resized.
-      To keep the original image size it will be stored into BaseRect.}
-      property BaseRect:TRect read FBaseRect;
-      {Returns the Pixelformat of the current texture. May be 16- or 32- Bit.}
-      property PixelFormat:byte read FPixelFormat;
-  end;
-
-  {A list which is able to contain TRects}
-  TRectList = class(TList)
-    private
-     	function GetItem(AIndex:integer):TRect;
-     	procedure SetItem(AIndex:integer;AItem:TRect);
-    protected
-      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
-    public
-      {Read/Write acess to the rectangles.}
-     	property Items[AIndex:integer]:TRect read GetItem write SetItem;default;
-      {Add a rectangle.}
-      procedure Add(ARect:TRect);
-    published
-  end;
+  end;      }
 
   TInitialLetters = string[4];
 
@@ -294,13 +227,81 @@ type
       //Returns the initial letters of this compressor. Will be calles without creating the object!!!
       function GetInitial:TInitialLetters;override;
       //Writes the bitmap into a stream
-      procedure Write(AStream:TStream;ABmp:TAdBitmap);virtual;abstract;
+      procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
       //Reads the bitmap from the stream
-      procedure Read(AStream:TStream;ABmp:TAdBitmap);virtual;abstract;
+      procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
   end;
 
   {A class of the compressor for easy registering}
   TCompressorClass = class of TCompressor;
+
+  EFormatNotSupportet = class(Exception);
+
+  TAdPictFormat = class(TPersistent)
+    public
+      procedure FileExts(strs:TStringList);virtual;abstract;
+      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;virtual;abstract;
+      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);virtual;abstract;
+      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;virtual;abstract;
+  end;
+
+  TAdSimpleFormat = class(TAdPictFormat)
+    public
+      procedure FileExts(strs:TStringList);override;
+      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
+      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
+      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
+  end;
+
+  TAdPictFormatClass = class of TAdPictFormat;
+
+  TAdTexture = class
+    private
+      FParent:TAdDraw;
+      FCache:TMemoryStream;
+      FAd2DTexture:TAd2DBitmapTexture;
+      FCompressor:TCompressor;
+      FCompressorClass:TCompressorClass;
+      function GetInitialized:boolean;
+      procedure SetCompressor(AClass:TCompressorClass);
+    protected
+      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
+    public
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;override;
+
+      procedure LoadFromStream(AStream:TStream);
+      procedure SaveToStream(AStream:TStream);
+
+      procedure SaveToFile(AFile:string);
+      procedure LoadFromFile(AFile:string);
+
+      procedure LoadGraphicFromFile(AFile:string;Transparent:boolean;TransparentColor:TColor);
+      procedure LoadFromGraphic(AGraphic:TGraphic);
+
+      procedure Initialize;
+      procedure Finalize;
+      procedure Clear;
+      property Texture:TAd2DBitmapTexture read FAd2DTexture;
+      property Initialized:boolean read GetInitialized;
+      //Set a compressor class. Default: TBMPCompressor;
+      property Compressor:TCompressorClass read FCompressorClass write SetCompressor;
+  end;
+
+  {A list which is able to contain TRects}
+  TRectList = class(TList)
+    private
+     	function GetItem(AIndex:integer):TRect;
+     	procedure SetItem(AIndex:integer;AItem:TRect);
+    protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
+    public
+      {Read/Write acess to the rectangles.}
+     	property Items[AIndex:integer]:TRect read GetItem write SetItem;default;
+      {Add a rectangle.}
+      procedure Add(ARect:TRect);
+    published
+  end;
 
   //This represents one image in an ImageList.
   TPictureCollectionItem = class
@@ -317,8 +318,6 @@ type
       FTextureYMode:TTextureMode;
       FDetail:integer;
       FOwnTexture:boolean;
-      FCompressor:TCompressor;
-      FCompressorClass:TCompressorClass;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -327,11 +326,8 @@ type
       function GetWidth:integer;
       function GetHeight:integer;
       procedure SetCurrentColor(Alpha:byte);
-      procedure SetTextureXMode(AValue:TTextureMode);
-      procedure SetTextureYMode(AValue:TTextureMode);
       procedure SetDetail(AValue:integer);
       procedure SetTexture(AValue:TAdTexture);
-      procedure SetCompressor(AClass:TCompressorClass);
     protected
       Rects:TRectList;
       procedure CreatePatternRects;
@@ -340,7 +336,7 @@ type
       //True if this item can be freed by the image list
       FreeByList:boolean;
       //Contains the link to Andorras Image
-      AdMesh:TAdMesh;
+      AdMesh:TAd2DMesh;
       //A Constructor
       constructor Create(AAdDraw:TAdDraw);
       //A Destructor
@@ -415,14 +411,8 @@ type
       property Color:TColor read FColor write FColor;
       //Name of the image in the imagelist.
       property Name:string read FName write FName;
-      //Set the mode of the texture.
-      property TextureXMode:TTextureMode read FTextureXMode write SetTextureXMode;
-      //Set the mode of the texture.
-      property TextureYMode:TTextureMode read FTextureYMode write SetTextureYMode;
       //Important for using lights: How many vertices does the image have.
       property Detail:integer read FDetail write SetDetail;
-      //Set a compressor class. Default: TBMPCompressor;
-      property Compressor:TCompressorClass read FCompressorClass write SetCompressor;
   end;
 
   //Administrates the images
@@ -484,22 +474,27 @@ const
 var
   //Contains all registered compressors. You must not change the contents.
   RegisteredCompressors:TStringList;
+  RegisteredFormats:TStringList;
 
 //Is called for registering a compressor class. If you register a compressor it will be automaticly used for decompressing.
 procedure RegisterCompressor(AClass:TClass);
 
+//Is called for registering a format class. The format classes are used to give the ability to load files of serveral formats.
+procedure RegisterFormat(AClass:TClass);
+
+
 implementation
-
-type TRGBRec = packed record
-  r,g,b:byte;
-end;
-
-type PRGBRec = ^TRGBRec;
 
 procedure RegisterCompressor(AClass:TClass);
 begin
   RegisterClass(TPersistentClass(AClass));
   RegisteredCompressors.Add(AClass.ClassName);
+end;
+
+procedure RegisterFormat(AClass:TClass);
+begin
+  RegisterClass(TPersistentClass(AClass));
+  RegisteredFormats.Add(AClass.ClassName);
 end;
 
 { TAdDraw }
@@ -516,8 +511,7 @@ begin
   FLog := TAdLog.Create;
   FLogFileName := 'adlog.txt';
 
-  //FSurfaceEventList := TSurfaceEventList.Create;
-  //FCanvas := TSurfaceCanvas.Create(self);
+  FSurfaceEventList := TSurfaceEventList.Create;
 
   AutoLoadLog := true;
 
@@ -557,20 +551,19 @@ begin
   end;
   FLog.Free;
 
-  //FSurfaceEventList.Free;
-  //FCanvas.Free;
-  
+  FSurfaceEventList.Free;
+
 	inherited Destroy;
 end;
 
 procedure TAdDraw.UnRegisterNotifyEvent(AProc: TSurfaceEvent);
 begin
-  //FSurfaceEventList.Remove(AProc)
+  FSurfaceEventList.Remove(AProc)
 end;
 
 procedure TAdDraw.RegisterNotifyEvent(AProc: TSurfaceEvent);
 begin
-  //FSurfaceEventList.Add(AProc);
+  FSurfaceEventList.Add(AProc);
 end;
 
 
@@ -754,14 +747,14 @@ begin
 end;
 
 procedure TAdDraw.CallNotifyEvent(AEventState: TSurfaceEventState);
-//var i:integer;
+var i:integer;
 begin
-  {i := 0;
+  i := 0;
   while i < FSurfaceEventList.Count do
   begin
-    //FSurfaceEventList.Items[i](self,AEventState);
+    FSurfaceEventList.Items[i](self,AEventState);
     i := i + 1;
-  end;     }
+  end;
 end;
 
 function TAdDraw.CanDraw:boolean;
@@ -769,172 +762,9 @@ begin
   result := (AdAppl <> nil) and (Initialized);
 end;
 
-{TAdTexture}
-
-{constructor TAdTexture.Create(AAdDraw:TAdDraw);
-begin
-  inherited Create;
-  AdTexture := nil;
-  FParent := AAdDraw;
-  FParent.RegisterNotifyEvent(Notify);
-end;
-
-destructor TAdTexture.Destroy;
-begin
-  FParent.UnRegisterNotifyEvent(Notify);
-  FreeTexture;
-  if Assigned(FPicture) then
-  begin
-    FreeAndNil(FPicture);
-  end;
-  if Assigned(FPictureAlpha) then
-  begin
-    FreeAndNil(FPictureAlpha);
-  end;
-  inherited Destroy;
-end;
-
-procedure TAdTexture.LoadFromFile(afile:string;ATransparent:boolean;ATransparentColor:TColor);
-var FTransparentColor:TAndorraColor;
-    Info:TImageInfo;
-begin
-  FreeTexture;
-  FTransparentColor := Ad_ARGB(0,0,0,0);
-  if ATransparent then
-  begin
-    FTransparentColor := Ad_ARGB(255,GetRValue(ATransparentColor),GetGValue(ATransparentColor),GetBValue(ATransparentColor));
-  end;
-  AdTexture := FParent.AdDllLoader.LoadTextureFromFile(FParent.AdAppl,PChar(Afile),FTransparentColor);
-  Info := FParent.AdDllLoader.GetTextureInfo(AdTexture);
-  FWidth := Info.Width;
-  FHeight := Info.Height;
-  FBaseRect := Info.BaseRect;
-  FPixelFormat := 32;
-end;
-
-procedure TAdTexture.LoadFromBitmap(ABitmap:TBitmap;ABitDepth:byte);
-var FColorDepth:byte;
-    Info:TImageInfo;
-begin
-  if (ABitmap.Width <> FBaseRect.Right) or (ABitmap.Height <> FBaseRect.Bottom) or
-     (FPixelFormat <> ABitDepth) or (AdTexture = nil) then
-  begin
-    FreeTexture;
-    case ABitDepth of
-      16: FColorDepth := 16;
-    else
-      FColorDepth := 32;
-    end;
-    AdTexture := FParent.AdDllLoader.LoadTextureFromBitmap(Fparent.AdAppl,ABitmap,FColorDepth);
-    Info := FParent.AdDllLoader.GetTextureInfo(AdTexture);
-    FWidth := Info.Width;
-    FHeight := Info.Height;
-    FBaseRect := Info.BaseRect;
-    FPixelFormat := FColorDepth;
-  end
-  else
-  begin
-    FParent.AdDllLoader.RefreshTextureWithBitmap(AdTexture,ABitmap);
-  end;
-end;
-
-
-procedure TAdTexture.LoadFromBitmap(ABitmap: TBitmap);
-var ABitDepth:byte;
-begin
-  case ABitmap.PixelFormat of
-    pf16Bit: ABitDepth := 16;
-  else
-    ABitDepth := 32;
-  end;
-  LoadFromBitmap(ABitmap,ABitDepth);
-end;
-
-procedure TAdTexture.AddAlphaChannel(ABitmap:TBitmap);
-begin
-  if AdTexture <> nil then
-  begin
-    FParent.AdDllLoader.AddTextureAlphaChannel(AdTexture,ABitmap);
-  end;
-end;
-
-procedure TAdTexture.SaveAlphaChannelToBitmap(ABitmap: TBitmap);
-begin
-  if AdTexture <> nil then
-  begin
-    FParent.AdDllLoader.GetTextureAlphaChannelAsBitmap(AdTexture,ABitmap);
-  end;
-end;
-
-procedure TAdTexture.SaveToBitmap(ABitmap: TBitmap);
-begin
-  if AdTexture <> nil then
-  begin
-    FParent.AdDllLoader.GetTextureAsBitmap(AdTexture,ABitmap);
-  end;
-end;
-
-procedure TAdTexture.Notify(Sender: TObject; AEvent: TSurfaceEventState);
-begin
-  if AEvent = seFinalize then
-  begin
-    if Loaded then
-    begin
-      if Assigned(FPicture) then
-      begin
-        FreeAndNil(FPicture);
-      end;
-      if Assigned(FPictureAlpha) then
-      begin
-        FreeAndNil(FPictureAlpha);
-      end;
-      FPicture := TBitmap.Create;
-      FPictureAlpha := TBitmap.Create;
-      SaveToBitmap(FPicture);
-      SaveAlphaChannelToBitmap(FPictureAlpha);
-    end;
-    FreeTexture;
-  end;
-  if AEvent = seInitialize then
-  begin
-    if not Loaded then
-    begin
-      if Assigned(FPicture) then
-      begin
-        LoadFromBitmap(FPicture);
-        AddAlphaChannel(FPictureAlpha);
-        FreeAndNil(FPicture);
-        FreeAndNil(FPictureAlpha);
-      end;
-    end;
-  end;
-end;      
-
-procedure TAdTexture.SetAlphaValue(AValue:byte);
-begin
-  if AdTexture <> nil then
-  begin
-    FParent.AdDllLoader.SetTextureAlpha(AdTexture,AValue);
-  end;
-end;
-
-procedure TAdTexture.FreeTexture;
-begin
-  if AdTexture <> nil then
-  begin
-    FParent.AdDllLoader.FreeTexture(AdTexture);
-    AdTexture := nil;
-  end;
-end;
-
-function TAdTexture.GetLoaded:boolean;
-begin
-  result := AdTexture <> nil;
-end;
-
 {TRectList}
 
-{procedure TRectList.Add(ARect: TRect);
+procedure TRectList.Add(ARect: TRect);
 var ar:PRect;
 begin
   new(ar);
@@ -959,12 +789,12 @@ end;
 procedure TRectList.SetItem(AIndex:integer;AItem:TRect);
 begin
   PRect(inherited Items[AIndex])^ := AItem;
-end; }
+end;
 
 
 {TPictureCollectionItem}
 
-{constructor TPictureCollectionItem.Create(AAdDraw:TAdDraw);
+constructor TPictureCollectionItem.Create(AAdDraw:TAdDraw);
 begin
   inherited Create;
   FTexture := TAdTexture.Create(AAdDraw);
@@ -973,7 +803,6 @@ begin
   Rects := TRectList.Create;
   FColor := clWhite;
   FOwnTexture := true;
-  Compressor := THAICompressor;
   Initialize;
 end;
 
@@ -982,10 +811,6 @@ begin
   if FOwnTexture then
   begin
     FTexture.Free;
-  end;
-  if FCompressor <> nil then
-  begin
-    FCompressor.Free;
   end;
   Rects.Free;
   FParent.UnRegisterNotifyEvent(Notify);
@@ -997,13 +822,13 @@ procedure TPictureCollectionItem.CreatePatternRects;
 var ax,ay:integer;
 begin
   Rects.Clear;
-  with Texture.BaseRect do
+  with FTexture.Texture do
   begin
     if (FPatternWidth <> 0) and (FPatternHeight <> 0) then
     begin
-      for ay := 0 to ((Bottom+FSkipHeight) div (PatternHeight+FSkipHeight)) - 1 do
+      for ay := 0 to ((BaseHeight+FSkipHeight) div (PatternHeight+FSkipHeight)) - 1 do
       begin
-        for ax := 0 to ((Right+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
+        for ax := 0 to ((BaseWidth+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
         begin
           Rects.Add(Bounds(
             ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
@@ -1013,14 +838,14 @@ begin
     end
     else
     begin
-      Rects.Add(Rect(0,0,Right,Bottom));
+      Rects.Add(Rect(0,0,BaseWidth,BaseHeight));
     end;
   end;
 end;
 
 procedure TPictureCollectionItem.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1028,13 +853,13 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       0,0,0,bmAlpha);
-  end;
+  end;}
 end;
 
 procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1042,13 +867,13 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmAdd);
-  end;
+  end;   }
 end;
 
 procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1056,13 +881,13 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmAlpha);
-  end;
+  end; }
 end;
 
 procedure TPictureCollectionItem.DrawMask(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1070,13 +895,13 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmMask);
-  end;
+  end;    }
 end;
 
 procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1084,14 +909,14 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAlpha);
-  end;
+  end;}
 end;
 
 procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1099,14 +924,14 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAdd);
-  end;
+  end; }
 end;
 
 procedure TPictureCollectionItem.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1114,14 +939,14 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmAlpha);
-  end;
+  end;  }
 end;
 
 procedure TPictureCollectionItem.DrawRotateMask(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1129,36 +954,36 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       Angle,CenterX,CenterY,bmMask);
-  end;
+  end;   }
 end;
 
 procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,SourceRect,
       Angle,CenterX,CenterY,bmAdd);
-  end;
+  end; }
 end;
 
 procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(Alpha);
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,SourceRect,
       Angle,CenterX,CenterY,bmAlpha);
-  end;
+  end;     }
 end;
 
 procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
 begin
-  if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
@@ -1166,12 +991,12 @@ begin
     FParent.AdDllLoader.DrawImage(
       FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
       0,0,0,bmAlpha);
-  end;
+  end; }
 end;
 
 procedure TPictureCollectionItem.Restore;
 begin
-  with FParent.AdDllLoader do
+  {with FParent.AdDllLoader do
   begin
     if FTexture.Loaded then
     begin
@@ -1180,7 +1005,7 @@ begin
       FHeight := Texture.BaseRect.Bottom;
       CreatePatternRects;
     end;
-  end;
+  end;   }
 end;
 
 procedure TPictureCollectionItem.SetPatternWidth(AValue: Integer);
@@ -1211,46 +1036,10 @@ begin
   FTexture := AValue;
 end;
 
-procedure TPictureCollectionItem.SetTextureXMode(AValue: TTextureMode);
-begin
-  if AValue <> FTextureXMode then
-  begin
-    case AValue of
-      tmWrap: FParent.AdDllLoader.SetTextureXMode(AdImage,amWrap);
-      tmMirror: FParent.AdDllLoader.SetTextureXMode(AdImage,amMirror);
-      tmClamp: FParent.AdDllLoader.SetTextureXMode(AdImage,amClamp);
-    end;
-    FTextureXMode := AValue;
-  end;
-end;
-
-procedure TPictureCollectionItem.SetTextureYMode(AValue: TTextureMode);
-begin
-  if AValue <> FTextureYMode then
-  begin
-    case AValue of
-      tmWrap: FParent.AdDllLoader.SetTextureYMode(AdImage,amWrap);
-      tmMirror: FParent.AdDllLoader.SetTextureYMode(AdImage,amMirror);
-      tmClamp: FParent.AdDllLoader.SetTextureYMode(AdImage,amClamp);
-    end;
-    FTextureYMode := AValue;
-  end;
-end;
-
-procedure TPictureCollectionItem.SetCompressor(AClass: TCompressorClass);
-begin
-  if FCompressor <> nil then
-  begin
-    FreeAndNil(FCompressor);
-  end;
-  FCompressor := AClass.Create;
-  FCompressorClass := AClass;
-end;
-
 procedure TPictureCollectionItem.SetCurrentColor(Alpha: byte);
 var CurCol:TAndorraColor;
 begin
-  if Texture.Loaded then
+  {if Texture.Loaded then
   begin
     CurCol := Ad_ARGB(Alpha,GetRValue(FColor),GetGValue(FColor),GetBValue(FColor));
     if not CompareColors(CurCol,FLastColor) then
@@ -1258,7 +1047,7 @@ begin
       FParent.AdDllLoader.SetImageColor(AdImage,CurCol);
       FLastColor := CurCol;
     end;
-  end;
+  end;   }
 end;
 
 procedure TPictureCollectionItem.SetDetail(AValue: integer);
@@ -1266,7 +1055,7 @@ begin
   if AValue > 0 then
   begin
     FDetail := AValue;
-    FParent.AdDllLoader.SetImageDetail(AdImage,AValue);
+    //FParent.AdDllLoader.SetImageDetail(AdImage,AValue);
   end;
 end;
 
@@ -1292,12 +1081,11 @@ end;
 
 procedure TPictureCollectionItem.Initialize;
 begin
-  if AdImage <> nil then
+  if AdMesh <> nil then
   begin
     Finalize;
   end;
-  AdImage := FParent.AdDllLoader.CreateImage(FParent.AdAppl);
-  FParent.AdDllLoader.SetImageColor(AdImage,FLastColor);
+  AdMesh := FParent.AdAppl.CreateMesh;
 end;
 
 procedure TPictureCollectionItem.LoadFromFile(AFile: string);
@@ -1320,56 +1108,16 @@ begin
 end;
 
 procedure TPictureCollectionItem.LoadFromStream(AStream: TStream);
-var bmp1,bmp2:TBitmap;
-    s:string;
+var s:string;
     c:char;
-    i,l:integer;
-    atemp:TCompressor;
-    cref:TPersistentClass;
+    l:integer;
 begin
   s := '';
   AStream.Read(c,1); s := s + c;
   AStream.Read(c,1); s := s + c;
   if s = 'PI' then
   begin
-    AStream.Read(c,1);
-    if c = 'T' then
-    begin
-      bmp1 := TBitmap.Create;
-      bmp2 := TBitmap.Create;
-      //Select a compressor
-      SetLength(s,4);
-      AStream.Read(s[1],4);
-      for i := 0 to RegisteredCompressors.Count - 1 do
-      begin
-        cref := GetClass(RegisteredCompressors[i]);
-        if cref <> nil then
-        begin
-          atemp := TCompressor(TCompressorClass(cref).Create);
-          if atemp.GetInitial <> s then
-          begin
-            FreeAndNil(atemp);
-          end
-          else
-          begin
-            break;
-          end;
-        end;
-      end;
-      if ATemp <> nil then
-      begin
-        ATemp.Read(AStream,bmp1,bmp2);
-        Texture.LoadFromBitmap(bmp1);
-        Texture.AddAlphaChannel(bmp2);
-        ATemp.Free;
-        bmp1.Free;
-        bmp2.Free;
-      end
-      else
-      begin
-        raise ENoCompressor.Create('The compressor '+s+' is not registered!');
-      end;
-    end;
+    Texture.LoadFromStream(AStream);
     AStream.Read(l,SizeOf(l));
     SetLength(FName,l);
     AStream.Read(FName[1],l);
@@ -1389,30 +1137,12 @@ begin
 end;
 
 procedure TPictureCollectionItem.SaveToStream(AStream: TStream);
-var bmp1,bmp2:TBitmap;
-    c:char;
-    s:TInitialLetters;
+var c:char;
     l:integer;
 begin
   c := 'P'; AStream.Write(c,1);
   c := 'I'; AStream.Write(c,1);
-  if (Texture.Loaded) and (FCompressor <> nil) then
-  begin
-    c := 'T'; AStream.Write(c,1);
-    bmp1 := TBitmap.Create;
-    bmp2 := TBitmap.Create;
-    Texture.SaveToBitmap(bmp1);
-    Texture.SaveAlphaChannelToBitmap(bmp2);
-    s := FCompressor.GetInitial;
-    AStream.Write(s[1],4);
-    FCompressor.Write(AStream,bmp1,bmp2);
-    bmp1.Free;
-    bmp2.Free;
-  end
-  else
-  begin
-    c := #0; AStream.Write(c,1);
-  end;
+  Texture.SaveToStream(AStream);
   l := length(FName);
   AStream.Write(l,SizeOf(l));
   AStream.Write(FName[1],l);
@@ -1427,10 +1157,9 @@ end;
 
 procedure TPictureCollectionItem.Finalize;
 begin
-  if AdImage <> nil then
+  if AdMesh <> nil then
   begin
-    FParent.AdDllLoader.DestroyImage(AdImage);
-    AdImage := nil;
+    FreeAndNil(AdMesh);
   end;
 end;
 
@@ -1458,12 +1187,12 @@ end;
 function TPictureCollectionItem.GetPatternRect(ANr: Integer):TRect;
 begin
   result := Rects[ANr];
-end;   }
+end;
 
 
 {TPictureCollection}
 
-{function TPictureCollection.Add(AName: string): TPictureCollectionItem;
+function TPictureCollection.Add(AName: string): TPictureCollectionItem;
 begin
   result := TPictureCollectionItem.Create(FParent);
   result.Name := AName;
@@ -1606,14 +1335,14 @@ begin
   FCompressor := ACompressor;
   for i := 0 to Count - 1 do
   begin
-    Items[i].Compressor := FCompressor;
+    Items[i].Texture.Compressor := FCompressor;
   end;
 end;
 
 procedure TPictureCollection.SetItem(AIndex:integer;AItem:TPictureCollectionItem);
 begin
  inherited Items[AIndex] := AItem;
-end;   }
+end;
 
 { TAdLight }
 
@@ -1708,7 +1437,7 @@ end;
 
 { TSurfaceEventList }
 
-{procedure TSurfaceEventList.Add(Item: TSurfaceEvent);
+procedure TSurfaceEventList.Add(Item: TSurfaceEvent);
 var Event:PSurfaceEvent;
 begin
   New(Event);
@@ -1748,7 +1477,7 @@ end;
 procedure TSurfaceEventList.SetItem(AIndex:integer;AItem:TSurfaceEvent);
 begin
   inherited Items[AIndex] := @AItem;
-end;       }
+end;
 
 { THAICompressor }
 
@@ -1757,7 +1486,7 @@ begin
   result := #3+'HAI'
 end;
 
-procedure THAICompressor.Read(AStream: TStream; AdBmp:TAdBitmap);
+procedure THAICompressor.Read(AStream: TStream; ABmp:TAdBitmap);
 var
   input:TMemoryStream;
   output:TMemoryStream;
@@ -1809,11 +1538,332 @@ begin
   Output.Free;
 end; 
 
+{ TAdTexture }
+
+procedure TAdTexture.Clear;
+begin
+  if FCache <> nil then
+  begin
+    FreeAndNil(FCache);
+    Texture.FlushTexture;
+  end;
+end;
+
+constructor TAdTexture.Create(AParent:TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+  Initialize;
+  FParent.RegisterNotifyEvent(Notify);
+  Compressor := THAICompressor;
+end;
+
+destructor TAdTexture.Destroy;
+begin
+  if FCompressor <> nil then
+  begin
+    FreeAndNil(FCompressor);
+  end;
+  FParent.UnRegisterNotifyEvent(Notify);
+  Finalize;
+  Inherited Destroy;
+end;
+
+procedure TAdTexture.Finalize;
+begin
+  if Initialized then
+  begin
+    FreeAndNil(FAd2DTexture);
+  end;
+end;
+
+function TAdTexture.GetInitialized: boolean;
+begin
+  result := FAd2DTexture <> nil;
+end;
+
+procedure TAdTexture.Initialize;
+begin
+  Finalize;
+  FAd2DTexture := FParent.AdAppl.CreateBitmapTexture;
+end;
+
+procedure TAdTexture.SaveToFile(AFile: string);
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.SaveToFile(AFile);
+end;
+
+procedure TAdTexture.LoadFromFile(AFile: string);
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  ms.LoadFromFile(AFile);
+  ms.Position := 0;
+  ms.LoadFromStream(ms);
+  ms.Free;
+end;
+
+procedure TAdTexture.LoadFromGraphic(AGraphic: TGraphic);
+var
+  fmt:TAdPictFormat;
+  i:integer;
+  cref:TAdPictFormatClass;
+  bmp:TAdBitmap;
+begin
+  for i := 0 to RegisteredFormats.Count-1 do
+  begin
+    cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
+    if cref <> nil then
+    begin
+      fmt := TAdPictFormat(cref.Create);
+      if fmt.SupportsGraphicClass(TGraphicClass(AGraphic.ClassType)) then
+      begin
+        break;
+      end;
+      fmt.Free;
+      fmt := nil;
+    end;
+    if fmt <> nil then
+    begin
+      bmp := TAdBitmap.Create;
+      fmt.AssignGraphic(AGraphic,bmp);
+      Texture.LoadFromBitmap(bmp);
+      bmp.Free;
+    end;    
+  end;
+end;
+
+procedure TAdTexture.LoadGraphicFromFile(AFile: string; Transparent: boolean;
+  TransparentColor: TColor);
+var
+  fmt:TAdPictFormat;
+  i:integer;
+  cref:TAdPictFormatClass;
+  ext:string;
+  str:TStringList;
+  bmp:TAdBitmap;
+begin
+  ext := ExtractFileExt(AFile);
+  for i := 0 to RegisteredFormats.Count-1 do
+  begin
+    cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
+    if cref <> nil then
+    begin
+      fmt := TAdPictFormat(cref.Create);
+      str := TStringlist.Create;
+      fmt.FileExts(str);
+      if str.IndexOf(ext) > -1 then
+      begin
+        str.Free;
+        break;
+      end;
+      str.Free;
+      fmt.Free;
+      fmt := nil;
+    end;
+  end;
+  if fmt <> nil then
+  begin
+    bmp := TAdBitmap.Create;
+    fmt.LoadFromFile(AFile,bmp,transparent,transparentcolor);
+    Texture.LoadFromBitmap(bmp);
+    bmp.Free;
+  end;
+end;
+
+procedure TAdTexture.LoadFromStream(AStream: TStream);
+var c:char;
+    i:integer;
+    s:string;
+    cref:TPersistentClass;
+    atemp:TCompressor;
+    bmp:TAdBitmap;
+    bits:byte;
+begin
+  AStream.Read(c,1);
+  if c = 'T' then
+  begin
+    //Select a compressor
+    SetLength(s,4);
+    AStream.Read(s[1],4);
+    for i := 0 to RegisteredCompressors.Count - 1 do
+    begin
+      cref := GetClass(RegisteredCompressors[i]);
+      if cref <> nil then
+      begin
+        atemp := TCompressor(TCompressorClass(cref).Create);
+        if atemp.GetInitial <> s then
+        begin
+          FreeAndNil(atemp);
+        end
+        else
+        begin
+          break;
+        end;
+      end;
+    end;
+    if ATemp <> nil then
+    begin
+      AStream.Read(bits,1);
+      bmp := TAdBitmap.Create;
+      ATemp.Read(AStream,bmp);
+      Texture.LoadFromBitmap(bmp,bits);
+      ATemp.Free;
+      bmp.Free;
+    end
+    else
+    begin
+      raise ENoCompressor.Create('The compressor '+s+' is not registered!');
+    end;
+  end;
+end;
+
+procedure TAdTexture.SaveToStream(AStream: TStream);
+var c:char;
+    bmp:TAdBitmap;
+    s:string;
+    bits:byte;
+begin
+  if (Texture.Loaded) and (FCompressor <> nil) then
+  begin
+    c := 'T'; AStream.Write(c,1);
+    bmp := TAdBitmap.Create;
+    Texture.SaveToBitmap(bmp);
+    s := FCompressor.GetInitial;
+    AStream.Write(s[1],4);
+    bits := Texture.BitCount;
+    AStream.Write(bits,1);
+    FCompressor.Write(AStream,bmp);
+    bmp.Free;
+  end
+  else
+  begin
+    c := #0; AStream.Write(c,1);
+  end;
+end;
+
+procedure TAdTexture.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+begin
+  if AEvent = seFinalize then
+  begin
+    if FCache <> nil then
+    begin
+      FreeAndNil(FCache);
+    end;
+    if FAd2DTexture.Loaded then
+    begin
+      FCache := TMemoryStream.Create;
+      SaveToStream(FCache);
+      FCache.Position := 0;
+    end;
+    Finalize;
+  end;
+  
+  if AEvent = seInitialize then
+  begin
+    Initialize;
+    if FCache <> nil then
+    begin
+      FCache.Position := 0;
+      LoadFromStream(FCache);
+      FCache.Free;
+    end;
+  end;
+end;
+
+procedure TAdTexture.SetCompressor(AClass: TCompressorClass);
+begin
+  if FCompressor <> nil then
+  begin
+    FreeAndNil(FCompressor);
+  end;
+  FCompressor := AClass.Create;
+  FCompressorClass := AClass;
+end;
+
+{ TAdSimpleFormat }
+
+procedure TAdSimpleFormat.AssignGraphic(AGraphic: TGraphic; ABmp: TAdBitmap);
+var bmp:TBitmap;
+begin
+  if SupportsGraphicClass(TGraphicClass(AGraphic.ClassType)) then
+  begin
+    bmp := TBitmap.Create;
+    if AGraphic is TBitmap then
+    begin
+      bmp.Assign(AGraphic);
+    end
+    else
+    begin
+      bmp.Width := AGraphic.Width;
+      bmp.Height := AGraphic.Height;
+      bmp.Canvas.StretchDraw(rect(0,0,bmp.Width,bmp.Height),AGraphic);
+    end;
+    ABmp.AssignBitmap(bmp);
+    bmp.Free;
+  end
+  else
+  begin
+    raise EFormatNotSupportet.Create('Can not assign the graphic with the format '+AGraphic.ClassName+'. Only support TBitmap, TIcon and TMetafile.');
+  end;
+end;
+
+procedure TAdSimpleFormat.FileExts(strs: TStringList);
+begin
+  strs.Add('.bmp');
+  strs.Add('.dib');
+  strs.Add('.ico');
+  strs.Add('.wfm');
+  strs.Add('.emf');
+end;
+
+function TAdSimpleFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;Transparent:boolean;TransparentColor:TColor): boolean;
+var
+  pict:TPicture;
+  bmp:TBitmap;
+begin
+  result := true;
+  pict := TPicture.Create;
+  try
+    pict.LoadFromFile(AFile);
+    bmp := TBitmap.Create;
+    if pict.Graphic is TBitmap then
+    begin
+      bmp.Assign(pict.Graphic);
+    end
+    else
+    begin
+      bmp.Width := pict.Graphic.Width;
+      bmp.Height := pict.Graphic.Height;
+      bmp.Canvas.StretchDraw(rect(0,0,bmp.Width,bmp.Height),pict.Graphic);
+    end;
+    bmp.Transparent := Transparent;
+    bmp.TransparentColor := TransparentColor;
+    bmp.TransparentMode := tmFixed;
+    ABmp.AssignBitmap(bmp);
+    bmp.Free;
+  except
+    result := false;
+  end;
+  pict.Free;
+end;
+
+function TAdSimpleFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
+begin
+  result := (AGraphicClass = TBitmap) or (AGraphicClass = TMetafile) or (AGraphicClass = TIcon);
+end;
+
 initialization
   RegisteredCompressors := TStringList.Create;
+  RegisteredFormats := TStringList.Create;
   RegisterCompressor(THAICompressor);
+  RegisterFormat(TAdSimpleFormat);
 
 finalization
   RegisteredCompressors.Free;
+  RegisteredFormats.Free;
 
 end.

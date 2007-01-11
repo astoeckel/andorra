@@ -3,11 +3,10 @@ program Image;
 uses
   Forms,
   Main in 'Main.pas' {Form1},
+  AdClasses in '..\..\..\src\AdClasses.pas',
+  AdDLLLoader in '..\..\..\src\AdDLLLoader.pas',
   AdDraws in '..\..\..\src\AdDraws.pas',
-  AdParticles in '..\..\..\src\AdParticles.pas',
-  AdSprites in '..\..\..\src\AdSprites.pas',
-  Andorra in '..\..\..\src\Andorra.pas',
-  AndorraUtils in '..\..\..\src\AndorraUtils.pas';
+  Huffman in '..\..\..\src\Huffman.pas';
 
 {$R *.res}
 

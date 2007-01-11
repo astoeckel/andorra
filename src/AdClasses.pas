@@ -112,12 +112,12 @@ type
   TAdLogProc = procedure(LogItem:TAdLogItem) of object;
   
   //TAdLight = class;
-  TAdTexture = class;
+  TAd2DTexture = class;
   //TAdRenderTargetTexture = class;
-  TAdBitmapTexture = class;
-  TAdMesh = class;
+  TAd2DBitmapTexture = class;
+  TAd2DMesh = class;
 
-  TAdApplication = class
+  TAd2DApplication = class
     private
       FLogProc:TAdLogProc;
     protected
@@ -131,9 +131,9 @@ type
       constructor Create;virtual;abstract;
 
       //function CreateLight:TAdLight;virtual;abstract;
-      function CreateBitmapTexture:TAdBitmapTexture;virtual;abstract;
+      function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;virtual;abstract;
-      function CreateMesh:TAdMesh;virtual;abstract;
+      function CreateMesh:TAd2DMesh;virtual;abstract;
 
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);virtual;abstract;
 
@@ -155,7 +155,7 @@ type
       property MaxLights:integer read FMaxLightCount;
   end;
 
-  TAdTexture = class
+  TAd2DTexture = class
     private
     protected
       FWidth:integer;
@@ -163,7 +163,9 @@ type
       FBitCount:byte;
       FEditable:boolean;
       FTexture:Pointer;
-      function GetLoaded:boolean;virtual;abstract;      
+      FBaseWidth:integer;
+      FBaseHeight:integer;
+      function GetLoaded:boolean;virtual;abstract;
     public
       property Width:integer read FWidth;
       property Height:integer read FHeight;
@@ -171,9 +173,11 @@ type
       property Editable:boolean read FEditable;
       property Loaded:boolean read GetLoaded;
       property Texture:pointer read FTexture;
+      property BaseWidth:integer read FBaseWidth;
+      property BaseHeight:integer read FBaseHeight;
   end;
 
-  TAdMesh = class
+  TAd2DMesh = class
     private
     protected
       FVertices:TAdVertexArray;
@@ -181,11 +185,11 @@ type
       FVertexCount:integer;
       FIndicesCount:integer;
       FPrimitiveCount:integer;
-      FTexture:TAdTexture;
+      FTexture:TAd2DTexture;
       function GetUseIndexBuffer:boolean;
       procedure SetVertices(AVertices:TAdVertexArray);virtual;abstract;
       procedure SetIndex(AIndex:TAdIndexArray);virtual;abstract;
-      procedure SetTexture(ATexture:TAdTexture);virtual;
+      procedure SetTexture(ATexture:TAd2DTexture);virtual;
       function GetLoaded:boolean;virtual;abstract;
     public
       procedure Update;virtual;abstract;
@@ -198,24 +202,20 @@ type
       property VertexCount:integer read FVertexCount;
       property IndicesCount:integer read FIndicesCount;
       property PrimitiveCount:integer read FPrimitiveCount write FPrimitiveCount;
-      property Texture:TAdTexture read FTexture write SetTexture;
+      property Texture:TAd2DTexture read FTexture write SetTexture;
   end;
 
-  TAdBitmapTexture = class(TAdTexture)
+  TAd2DBitmapTexture = class(TAd2DTexture)
     private
     protected
-      FBaseWidth:integer;
-      FBaseHeight:integer;
     public
       procedure FlushTexture;virtual;abstract;
       procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);virtual;abstract;
       procedure SaveToBitmap(ABmp:TAdBitmap);virtual;abstract;
-      property BaseWidth:integer read FBaseWidth;
-      property BaseHeight:integer read FBaseHeight;
     end;
 
 
-  TAdCreateApplicationProc = function:TAdApplication;stdcall;
+  TAdCreateApplicationProc = function:TAd2DApplication;stdcall;
 
   TRGBRec = packed record
     r,g,b:byte;
@@ -638,18 +638,18 @@ end;
 
 { TAdApplication }
 
-procedure TAdApplication.SetLogProc(ALogProc: TAdLogProc);
+procedure TAd2DApplication.SetLogProc(ALogProc: TAdLogProc);
 begin
   TMethod(FLogProc).Code := TMethod(ALogProc).Code;
   TMethod(FLogProc).Data := TMethod(ALogProc).Data;
 end;
 
-procedure TAdApplication.SetOptions(AValue: TAdOptions);
+procedure TAd2DApplication.SetOptions(AValue: TAdOptions);
 begin
   FOptions := AValue;
 end;
 
-procedure TAdApplication.WriteLog(Typ: TAdLogTyp; Text: PChar);
+procedure TAd2DApplication.WriteLog(Typ: TAdLogTyp; Text: PChar);
 var LogItem:TAdLogItem;
 begin
   if @FLogProc <> nil then
@@ -662,12 +662,12 @@ end;
 
 { TAdMesh }
 
-function TAdMesh.GetUseIndexBuffer: boolean;
+function TAd2DMesh.GetUseIndexBuffer: boolean;
 begin
   result := FIndices <> nil;
 end;
 
-procedure TAdMesh.SetTexture(ATexture:TAdTexture);
+procedure TAd2DMesh.SetTexture(ATexture:TAd2DTexture);
 begin
   FTexture := ATexture;
 end;

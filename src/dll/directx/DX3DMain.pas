@@ -16,7 +16,7 @@ interface
 uses d3dx9, dxerr9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils;
 
 type
-  TDXApplication = class(TAdApplication)
+  TDXApplication = class(TAd2DApplication)
     private
       FLights:Array[0..1023] of Boolean;
       FCurrentLights:integer;
@@ -28,9 +28,9 @@ type
       constructor Create;override;
       destructor Destroy;reintroduce;
       //function CreateLight:TAdLight;override;
-      function CreateBitmapTexture:TAdBitmapTexture;override;
+      function CreateBitmapTexture:TAd2DBitmapTexture;override;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
-      function CreateMesh:TAdMesh;override;
+      function CreateMesh:TAd2DMesh;override;
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
@@ -43,7 +43,7 @@ type
       procedure Flip;override;
   end;
 
-  TDXMesh = class(TAdMesh)
+  TDXMesh = class(TAd2DMesh)
     private
       FVertexBuffer:IDirect3DVertexBuffer9;
       FIndexBuffer:IDirect3DIndexBuffer9;
@@ -53,7 +53,7 @@ type
     protected
       procedure SetVertices(AVertices:TAdVertexArray);override;
       procedure SetIndex(AIndex:TAdIndexArray);override;
-      procedure SetTexture(ATexture:TAdTexture);override;
+      procedure SetTexture(ATexture:TAd2DTexture);override;
       function GetLoaded:boolean;override;
     public
       procedure SetMatrix(AMatrix:TAdMatrix);override;
@@ -63,7 +63,7 @@ type
       procedure Update;override;
   end;
 
-  TDXBitmapTexture = class(TAdBitmapTexture)
+  TDXBitmapTexture = class(TAd2DBitmapTexture)
     private
       FParent:TDXApplication;
     protected
@@ -105,12 +105,12 @@ begin
   inherited;
 end;
 
-function TDXApplication.CreateMesh: TAdMesh;
+function TDXApplication.CreateMesh: TAd2DMesh;
 begin
   result := TDXMesh.Create(self);
 end;
 
-function TDXApplication.CreateBitmapTexture: TAdBitmapTexture;
+function TDXApplication.CreateBitmapTexture: TAd2DBitmapTexture;
 begin
   result := TDXBitmapTexture.Create(self);
 end;
@@ -467,7 +467,7 @@ begin
   end;
 end;
 
-procedure TDXMesh.SetTexture(ATexture: TAdTexture);
+procedure TDXMesh.SetTexture(ATexture: TAd2DTexture);
 begin
   inherited SetTexture(ATexture);
 end;

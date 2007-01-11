@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AndorraUtils;
+  Dialogs, AdDraws, AdClasses;
 
 type
   TForm1 = class(TForm)
@@ -29,6 +29,8 @@ implementation
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
+var bmp:TBitmap;
+    adbmp:TAdBitmap;
 begin
   AdPerCounter := TPerformanceCounter.Create;
 
@@ -42,7 +44,7 @@ begin
     AdImageList1 := TPictureCollection.Create(AdDraw1);
     with AdImageList1.Add('logo') do
     begin
-      Texture.LoadFromFile('icon64.png',True,clWhite);
+      Texture.LoadGraphicFromFile('C:\fc.bmp',True,clWhite);
     end;
     AdImageList1.Restore;
   end
