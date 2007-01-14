@@ -110,6 +110,9 @@ type
   end;
   
   TAdLogProc = procedure(LogItem:TAdLogItem) of object;
+
+  TAd2DBlendMode = (bmAlpha,bmAdd,bmMask);
+  TAd2DDrawMode = (dmNormal,dmWireFrames);
   
   //TAdLight = class;
   TAd2DTexture = class;
@@ -193,7 +196,7 @@ type
       function GetLoaded:boolean;virtual;abstract;
     public
       procedure Update;virtual;abstract;
-      procedure Draw;virtual;abstract;
+      procedure Draw(ABlendMode:TAd2DBlendMode);virtual;abstract;
       procedure SetMatrix(AMatrix:TAdMatrix);virtual;abstract;
       property Loaded:boolean read GetLoaded;
       property Vertices:TAdVertexArray read FVertices write SetVertices;
@@ -256,7 +259,18 @@ function AdMatrix_RotationZ(angle:single):TAdMatrix;
 function AdMatrix_Identity:TAdMatrix;
 function AdMatrix_Clear:TAdMatrix;
 
+function CompRects(Rect1,Rect2:TRect):boolean;
+
 implementation
+
+function CompRects(Rect1,Rect2:TRect):boolean;
+begin
+  result := (Rect1.Left = Rect2.Left) and
+            (Rect1.Right = Rect2.Right) and
+            (Rect1.Top = Rect2.Top) and
+            (Rect1.Bottom = Rect2.Bottom);
+end;
+
 
 function AdVector3(AX,AY,AZ:double):TAdVector3;
 begin

@@ -173,8 +173,6 @@ type
     property AutoLoadLog: boolean read FAutoLoadLog write SetAutoLoadLog;
     //The name of the logfile.
     property LogFileName:string read FLogFileName write FLogFileName;
-    //A canvas for drawing directly on the surface. (Draw through the canvas shouldn't be used very often because it is slow.)
-    //property Canvas:TSurfaceCanvas read FCanvas;
   end;
 
   {TAdLight is the representation of a light in your game. Before using lights
@@ -313,11 +311,12 @@ type
       FTexture:TAdTexture;
       FColor:TColor;
       FLastColor:TAndorraColor;
+      FAlpha:byte;
       FName:string;
-      FTextureXMode:TTextureMode;
-      FTextureYMode:TTextureMode;
-      FDetail:integer;
+      FDetails:integer;
       FOwnTexture:boolean;
+      FSrcRect:TRect;
+      FUseIndexBuffer:boolean;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -325,11 +324,15 @@ type
       function GetPatternCount:integer;
       function GetWidth:integer;
       function GetHeight:integer;
+      function GetColor:TAndorraColor;
       procedure SetCurrentColor(Alpha:byte);
-      procedure SetDetail(AValue:integer);
+      procedure SetDetails(AValue:integer);
       procedure SetTexture(AValue:TAdTexture);
     protected
       Rects:TRectList;
+      procedure DrawMesh(DestApp:TAdDraw;DestRect,SourceRect:TRect;Rotation:integer;
+        RotCenterX,RotCenterY:single;BlendMode:TAd2DBlendMode);
+      procedure BuildVertices;
       procedure CreatePatternRects;
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
@@ -412,7 +415,7 @@ type
       //Name of the image in the imagelist.
       property Name:string read FName write FName;
       //Important for using lights: How many vertices does the image have.
-      property Detail:integer read FDetail write SetDetail;
+      property Details:integer read FDetails write SetDetails;
   end;
 
   //Administrates the images
@@ -677,7 +680,7 @@ begin
     FInitialized := false;
     CallNotifyEvent(seFinalize);
     AdAppl.Finalize;
-    FreeAndNil(AdAppl)
+    if AdAppl <> nil then FreeAndNil(AdAppl);
   end;
 end;
 
@@ -802,7 +805,9 @@ begin
   FParent.RegisterNotifyEvent(Notify);
   Rects := TRectList.Create;
   FColor := clWhite;
+  FAlpha := 255;
   FOwnTexture := true;
+  FDetails := 1;
   Initialize;
 end;
 
@@ -816,6 +821,120 @@ begin
   FParent.UnRegisterNotifyEvent(Notify);
   Finalize;
   inherited Destroy;
+end;
+
+procedure TPictureCollectionItem.DrawMesh(DestApp: TAdDraw; DestRect,
+  SourceRect: TRect; Rotation: integer; RotCenterX, RotCenterY: single;
+  BlendMode: TAd2DBlendMode);
+var
+  mat1,mat2:TAdMatrix;
+  curx,cury:single;  
+begin
+  if not CompRects(SourceRect,FSrcRect) then
+  begin
+    FSrcRect := SourceRect;
+    BuildVertices;
+  end;
+
+  //Initialize "The Matrix"
+  mat1 := AdMatrix_Identity;
+  mat2 := AdMatrix_Identity;
+
+  //Set the scale matrix
+  mat1 := AdMatrix_Scale((DestRect.Right-DestRect.Left)/FWidth,(DestRect.Bottom-DestRect.Top)/FHeight,0);
+  mat2 := AdMatrix_Multiply(mat1,mat2);
+
+  if (Rotation <> 0) then
+  begin
+    CurX := (DestRect.Right-DestRect.Left)*RotCenterX;
+    CurY := (DestRect.Bottom-DestRect.Top)*RotCenterY;
+
+    mat1 := AdMatrix_Translate(-CurX,-CurY,0);
+    mat2 := AdMatrix_Multiply(mat2,mat1);
+
+    mat1 := AdMatrix_RotationZ(Rotation/360*2*PI);
+    mat2 := AdMatrix_Multiply(mat2,mat1);
+
+    mat1 := AdMatrix_Translate(CurX,CurY,0);
+    mat2 := AdMatrix_Multiply(mat2,mat1);
+  end;
+
+  //Translate the Box
+  mat1 := AdMatrix_Translate(DestRect.Left,DestRect.Top,0);
+  mat2 := AdMatrix_Multiply(mat2,mat1);
+
+  AdMesh.SetMatrix(mat2); 
+  
+  AdMesh.Draw(BlendMode);
+end;
+
+procedure TPictureCollectionItem.BuildVertices;
+var
+  Vertices:TAdVertexArray;
+  Indices:TAdIndexArray;
+  i,x,y:integer;
+  ax,ay:double;
+  w,h:integer;
+  vc,ic:integer;
+  c:TAndorraColor;
+begin
+  if AdMesh <> nil then
+  begin
+    vc := (FDetails+1)*(FDetails+1);
+    ic := FDetails*FDetails*6;
+
+    SetLength(Vertices,vc);
+    SetLength(Indices,ic);
+
+    FUseIndexBuffer := FDetails > 1;
+
+    w := FSrcRect.Right - FSrcRect.Left;
+    h := FSrcRect.Bottom - FSrcRect.Top;
+
+    c := GetColor;
+
+    i := 0;
+    for y := 0 to FDetails do
+    begin
+      for x := 0 to FDetails do
+      begin
+        ay := y*fheight/FDetails;
+        ax := x*fwidth/FDetails;
+        Vertices[i].Position := AdVector3(ax,ay,0);
+        Vertices[i].Color := c;
+        Vertices[i].Texture := AdVector2((FSrcRect.Left + w/FDetails*x)/FWidth,(FSrcRect.Top + h/FDetails*y)/FHeight);
+        Vertices[i].Normal := AdVector3(0,0,-1);
+        i := i + 1;
+      end;
+    end;
+    AdMesh.Vertices := Vertices;
+
+    if FUseIndexBuffer then
+    begin
+      i := 0;
+      for y := 0 to FDetails - 1 do
+      begin
+        for x := 0 to FDetails - 1 do
+        begin
+          Indices[i] :=   y     * (FDetails+1) + x + 1;
+          Indices[i+1] := (y+1) * (FDetails+1) + x;
+          Indices[i+2] := y     * (FDetails+1) + x;
+          Indices[i+3] := y     * (FDetails+1) + x + 1;
+          Indices[i+4] := (y+1) * (FDetails+1) + x + 1;
+          Indices[i+5] := (y+1) * (FDetails+1) + x;
+          i := i + 6;
+        end;
+      end;
+      AdMesh.IndexBuffer := Indices;
+    end
+    else
+    begin
+      AdMesh.IndexBuffer := nil;
+    end;
+
+    AdMesh.PrimitiveCount := FDetails*FDetails*2;
+    AdMesh.Update;
+  end;
 end;
 
 procedure TPictureCollectionItem.CreatePatternRects;
@@ -845,167 +964,144 @@ end;
 
 procedure TPictureCollectionItem.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
+    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
       0,0,0,bmAlpha);
-  end;}
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
-      0,0,0,bmAdd);
-  end;   }
+    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmAdd);
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
-      0,0,0,bmAlpha);
-  end; }
+    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmAlpha);
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawMask(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
-      0,0,0,bmMask);
-  end;    }
+    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmMask);
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
-      Angle,CenterX,CenterY,bmAlpha);
-  end;}
+    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmAlpha);
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
-      Angle,CenterX,CenterY,bmAdd);
-  end; }
+    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmAdd);
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
-      Angle,CenterX,CenterY,bmAlpha);
-  end;  }
+    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmAlpha);
+  end;
 end;
 
 procedure TPictureCollectionItem.DrawRotateMask(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
-      Angle,CenterX,CenterY,bmMask);
-  end;   }
+    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmMask);
+  end;
 end;
 
 procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,DestRect,SourceRect,
-      Angle,CenterX,CenterY,bmAdd);
-  end; }
+    DrawMesh(Dest,DestRect,SourceRect,Angle,CenterX,CenterY,bmAdd);
+  end;
 end;
 
 procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,DestRect,SourceRect,
-      Angle,CenterX,CenterY,bmAlpha);
-  end;     }
+    DrawMesh(Dest,DestRect,SourceRect,Angle,CenterX,CenterY,bmAlpha);
+  end;
 end;
 
 procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
 begin
-  {if (Texture.Loaded) and (Dest.CanDraw) and (AdImage <> nil) then
+  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    FParent.AdDllLoader.DrawImage(
-      FParent.AdAppl,AdImage,DestRect,Rects[PatternIndex],
-      0,0,0,bmAlpha);
-  end; }
+    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmAlpha);
+  end;
 end;
 
 procedure TPictureCollectionItem.Restore;
 begin
-  {with FParent.AdDllLoader do
-  begin
-    if FTexture.Loaded then
-    begin
-      ImageLoadTexture(AdImage,FTexture.AdTexture);
-      FWidth := Texture.BaseRect.Right;
-      FHeight := Texture.BaseRect.Bottom;
-      CreatePatternRects;
-    end;
-  end;   }
+  FWidth := Texture.Texture.BaseWidth;
+  FHeight := Texture.Texture.BaseHeight;
+  AdMesh.Texture := Texture.Texture;
+  CreatePatternRects;
+
+  FSrcRect := Rect(0,0,FWidth,FHeight);
+  FLastColor := GetColor;
+  BuildVertices;
 end;
 
 procedure TPictureCollectionItem.SetPatternWidth(AValue: Integer);
@@ -1039,23 +1135,24 @@ end;
 procedure TPictureCollectionItem.SetCurrentColor(Alpha: byte);
 var CurCol:TAndorraColor;
 begin
-  {if Texture.Loaded then
+  if Texture.Texture.Loaded then
   begin
-    CurCol := Ad_ARGB(Alpha,GetRValue(FColor),GetGValue(FColor),GetBValue(FColor));
+    FAlpha := Alpha;
+    CurCol := GetColor;
     if not CompareColors(CurCol,FLastColor) then
     begin
-      FParent.AdDllLoader.SetImageColor(AdImage,CurCol);
       FLastColor := CurCol;
-    end;
-  end;   }
+      BuildVertices;
+    end;    
+  end;
 end;
 
-procedure TPictureCollectionItem.SetDetail(AValue: integer);
+procedure TPictureCollectionItem.SetDetails(AValue: integer);
 begin
-  if AValue > 0 then
+  if (AValue > 0) and (AValue <> FDetails) then
   begin
-    FDetail := AValue;
-    //FParent.AdDllLoader.SetImageDetail(AdImage,AValue);
+    FDetails := AValue;
+    BuildVertices;
   end;
 end;
 
@@ -1063,6 +1160,11 @@ procedure TPictureCollectionItem.SetPatternHeight(AValue: Integer);
 begin
   FPatternHeight := AValue;
   CreatePatternRects;
+end;
+
+function TPictureCollectionItem.GetColor: TAndorraColor;
+begin
+  result := Ad_ARGB(FAlpha,GetRValue(FColor),GetGValue(FColor),GetBValue(FColor));
 end;
 
 function TPictureCollectionItem.GetHeight: integer;
@@ -1121,13 +1223,11 @@ begin
     AStream.Read(l,SizeOf(l));
     SetLength(FName,l);
     AStream.Read(FName[1],l);
-    AStream.Read(FDetail,SizeOf(FDetail));
+    AStream.Read(FDetails,SizeOf(FDetails));
     AStream.Read(FPatternWidth,SizeOf(FPatternWidth));
     AStream.Read(FPatternHeight,SizeOf(FPatternHeight));
     AStream.Read(FSkipWidth,SizeOf(FSkipWidth));
     AStream.Read(FSkipHeight,SizeOf(FSkipHeight));
-    AStream.Read(FTextureXMode,SizeOf(FTextureXMode));
-    AStream.Read(FTextureYMode,SizeOf(FTextureYMode));
     Restore;
   end
   else
@@ -1146,13 +1246,11 @@ begin
   l := length(FName);
   AStream.Write(l,SizeOf(l));
   AStream.Write(FName[1],l);
-  AStream.Write(FDetail,SizeOf(FDetail));
+  AStream.Write(FDetails,SizeOf(FDetails));
   AStream.Write(FPatternWidth,SizeOf(FPatternWidth));
   AStream.Write(FPatternHeight,SizeOf(FPatternHeight));
   AStream.Write(FSkipWidth,SizeOf(FSkipWidth));
   AStream.Write(FSkipHeight,SizeOf(FSkipHeight));
-  AStream.Write(FTextureXMode,SizeOf(FTextureXMode));
-  AStream.Write(FTextureYMode,SizeOf(FTextureYMode));
 end;
 
 procedure TPictureCollectionItem.Finalize;
@@ -1508,7 +1606,6 @@ begin
   output.Position := 0;
 
   ABmp.LoadFromStream(output);
-  
   output.Free;
 end;
 
@@ -1525,6 +1622,9 @@ begin
   output := TMemoryStream.Create;
 
   Input.Position := 0;
+  Input.SaveToFile('test.raw');
+
+
   enc := THuffmanEncoder.Create;
   enc.Input := input;
   enc.Output := output;
@@ -1669,6 +1769,7 @@ begin
   begin
     bmp := TAdBitmap.Create;
     fmt.LoadFromFile(AFile,bmp,transparent,transparentcolor);
+    fmt.Free;
     Texture.LoadFromBitmap(bmp);
     bmp.Free;
   end;
@@ -1707,9 +1808,9 @@ begin
     end;
     if ATemp <> nil then
     begin
-      AStream.Read(bits,1);
       bmp := TAdBitmap.Create;
       ATemp.Read(AStream,bmp);
+      AStream.Read(bits,1);
       Texture.LoadFromBitmap(bmp,bits);
       ATemp.Free;
       bmp.Free;
@@ -1730,14 +1831,19 @@ begin
   if (Texture.Loaded) and (FCompressor <> nil) then
   begin
     c := 'T'; AStream.Write(c,1);
-    bmp := TAdBitmap.Create;
-    Texture.SaveToBitmap(bmp);
+
     s := FCompressor.GetInitial;
     AStream.Write(s[1],4);
-    bits := Texture.BitCount;
-    AStream.Write(bits,1);
+
+    bmp := TAdBitmap.Create;
+    bmp.ReserveMemory(Texture.Width,Texture.Height);
+    Texture.SaveToBitmap(bmp);
     FCompressor.Write(AStream,bmp);
     bmp.Free;
+
+    bits := Texture.BitCount;
+    AStream.Write(bits,1);
+
   end
   else
   begin
@@ -1746,6 +1852,8 @@ begin
 end;
 
 procedure TAdTexture.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+var bmp:TAdBitmap;
+    ms:TMemoryStream;
 begin
   if AEvent = seFinalize then
   begin
@@ -1769,7 +1877,7 @@ begin
     begin
       FCache.Position := 0;
       LoadFromStream(FCache);
-      FCache.Free;
+      FreeAndNil(FCache);
     end;
   end;
 end;

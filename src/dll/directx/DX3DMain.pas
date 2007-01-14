@@ -20,6 +20,7 @@ type
     private
       FLights:Array[0..1023] of Boolean;
       FCurrentLights:integer;
+      FLastTexture:TAd2DTexture;
     protected
       procedure SetOptions(AValue:TAdOptions);override;
     public
@@ -59,7 +60,7 @@ type
       procedure SetMatrix(AMatrix:TAdMatrix);override;
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
-      procedure Draw;override;
+      procedure Draw(ABlendMode:TAd2DBlendMode);override;
       procedure Update;override;
   end;
 
@@ -285,7 +286,7 @@ begin
   end
   else
   begin
-    WriteLog(ltFatalError,'Error while connecting DirectX. Check out whether you have the right DirectX Version (9c) installed.');
+    WriteLog(ltFatalError,'Error while connecting to DirectX. Check out whether you have the right DirectX Version (9c) installed.');
   end;
 end;
 
@@ -294,7 +295,6 @@ begin
   Direct3d9 := nil;
   Direct3dDevice9 := nil;
   WriteLog(ltInfo,'Finalization Complete.');
-  Free;
 end;
 
 procedure TDXApplication.SetOptions(AValue: TAdOptions);
@@ -339,6 +339,7 @@ begin
   if Direct3DDevice9 <> nil then
   begin
     Direct3DDevice9.BeginScene;
+    FLastTexture := nil;
   end;
 end;
 
@@ -409,27 +410,46 @@ begin
   inherited Destroy;
 end;
 
-procedure TDXMesh.Draw;
+procedure TDXMesh.Draw(ABlendMode:TAd2DBlendMode);
 begin
   if Loaded then
   begin
     with FParent do
     begin
-      Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), FMatrix);
-      if (FTexture <> nil) and (FTexture.Loaded) then
+
+      //Set Blendmode
+      if ABlendMode = bmAdd then
       begin
-        Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
+        Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
+        Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+      end else
+      if ABlendMode = bmMask then
+      begin
+        Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
+        Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+      end else
+      if ABlendMode = bmAlpha then
+      begin
+        Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+        Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       end;
+
+      Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), FMatrix);
+      {if (FLastTexture <> FTexture) and (FTexture <> nil) and (FTexture.Loaded) then
+      begin
+        FLastTexture := FTexture;}
+        Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
+      //end;
       Direct3DDevice9.SetStreamSource(0, FVertexBuffer, 0, sizeof(TD3DLVertex));
       Direct3DDevice9.SetFVF(D3DFVF_TD3DLVertex);
       if UseIndexBuffer then
       begin
         Direct3DDevice9.SetIndices(FIndexBuffer);
-        Direct3DDevice9.DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, VertexCount, 0, FPrimitiveCount)
+        Direct3DDevice9.DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, VertexCount, 0, FPrimitiveCount);
       end
       else
       begin
-        Direct3DDevice9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, FPrimitiveCount)
+        Direct3DDevice9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, FPrimitiveCount);
       end;
     end;
   end;
@@ -600,6 +620,8 @@ var afmt:TD3DFORMAT;
     pnt32:PRGBARec;
     cur16:PWord;
     cur32:PLongWord;
+    ms:TMemoryStream;
+    t:longword;
 begin
   w := 1 shl ceil(log2(ABmp.Width));
   h := 1 shl ceil(log2(ABmp.Height));
@@ -653,18 +675,25 @@ begin
     begin
       cur32 := d3dlr.pBits;
       pnt32 := ABmp.ScanLine;
+      ms := TMemoryStream.Create;
       for y := 0 to ABmp.Height - 1 do
       begin
         for x := 0 to w - 1 do
         begin
           if (x < ABmp.Width) then
           begin
-            cur32^ := D3DColor_ARGB(pnt32^.a,pnt32^.b,pnt32^.g,pnt32^.r);
+            t := D3DColor_ARGB(pnt32^.a,pnt32^.b,pnt32^.g,pnt32^.r);
+            ms.Write(t,sizeof(t));
+            ms.Position := ms.Position - sizeof(t);
+            ms.Read(t,sizeof(t));
+            cur32^ := t;
             inc(pnt32);
           end;
           inc(cur32);
         end;
       end;
+      ms.SaveToFile('test.raw');
+      ms.Free;
     end;
 
     UnlockRect(0);
