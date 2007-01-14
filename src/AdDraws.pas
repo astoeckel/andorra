@@ -1,7 +1,7 @@
 {
-* This program is licensed under the GNU Lesser General Public License Version 2
+* This program is licensed under the to Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
@@ -235,7 +235,7 @@ type
 
   EFormatNotSupportet = class(Exception);
 
-  TAdPictFormat = class(TPersistent)
+  TPictFormat = class(TPersistent)
     public
       procedure FileExts(strs:TStringList);virtual;abstract;
       function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;virtual;abstract;
@@ -243,7 +243,7 @@ type
       function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;virtual;abstract;
   end;
 
-  TAdSimpleFormat = class(TAdPictFormat)
+  TSimpleFormat = class(TPictFormat)
     public
       procedure FileExts(strs:TStringList);override;
       function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
@@ -251,7 +251,7 @@ type
       function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
   end;
 
-  TAdPictFormatClass = class of TAdPictFormat;
+  TAdPictFormatClass = class of TPictFormat;
 
   TAdTexture = class
     private
@@ -841,7 +841,7 @@ begin
   mat2 := AdMatrix_Identity;
 
   //Set the scale matrix
-  mat1 := AdMatrix_Scale((DestRect.Right-DestRect.Left)/FWidth,(DestRect.Bottom-DestRect.Top)/FHeight,0);
+  mat1 := AdMatrix_Scale((DestRect.Right-DestRect.Left)/FWidth,(DestRect.Bottom-DestRect.Top)/FHeight,1);
   mat2 := AdMatrix_Multiply(mat1,mat2);
 
   if (Rotation <> 0) then
@@ -890,7 +890,6 @@ begin
 
     w := FSrcRect.Right - FSrcRect.Left;
     h := FSrcRect.Bottom - FSrcRect.Top;
-
     c := GetColor;
 
     i := 0;
@@ -902,7 +901,7 @@ begin
         ax := x*fwidth/FDetails;
         Vertices[i].Position := AdVector3(ax,ay,0);
         Vertices[i].Color := c;
-        Vertices[i].Texture := AdVector2((FSrcRect.Left + w/FDetails*x)/FWidth,(FSrcRect.Top + h/FDetails*y)/FHeight);
+        Vertices[i].Texture := AdVector2((FSrcRect.Left + w/FDetails*x)/Texture.Texture.Width,(FSrcRect.Top + h/FDetails*y)/Texture.Texture.Height);
         Vertices[i].Normal := AdVector3(0,0,-1);
         i := i + 1;
       end;
@@ -1622,8 +1621,6 @@ begin
   output := TMemoryStream.Create;
 
   Input.Position := 0;
-  Input.SaveToFile('test.raw');
-
 
   enc := THuffmanEncoder.Create;
   enc.Input := input;
@@ -1708,7 +1705,7 @@ end;
 
 procedure TAdTexture.LoadFromGraphic(AGraphic: TGraphic);
 var
-  fmt:TAdPictFormat;
+  fmt:TPictFormat;
   i:integer;
   cref:TAdPictFormatClass;
   bmp:TAdBitmap;
@@ -1718,7 +1715,7 @@ begin
     cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
     if cref <> nil then
     begin
-      fmt := TAdPictFormat(cref.Create);
+      fmt := TPictFormat(cref.Create);
       if fmt.SupportsGraphicClass(TGraphicClass(AGraphic.ClassType)) then
       begin
         break;
@@ -1726,20 +1723,21 @@ begin
       fmt.Free;
       fmt := nil;
     end;
-    if fmt <> nil then
-    begin
-      bmp := TAdBitmap.Create;
-      fmt.AssignGraphic(AGraphic,bmp);
-      Texture.LoadFromBitmap(bmp);
-      bmp.Free;
-    end;    
+  end;
+  if fmt <> nil then
+  begin
+    bmp := TAdBitmap.Create;
+    fmt.AssignGraphic(AGraphic,bmp);
+    Texture.LoadFromBitmap(bmp);
+    fmt.Free;
+    bmp.Free;
   end;
 end;
 
 procedure TAdTexture.LoadGraphicFromFile(AFile: string; Transparent: boolean;
   TransparentColor: TColor);
 var
-  fmt:TAdPictFormat;
+  fmt:TPictFormat;
   i:integer;
   cref:TAdPictFormatClass;
   ext:string;
@@ -1752,7 +1750,7 @@ begin
     cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
     if cref <> nil then
     begin
-      fmt := TAdPictFormat(cref.Create);
+      fmt := TPictFormat(cref.Create);
       str := TStringlist.Create;
       fmt.FileExts(str);
       if str.IndexOf(ext) > -1 then
@@ -1894,7 +1892,7 @@ end;
 
 { TAdSimpleFormat }
 
-procedure TAdSimpleFormat.AssignGraphic(AGraphic: TGraphic; ABmp: TAdBitmap);
+procedure TSimpleFormat.AssignGraphic(AGraphic: TGraphic; ABmp: TAdBitmap);
 var bmp:TBitmap;
 begin
   if SupportsGraphicClass(TGraphicClass(AGraphic.ClassType)) then
@@ -1919,7 +1917,7 @@ begin
   end;
 end;
 
-procedure TAdSimpleFormat.FileExts(strs: TStringList);
+procedure TSimpleFormat.FileExts(strs: TStringList);
 begin
   strs.Add('.bmp');
   strs.Add('.dib');
@@ -1928,7 +1926,7 @@ begin
   strs.Add('.emf');
 end;
 
-function TAdSimpleFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;Transparent:boolean;TransparentColor:TColor): boolean;
+function TSimpleFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;Transparent:boolean;TransparentColor:TColor): boolean;
 var
   pict:TPicture;
   bmp:TBitmap;
@@ -1959,7 +1957,7 @@ begin
   pict.Free;
 end;
 
-function TAdSimpleFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
+function TSimpleFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
 begin
   result := (AGraphicClass = TBitmap) or (AGraphicClass = TMetafile) or (AGraphicClass = TIcon);
 end;
@@ -1968,7 +1966,7 @@ initialization
   RegisteredCompressors := TStringList.Create;
   RegisteredFormats := TStringList.Create;
   RegisterCompressor(THAICompressor);
-  RegisterFormat(TAdSimpleFormat);
+  RegisterFormat(TSimpleFormat);
 
 finalization
   RegisteredCompressors.Free;

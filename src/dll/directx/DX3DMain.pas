@@ -1,7 +1,7 @@
 {
-* This program is licensed under the GNU Lesser General Public License Version 2
+* This program is licensed under the to Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
@@ -13,7 +13,7 @@ unit DX3DMain;
 
 interface
 
-uses d3dx9, dxerr9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils;
+uses d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils;
 
 type
   TDXApplication = class(TAd2DApplication)
@@ -224,7 +224,6 @@ begin
     hr := Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype, AWnd, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
     begin
-      WriteLog(ltWarning,DXGetErrorDescription9(hr));
       WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
       exit;
     end
@@ -339,7 +338,6 @@ begin
   if Direct3DDevice9 <> nil then
   begin
     Direct3DDevice9.BeginScene;
-    FLastTexture := nil;
   end;
 end;
 
@@ -435,11 +433,11 @@ begin
       end;
 
       Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), FMatrix);
-      {if (FLastTexture <> FTexture) and (FTexture <> nil) and (FTexture.Loaded) then
+      if (FLastTexture <> FTexture) and (FTexture <> nil) and (FTexture.Loaded) then
       begin
-        FLastTexture := FTexture;}
+        FLastTexture := FTexture;
         Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
-      //end;
+      end;
       Direct3DDevice9.SetStreamSource(0, FVertexBuffer, 0, sizeof(TD3DLVertex));
       Direct3DDevice9.SetFVF(D3DFVF_TD3DLVertex);
       if UseIndexBuffer then
@@ -620,8 +618,6 @@ var afmt:TD3DFORMAT;
     pnt32:PRGBARec;
     cur16:PWord;
     cur32:PLongWord;
-    ms:TMemoryStream;
-    t:longword;
 begin
   w := 1 shl ceil(log2(ABmp.Width));
   h := 1 shl ceil(log2(ABmp.Height));
@@ -675,25 +671,18 @@ begin
     begin
       cur32 := d3dlr.pBits;
       pnt32 := ABmp.ScanLine;
-      ms := TMemoryStream.Create;
       for y := 0 to ABmp.Height - 1 do
       begin
         for x := 0 to w - 1 do
         begin
           if (x < ABmp.Width) then
           begin
-            t := D3DColor_ARGB(pnt32^.a,pnt32^.b,pnt32^.g,pnt32^.r);
-            ms.Write(t,sizeof(t));
-            ms.Position := ms.Position - sizeof(t);
-            ms.Read(t,sizeof(t));
-            cur32^ := t;
+            cur32^ := D3DCOLOR_ARGB(pnt32^.a,pnt32^.b,pnt32^.g,pnt32^.r);
             inc(pnt32);
           end;
           inc(cur32);
         end;
       end;
-      ms.SaveToFile('test.raw');
-      ms.Free;
     end;
 
     UnlockRect(0);
@@ -721,6 +710,7 @@ begin
         begin
           if x < ABmp.Width then
           begin
+            ptr32^.a := Cur32^ shr 24;
             ptr32^.b := Cur32^ shr 16;
             ptr32^.g := Cur32^ shr 8;
             ptr32^.r := Cur32^;
@@ -729,7 +719,7 @@ begin
           inc(Cur32);
         end;
       end;
-    end;   
+    end;
 
     if FBitCount = 16 then
     begin
@@ -741,9 +731,10 @@ begin
         begin
           if x < ABmp.Width then
           begin
-            ptr32.r := ($000F and (Cur16^ shr 8))*16;
-            ptr32.g := ($000F and (Cur16^ shr 4))*16;
-            ptr32.b := ($000F and Cur16^)*16;
+            ptr32^.a := ($000F and (Cur16^ shr 12))*16;
+            ptr32^.r := ($000F and (Cur16^ shr 8))*16;
+            ptr32^.g := ($000F and (Cur16^ shr 4))*16;
+            ptr32^.b := ($000F and Cur16^)*16;
             inc(ptr32);
           end;
           inc(Cur16);

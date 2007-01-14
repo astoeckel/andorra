@@ -2,11 +2,7 @@ program Image;
 
 uses
   Forms,
-  Main in 'Main.pas' {Form1},
-  AdClasses in '..\..\..\src\AdClasses.pas',
-  AdDLLLoader in '..\..\..\src\AdDLLLoader.pas',
-  AdDraws in '..\..\..\src\AdDraws.pas',
-  Huffman in '..\..\..\src\Huffman.pas';
+  Main in 'Main.pas' {Form1};
 
 {$R *.res}
 

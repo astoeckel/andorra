@@ -15,7 +15,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdParticles, AndorraUtils, ExtCtrls, StdCtrls, Menus, XPMan,
+  Dialogs, AdDraws, AdParticles, AdClasses, ExtCtrls, StdCtrls, Menus, XPMan,
   ComCtrls, ExtDlgs, Math;
 
 type
@@ -211,6 +211,7 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var bmp:TBitmap;
+    adbmp:TAdBitmap;
 begin
   if OpenPictureDialog1.FileName = '' then
   begin
@@ -228,8 +229,11 @@ begin
     bmp := TBitmap.Create;
     bmp.LoadFromFile(OpenPictureDialog1.FileName);
     AdImg1 := TPictureCollectionItem.Create(AdDraw1);
-    AdImg1.Texture.LoadFromBitmap(bmp);
-    AdImg1.Texture.AddAlphaChannel(bmp);
+    adbmp := TAdBitmap.Create;
+    adbmp.AssignBitmap(bmp);
+    adbmp.AssignAlphaChannel(bmp);
+    AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
+    adbmp.Free;
     AdImg1.Color := clWhite;
     AdImg1.Restore;
     PartSys.Texture.Free;
@@ -449,6 +453,7 @@ end;
 
 procedure TForm1.Edit9Change(Sender: TObject);
 begin
+  if changing then exit;  
   PartSys.DefaultParticle.SizeStart := StrToFloatDef(Edit9.Text,1);
   PartSys.DefaultParticle.SizeEnd   := StrToFloatDef(Edit10.Text,1);
 end;
@@ -456,6 +461,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 var bmp:TBitmap;
     i:integer;
+    adbmp:TAdBitmap;
 begin
   Randomize;
 
@@ -487,11 +493,14 @@ begin
     end;
   end;
   Image2.Picture.Bitmap.Assign(bmp);
+  adbmp := TAdBitmap.Create;
   AdImg1 := TPictureCollectionItem.Create(AdDraw1);
-  AdImg1.Texture.LoadFromBitmap(bmp);
-  AdImg1.Texture.AddAlphaChannel(bmp);
+  adbmp.AssignBitmap(bmp);
+  adbmp.AssignAlphaChannel(bmp);
+  AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
   AdImg1.Color := clWhite;
   AdImg1.Restore;
+  adbmp.Free;
   bmp.Free;
 
   Application.OnIdle := ApplicationIdle;

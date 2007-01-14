@@ -52,7 +52,7 @@ begin
     AdImageList1 := TPictureCollection.Create(AdDraw1);
     with AdImageList1.Add('surface') do
     begin
-      Texture.LoadFromBitmap(Bmp);
+      Texture.LoadFromGraphic(Bmp);
       Restore;
     end;
     Ico := TIcon.Create;
@@ -98,14 +98,14 @@ begin
         LineTo(X,Y)
       end;
     end;
-    AdImageList1[0].Texture.LoadFromBitmap(bmp);
+    AdImageList1[0].Texture.LoadFromGraphic(bmp);
   end;
 end;
 
 procedure TForm1.FormDblClick(Sender: TObject);
 begin
   Bmp.Canvas.Rectangle(-1,-1,ClientWidth+1,ClientHeight+1);
-  AdImageList1[0].Texture.LoadFromBitmap(bmp);
+  AdImageList1[0].Texture.LoadFromGraphic(bmp);
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
@@ -117,7 +117,7 @@ begin
 
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
-    AdImageList1.Items[0].DrawRotate(AdDraw1,0,0,Bmp.Width,Bmp.Height,0,0.5,0.5,0);
+    AdImageList1.Items[0].Draw(AdDraw1,0,0,0);
     AdDraw1.EndScene;
     AdDraw1.Flip;
 

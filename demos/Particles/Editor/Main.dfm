@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Particle Editor'
-  ClientHeight = 608
+  ClientHeight = 628
   ClientWidth = 838
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -23,7 +23,7 @@ object Form1: TForm1
     Left = 233
     Top = 0
     Width = 605
-    Height = 589
+    Height = 609
     Align = alClient
     BevelOuter = bvLowered
     BorderWidth = 2
@@ -32,25 +32,29 @@ object Form1: TForm1
     OnMouseDown = Panel1MouseDown
     OnMouseMove = FormMouseMove
     OnResize = Panel1Resize
+    ExplicitHeight = 589
   end
   object Panel2: TPanel
     Left = 0
     Top = 0
     Width = 233
-    Height = 589
+    Height = 609
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 1
+    ExplicitHeight = 589
     object PageControl1: TPageControl
       Left = 0
       Top = 0
       Width = 233
-      Height = 589
-      ActivePage = TabSheet1
+      Height = 609
+      ActivePage = TabSheet2
       Align = alClient
       TabOrder = 0
+      ExplicitHeight = 589
       object TabSheet1: TTabSheet
         Caption = 'Basics'
+        ExplicitHeight = 561
         object GroupBox1: TGroupBox
           Left = 0
           Top = 0
@@ -372,6 +376,7 @@ object Form1: TForm1
       object TabSheet2: TTabSheet
         Caption = 'Movement'
         ImageIndex = 1
+        ExplicitHeight = 561
         object GroupBox5: TGroupBox
           Left = 0
           Top = 0
@@ -516,7 +521,7 @@ object Form1: TForm1
             OnChange = Edit9Change
           end
           object Edit10: TEdit
-            Left = 139
+            Left = 137
             Top = 38
             Width = 53
             Height = 21
@@ -694,11 +699,12 @@ object Form1: TForm1
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 589
+    Top = 609
     Width = 838
     Height = 19
     Panels = <>
     SimplePanel = True
+    ExplicitTop = 589
   end
   object Timer1: TTimer
     Interval = 1

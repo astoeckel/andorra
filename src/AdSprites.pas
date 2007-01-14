@@ -1,7 +1,7 @@
 {
-* This program is licensed under the GNU Lesser General Public License Version 2
+* This program is licensed under the to Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel

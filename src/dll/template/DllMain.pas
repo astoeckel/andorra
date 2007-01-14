@@ -1,7 +1,7 @@
 {
-* This program is licensed under the GNU Lesser General Public License Version 2
+* This program is licensed under the to Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
@@ -9,243 +9,224 @@
 * Comment: Only a DLL template
 }
 
-unit DX3DMain;
+unit DllMain;
 
 interface
 
-uses AndorraUtils, Classes, Windows, Graphics, Math, SysUtils;
+uses d3XX9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils;
 
-//Initialization
-function CreateApplication:TAndorraApplication;stdcall;
-procedure DestroyApplication(Appl:TAndorraApplication);stdcall;
-function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes; ADisplay:TAdDrawDisplay):boolean;stdcall;
-procedure SetTextureQuality(Appl:TAndorraApplication;Quality:TAndorraTextureQuality);stdcall;
+type
+  TXXApplication = class(TAd2DApplication)
+    private
+    protected
+      procedure SetOptions(AValue:TAdOptions);override;
+    public
+      constructor Create;override;
+      destructor Destroy;reintroduce;
+      //function CreateLight:TAdLight;override;
+      function CreateBitmapTexture:TAd2DBitmapTexture;override;
+      //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
+      function CreateMesh:TAd2DMesh;override;
+      //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
+      function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
+      procedure Finalize;override;
 
-//Render Control
-procedure BeginScene(Appl:TAndorraApplication);stdcall;
-procedure EndScene(Appl:TAndorraApplication);stdcall;
-procedure ClearScene(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
-procedure SetupScene(Appl:TAndorraApplication;AWidth,AHeight:integer);stdcall;
-procedure Flip(Appl:TAndorraApplication);stdcall;
-procedure SetOptions(Appl:TAndorraApplication;AOptions:TAdDrawModes);stdcall;
-procedure SetAmbientLight(Appl:TAndorraApplication;AColor:TAndorraColor);stdcall;
+      procedure Setup2DScene(AWidth,AHeight:integer);override;
 
-//SpriteControl
-function CreateImage(Appl:TAndorraApplication):TAndorraImage;stdcall;
-procedure DrawImage(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
-  RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);stdcall;
-procedure DestroyImage(Img:TAndorraImage);stdcall;
-procedure ImageLoadTexture(Img:TAndorraImage;ATexture:TAndorraTexture);stdcall;
-procedure SetImageColor(Img:TAndorraImage;AColor:TAndorraColor);stdcall;
-procedure SetTextureXMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
-procedure SetTextureYMode(Img:TAndorraImage;AMode:TAndorraTextureMode);stdcall;
-procedure SetImageDetail(Img:TAndorraImage;ADetail:integer);stdcall;
+      procedure ClearSurface(AColor: TAndorraColor);override;
+      procedure BeginScene;override;
+      procedure EndScene;override;
+      procedure Flip;override;
+  end;
 
-//Texture Creation
-function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
-function LoadTextureFromFileEx(Appl:TAndorraApplication;AFile:PChar;AWidth,AHeight:integer;AColorDepth:byte;ATransparentColor:TAndorraColor):TAndorraTexture;stdcall;
-function LoadTextureFromBitmap(Appl:TAndorraApplication;ABitmap:Pointer;AColorDepth:byte):TAndorraTexture;stdcall;
-procedure FreeTexture(ATexture:TAndorraTexture);stdcall;
-procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);stdcall;
-function GetTextureInfo(Tex:TAndorraTexture):TImageInfo;stdcall;
-procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);stdcall;
-function CheckTextureMem(Appl:TAndorraApplication):integer;stdcall;
+  TXXMesh = class(TAd2DMesh)
+    private
+    protected
+      procedure SetVertices(AVertices:TAdVertexArray);override;
+      procedure SetIndex(AIndex:TAdIndexArray);override;
+      procedure SetTexture(ATexture:TAd2DTexture);override;
+      function GetLoaded:boolean;override;
+    public
+      procedure SetMatrix(AMatrix:TAdMatrix);override;
+      constructor Create(AParent:TXXApplication);
+      destructor Destroy;override;
+      procedure Draw(ABlendMode:TAd2DBlendMode);override;
+      procedure Update;override;
+  end;
 
-//Lights
-function CreateLight(Appl:TAndorraApplication):TAndorraLight;stdcall;
-procedure DestroyLight(ALight:TAndorraLight);stdcall;
-procedure RestoreLight(ALight:TAndorraLight;Data:TLight);stdcall;
-procedure EnableLight(ALight:TAndorraLight);stdcall;
-procedure DisableLight(ALight:TAndorraLight);stdcall;
-
-//LogSystem
-procedure SetLogProc(Appl:TAndorraApplication;ALogProc:TAdLogProc;AAppl:Pointer);
+  TXXBitmapTexture = class(TAd2DBitmapTexture)
+    private
+    protected
+      function GetLoaded:boolean;override;
+    public
+      constructor Create(AParent:TXXApplication);
+      destructor Destroy;override;
+      procedure FlushTexture;override;
+      procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);override;
+      procedure SaveToBitmap(ABmp:TAdBitmap);override;
+  end;
 
 implementation
 
-//Initialization
-function CreateApplication:TAndorraApplication;
+{ TXXApplication }
+
+constructor TXXApplication.Create;
 begin
-  //Create an application object. Returns the pointer to this application object.
+  inherited;
 end;
 
-function InitDisplay(Appl:TAndorraApplication; AWindow:hWnd; AOptions:TAdDrawModes;
-   ADisplay:TAdDrawDisplay):boolean;
+destructor TXXApplication.Destroy;
 begin
-  //Initializes the display.
-  //Appl --> Pointer to the application object
-  //AWindows --> The window the application is displayed in.
-  //AOptions --> Contains the options (see TAdDrawModes)
-  //ADisplay --> Contains information how to display the scene in the fullscreen mode.
+  inherited;
 end;
 
-procedure DestroyApplication(Appl:TAndorraApplication);
+function TXXApplication.CreateMesh: TAd2DMesh;
 begin
-  //Destroys an application object
+  result := TXXMesh.Create(self);
 end;
 
-//Log System
-procedure SetLogProc(Appl:TAndorraApplication;ALogProc:TAdLogProc;AAppl:Pointer);
+function TXXApplication.CreateBitmapTexture: TAd2DBitmapTexture;
 begin
-  //Set a call back function for an application object.
-  //ALog --> Pointer to the function.
-  //AAppl --> Pointer to the TAdDraw object.
+  result := TXXBitmapTexture.Create(self);
 end;
 
-//Render Control
-procedure BeginScene(Appl:TAndorraApplication);
+{function TXXApplication.CreateLight: TAdLight;
 begin
-  //Begins the scene
+
 end;
 
-procedure EndScene(Appl:TAndorraApplication);
+function TXXApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
 begin
-  //Ends the scene
-  //Disables all lights
+
+end;    }
+
+function TXXApplication.Initialize(AWnd: LongWord; AOptions: TAdOptions;
+  ADisplay: TAdDisplay):boolean;
+begin
+  //Initialize the graphic system
 end;
 
-procedure Flip(Appl:TAndorraApplication);
+procedure TXXApplication.Finalize;
 begin
-  //Flips Front- and Backbuffer.
+  //Finalize the graphic system
 end;
 
-procedure ClearScene(Appl:TAndorraApplication;AColor:TAndorraColor);
+procedure TXXApplication.SetOptions(AValue: TAdOptions);
 begin
-  //Fills the Scene with a specific color.
+  //Sets the options (wether Antialiasing or Lights etc. are turned on or off.)
 end;
 
-procedure SetupScene(Appl:TAndorraApplication;AWidth,AHeight:integer);
-var pos, dir, up : TD3DXVector3;
-    matView, matProj: TD3DXMatrix;
+procedure TXXApplication.Setup2DScene(AWidth, AHeight: integer);
 begin
-  //Creates the 2D Projection Matrix.
+  //Sets the projection and the view matrix to 2D
 end;
 
-procedure SetTextureQuality(Appl:TAndorraApplication;Quality:TAndorraTextureQuality);
+{procedure TXXApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
 begin
-  //
+  inherited;
+
+end;}
+
+
+procedure TXXApplication.BeginScene;
+begin
 end;
 
-procedure SetOptions(Appl:TAndorraApplication;AOptions:TAdDrawModes);
+procedure TXXApplication.EndScene;
 begin
-  //Takes the (new) options and applies them.
+  //Ends the scene and turns all lights off.
 end;
 
-procedure SetAmbientLight(Appl:TAndorraApplication;AColor:TAndorraColor);
+procedure TXXApplication.Flip;
 begin
-  //Sets the color of the ambient light.
 end;
 
-//Image Controls
-
-function CreateImage(Appl:TAndorraApplication):TAndorraImage;
+procedure TXXApplication.ClearSurface(AColor: TAndorraColor);
 begin
-  //Creates an Image
 end;
 
-procedure DestroyImage(Img:TAndorraImage);
+{ TXXMesh }
+
+constructor TXXMesh.Create(AParent: TXXApplication);
 begin
-  //Destroys the Image
+  inherited Create;
 end;
 
-procedure DrawImage(DestApp:TAndorraApplication;Img:TAndorraImage;DestRect,SourceRect:TRect;Rotation:integer;
-  RotCenterX,RotCenterY:single;BlendMode:TAndorraBlendMode);
+destructor TXXMesh.Destroy;
 begin
-  //Draws the Image
+  inherited Destroy;
 end;
 
-procedure ImageLoadTexture(Img:TAndorraImage;ATexture:TAndorraTexture);
+procedure TXXMesh.Draw(ABlendMode:TAd2DBlendMode);
 begin
-  //Loads an texture for the Image
+  //Draws the Mesh with the texture and the matrix.
 end;
 
-procedure SetImageColor(Img:TAndorraImage;AColor:TAndorraColor);
+function TXXMesh.GetLoaded: boolean;
 begin
-  //Sets the vertex color of the Image
+  //A mesh is loaded if the vertexbuffer is filled with data and the mesh can be drawn.
 end;
 
-procedure SetTextureXMode(Img:TAndorraImage;AMode:TAndorraTextureMode);
+procedure TXXMesh.SetIndex(AIndex: TAdIndexArray);
 begin
-  //Sets how the Image's textures are drawn in X Direction. May be a little problem in OpenGl.
+  //Copys the data from AIndex into FIndices
 end;
 
-procedure SetTextureYMode(Img:TAndorraImage;AMode:TAndorraTextureMode);
+procedure TXXMesh.SetMatrix(AMatrix: TAdMatrix);
 begin
-  //Sets how the Image's textures are drawn in Y Direction. May be a little problem in OpenGl.
+  //Sets the transformation Matrix
 end;
 
-function GetTextureInfo(Tex:TAndorraImage):TImageInfo;
+procedure TXXMesh.SetTexture(ATexture: TAd2DTexture);
 begin
-  //Returns informations about the texture (width, height etc.)
+  //Sets the texture of a TXXMesh
+  inherited SetTexture(ATexture);
 end;
 
-procedure SetImageDetail(Img:TAndorraImage;ADetail:integer);
+procedure TXXMesh.SetVertices(AVertices: TAdVertexArray);
 begin
-  //Sets the vertex count.
+  //Copys the data from AVertices into FVertices
 end;
 
-//Texture Creation
-
-function CheckTextureMem(Appl:TAndorraApplication):integer;
+procedure TXXMesh.Update;
 begin
-  //Returns the size of the aviable texture memory in byte.
+  //Takes the data from FVertices and FIndices and writes it into the graphic system's vertex- and indexbuffer.
+  //A new buffer will only be created if the count of the vertices/indices has changed.
 end;
 
-function LoadTextureFromFile(Appl:TAndorraApplication;AFile:PChar;ATransparentColor:TAndorraColor):TAndorraTexture;
+{ TXXBitmapTexture }
+
+constructor TXXBitmapTexture.Create(AParent: TXXApplication);
 begin
-  //ATransparentColor is A=0 R=0 G=0 B=0 if transparenzy is turned off.
+  inherited Create;
+  //Creates a BitmapTexture
 end;
 
-function LoadTextureFromFileEx(Appl:TAndorraApplication;AFile:PChar;AWidth,AHeight:integer;AColorDepth:byte;ATransparentColor:TAndorraColor):TAndorraTexture;
+destructor TXXBitmapTexture.Destroy;
 begin
-  //ATransparentColor is A=0 R=0 G=0 B=0 if transparenzy is turned off.
+  //Destroys the BitmapTexture and frees its memory
+  inherited Destroy;
 end;
 
-procedure FreeTexture(ATexture:TAndorraTexture);
+procedure TXXBitmapTexture.FlushTexture;
 begin
-  //
+  //Frees the textures if a texture is loaded
 end;
 
-
-function LoadTextureFromBitmap(Appl:TAndorraApplication;ABitmap:Pointer;AColorDepth:byte):TAndorraTexture;
+function TXXBitmapTexture.GetLoaded: boolean;
 begin
-   //
+  //Returns true if a texture is loaded.
 end;
 
-procedure AddTextureAlphaChannel(ATexture:TAndorraTexture;ABitmap:Pointer);
+procedure TXXBitmapTexture.LoadFromBitmap(ABmp: TAdBitmap; ABitDepth: byte);
 begin
-  //
+  //Loads the texture from a TAdBitmap.
+  //The texture can be created in a A4R4G4B4 (16 Bit) and a A8R8G8B8 (32 Bit) mode.
 end;
 
-procedure SetTextureAlpha(Tex:TAndorraTexture;AValue:Byte);
+procedure TXXBitmapTexture.SaveToBitmap(ABmp: TAdBitmap);
 begin
-  //The same as AddTextureAlphaChannel. The AlphaChannel has a regular value.
+  //Saves the texture back into a TAdBitmap
 end;
-
-
-function CreateLight(Appl:TAndorraApplication):TAndorraLight;
-begin
-  //Returns the pointer to a new light
-end;
-
-procedure DestroyLight(ALight:TAndorraLight);
-begin
-  //
-end;
-
-procedure RestoreLight(ALight:TAndorraLight;Data:TLight);
-begin
-  //Sets the light parameters. Data contains informations about the light.
-end;
-
-procedure EnableLight(ALight:TAndorraLight);
-begin
-  //Enables a light. Lights are automaticly disabled in "EndScene"
-end;
-
-procedure DisableLight(ALight:TAndorraLight);
-begin
-  //
-end;   
 
 end.

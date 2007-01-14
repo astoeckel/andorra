@@ -1,0 +1,56 @@
+Andorra 2D Roadmap
+
+This roadmap may change!!!!
+
+Project Alpha State
+
+Version 0.1 (Releases: BETA|STABLE)
+  Plugin side:
+    - Loading and saving of Textures
+    - Initializing
+    - Finalizing
+    - Using and drawing of Index- and Vertexbuffers
+    - Lights
+  Application side:
+    - A plugin loader
+    - A simple API for creating a surface
+    - A simple API for creating meshs - images
+    - A simple API for loading and saving textures
+    - A image/mesh list
+    - A sprite engine
+    - A particle system engine
+    
+Version 0.2 (Releases: BETA|STABLE)
+  Plugin side:
+    - Textures as rendertarget
+    - Transform the view matrix to a 3D View
+  Application side:
+    - Load 3D objects 
+
+There won't be changes on the plugins structure since this time.
+
+Version 0.3
+
+Version 0.4
+
+Projects Beta State
+  
+Version 0.5:
+  - Improve sprite engine
+  
+Version 0.6:
+  - Find bugs, improve, test
+  
+Version 0.7:
+  - Find bugs, improve, test
+  
+Version 0.8
+  - Find bugs, improve, test
+  
+Version 0.9:
+  - Find bugs, improve, test
+  
+Projects stable state
+  
+Version 1.0
+  - Every thing is done

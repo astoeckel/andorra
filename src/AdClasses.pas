@@ -1,7 +1,7 @@
 {
-* This program is licensed under the GNU Lesser General Public License Version 2
+* This program is licensed under the to Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
@@ -523,10 +523,15 @@ procedure TAdBitmap.AssignBitmap(ABitmap: TBitmap);
 var sl1:PRGBRec;
     sl2:PRGBARec;
     x,y:integer;
+    a:byte;
+    tr,tg,tb:byte;
 begin
   ReserveMemory(ABitmap.Width,ABitmap.Height);
   ABitmap.PixelFormat := pf24Bit;
   sl2 := Scanline;
+  tr := GetRValue(ABitmap.TransparentColor);
+  tg := GetGValue(ABitmap.TransparentColor);
+  tb := GetBValue(ABitmap.TransparentColor);
   for y := 0 to FHeight - 1 do
   begin
     sl1 := ABitmap.ScanLine[y];
@@ -535,7 +540,15 @@ begin
       sl2^.r := sl1^.r;
       sl2^.g := sl1^.g;
       sl2^.b := sl1^.b;
-      sl2^.a := 255;
+      if (ABitmap.Transparent) and (sl2^.r = tr) and (sl2^.g = tg) and (sl2^.b = tb) then
+      begin
+        a := 0;
+      end
+      else
+      begin
+        a := 255;
+      end;
+      sl2^.a := a;
       inc(sl1);
       inc(sl2);
     end;

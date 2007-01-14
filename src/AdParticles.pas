@@ -1,7 +1,7 @@
 {
-* This program is licensed under the GNU Lesser General Public License Version 2
+* This program is licensed under the to Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.gnu.org/licenses/lgpl.html for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
 *
 * Project: Andorra 2D
 * Authors:  Andreas Stoeckel
@@ -15,7 +15,7 @@ unit AdParticles;
 
 interface
 
-uses SysUtils, Types, Classes,AdDraws,AndorraUtils;
+uses SysUtils, Types, Classes,AdDraws, AdClasses;
 
 type
 
@@ -116,7 +116,7 @@ type
       FSpeedXStart,FSpeedXEnd:double;
       FSpeedYStart,FSpeedYEnd:double;
       FCrAngle, FCrAngleOpen:integer;
-      FBlendMode:TAndorraBlendMode;
+      FBlendMode:TAd2DBlendMode;
       FSpeedVar:double;
       FName:ShortString;
       function GetBoundsRect:TRect;
@@ -157,7 +157,7 @@ type
       property CreationAngle:integer read FCrAngle write FCrAngle;
       property CreationAngleOpen:integer read FCrAngleOpen write FCrAngleOpen;
       property Force:TAdVector read FForce write FForce;
-      property BlendMode:TAndorraBlendMode read FBlendMode write FBlendmode;
+      property BlendMode:TAd2DBlendMode read FBlendMode write FBlendmode;
       property Name:ShortString read FName write FName;
   end;
 
@@ -532,10 +532,10 @@ function TAdParticle.GetBoundsRect: TRect;
 var s:double;
 begin
   s := GetValue(SizeStart,SizeEnd,LifeTime,FLifedTime);
-  result := Rect(round(FX-(Parent.Texture.BaseRect.Right)*s / 2),
-                 round(FY-(Parent.Texture.BaseRect.Bottom)*s / 2),
-                 round(FX+(Parent.Texture.BaseRect.Right)*s / 2),
-                 round(FY+(Parent.Texture.BaseRect.Bottom*s) / 2));
+  result := Rect(round(FX-(Parent.Texture.Texture.BaseWidth)*s / 2),
+                 round(FY-(Parent.Texture.Texture.BaseHeight)*s / 2),
+                 round(FX+(Parent.Texture.Texture.BaseWidth)*s / 2),
+                 round(FY+(Parent.Texture.Texture.BaseHeight)*s / 2));
 end;
 
 function TAdParticle.GetImage: TPictureCollectionItem;
