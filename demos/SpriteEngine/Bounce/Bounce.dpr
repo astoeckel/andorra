@@ -3,8 +3,6 @@ program Bounce;
 uses
   Forms,
   Main in 'Main.pas' {Form1},
-  Andorra in '..\..\..\src\Andorra.pas',
-  AndorraUtils in '..\..\..\src\AndorraUtils.pas',
   AdDraws in '..\..\..\src\AdDraws.pas',
   AdSprites in '..\..\..\src\AdSprites.pas',
   AdParticles in '..\..\..\src\AdParticles.pas';

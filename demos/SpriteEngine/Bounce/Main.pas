@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  AdDraws, AdSprites, AndorraUtils, IniFiles;
+  AdDraws, AdSprites, AdClasses, IniFiles, AdPng;
 
 type
   TForm1 = class(TForm)
@@ -14,6 +14,9 @@ type
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormResize(Sender: TObject);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
+    procedure FormActivate(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -41,6 +44,7 @@ type
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var Done:boolean);override;
       procedure Coll;
+      procedure Reset;
   end;
 
 var
@@ -50,6 +54,7 @@ var
   lasttime:double;
   framecount:integer;
   settings:TIniFile;
+  firsttime:boolean;
 
 const
   path='..\demos\SpriteEngine\Bounce\';
@@ -88,6 +93,16 @@ begin
   Done := false;
 end;
 
+procedure TForm1.FormActivate(Sender: TObject);
+var r:char;
+begin
+  if not firsttime then
+  begin
+    r := 'r';
+    FormKeyPress(self,r);
+  end;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 var
   ax,ay: Integer;
@@ -99,6 +114,7 @@ begin
   Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+'settings.ini');
 
   AdDraw := TAdDraw.Create(self);
+  AdDraw.Options := AdDraw.Options;
   AdDraw.DllName := Settings.ReadString('set','dllname','AndorraDX93D.dll');
 
   amessage.Text := 'Starting Application';
@@ -139,27 +155,27 @@ begin
   AdPictureCollection := TPictureCollection.Create(AdDraw);
   with AdPictureCollection.Add('wall')do
   begin
-    Texture.LoadFromFile(path+'texture.bmp',false,clWhite);
-    Detail := Settings.ReadInteger('set','meshdetail',16);
+    Texture.LoadGraphicFromFile(path+'texture.bmp',false,clWhite);
+    Details := Settings.ReadInteger('set','meshdetail',16);
   end;
   with AdPictureCollection.Add('wallgras')do
   begin
-    Texture.LoadFromFile(path+'texture2.bmp',false,clWhite);
-    Detail := Settings.ReadInteger('set','meshdetail',16);
+    Texture.LoadGraphicFromFile(path+'texture2.bmp',false,clWhite);
+    Details := Settings.ReadInteger('set','meshdetail',16);
   end;
   with AdPictureCollection.Add('sky') do
   begin
-    Texture.LoadFromFile(path+'sky.png',false,clBlack);
+    Texture.LoadGraphicFromFile(path+'sky.png',false,clBlack);
     Color := rgb(200,200,255);
   end;    
   with AdPictureCollection.Add('ball') do
   begin
-    Texture.LoadFromFile(path+'ball.bmp',true,clYellow);
+    Texture.LoadGraphicFromFile(path+'ball.bmp',true,clYellow);
     PatternWidth := 32;
     PatternHeight := 32;
   end;
+
   AdPictureCollection.Restore;
-  AdPictureCollection.Add('part').Texture.LoadFromFile('particle.bmp',false,0);
 
   AdSpriteEngine := TSpriteEngine.Create(nil);
   AdSpriteEngine.Surface := AdDraw;
@@ -207,7 +223,7 @@ begin
             Image := AdPictureCollection.Find('ball');
             x := ax*128;
             y := ay*128+128-height;
-            z := 1;
+            z := 2;
             sourcex := round(x);
             sourcey := round(y);
            end;
@@ -252,6 +268,21 @@ begin
   end;
 end;
 
+procedure TForm1.FormKeyPress(Sender: TObject; var Key: Char);
+var i:integer;
+begin
+  if key = 'r' then
+  begin
+    for i := 0 to AdSpriteEngine.Items.Count-1 do
+    begin
+      if AdSpriteEngine.Items[i] is TBall then
+      begin
+        TBall(AdSpriteEngine.Items[i]).Reset;
+      end;
+    end;
+  end;
+end;
+
 procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
@@ -269,6 +300,12 @@ begin
     Lx := X;
     Ly := Y;
   end;
+end;
+
+procedure TForm1.FormResize(Sender: TObject);
+begin
+  AdDraw.Finalize;
+  AdDraw.Initialize;
 end;
 
 { TBall }
@@ -308,7 +345,7 @@ begin
     Range := 200;
     Falloff := 5;
     Color := clWhite;
-  end;           
+  end;
 end;
 
 
@@ -399,12 +436,19 @@ begin
   else
   begin
     Alpha := Alpha - 1000*TimeGap;
-    Light.Color  := RGB(round(Alpha),round(Alpha),round(Alpha));
-    if Alpha <= 20 then Dead;    
+    if Alpha < 0 then Alpha := 0;    
+    Light.Color := RGB(round(Alpha),round(Alpha),round(Alpha));
+    if Alpha <= 20 then Dead;
   end;
 
   Light.X := X+Width / 2;
   Light.Y := Y+Height / 2;
+end;
+
+procedure TBall.Reset;
+begin
+  X := sourcex;
+  Y := sourcey;
 end;
 
 end.

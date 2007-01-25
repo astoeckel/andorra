@@ -177,28 +177,48 @@ type
 
   {TAdLight is the representation of a light in your game. Before using lights
   be sure that you've turned on "doLights" in the options. You can only use 8 Lights in a scene by one time.}
-  {TAdLight = class
+  TAdLight = class
     private
       FParent:TAdDraw;
+      FX,FY,FZ:double;
+      FRange:double;
+      FFalloff:double;
+      FColor:TAndorraColor;
+      procedure SetX(AValue:double);
+      procedure SetY(AValue:double);
+      procedure SetZ(AValue:double);
+      procedure SetRange(AValue:double);
+      procedure SetColor(AValue:TAndorraColor);
+      procedure SetFalloff(AValue:double);
     protected
+      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
       //Link to Andorras Light
-      AdLight:TAndorraLight;
-      //Contains information about the light.
-      Data:TLight;
+      AdLight:TAd2DLight;
       //A constructor
       constructor Create(AParent:TAdDraw);
       //A destructor
       destructor Destroy;override;
-      //Push the settings you've made in "data" into the engine.
+
       procedure Restore;
+
       {Enables the light. Note that most graphic boards can only display 8 Lights a time.
 
       All lights are automaticly disabled in the "EndScene" routine.}
-      {procedure Enable;
+      procedure Enable;
       //Disable a light manually.
       procedure Disable;
-  end;      }
+
+      procedure Initialize;
+      procedure Finalize;
+
+      property X:double read FX write SetX;
+      property Y:double read FY write SetY;
+      property Z:double read FZ write SetZ;
+      property Range:double read FRange write SetRange;
+      property Color:TAndorraColor read FColor write SetColor;
+      property Falloff:double read FFalloff write SetFalloff;
+  end;
 
   TInitialLetters = string[4];
 
@@ -572,12 +592,12 @@ end;
 
 procedure TAdDraw.SetAmbientColor(AValue: TColor);
 begin
-  {if Initialized then
+  FAmbientColor := AValue;
+  if Initialized then
   begin
-    FAmbientColor := AValue;
-    AdDllLoader.SetAmbientLight(AdAppl,AD_RGB(GetRValue(AValue),GetGValue(AValue),
-      GetBValue(AValue)));
-  end;}
+    AdAppl.AmbientLightColor := AD_RGB(GetRValue(AValue),GetGValue(AValue),
+      GetBValue(AValue));
+  end;
 end;
 
 procedure TAdDraw.SetAutoLoadLog(AValue: boolean);
@@ -616,7 +636,7 @@ begin
   FOptions := AValue;
   if Initialized then
   begin
-    //AdDllLoader.SetOptions(AdAppl,Options);
+    AdAppl.Options := AValue;
   end;
 end;
 
@@ -642,6 +662,10 @@ begin
       result := AdAppl.Initialize(FParent.Handle,Options,Display);
 
       //AdDllLoader.SetTextureQuality(AdAppl,tqNone);
+
+      AdAppl.AmbientLightColor := AD_RGB(GetRValue(FAmbientColor),GetGValue(FAmbientColor),
+        GetBValue(FAmbientColor));
+
       Setup2DScene;
     end
     else
@@ -950,7 +974,7 @@ begin
         begin
           Rects.Add(Bounds(
             ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
-            Width,Height));
+            FPatternWidth,FPatternHeight));
         end;
       end;
     end
@@ -1443,33 +1467,126 @@ end;
 
 { TAdLight }
 
-{constructor TAdLight.Create(AParent: TAdDraw);
+constructor TAdLight.Create(AParent: TAdDraw);
 begin
   inherited Create;
   FParent := AParent;
-  AdLight := AParent.AdDllLoader.CreateLight(AParent.AdAppl);
+  FParent.RegisterNotifyEvent(Notify);
+  FRange := 50;
+  FFalloff := 1;
+  FColor := Ad_RGB(255,255,255);
+  Initialize;
 end;
 
 destructor TAdLight.Destroy;
 begin
-  FParent.AdDllLoader.DestroyLight(AdLight);
+  FParent.UnRegisterNotifyEvent(Notify);
+  Finalize;
   inherited Destroy;
 end;
 
 procedure TAdLight.Disable;
 begin
-  FParent.AdDllLoader.DisableLight(AdLight);
+  AdLight.Disable;
 end;
 
 procedure TAdLight.Enable;
 begin
-  FParent.AdDllLoader.EnableLight(AdLight);
+  AdLight.Enable;
+end;
+
+procedure TAdLight.Finalize;
+begin
+  if AdLight <> nil then
+  begin
+    FreeAndNil(AdLight);
+  end;
+end;
+
+procedure TAdLight.Initialize;
+begin
+  Finalize;
+  AdLight := FParent.AdAppl.CreateLight;
+  AdLight.X := FX;
+  AdLight.Y := FY;
+  AdLight.Z := FZ;
+  AdLight.Range := FRange;
+  AdLight.Color := FColor;
+  AdLight.Falloff := FFalloff;
+  AdLight.Restore;
+end;
+
+procedure TAdLight.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+begin
+  if AEvent = seInitialize then
+  begin
+    Initialize;
+  end;
+
+  if AEvent = seFinalize then
+  begin
+    Finalize;
+  end;
 end;
 
 procedure TAdLight.Restore;
 begin
-  FParent.AdDllLoader.RestoreLight(AdLight,Data);
-end; }
+  AdLight.Restore;
+end;
+
+procedure TAdLight.SetColor(AValue: TAndorraColor);
+begin
+  if not CompareColors(AValue,FColor) then
+  begin
+    FColor := AValue;
+    AdLight.Color := FColor;
+  end;
+end;
+
+procedure TAdLight.SetFalloff(AValue: double);
+begin
+  if not (AValue = FFalloff) then
+  begin
+    FFalloff := AValue;
+    AdLight.Falloff := FFalloff;
+  end;
+end;
+
+procedure TAdLight.SetRange(AValue: double);
+begin
+  if not (AValue = FRange) then
+  begin
+    FRange := AValue;
+    AdLight.Range := FRange;
+  end;
+end;
+
+procedure TAdLight.SetX(AValue: double);
+begin
+  if not (AValue = FX) then
+  begin
+    FX := AValue;
+    AdLight.X := FX;
+  end;
+end;
+
+procedure TAdLight.SetY(AValue: double);
+begin
+  if not (AValue = FY) then
+  begin
+    FY := AValue;
+    AdLight.Y := FY;
+  end;
+end;
+
+procedure TAdLight.SetZ(AValue: double);
+begin
+  if not (AValue = FZ) then
+  begin
+    FZ := AValue;
+    AdLight.Z := FZ;
+  end;
+end;
 
 { TAdLog }
 
@@ -1710,6 +1827,7 @@ var
   cref:TAdPictFormatClass;
   bmp:TAdBitmap;
 begin
+  fmt := nil;
   for i := 0 to RegisteredFormats.Count-1 do
   begin
     cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
@@ -1744,6 +1862,7 @@ var
   str:TStringList;
   bmp:TAdBitmap;
 begin
+  fmt := nil;
   ext := ExtractFileExt(AFile);
   for i := 0 to RegisteredFormats.Count-1 do
   begin
@@ -1850,8 +1969,6 @@ begin
 end;
 
 procedure TAdTexture.Notify(ASender: TObject; AEvent: TSurfaceEventState);
-var bmp:TAdBitmap;
-    ms:TMemoryStream;
 begin
   if AEvent = seFinalize then
   begin

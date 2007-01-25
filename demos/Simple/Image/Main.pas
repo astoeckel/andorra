@@ -3,7 +3,8 @@ unit Main;
 interface
 
 uses
-  Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses, AdPNG;
+  Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses, AdPNG,
+  Controls, ExtCtrls;
 
 type
   TForm1 = class(TForm)
@@ -22,7 +23,7 @@ type
 
 var
   Form1: TForm1;
-  firsttime:boolean;
+  al:TAdLight;
 
 implementation
 
@@ -34,7 +35,9 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
+  AdDraw1.Options := AdDraw1.Options+[doLights];
   AdDraw1.DllName := 'AndorraDX93D.dll';
+
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -43,8 +46,11 @@ begin
     with AdImageList1.Add('logo') do
     begin
       Texture.LoadGraphicFromFile('icon64.png',True,clWhite);
+      Details := 16;
     end;
     AdImageList1.Restore;
+
+    al := TAdLight.Create(AdDraw1);
   end
   else
   begin
@@ -56,9 +62,16 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  al.Free;
   AdImageList1.Free;
   AdPerCounter.Free;
   AdDraw1.Free;
+end;
+
+procedure TForm1.FormResize(Sender: TObject);
+begin
+  AdDraw1.Finalize;
+  AdDraw1.Initialize;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
@@ -68,22 +81,16 @@ begin
     AdPerCounter.Calculate;
     Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
 
-    AdDraw1.ClearSurface(clWhite);
+    AdDraw1.ClearSurface(clSilver);
     AdDraw1.BeginScene;
 
+    al.Enable;
     AdImageList1.Find('logo').Draw(AdDraw1,0,0,0);
-
     AdDraw1.EndScene;
     AdDraw1.Flip;
 
     Done := false;
   end;
-end;
-
-procedure TForm1.FormResize(Sender: TObject);
-begin
-  AdDraw1.Finalize;
-  AdDraw1.Initialize;
 end;
 
 end.

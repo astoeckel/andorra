@@ -19,11 +19,12 @@ type
   TXXApplication = class(TAd2DApplication)
     private
     protected
+      procedure SetAmbientLight(AValue:TAndorraColor);override;
       procedure SetOptions(AValue:TAdOptions);override;
     public
       constructor Create;override;
       destructor Destroy;reintroduce;
-      //function CreateLight:TAdLight;override;
+      function CreateLight:TAdLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
@@ -65,6 +66,16 @@ type
       procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);override;
       procedure SaveToBitmap(ABmp:TAdBitmap);override;
   end;
+  
+  TXXLight = class(TAd2DLight)
+    private
+    public
+      constructor Create(AParent:TXXApplication);
+      destructor Destroy;reintroduce;
+      procedure Restore;override;
+      procedure Enable;override;
+      procedure Disable;override;
+  end;
 
 implementation
 
@@ -90,12 +101,12 @@ begin
   result := TXXBitmapTexture.Create(self);
 end;
 
-{function TXXApplication.CreateLight: TAdLight;
+function TXXApplication.CreateLight: TAd2DLight;
 begin
-
+  result := TXXLight.Create(self);
 end;
 
-function TXXApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
+{function TXXApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
 begin
 
 end;    }
@@ -116,9 +127,15 @@ begin
   //Sets the options (wether Antialiasing or Lights etc. are turned on or off.)
 end;
 
+procedure TXXApplication.SetAmbientLight(AValue: TAndorraColor);
+begin
+  inherited;
+  //Sets the ambient light color
+end;
+
 procedure TXXApplication.Setup2DScene(AWidth, AHeight: integer);
 begin
-  //Sets the projection and the view matrix to 2D
+  //Sets the projection and the view matrix to 2D.
 end;
 
 {procedure TXXApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
@@ -126,7 +143,6 @@ begin
   inherited;
 
 end;}
-
 
 procedure TXXApplication.BeginScene;
 begin
@@ -227,6 +243,33 @@ end;
 procedure TXXBitmapTexture.SaveToBitmap(ABmp: TAdBitmap);
 begin
   //Saves the texture back into a TAdBitmap
+end;
+
+{ TXXLight }
+
+constructor TXXLight.Create(AParent:TXXApplication);
+begin
+  inherited Create;
+end;
+
+destructor TXXLight.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TXXLight.Disable;
+begin
+  //Hides the lightsource.
+end;
+
+procedure TXXLight.Enable;
+begin
+  //Shows the lightsource. It will automaticly be disabled by TXXApplication.EndScene
+end;
+
+procedure TXXLight.Restore;
+begin
+  //Pushs all settings made (position, color, etc.) into the graphic system.
 end;
 
 end.

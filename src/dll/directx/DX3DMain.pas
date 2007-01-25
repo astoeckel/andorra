@@ -18,17 +18,20 @@ uses d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils;
 type
   TDXApplication = class(TAd2DApplication)
     private
-      FLights:Array[0..1023] of Boolean;
-      FCurrentLights:integer;
+      FLights:array of Boolean;
       FLastTexture:TAd2DTexture;
+      FCurrentLights:integer;
     protected
+      function GetFreeLight:integer;
+      procedure ReleaseLight(alight:integer);
       procedure SetOptions(AValue:TAdOptions);override;
+      procedure SetAmbientLight(AValue:TAndorraColor);override;
     public
       Direct3D9:IDirect3D9;
       Direct3DDevice9:IDirect3DDevice9;
       constructor Create;override;
       destructor Destroy;reintroduce;
-      //function CreateLight:TAdLight;override;
+      function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
@@ -42,6 +45,20 @@ type
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
+
+      procedure EnableLight;override;
+  end;
+
+  TDXLight = class(TAd2DLight)
+    private
+      flight:integer;
+      fparent:TDXApplication;
+    public
+      constructor Create(AParent:TDXApplication);
+      destructor Destroy;reintroduce;
+      procedure Restore;override;
+      procedure Enable;override;
+      procedure Disable;override;
   end;
 
   TDXMesh = class(TAd2DMesh)
@@ -116,12 +133,12 @@ begin
   result := TDXBitmapTexture.Create(self);
 end;
 
-{function TDXApplication.CreateLight: TAdLight;
+function TDXApplication.CreateLight: TAd2DLight;
 begin
-
+  result := TDXLight.Create(self);
 end;
 
-function TDXApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
+{function TDXApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
 begin
 
 end;    }
@@ -137,10 +154,14 @@ var
   hw : boolean;
   vp,i : integer;
   hr : HRESULT;
+
+  l:Td3dlight9;
 begin
   result := false;
   if Direct3D9 <> nil then
   begin
+    FOptions := AOptions;
+
     WriteLog(ltNone,'Try to initialize Andorra Direct3D 9 Plugin.');
 
     if (doHardware in AOptions) then
@@ -236,8 +257,8 @@ begin
     FHeight := ADisplay.Height;
 
     //Set lighting
-    //SetOptions(AAppl,AOptions);
-    //Direct3DDevice9.SetRenderState(D3DRS_AMBIENT, $00FFFFFF);
+    SetOptions(FOptions);
+    Direct3DDevice9.SetRenderState(D3DRS_AMBIENT, $00FFFFFF);
 
     //Get the number of lights
     FMaxLightCount := d3dcaps9.MaxActiveLights;
@@ -271,21 +292,22 @@ begin
     begin
       WriteLog(ltWarning,'Alphablending is disabled');
     end;
-
-    for i := 0 to 1023 do
-    begin
-      FLights[i] := false;
-    end;
-    FCurrentLights := 0;
-
+    
     WriteLog(ltInfo,'Initialization complete.');
     result := true;
-
-    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(false));
   end
   else
   begin
     WriteLog(ltFatalError,'Error while connecting to DirectX. Check out whether you have the right DirectX Version (9c) installed.');
+  end;
+end;
+
+procedure TDXApplication.ReleaseLight(alight: integer);
+begin
+  FLights[alight] := false;
+  if alight = high(FLights) then
+  begin
+    SetLength(FLights,high(FLights));
   end;
 end;
 
@@ -296,9 +318,19 @@ begin
   WriteLog(ltInfo,'Finalization Complete.');
 end;
 
+procedure TDXApplication.SetAmbientLight(AValue: TAndorraColor);
+begin
+  inherited;
+  Direct3DDevice9.SetRenderState(D3DRS_AMBIENT, D3DColor_ARGB(AValue.a,AValue.r,AValue.g,AValue.b));
+end;
+
 procedure TDXApplication.SetOptions(AValue: TAdOptions);
 begin
-
+  FOptions := AValue;
+  if Direct3DDevice9 <> nil then
+  begin
+    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
+  end;
 end;
 
 procedure TDXApplication.Setup2DScene(AWidth, AHeight: integer);
@@ -341,6 +373,32 @@ begin
   end;
 end;
 
+procedure TDXApplication.EnableLight;
+var settings:TD3DLight9;
+begin
+  ZeroMemory(@settings,Sizeof(TD3DLight9));
+  with settings do
+  begin
+    _type := D3DLIGHT_POINT;
+    Ambient.r := 1;
+    Ambient.g := 1;
+    Ambient.b := 1;
+    Range := 50;
+    Position := D3DXVector3(50,50,0);
+    Attenuation0 := 1;
+    Attenuation1 := 0;
+    Attenuation2 := 0;
+  end;
+  if failed(Direct3dDevice9.SetLight(0,settings)) then
+  begin
+    beep;
+  end;
+  if failed(Direct3DDevice9.LightEnable(0, true)) then
+  begin
+    beep;
+  end;
+end;
+
 procedure TDXApplication.EndScene;
 var ares:cardinal;
     i:integer;
@@ -350,15 +408,15 @@ begin
     Direct3DDevice9.GetRenderState(D3DRS_LIGHTING,ares);
     if ares = Cardinal(true) then
     begin
-      for i := 0 to 1023 do
+      for i := 0 to high(FLights) do
       begin
         if FLights[i] then
         begin
           Direct3DDevice9.LightEnable(i,false);
         end;
       end;
+      FCurrentLights := 0;   
     end;
-    FCurrentLights := 0;
     Direct3DDevice9.EndScene;
   end;
 end;
@@ -372,6 +430,23 @@ begin
       WriteLog(ltFatalError,'Error while flipping.');
     end;
   end;
+end;
+
+function TDXApplication.GetFreeLight: integer;
+var i:integer;
+begin
+  for i := 0 to high(FLights) do
+  begin
+    if not FLights[i] then
+    begin
+      result := i;
+      FLights[i] := true;
+      exit;
+    end;
+  end;
+  SetLength(FLights,length(FLights)+1);
+  FLights[high(FLights)] := true;
+  result := high(FLights);
 end;
 
 procedure TDXApplication.ClearSurface(AColor: TAndorraColor);
@@ -744,6 +819,72 @@ begin
 
     IDirect3DTexture9(FTexture).UnlockRect(0)
   end;
+end;
+
+{ TDXLight }
+
+constructor TDXLight.Create(AParent:TDXApplication);
+begin
+  inherited Create;
+  FParent := AParent;
+  FLight := AParent.GetFreeLight;
+end;
+
+destructor TDXLight.Destroy;
+begin
+  FParent.ReleaseLight(FLight);
+  inherited Destroy;
+end;
+
+procedure TDXLight.Disable;
+begin
+  with FParent do
+  begin
+    Direct3DDevice9.LightEnable(FLight,false);
+    FCurrentLights := FCurrentLights - 1;
+  end;
+end;
+
+procedure TDXLight.Enable;
+var tmp:longbool;
+begin
+  with FParent do
+  begin
+    if FCurrentLights < MaxLights then
+    begin
+      Direct3DDevice9.GetLightEnable(FLight,tmp);
+      if not tmp then
+      begin
+        Direct3dDevice9.LightEnable(FLight,true);
+        FCurrentLights := FCurrentLights + 1;
+      end;
+    end;
+  end;
+end;
+
+function D3DColorValue(a,r,g,b:single):TD3DColorValue;
+begin
+  result.a := a;
+  result.r := r;
+  result.g := g;
+  result.b := b;
+end;
+
+procedure TDXLight.Restore;
+var settings:TD3DLight9;
+begin
+  ZeroMemory(@Settings,Sizeof(TD3DLight9));
+  with Settings do
+  begin
+    _Type := D3DLIGHT_POINT;
+    Ambient := D3DColorValue(Color.a/255,Color.r/255,Color.g/255,Color.b/255);
+    Position := D3DXVector3(X,Y,Z);
+    Range := self.Range;
+    Attenuation0 := 0;
+    Attenuation1 := self.Falloff/(self.Range);
+    Attenuation2 := 0;
+  end;
+  FParent.Direct3DDevice9.SetLight(FLight,Settings);
 end;
 
 end.

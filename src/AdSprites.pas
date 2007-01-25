@@ -15,7 +15,7 @@ unit AdSprites;
 
 interface
 
-uses Types,SysUtils,Classes,AdDraws,AndorraUtils;
+uses Types,SysUtils,Classes, AdDraws, AdClasses;
 
 type
   TSprite = class;
@@ -73,6 +73,7 @@ type
       procedure Collision2;
       
       property BoundsRect:TRect read GetBoundsRect;
+      property Items:TSpriteList read FList;
     published
       property X:double read FX write SetX;
       property Y:double read FY write SetY;
@@ -101,6 +102,7 @@ type
       FSurfaceRect:TRect;
       procedure SetSurface(AValue:TAdDraw);
     protected
+      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);
     public
       property CollisionCount:integer read FCollisionCount write FCollisionCount;
       property CollisionSprite:TSprite read FCollisionSprite write FCollisionSprite;
@@ -187,11 +189,11 @@ type
       FRange:double;
       FFalloff:double;
       FColor:LongWord;
+      FLight:TAdLight;
       procedure SetRange(AValue:double);
       procedure SetFalloff(AValue:double);
       procedure SetColor(AValue:LongWord);
     protected
-      Light:TAdLight;
       procedure DoDraw;override;
       function GetBoundsRect:TRect;override;
     public
@@ -201,6 +203,7 @@ type
       property Range:double read FRange write SetRange;
       property Falloff:double read FFalloff write SetFalloff;
       property Color:LongWord read FColor write SetColor;
+      property Light:TAdLight read FLight;
   end;
 
 implementation
@@ -513,10 +516,26 @@ begin
   inherited Destroy;
 end;
 
+procedure TSpriteEngine.Notify(Sender: TObject; AEvent: TSurfaceEventState);
+begin
+  if AEvent = seInitialize then
+  begin
+    FSurfaceRect := FSurface.DisplayRect;
+  end;
+end;
+
 procedure TSpriteEngine.SetSurface(AValue: TAdDraw);
 begin
-  FSurface := AValue;
-  FSurfaceRect := AValue.DisplayRect;
+  if (AValue <> nil) and (AValue <> FSurface) then
+  begin
+    if FSurface <> nil then
+    begin
+      FSurface.UnRegisterNotifyEvent(Notify);
+    end;
+    FSurface := AValue;
+    FSurfaceRect := AValue.DisplayRect;
+    FSurface.RegisterNotifyEvent(Notify);
+  end;
 end;
 
 { TImageSprite }
@@ -719,30 +738,22 @@ end;
 constructor TLightSprite.Create(AParent: TSprite);
 begin
   inherited Create(AParent);
-  Light := TAdLight.Create(Engine.Surface);
-  Light.Data.X1 := 0;
-  Light.Data.Y1 := 0;
-  Light.Data.Range := 100;
-  Light.Data.Color := Ad_RGB(255,255,255);
-  Light.Data.Falloff := 2;
-  Light.Restore;
-  FColor := $FFFFFF;
-  FRange := 100;
+  FLight := TAdLight.Create(FEngine.Surface);
   CanDoCollisions := false;
 end;
 
 destructor TLightSprite.Destroy;
 begin
-  Light.Free;
+  FLight.Free;
   inherited Destroy;
 end;
 
 procedure TLightSprite.DoDraw;
 begin
-  Light.Data.X1 := round(X+Engine.X);
-  Light.Data.Y1 := round(Y+Engine.Y);
-  Light.Restore;
-  Light.Enable;
+  FLight.X := round(X+Engine.X);
+  FLight.Y := round(Y+Engine.Y);
+  FLight.Restore;
+  FLight.Enable;
 end;
 
 function TLightSprite.GetBoundsRect: TRect;
@@ -756,22 +767,19 @@ end;
 procedure TLightSprite.SetColor(AValue: LongWord);
 begin
   FColor := AValue;
-  Light.Data.Color := Ad_RGB(AValue, (AValue shr 8) and 255, (AValue shr 16) and 255);
-  Light.Restore;
+  FLight.Color := Ad_RGB(GetRValue(AValue),GetGValue(AValue),GetBValue(AValue));
 end;
 
 procedure TLightSprite.SetFalloff(AValue: double);
 begin
   FFalloff := AValue;
-  Light.Data.Falloff := AValue;
-  Light.Restore;
+  FLight.Falloff := AValue;
 end;
 
 procedure TLightSprite.SetRange(AValue: double);
 begin
   FRange := AValue;
-  Light.Data.Range := AValue;
-  Light.Restore;
+  FLight.Range := AValue;
 end;
 
 end.

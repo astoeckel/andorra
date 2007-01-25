@@ -114,7 +114,7 @@ type
   TAd2DBlendMode = (bmAlpha,bmAdd,bmMask);
   TAd2DDrawMode = (dmNormal,dmWireFrames);
   
-  //TAdLight = class;
+  TAd2DLight = class;
   TAd2DTexture = class;
   //TAdRenderTargetTexture = class;
   TAd2DBitmapTexture = class;
@@ -123,17 +123,20 @@ type
   TAd2DApplication = class
     private
       FLogProc:TAdLogProc;
+    FAmbientLight: TAndorraColor;
     protected
       FOptions:TAdOptions;
       FWidth:integer;
       FHeight:integer;
       FMaxLightCount:integer;
+      FAmbientColor:TAndorraColor;
       procedure SetOptions(AValue:TAdOptions);virtual;
       procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
+      procedure SetAmbientLight(AValue:TAndorraColor);virtual;
     public
       constructor Create;virtual;abstract;
 
-      //function CreateLight:TAdLight;virtual;abstract;
+      function CreateLight:TAd2DLight;virtual;abstract;
       function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;virtual;abstract;
       function CreateMesh:TAd2DMesh;virtual;abstract;
@@ -152,10 +155,24 @@ type
 
       procedure Setup2DScene(AWidth,AHeight:integer);virtual;abstract;
 
+      procedure EnableLight;virtual;abstract;
+
       property Width:integer read FWidth;
       property Height:integer read FHeight;
       property Options:TAdOptions read FOptions write SetOptions;
       property MaxLights:integer read FMaxLightCount;
+      property AmbientLightColor:TAndorraColor read FAmbientLight write SetAmbientLight;
+  end;
+
+  TAd2DLight = class
+    public
+      X,Y,Z:double;
+      Range:double;
+      Color:TAndorraColor;
+      Falloff:double;
+      procedure Restore;virtual;abstract;
+      procedure Enable;virtual;abstract;
+      procedure Disable;virtual;abstract;
   end;
 
   TAd2DTexture = class
@@ -540,7 +557,7 @@ begin
       sl2^.r := sl1^.r;
       sl2^.g := sl1^.g;
       sl2^.b := sl1^.b;
-      if (ABitmap.Transparent) and (sl2^.r = tr) and (sl2^.g = tg) and (sl2^.b = tb) then
+      if (ABitmap.Transparent) and (sl2^.b = tr) and (sl2^.g = tg) and (sl2^.r = tb) then
       begin
         a := 0;
       end
@@ -664,6 +681,11 @@ begin
 end;
 
 { TAdApplication }
+
+procedure TAd2DApplication.SetAmbientLight(AValue: TAndorraColor);
+begin
+  FAmbientColor := AValue;
+end;
 
 procedure TAd2DApplication.SetLogProc(ALogProc: TAdLogProc);
 begin

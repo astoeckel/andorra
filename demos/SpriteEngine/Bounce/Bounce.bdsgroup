@@ -10,11 +10,12 @@
 	</PersonalityInfo>
 	<Default.Personality>  <Projects>
       <Projects Name="Bounce.exe">Bounce.bdsproj</Projects>
-      <Projects Name="Targets">Bounce.exe</Projects>
+      <Projects Name="AndorraDX93D.dll">..\..\..\src\dll\directx\AndorraDX93D.bdsproj</Projects>
+      <Projects Name="Targets">Bounce.exe AndorraDX93D.dll</Projects>
     </Projects>
     <Dependencies>
       <Dependency GUID="{C8C6B723-824E-4A3B-A852-EF7E1D00D684}">
-        <Dependency GUID="{594A5828-07B0-4BDA-BE50-D6368A35A1C0}"/>
+        <Dependency GUID="{53056E3B-E4E0-4B8C-A66D-4CA83A59EEB1}"/>
       </Dependency>
     </Dependencies>
   </Default.Personality>
