@@ -10,7 +10,7 @@
            and the plugin.
 }
 
-//Contains all classes and types which are exchanged between the host and the plugin.
+{AdClasses.pas contains all classes and types shared between the host and the plugin.}
 unit AdClasses;
 
 interface
@@ -18,46 +18,54 @@ interface
 uses SysUtils, Classes, Graphics, Types;
 
 type
-  //Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )
+  {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
   TAndorraColor = record
+    {Contains the color informations. They are stored in an integer (not in a byte as usual), because light sources can be more intensive (and each channel can have a value bigger than 255)}
     r,g,b,a:integer;
   end;
 
-  //A simple vector
+  {A simple vector (used for texture formates)}
   TAdVector2 = record
+    {Stores the vectors information.}
     x,y:double;
   end;
 
-  //Another simple vector with 3 parameters
+  {Another simple vector with 3 parameters}
   TAdVector3 = record
+    {Stores the vectors information.}
     x,y,z:double;
   end;
 
-  //Andorras vertex format
+  {Andorras vertex format}
   TAdVertex = record
+    {The position of the vertex}
     Position:TAdVector3;
+    {The color. If you change the alpha channels value to a value less than 255, the vertex will be transparent.}
     Color:TAndorraColor;
+    {A normal vector stores information about how light is reflected}
     Normal:TAdVector3;
+    {Contains the position of the texture. Normaly each value lies between 0 and 1. If a value is bigger/smaller the texture will be wrapped}
     Texture:TAdVector2;
   end;
 
-  //An array of the vertex
+  {An array of the vertex}
   TAdVertexArray = array of TAdVertex;
 
-  //Represtents an index buffer
+  {Represtents an index buffer}
   TAdIndexArray = array of Word;
 
-  //A matrix
+  {A matrix}
   TAdMatrix = array[0..3] of array[0..3] of double;
 
+  
+  {Contains information about how the scene is displayed.}
   TAdOption = (
     doFullscreen, //< Specifies weather the application should run in the fullscreen mode or not
     doVSync, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
-    doStretch, //< Should the picture be stretched when the window resizes?
     doHardware,//< Run in hardware mode? (WARNING: Should be set!)
     doZBuffer, //< The ZBuffer has to be used if you are using 3D Objects in your scene
     doAntialias,//< should Antialiasing be used
-    doLights//Turn lights off/on.
+    doLights//<Turn lights off/on.
   );
 
   {Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
@@ -71,11 +79,11 @@ type
     Height:integer;
     //The Bitcount of the Display (May be 16 or 32.)
     BitCount:byte;
-    //The horizontal refresh rate
+    //The horizontal refresh rate. Can be zero to use the desktops refresh rate.
     Freq:integer;
   end;
 
-  //A 32-Bit Bitmap
+  {A 32-Bit Bitmap}
   TAdBitmap = class
     private
       FMemory:PByte;
@@ -85,45 +93,81 @@ type
       procedure ClearMemory;
     protected
     public
+      {Creates an instance of TAdBitmap}
       constructor Create;
+      {Destroys the instance of this TAdBitmap and clears all memory.}
       destructor Destroy;override;
+      {Reserves memory for the bitmap. Old memory will be cleared. Use ReserveMemory(0,0) to clear the bitmap's memory.}
       procedure ReserveMemory(AWidth,AHeight:integer);
+      {Assignes a bitmap. If ABitmap.Transparent is turned on, an alpha channel will be generated automaticly.}
       procedure AssignBitmap(ABitmap:TBitmap);
+      {Assignes a bitmap as AlphaChannel.}
       procedure AssignAlphaChannel(ABitmap:TBitmap);
+      {Copies the loaded bitmap into a TBitmap. If AIgnoreAlphaChannel is false, the bitmap will be drawed transparent.}
       procedure AssignToBitmap(ABitmap:TBitmap;AIgnoreAlphaChannel:boolean=true);
+      {Copies the loaded bitmap's alphachannel into a TBitmap.}
       procedure AssignAlphaChannelToBitmap(ABitmap:TBitmap);
+      {Saves the loaded bitmap into a stream}
       procedure SaveToStream(AStream:TStream);
+      {Loads a bitmap from a stream}
       procedure LoadFromStream(AStream:TStream);
+      {Returns a pointer on the first pixel of a line.}
       function ScanLine(AY:integer):pointer;overload;
+      {Returns a pointer on the first pixel in the bitmap.}
       function ScanLine:pointer;overload;
+      {Returnes weather memory is reserved.}
       function Loaded:boolean;
+      {Returns the width of the bitmap.}
       property Width:integer read FWidth;
+      {Returns the height of the bitmap.}
       property Height:integer read FHeight;
+      {Returns the size of the bitmap in bytes. (Width*Height*4)}
       property Size:int64 read FSize;
   end;
 
-  TAdLogTyp = (ltInfo,ltWarning,ltError,ltFatalError,ltNone);
+  {Declares the different types of log information.}
+  TAdLogTyp = (
+    ltInfo, //< Only an information
+    ltWarning, //< A warning means that the next steps the engine does, could be influenced by this occurence.
+    ltError, //< Something didn't work as espected
+    ltFatalError, //< Something didn't work as espected and the engine can not be runned anymore
+    ltNone //< Something else.
+  );
 
+  {A record which represents one log item.}
   TAdLogItem = record
+    {The information}
     Text:PChar;
+    {The typ of the log entry}
     Typ:TAdLogTyp;
   end;
   
+  {Declares a procedure which is called by the engine when it wants to log something.}
   TAdLogProc = procedure(LogItem:TAdLogItem) of object;
 
-  TAd2DBlendMode = (bmAlpha,bmAdd,bmMask);
-  TAd2DDrawMode = (dmNormal,dmWireFrames);
+  {Declares, how a mesh is blended}
+  TAd2DBlendMode = (
+    bmAlpha,//< Normal mode
+    bmAdd,//< Additive blending
+    bmMask//< The mesh apears black
+  );
   
+  
+  {An abstract class which represents a light in Andorra's engine. }
   TAd2DLight = class;
-  TAd2DTexture = class;
-  //TAdRenderTargetTexture = class;
+  {An class which represents a texture in Andorra's engine. }
+  TAd2DTexture = class;  
+  //TAdRenderTargetTexture = class;  
+  {An abstract class which represents a bitmap texture in Andorra's engine. }
   TAd2DBitmapTexture = class;
+  {An abstract class which represents a mesh (a set of vertices)  in Andorra's engine. }
   TAd2DMesh = class;
 
+  {Abstract class which represents an Andorra 2D application.}
   TAd2DApplication = class
     private
       FLogProc:TAdLogProc;
-    FAmbientLight: TAndorraColor;
+      FAmbientLight: TAndorraColor;
     protected
       FOptions:TAdOptions;
       FWidth:integer;
@@ -134,47 +178,71 @@ type
       procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
       procedure SetAmbientLight(AValue:TAndorraColor);virtual;
     public
+      { Creates an instance of TAd2DApplication}
       constructor Create;virtual;abstract;
 
+      {Creates and returns a TAd2DLight}
       function CreateLight:TAd2DLight;virtual;abstract;
+      {Creates and returns a TAd2DBitmapTexture}
       function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;virtual;abstract;
+      {Creates and returns a TAd2DMesh}
       function CreateMesh:TAd2DMesh;virtual;abstract;
 
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);virtual;abstract;
 
+      {Sets the procedure which will recive a new log entry.}
       procedure SetLogProc(ALogProc:TAdLogProc);
 
+      {Initializes the engine. AWnd is the handle to the window.}
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
+      {Finalizes the engine.}
       procedure Finalize;virtual;abstract;
 
+      {Clears the surface with a specific color.}
       procedure ClearSurface(AColor: TAndorraColor);virtual;abstract;
+      {Begins a scene}
       procedure BeginScene;virtual;abstract;
+      {Ends a scene}
       procedure EndScene;virtual;abstract;
+      {Presents the scene on the screen}
       procedure Flip;virtual;abstract;
 
+      {Prepares a 2D coordinate system }
       procedure Setup2DScene(AWidth,AHeight:integer);virtual;abstract;
 
-      procedure EnableLight;virtual;abstract;
-
+      {Returns the width of the engines surface}
       property Width:integer read FWidth;
+      {Returns the height of the engines surface}
       property Height:integer read FHeight;
+      {Returns the options set. You can also set new options.}
       property Options:TAdOptions read FOptions write SetOptions;
+      {Returns the number of max lights}
       property MaxLights:integer read FMaxLightCount;
+      {Read and write the AmbientLightColor. This will only work, if doLights is included in "options".}
       property AmbientLightColor:TAndorraColor read FAmbientLight write SetAmbientLight;
   end;
 
+  {An abstract class which represents a light in Andorra's engine. }
   TAd2DLight = class
     public
+      {The position of the light}
       X,Y,Z:double;
+      {The range, where a light shines}
       Range:double;
+      {The color of the light}
       Color:TAndorraColor;
+      {How the light falls off.}
       Falloff:double;
+      {Writes all data into the engine.}
       procedure Restore;virtual;abstract;
-      procedure Enable;virtual;abstract;
+      {Enables the light. Notice that all lights will be disabled in Ad2DApplications EndScene.}
+      procedure Enable;virtual;abstract;     
+      {Disables the light.}
       procedure Disable;virtual;abstract;
   end;
 
+  {An class which represents a texture in Andorra's engine. }
   TAd2DTexture = class
     private
     protected
@@ -187,16 +255,25 @@ type
       FBaseHeight:integer;
       function GetLoaded:boolean;virtual;abstract;
     public
+      {The width of the texture in the memory. Is scaled to power of two.}
       property Width:integer read FWidth;
+      {The height of the texture in the memory. Is scaled to power of two.}
       property Height:integer read FHeight;
+      {Contains informations about the BitDepth of the texture. Can be 16 or 32.}
       property BitCount:byte read FBitCount;
+      {Returns weather the texture can be edited.}
       property Editable:boolean read FEditable;
+      {Returns weather a texture is loaded.}
       property Loaded:boolean read GetLoaded;
+      {A pointer to the graphic systems texture.}
       property Texture:pointer read FTexture;
+      {This value contains the original width of the texture. Important if the original texture's size was not power of two.}
       property BaseWidth:integer read FBaseWidth;
+      {This value contains the original height of the texture. Important if the original texture's size was not power of two.}
       property BaseHeight:integer read FBaseHeight;
   end;
 
+  {An abstract class which represents a mesh (a set of vertices)  in Andorra's engine. }
   TAd2DMesh = class
     private
     protected
@@ -212,70 +289,113 @@ type
       procedure SetTexture(ATexture:TAd2DTexture);virtual;
       function GetLoaded:boolean;virtual;abstract;
     public
+      {Pushes the data into the graphic system's format.}
       procedure Update;virtual;abstract;
+      {Draws the mesh.}
       procedure Draw(ABlendMode:TAd2DBlendMode);virtual;abstract;
+      {Sets the transformation matrix.}
       procedure SetMatrix(AMatrix:TAdMatrix);virtual;abstract;
+      {Returnes weather data is loaded.}
       property Loaded:boolean read GetLoaded;
+      {The vertices a mesh has.}
       property Vertices:TAdVertexArray read FVertices write SetVertices;
+      {The index buffer of a mesh.}
       property IndexBuffer:TAdIndexArray read FIndices write SetIndex;
+      {Returnes whether the mesh uses an index buffer.}
       property UseIndexBuffer:boolean read GetUseIndexBuffer;
+      {Returnes the count of vertices.}
       property VertexCount:integer read FVertexCount;
+      {Returnes the count of indices.}
       property IndicesCount:integer read FIndicesCount;
+      {Set the amount of primitives here.}
       property PrimitiveCount:integer read FPrimitiveCount write FPrimitiveCount;
+      {Set the texture of the mesh here. Set to nil, if you want no texture.}
       property Texture:TAd2DTexture read FTexture write SetTexture;
   end;
 
+  {An abstract class which represents a bitmap texture in Andorra's engine. }
   TAd2DBitmapTexture = class(TAd2DTexture)
     private
     protected
     public
+      {Set the texture of the mesh here. Set to nil, if you want no texture.}
       procedure FlushTexture;virtual;abstract;
+      {Loads the texture from a TAdBitmap.}
       procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);virtual;abstract;
+      {Saves the texture to a TAdBitmap.}
       procedure SaveToBitmap(ABmp:TAdBitmap);virtual;abstract;
     end;
 
 
+  //Used to import the CreateApplication function form the DLL.
   TAdCreateApplicationProc = function:TAd2DApplication;stdcall;
 
+  //A record which contains one pixel of the data stored in a normal 24Bit TBitmap.
   TRGBRec = packed record
+    //The colour data
     r,g,b:byte;
   end;
+  //Pointer on TRGBRec.
   PRGBRec = ^TRGBRec;
 
+  //A record which contains one pixel of the data stored in a TAdBitmap
   TRGBARec = packed record
     r,g,b,a:byte;
   end;
+  //Pointer on TRGBARec
   PRGBARec = ^TRGBARec;
 
+{Returns a TAndorraColor value with alphachannel.}
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
+{Returns a TAndorraColor value without alphachannel. (To be percise, the alphachannel is 255.)}
 function Ad_RGB(r,g,b:byte):TAndorraColor;
+{Converts an AndorraColor into a string.}
 function AdColorToString(AColor:TAndorraColor):string;
+{Converts a string into an andorra color.}
 function StringToAdColor(AString:string):TAndorraColor;
 
+{Converts a TAndorraColor into a TColor value.}
 function AdColorToColor(AAdColor:TAndorraColor):LongWord;
 
+{Returns the "R" segment of a TColor}
 function GetRValue(AColor:LongWord):byte;
+{Returns the "G" segment of a TColor}
 function GetGValue(AColor:LongWord):byte;
+{Returns the "B" segment of a TColor}
 function GetBValue(AColor:LongWord):byte;
 
+{Converts a R, a G and a B value into a TColor value.}
 function RGB(r,g,b:byte):LongWord;
 
+{Compares two AndorraColors.}
 function CompareColors(col1,col2:TAndorraColor):boolean;
 
+{Converts an integer into a byte. If the value was smaller than zero the funktion returns 0, if it was bigger than 255 it returns 255.}
 function Cut(AValue:integer):byte;
 
+{Creates an Andora Vector.}
 function AdVector3(AX,AY,AZ:double):TAdVector3;
+{Creates an Andora Vector.}
 function AdVector2(AX,AY:double):TAdVector2;
 
+{Multiplies two matrices.}
 function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
+{Creates a translation matrix.}
 function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
+{Creates a scalation matrix.}
 function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
+{Creates a rotation matrix.}
 function AdMatrix_RotationX(angle:single):TAdMatrix;
+{Creates a rotation matrix.}
 function AdMatrix_RotationY(angle:single):TAdMatrix;
+{Creates a rotation matrix.}
 function AdMatrix_RotationZ(angle:single):TAdMatrix;
+{Creates a identity matrix.}
 function AdMatrix_Identity:TAdMatrix;
+{Creates a clear matrix. (With zeros everywhere)}
 function AdMatrix_Clear:TAdMatrix;
 
+{Compares two rectangles.}
 function CompRects(Rect1,Rect2:TRect):boolean;
 
 implementation

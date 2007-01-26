@@ -10,41 +10,42 @@
            at http://pngdelphi.sourceforge.net/
 }
 
-//A PNG loader and compressor. It needs the PNG Delphi Sources which are available at http://pngdelphi.sourceforge.net/
+{A PNG loader and compressor. It needs the PNG Delphi Sources which are available at http://pngdelphi.sourceforge.net/}
 unit AdPNG;
 
 interface
 
 uses PngImage,AdDraws,AdClasses,Classes,Graphics;
 
-type TPNGCompressor = class(TCompressor)
-  public
-    //Returns the initial letters of this compressor. Will be calles without creating the object!!!
-    function GetInitial:TInitialLetters;override;
-    //Writes the two bitmaps into a stream
-    procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
-    //Reads the two bitmaps from the stream and copies them into ABitmap and AAlphaChannel.
-    procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
-end;
 
-type TPNGFormat = class(TPictFormat)
-    procedure FileExts(strs:TStringList);override;
-    function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
-    procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
-    function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
+type
+  {A compressor to store textures in the png format}
+  TPNGCompressor = class(TCompressor)
+    public
+      //Returns the initial letters of this compressor.
+      function GetInitial:TInitialLetters;override;
+      //Writes the two bitmaps into a stream
+      procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
+      //Reads the two bitmaps from the stream and copies them into ABitmap and AAlphaChannel.
+      procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
+  end;
+
+  {A loader for PNG files and TPNGObject.}
+  TPNGFormat = class(TPictFormat)
+    public
+      //Fills a list with its supported graphic extension.
+      procedure FileExts(strs:TStringList);override;
+      //Loads the graphic from a file and stros it in a TAdBitmap.
+      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
+      //Assigns an TGraphic and  stores it in a TAdBitmap
+      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
+      //Returns true if this format supports the graphicclass defined in AGraphicClass
+      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
 end;
 
 implementation
 
-type TRGBRec = packed record
-  r,g,b:byte;
-end;
-
-type PRGBRec = ^TRGBRec;
-
-
 procedure GetAlpha(APNG:TPNGObject;ABMP:TAdBitmap);
-
 var x,y:integer;
     sl1:PByteArray;
     sl2:PRGBARec;

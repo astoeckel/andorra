@@ -45,8 +45,6 @@ type
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
-
-      procedure EnableLight;override;
   end;
 
   TDXLight = class(TAd2DLight)
@@ -200,7 +198,7 @@ begin
       if not Windowed then
       begin
         BackBufferWidth := ADisplay.Width;
-        BackBufferWidth := ADisplay.Height;
+        BackBufferHeight := ADisplay.Height;
         if ADisplay.Freq > 0 then
         begin
           Fullscreen_RefreshRateInHz := ADisplay.Freq;
@@ -370,32 +368,6 @@ begin
   if Direct3DDevice9 <> nil then
   begin
     Direct3DDevice9.BeginScene;
-  end;
-end;
-
-procedure TDXApplication.EnableLight;
-var settings:TD3DLight9;
-begin
-  ZeroMemory(@settings,Sizeof(TD3DLight9));
-  with settings do
-  begin
-    _type := D3DLIGHT_POINT;
-    Ambient.r := 1;
-    Ambient.g := 1;
-    Ambient.b := 1;
-    Range := 50;
-    Position := D3DXVector3(50,50,0);
-    Attenuation0 := 1;
-    Attenuation1 := 0;
-    Attenuation2 := 0;
-  end;
-  if failed(Direct3dDevice9.SetLight(0,settings)) then
-  begin
-    beep;
-  end;
-  if failed(Direct3DDevice9.LightEnable(0, true)) then
-  begin
-    beep;
   end;
 end;
 

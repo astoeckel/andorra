@@ -36,8 +36,8 @@ type
 
   //A Vector
   TAdVector = record
-    X:double;//The X value
-    Y:double;//The Y value
+    X:double;//< The X value
+    Y:double;//< The Y value
   end;
 
   //A list containing TAndorraColors and returning
@@ -63,7 +63,7 @@ type
   //A class of a particle
   TAdParticleClass = class of TAdParticle;
 
-  //Manages all particles.
+  //Manages all particles in a system.
   TAdParticleSystem = class
     private
       FTexture:TAdTexture;
@@ -84,18 +84,29 @@ type
       //Draws the system at a specified position
       procedure Draw(X,Y:double);
 
-      procedure Move(TimeGap:double);
+      //Moves all assigned particles
+      procedure Move(TimeGap:double);     
+      //Kills all particles which want to be freed
       procedure Dead;
+      //Creates a new image in the systems imagelist with a specific color.
       procedure CreateImage(AColor:TAndorraColor);
+      //Returns an image with a specific color or "nil" if the image isn't found.
       function GetImage(AColor:TAndorraColor):TPictureCollectionItem;
+      //Specifies the texture of all particles
       property Texture:TAdTexture read FTexture write SetTexture;
+      //The parent sourface
       property Parent:TAdDraw read FDraw write FDraw;
+      //All particles in the system
       property Items:TAdParticleList read FParticles;
+      //A link to the system's image list.
       property Images:TPictureCollection read FImages;
+      //The relative rect of all particles
       property BoundsRect:TRect read GetBoundsRect;
+      //A particle which settings are automaticly copied when creating new particles
       property DefaultParticle:TAdParticle read FDefault;
   end;
 
+  //One particle
   TAdParticle = class
     private
       FX,FY:double;
@@ -124,40 +135,81 @@ type
     protected
       function GetImage:TPictureCollectionItem;virtual;
     public
+      //Creates an instance of the particle
       constructor Create(ASystem:TAdParticleSystem);
+      //Destroys the instance of this particle
       destructor Destroy;override;
+      
+      //Called by the particle system, contains all steps to move a particle
       procedure DoMove(TimeGap:double);virtual;
+      //Called by the particle system, draws the particle
       procedure DoDraw(AX,AY:double);virtual;
+      //Called by the particle system, is called before DoDraw is called. Used to draw a background mask.
       procedure DoPreDraw(AX,AY:double);virtual;
+      
+      //Signs the system that this particle has to be freed.
       procedure Dead;virtual;
+      
+      //Copies the settings of another particle to this particle.
       procedure Assign(AParticle:TAdParticle);
+      
+      //Called by the particle system, setups the movement (the direction) of the particle.
       procedure SetupMovement;
+      
+      //Saves the particle's settings to a stream
       procedure SaveToStream(AStream:TStream);
+      //Loads the particle's settings from a stream
       procedure LoadFromStream(AStream:TStream);
+      //Saves the particle settings to a file
       procedure SaveToFile(AFile:string);
+      //Loads the particle settings from a file
       procedure LoadFromFile(AFile:string);
+      
+      //Specifies whether the backgroundmask should be drawn by the DoPreDraw function.
       property DrawMask:boolean read FDrawMask write FDrawMask;
+      //The image of the particle
       property Image:TPictureCollectionItem read GetImage;
+      //The parent particle system.
       property Parent:TAdParticleSystem read FSystem;
+      //Specifies whether the particle wants to be killed.
       property Deaded:boolean read FDeaded;
+      //The direction vector of the particle
       property Dir:TAdVector read FDir write FDir;
+      //The relative rectangle of the particle system
       property BoundsRect:TRect read GetBoundsRect;
+      //The lifetime of a particle
       property LifeTime:double read FLifeTime write FLifeTime;
+      //The variation of the lifetime in percent.
       property LifeTimeVariation:integer read FLifeTimeVariation write FLifeTimeVariation;
+      //The colors the particle has.
       property Colors:TAdColorList read FColors write FColors;
+      //The start size of a particle in %/100.
       property SizeStart:double read FSizeStart write FSizeStart;
+      //The end size of a particle in %/100.
       property SizeEnd:double read FSizeEnd write FSizeEnd;
+      //The start rotation angle of the particle in degrees.
       property RotStart:double read FRotStart write FRotStart;
+      //The end rotation angle of the particle in degrees.
       property RotEnd:double read FRotEnd write FRotEnd;
+      //The start x-speed of the particle
       property SpeedXStart:double read FSpeedXStart write FSpeedXStart;
+      //The start y-speed of the particle
       property SpeedYStart:double read FSpeedYStart write FSpeedYStart;
+      //The end x-speed of the particle
       property SpeedXEnd:double read FSpeedXEnd write FSpeedXEnd;
+      //The end y-speed of the particle
       property SpeedYEnd:double read FSpeedYEnd write FSpeedYEnd;
+      //The speed's varition in percent.
       property SpeedVariation:integer read FSpeedVariation write FSpeedVariation;
+      //The angle the particle can fly in in degrees from 0-360
       property CreationAngle:integer read FCrAngle write FCrAngle;
+      //The angle defining the space the particle can fly in
       property CreationAngleOpen:integer read FCrAngleOpen write FCrAngleOpen;
+      //A vector of a force which influences the movement of the particle
       property Force:TAdVector read FForce write FForce;
+      //The blendmode the particle is drawn in
       property BlendMode:TAd2DBlendMode read FBlendMode write FBlendmode;
+      //The name of the particle.
       property Name:ShortString read FName write FName;
   end;
 

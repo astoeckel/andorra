@@ -8,21 +8,29 @@
 *Comment: Loads the Plugin-DLL
 }
 
+//Loads the plugin DLL
 unit AdDLLLoader;
 
 interface
 
 uses SysUtils,Windows,AdClasses;
 
+//This is the class which loads the plugin DLL
 type TAndorraDllLoader = class
   private
     DllHandle:THandle;
   public
+    //The function which creates the application from the DLL
     CreateApplication:TAdCreateApplicationProc;
+    //Loads the library
     procedure LoadLibrary(afile:string);
+    //Unloads the library
     procedure UnLoadLibrary;
+    //Returns whether the library is loaded
     function LibraryLoaded:boolean;
+    //Creates an instance of TAndorraDLLLoader
     constructor Create;
+    //Destroys the instance of TAndorraDLLLoader
     destructor Destroy;override;
 end;
 

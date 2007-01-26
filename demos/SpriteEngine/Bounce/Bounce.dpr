@@ -2,10 +2,7 @@ program Bounce;
 
 uses
   Forms,
-  Main in 'Main.pas' {Form1},
-  AdDraws in '..\..\..\src\AdDraws.pas',
-  AdSprites in '..\..\..\src\AdSprites.pas',
-  AdParticles in '..\..\..\src\AdParticles.pas';
+  Main in 'Main.pas' {Form1};
 
 {$R *.res}
 

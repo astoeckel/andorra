@@ -40,17 +40,20 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
+      //The lists items property
       property Items[AIndex:integer]:TSurfaceEvent read GetItem write SetItem;default;
+      //Adds an event to the list
       procedure Add(Item:TSurfaceEvent);
+      //Removes an event from the list.
       procedure Remove(Item:TSurfaceEvent);
   end;
 
 
   //A record for adding a new log entry into the log system
   TAdLogMessage = record
-    Text:string;
-    Sender:string;
-    Typ:string;
+    Text:string;//< the text of the message
+    Sender:string;//< the sender of the message. (May be the plugin or something else.)
+    Typ:string;//< the typ of the message
   end;
 
   //The log system class
@@ -200,6 +203,7 @@ type
       //A destructor
       destructor Destroy;override;
 
+      //Pushs the data set into the engine. Has to be called if you want to see the changes you made to the light.
       procedure Restore;
 
       {Enables the light. Note that most graphic boards can only display 8 Lights a time.
@@ -253,26 +257,39 @@ type
   {A class of the compressor for easy registering}
   TCompressorClass = class of TCompressor;
 
+  //An exception class
   EFormatNotSupportet = class(Exception);
 
+  //A format is a construct which enables the posibility of loading different graphic formats to Andorra. This is only an abstract class.
   TPictFormat = class(TPersistent)
     public
+      //Fills a list with its supported graphic extension.
       procedure FileExts(strs:TStringList);virtual;abstract;
+      //Loads the graphic from a file and stros it in a TAdBitmap.
       function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;virtual;abstract;
+      //Assigns an TGraphic and  stores it in a TAdBitmap
       procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);virtual;abstract;
+      //Returns true if this format supports the graphicclass defined in AGraphicClass
       function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;virtual;abstract;
   end;
 
+  //A simple format which is able  to load bmps, dibs, wmfs and emfs.
   TSimpleFormat = class(TPictFormat)
     public
+      //Fills a list with its supported graphic extension.
       procedure FileExts(strs:TStringList);override;
+      //Loads the graphic from a file and stros it in a TAdBitmap.
       function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
+      //Assigns an TGraphic and  stores it in a TAdBitmap
       procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
+      //Returns true if this format supports the graphicclass defined in AGraphicClass
       function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
   end;
 
+  //A class of the picture format
   TAdPictFormatClass = class of TPictFormat;
 
+  //Represents a bitmap texture
   TAdTexture = class
     private
       FParent:TAdDraw;
@@ -285,22 +302,35 @@ type
     protected
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
+      //Creates an instance of TAdTexture
       constructor Create(AParent:TAdDraw);
+      //Destroys the instance of TAdTexture
       destructor Destroy;override;
 
+      //Loads the texture from a stream.
       procedure LoadFromStream(AStream:TStream);
+      //Saves the texture to a stream.
       procedure SaveToStream(AStream:TStream);
 
+      //Saves the texture's data to a file.
       procedure SaveToFile(AFile:string);
+      //Loads the texture's data from a file. If you want to load the texture's graphic, call LoadGraphicFromFile or LoadFromGraphic
       procedure LoadFromFile(AFile:string);
-
+  
+      //Loads the graphic of the texture from a file
       procedure LoadGraphicFromFile(AFile:string;Transparent:boolean;TransparentColor:TColor);
+      //Loads the graphic of the texture from a TGraphic
       procedure LoadFromGraphic(AGraphic:TGraphic);
 
+      //Initializes the texture. Creates a TAd2DBitmapTexture object. 
       procedure Initialize;
+      //Finalizes the texture. Frees the TAd2DBitmapTexture object. 
       procedure Finalize;
+      //Clears the textures graphic
       procedure Clear;
+      //A link to Andorras TAd2DBitmapTexture
       property Texture:TAd2DBitmapTexture read FAd2DTexture;
+      //Returns whether the texture is initialized
       property Initialized:boolean read GetInitialized;
       //Set a compressor class. Default: TBMPCompressor;
       property Compressor:TCompressorClass read FCompressorClass write SetCompressor;
@@ -318,7 +348,6 @@ type
      	property Items[AIndex:integer]:TRect read GetItem write SetItem;default;
       {Add a rectangle.}
       procedure Add(ARect:TRect);
-    published
   end;
 
   //This represents one image in an ImageList.

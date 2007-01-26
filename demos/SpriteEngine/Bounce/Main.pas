@@ -115,10 +115,10 @@ begin
   begin
     AdDraw.Options := AdDraw.Options+[doLights];
   end;
-  //if Settings.ReadBool('set','fullscreen',false) then
-  //begin
+  if Settings.ReadBool('set','fullscreen',false) then
+  begin
     AdDraw.Options := AdDraw.Options+[doFullscreen];
-  //end;
+  end;
 
   AdDraw.Display.Width := Settings.ReadInteger('set','width',800);
   AdDraw.Display.Height := Settings.ReadInteger('set','height',600);

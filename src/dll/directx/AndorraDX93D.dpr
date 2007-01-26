@@ -3,8 +3,8 @@ library AndorraDX93D;
 uses
   SysUtils,
   Classes,
-  DX3DMain in 'DX3DMain.pas',
-  AdClasses in '..\..\AdClasses.pas';
+  AdClasses,
+  DX3DMain in 'DX3DMain.pas';
 
 {$E .dll}
 

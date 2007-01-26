@@ -18,21 +18,27 @@ interface
 uses Types,SysUtils,Classes, AdDraws, AdClasses;
 
 type
+  {The sprite engines base class.}
   TSprite = class;
+  {The spriteengine itsself.}
   TSpriteEngine = class;
   
+  {A list, which contains sprites.}
   TSpriteList = class(TList)
     private
     	function GetItem(AIndex:integer):TSprite;
     	procedure SetItem(AIndex:integer;AItem:TSprite);
     protected
     public
-    	property Items[AIndex:integer]:TSprite read GetItem write SetItem;default;
+    	{Access on every item in the list.}
+      property Items[AIndex:integer]:TSprite read GetItem write SetItem;default;
+      {Adds a sprite to the list and orders it by its Z value}
       procedure Add(ASprite:TSprite);
+      {Removes a sprite from the list.}
       procedure Remove(ASprite:TSprite);
-    published
   end;
 
+  {The sprite engines base class.}
   TSprite = class
     private
       FList:TSpriteList;
@@ -60,37 +66,58 @@ type
       procedure SetX(AValue:double);virtual;
       procedure SetY(AValue:double);virtual;
     public
+      {Creates an instance of TSprite.}
       constructor Create(AParent:TSprite);virtual;
+      {Destroyes the instance.}
       destructor Destroy;override;
+      {The parent sprite you've set into the constructor.}
       property Parent:TSprite read FParent write SetParent;
+      {The sprite engine.}
       property Engine:TSpriteEngine read FEngine;
 
+      {Calls the instance's DoMove function and all child's move function.}
       procedure Move(TimeGap:double);
+      {Calls the instance's DoDraw function and all childs' draw function.}
       procedure Draw;
+      {Tells the engine that this instance of TSprite wants to bee freed.}
       procedure Dead;virtual;
 
+      {Checks whether this sprite collides with another sprite in the spriteengine.  Returns the count of sprites.}
       function Collision:integer;
+      {Checks whether this sprite collides to the sprite, that wants to know whether it collides with another sprite.}
       procedure Collision2;
       
+      {Returns a rect which contains the relative coordinates of the sprite.}
       property BoundsRect:TRect read GetBoundsRect;
+      {Contains all child sprites.}
       property Items:TSpriteList read FList;
     published
+      {The absolute X Position of the sprite.}
       property X:double read FX write SetX;
+      {The absolute Y Position of the sprite.}
       property Y:double read FY write SetY;
+      {The Z order of the sprite.}
       property Z:integer read FZ write SetZ;
+      {The width of the sprite.}
       property Width:double read FWidth write FWidth;
+      {The height of the sprite.}
       property Height:double read FHeight write FHeight;
+      {The relative X Position of the sprite.}
       property WorldX:double read GetWorldX;
+      {The relative Y Position of the sprite.}
       property WorldY:double read GetWorldY;
+      {Returns wether this sprite wants to be freed.}
       property Deaded:boolean read FDead;
 
-      //Equal to DelpiX's "Collisioned". Must have been a translation fault.
+      {Defines whether this sprite is included in the collision system. Equal to DelpiX's "Collisioned". Must have been a translation fault.}
       property CanDoCollisions:boolean read FDoCollisions write FDoCollisions;
-      //Equal to DelphiX's "Moved".
+      {Defines whether the "DoMove" function is called. Equal to DelphiX's "Moved".}
       property CanDoMoving:boolean read FDoMoving write FDoMoving;
+      {Defines whether "DoDraw" is called.}
       property Visible:boolean read FVisible write FVisible;
   end;
 
+  {The spriteengine itsself.}
   TSpriteEngine = class(TSprite)
     private
       FSurface:TAdDraw;
@@ -104,20 +131,30 @@ type
     protected
       procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);
     public
+      //The count of sprites which collide to the collision sprite.
       property CollisionCount:integer read FCollisionCount write FCollisionCount;
+      //The sprite which wants to know, whether it collides.
       property CollisionSprite:TSprite read FCollisionSprite write FCollisionSprite;
+      //If this value is set to true, the collision aborts.
       property CollisionDone:boolean read FCollisionDone write FCollisionDone;
+      //The rect the collision takes place in.
       property CollisionRect:TRect read FCollisionRect write FCollisionRect;
 
+      //Creates an instance of TSprite
       constructor Create(AParent:TSprite);override;
+      //Destroyes the instance
       destructor Destroy;override;
+      //Kills all sprites which want to be dead.
       procedure Dead;override;
 
+      //The size of the surface.
       property SurfaceRect:TRect read FSurfaceRect;
     published
+      //The parent application.
       property Surface:TAdDraw read FSurface write SetSurface;
   end;
 
+  {A sprite which draws sprites.}
   TImageSprite = class(TSprite)
     private
       FImage:TPictureCollectionItem;
@@ -135,19 +172,28 @@ type
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
     public
+      //Creates an instance of TImageSprite
       constructor Create(AParent:TSprite);override;
+      //The image which is drawn by the sprite.
       property Image:TPictureCollectionItem read FImage write SetImage;
     published
+      //The count of patterns the image has.
       property AnimCount:Integer read GetAnimCount;
+      //The pattern where the animation starts.
       property AnimStart:Integer read FAnimStart write SetAnimStart;
+      //The pattern where the animation ends.
       property AnimStop:Integer read FAnimStop write SetAnimStop;
+      //The pattern where the animation is at this moment.
       property AnimPos:double read FAnimPos write FAnimPos;
+      //Defines whether the animation loops or it is only played once.
       property AnimLoop:boolean read FAnimLoop write FAnimLoop;
+      //Defines whether the animation is played (true) or paused (false).
       property AnimActive:boolean read FAnimActive write FAnimActive;
-      //The animation speed in frames per second.
+      //The animation speed in frames (patterns) per second.
       property AnimSpeed:double read FAnimSpeed write FAnimSpeed;
     end;
 
+  {An extended sprite which draws sprites blended and rotatet.}
   TImageSpriteEx = class(TImageSprite)
     private
       FAngle:double;
@@ -155,12 +201,16 @@ type
     protected
       procedure DoDraw;override;
     public
+      //Creates an instance of TImageSpriteEx
       constructor Create(AParent:TSprite);override;
     published
+      //The alpha blend value of the sprite
       property Alpha:double read FAlpha write FAlpha;
+      //The rotation angle from 0 to 360.
       property Angle:double read FAngle write FAngle;
   end;
 
+  {A sprite which draws the background of a scene.}
   TBackgroundSprite = class(TSprite)
     private
       FImage:TPictureCollectionItem;
@@ -173,17 +223,24 @@ type
       function GetBoundsRect:TRect;override;
       procedure DoDraw;override;
     public
+      {Creates an instance of TBackgroundSprite}
       constructor Create(AParent:TSprite);override;
     published
       {The virtual distance from the viewer. (May be a value bigger 0)}
       property Depth:single read FDepth write SetDepth;
+      {Defines whether the sprites is drawn patterned.}
       property Tiled:boolean read FTile write FTile;
+      {The image which is drawn}
       property Image:TPictureCollectionItem read FImage write FImage;
+      {The number of tiles in X direction if tiled is false.}
       property XTiles:integer read FXTiles write FXTiles;
+      {The number of tiles in Y direction if tiled is false.}
       property YTiles:integer read FYTiles write FYTiles;
+      {Whether the background should be drawn in the center.}
       property Center:boolean read FCenter write FCenter;
   end;
 
+  {A sprite which contains a light source.}
   TLightSprite = class(TSprite)
     private
       FRange:double;
@@ -197,12 +254,18 @@ type
       procedure DoDraw;override;
       function GetBoundsRect:TRect;override;
     public
+      {Creates an instance of TLightSprite}
       constructor Create(AParent:TSprite);override;
+      {Destroys the instance of TLightSprite}
       destructor Destroy;override;
     published
+      {Sets the spot size of the light}
       property Range:double read FRange write SetRange;
+      {Sets the falloff value of the light}
       property Falloff:double read FFalloff write SetFalloff;
+      {Sets the color value of the light}
       property Color:LongWord read FColor write SetColor;
+      {Link back to the TAdLight}
       property Light:TAdLight read FLight;
   end;
 
