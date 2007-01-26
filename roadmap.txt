@@ -13,12 +13,17 @@ Version 0.1 (Releases: BETA|STABLE)
     - Lights
   Application side:
     - A plugin loader
-    - A simple API for creating a surface
-    - A simple API for creating meshs - images
+    - A simple API for creating an application
+    - A simple API for creating meshs/images
     - A simple API for loading and saving textures
     - A image/mesh list
     - A sprite engine
     - A particle system engine
+    
+Version 1.5 (Releases: BETA|STABLE)
+  Application side:
+    - Improve SpriteEngine
+    - 
     
 Version 0.2 (Releases: BETA|STABLE)
   Plugin side:

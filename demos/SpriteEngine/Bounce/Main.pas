@@ -16,7 +16,6 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure FormResize(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
-    procedure FormActivate(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -93,16 +92,6 @@ begin
   Done := false;
 end;
 
-procedure TForm1.FormActivate(Sender: TObject);
-var r:char;
-begin
-  if not firsttime then
-  begin
-    r := 'r';
-    FormKeyPress(self,r);
-  end;
-end;
-
 procedure TForm1.FormCreate(Sender: TObject);
 var
   ax,ay: Integer;
@@ -126,10 +115,10 @@ begin
   begin
     AdDraw.Options := AdDraw.Options+[doLights];
   end;
-  if Settings.ReadBool('set','fullscreen',false) then
-  begin
+  //if Settings.ReadBool('set','fullscreen',false) then
+  //begin
     AdDraw.Options := AdDraw.Options+[doFullscreen];
-  end;
+  //end;
 
   AdDraw.Display.Width := Settings.ReadInteger('set','width',800);
   AdDraw.Display.Height := Settings.ReadInteger('set','height',600);
@@ -237,6 +226,8 @@ begin
   Application.OnIdle := ApplicationIdle;
 
   Settings.Free;
+
+  firsttime := true;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -304,8 +295,11 @@ end;
 
 procedure TForm1.FormResize(Sender: TObject);
 begin
-  AdDraw.Finalize;
-  AdDraw.Initialize;
+  if firsttime then
+  begin
+    AdDraw.Finalize;
+    AdDraw.Initialize;
+  end;
 end;
 
 { TBall }
