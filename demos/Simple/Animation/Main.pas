@@ -3,7 +3,7 @@ unit Main;
 interface
 
 uses
-  Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses, AdPNG,
+  Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses,
   Controls, ExtCtrls;
 
 type
@@ -18,15 +18,41 @@ type
     AdPerCounter:TPerformanceCounter;
     AdImageList1:TPictureCollection;
     procedure Idle(Sender:TObject;var Done:boolean);
+    procedure SetLine;
     { Public-Deklarationen }
   end;
 
 var
   Form1: TForm1;
+  Pattern:single;
+  StartPt,EndPt:integer;
+  Y,X:single;
+  XSpeed:single;
+
+const
+  path = '..\demos\Simple\Animation\';
 
 implementation
 
 {$R *.dfm}
+
+procedure TForm1.SetLine;
+begin
+  XSpeed := -XSpeed;
+  if XSpeed > 0 then
+  begin
+    StartPt := 0;
+    EndPt := 7;
+    X := -96;
+  end
+  else
+  begin
+    StartPt := 8;
+    EndPt := 15;
+    X := ClientWidth+96;
+  end;
+  Y := Random(ClientHeight-96);
+end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
@@ -41,11 +67,18 @@ begin
     Application.OnIdle := Idle;
 
     AdImageList1 := TPictureCollection.Create(AdDraw1);
-    with AdImageList1.Add('logo') do
+    with AdImageList1.Add('figur') do
     begin
-      Texture.LoadGraphicFromFile('icon64.png',true,clWhite);
+      Texture.LoadGraphicFromFile(path+'boy.bmp',true,clFuchsia);
+      PatternWidth := 96;
+      PatternHeight := 96;
     end;
     AdImageList1.Restore;
+
+    XSpeed := -150;
+
+    Randomize;
+    SetLine;
   end
   else
   begin
@@ -78,10 +111,17 @@ begin
     AdPerCounter.Calculate;
     Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
 
-    AdDraw1.ClearSurface(clSilver);
+    Pattern := Pattern + 15*AdPerCounter.TimeGap/1000;
+    if Pattern >= EndPt then Pattern := StartPt;
+
+    X := X + XSpeed*AdPerCounter.TimeGap/1000;
+    if ((X > ClientWidth) and (XSpeed > 0)) or ((X < -96) and (XSpeed < 0))  then SetLine;
+
+
+    AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
 
-    AdImageList1.Find('logo').Draw(AdDraw1,0,0,0);
+    AdImageList1.Find('figur').Draw(AdDraw1,round(X),round(Y),round(Pattern));
     AdDraw1.EndScene;
     AdDraw1.Flip;
 

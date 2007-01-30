@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdPng;
+  Dialogs, AdDraws, AdClasses;
 
 type
   TForm1 = class(TForm)
@@ -63,8 +63,8 @@ begin
     AdDraw1.EndScene;
     AdDraw1.Flip;
 
-    Done := false;
   end;
+  Done := false;
 end;
 
 end.

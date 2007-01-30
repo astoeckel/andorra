@@ -992,25 +992,21 @@ end;
 procedure TPictureCollectionItem.CreatePatternRects;
 var ax,ay:integer;
 begin
-  Rects.Clear;
-  with FTexture.Texture do
+  if (FPatternWidth <> 0) and (FPatternHeight <> 0) then
   begin
-    if (FPatternWidth <> 0) and (FPatternHeight <> 0) then
+    for ay := 0 to ((FHeight+FSkipHeight) div (PatternHeight+FSkipHeight)) - 1 do
     begin
-      for ay := 0 to ((BaseHeight+FSkipHeight) div (PatternHeight+FSkipHeight)) - 1 do
+      for ax := 0 to ((FWidth+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
       begin
-        for ax := 0 to ((BaseWidth+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
-        begin
-          Rects.Add(Bounds(
-            ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
-            FPatternWidth,FPatternHeight));
-        end;
+        Rects.Add(Bounds(
+          ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
+          FPatternWidth,FPatternHeight));
       end;
-    end
-    else
-    begin
-      Rects.Add(Rect(0,0,BaseWidth,BaseHeight));
     end;
+  end
+  else
+  begin
+    Rects.Add(Rect(0,0,FWidth,FHeight));
   end;
 end;
 
@@ -1150,7 +1146,6 @@ begin
   FHeight := Texture.Texture.BaseHeight;
   AdMesh.Texture := Texture.Texture;
   CreatePatternRects;
-
   FSrcRect := Rect(0,0,FWidth,FHeight);
   FLastColor := GetColor;
   BuildVertices;
@@ -1159,19 +1154,16 @@ end;
 procedure TPictureCollectionItem.SetPatternWidth(AValue: Integer);
 begin
   FPatternWidth := AValue;
-  CreatePatternRects;
 end;
 
 procedure TPictureCollectionItem.SetSkipHeight(AValue: integer);
 begin
   FSkipHeight := AValue;
-  CreatePatternRects;
 end;
 
 procedure TPictureCollectionItem.SetSkipWidth(AValue: integer);
 begin
   FSkipWidth := AValue;
-  CreatePatternRects;
 end;
 
 procedure TPictureCollectionItem.SetTexture(AValue: TAdTexture);
@@ -1211,7 +1203,6 @@ end;
 procedure TPictureCollectionItem.SetPatternHeight(AValue: Integer);
 begin
   FPatternHeight := AValue;
-  CreatePatternRects;
 end;
 
 function TPictureCollectionItem.GetColor: TAndorraColor;
@@ -1982,7 +1973,7 @@ begin
     AStream.Write(s[1],4);
 
     bmp := TAdBitmap.Create;
-    bmp.ReserveMemory(Texture.Width,Texture.Height);
+    bmp.ReserveMemory(Texture.BaseWidth,Texture.BaseHeight);
     Texture.SaveToBitmap(bmp);
     FCompressor.Write(AStream,bmp);
     bmp.Free;
