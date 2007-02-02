@@ -287,7 +287,7 @@ type
   end;
 
   //A class of the picture format
-  TAdPictFormatClass = class of TPictFormat;
+  TPictFormatClass = class of TPictFormat;
 
   //Represents a bitmap texture
   TAdTexture = class
@@ -297,8 +297,11 @@ type
       FAd2DTexture:TAd2DBitmapTexture;
       FCompressor:TCompressor;
       FCompressorClass:TCompressorClass;
+      FBitDepth:byte;
       function GetInitialized:boolean;
       procedure SetCompressor(AClass:TCompressorClass);
+      function GetBitDepth:byte;
+      procedure SetBitDepth(AValue:byte);
     protected
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
@@ -334,6 +337,8 @@ type
       property Initialized:boolean read GetInitialized;
       //Set a compressor class. Default: TBMPCompressor;
       property Compressor:TCompressorClass read FCompressorClass write SetCompressor;
+      //BitDepth
+      property BitDepth:byte read GetBitDepth write SetBitDepth;
   end;
 
   {A list which is able to contain TRects}
@@ -526,6 +531,7 @@ const
 var
   //Contains all registered compressors. You must not change the contents.
   RegisteredCompressors:TStringList;
+  //Contains all registered pictureformats. You must not change the contents.
   RegisteredFormats:TStringList;
 
 //Is called for registering a compressor class. If you register a compressor it will be automaticly used for decompressing.
@@ -992,6 +998,7 @@ end;
 procedure TPictureCollectionItem.CreatePatternRects;
 var ax,ay:integer;
 begin
+  Rects.Clear;
   if (FPatternWidth <> 0) and (FPatternHeight <> 0) then
   begin
     for ay := 0 to ((FHeight+FSkipHeight) div (PatternHeight+FSkipHeight)) - 1 do
@@ -1146,7 +1153,7 @@ begin
   FHeight := Texture.Texture.BaseHeight;
   AdMesh.Texture := Texture.Texture;
   CreatePatternRects;
-  FSrcRect := Rect(0,0,FWidth,FHeight);
+  FSrcRect := GetPatternRect(0);
   FLastColor := GetColor;
   BuildVertices;
 end;
@@ -1790,6 +1797,7 @@ begin
   Initialize;
   FParent.RegisterNotifyEvent(Notify);
   Compressor := THAICompressor;
+  FBitDepth := 32;
 end;
 
 destructor TAdTexture.Destroy;
@@ -1808,6 +1816,18 @@ begin
   if Initialized then
   begin
     FreeAndNil(FAd2DTexture);
+  end;
+end;
+
+function TAdTexture.GetBitDepth: byte;
+begin
+  if Initialized then
+  begin
+    result := Texture.BitCount;
+  end
+  else
+  begin
+    result := FBitDepth;
   end;
 end;
 
@@ -1844,13 +1864,13 @@ procedure TAdTexture.LoadFromGraphic(AGraphic: TGraphic);
 var
   fmt:TPictFormat;
   i:integer;
-  cref:TAdPictFormatClass;
+  cref:TPictFormatClass;
   bmp:TAdBitmap;
 begin
   fmt := nil;
   for i := 0 to RegisteredFormats.Count-1 do
   begin
-    cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
+    cref := TPictFormatClass(GetClass(RegisteredFormats[i]));
     if cref <> nil then
     begin
       fmt := TPictFormat(cref.Create);
@@ -1866,7 +1886,7 @@ begin
   begin
     bmp := TAdBitmap.Create;
     fmt.AssignGraphic(AGraphic,bmp);
-    Texture.LoadFromBitmap(bmp);
+    Texture.LoadFromBitmap(bmp,FBitDepth);
     fmt.Free;
     bmp.Free;
   end;
@@ -1877,7 +1897,7 @@ procedure TAdTexture.LoadGraphicFromFile(AFile: string; Transparent: boolean;
 var
   fmt:TPictFormat;
   i:integer;
-  cref:TAdPictFormatClass;
+  cref:TPictFormatClass;
   ext:string;
   str:TStringList;
   bmp:TAdBitmap;
@@ -1886,7 +1906,7 @@ begin
   ext := ExtractFileExt(AFile);
   for i := 0 to RegisteredFormats.Count-1 do
   begin
-    cref := TAdPictFormatClass(GetClass(RegisteredFormats[i]));
+    cref := TPictFormatClass(GetClass(RegisteredFormats[i]));
     if cref <> nil then
     begin
       fmt := TPictFormat(cref.Create);
@@ -1907,7 +1927,7 @@ begin
     bmp := TAdBitmap.Create;
     fmt.LoadFromFile(AFile,bmp,transparent,transparentcolor);
     fmt.Free;
-    Texture.LoadFromBitmap(bmp);
+    Texture.LoadFromBitmap(bmp,FBitDepth);
     bmp.Free;
   end;
 end;
@@ -1919,7 +1939,6 @@ var c:char;
     cref:TPersistentClass;
     atemp:TCompressor;
     bmp:TAdBitmap;
-    bits:byte;
 begin
   AStream.Read(c,1);
   if c = 'T' then
@@ -1947,8 +1966,9 @@ begin
     begin
       bmp := TAdBitmap.Create;
       ATemp.Read(AStream,bmp);
-      AStream.Read(bits,1);
-      Texture.LoadFromBitmap(bmp,bits);
+      AStream.Read(FBitDepth,1);
+      Texture.LoadFromBitmap(bmp,FBitDepth);
+      Compressor := TCompressorClass(atemp.ClassType);
       ATemp.Free;
       bmp.Free;
     end
@@ -2017,6 +2037,11 @@ begin
   end;
 end;
 
+procedure TAdTexture.SetBitDepth(AValue: byte);
+begin
+  FBitDepth := AValue;
+end;
+
 procedure TAdTexture.SetCompressor(AClass: TCompressorClass);
 begin
   if FCompressor <> nil then
@@ -2059,7 +2084,7 @@ begin
   strs.Add('.bmp');
   strs.Add('.dib');
   strs.Add('.ico');
-  strs.Add('.wfm');
+  strs.Add('.wmf');
   strs.Add('.emf');
 end;
 
