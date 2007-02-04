@@ -251,10 +251,10 @@ type
       FBitCount:byte;
       FEditable:boolean;
       FTexture:Pointer;
-      function GetLoaded:boolean;virtual;abstract;
-    public
       FBaseWidth:integer;
       FBaseHeight:integer;
+      function GetLoaded:boolean;virtual;abstract;
+    public
       {The width of the texture in the memory. Is scaled to power of two.}
       property Width:integer read FWidth;
       {The height of the texture in the memory. Is scaled to power of two.}

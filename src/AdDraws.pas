@@ -427,9 +427,9 @@ type
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
       //Draw only specified part from the image. Alpha blending.
-      procedure StretchBltAlpha(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
+      procedure StretchBltAlpha(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
       //Draw only specified part from the image. Additive blending.
-      procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:integer;Angle:Integer;Alpha:Integer);
+      procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
       //If you've set the color or a new texture you have to call this function to see your changes.
       procedure Restore;
       //Frees all data
@@ -446,6 +446,8 @@ type
       procedure SaveToFile(AFile:string);
       //Loads the image from a file
       procedure LoadFromFile(AFile:string);
+      //Assings the settings of another item
+      procedure Assign(AItem:TPictureCollectionItem);
       //Returns the parent you've set in the constructor
       property Parent:TAdDraw read FParent write FParent;
       //Returns the width of the image.
@@ -927,6 +929,16 @@ begin
   AdMesh.Draw(BlendMode);
 end;
 
+procedure TPictureCollectionItem.Assign(AItem: TPictureCollectionItem);
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  AItem.SaveToStream(ms);
+  ms.Position := 0;
+  LoadFromStream(ms);
+  ms.Free;
+end;
+
 procedure TPictureCollectionItem.BuildVertices;
 var
   Vertices:TAdVertexArray;
@@ -1117,7 +1129,7 @@ begin
 end;
 
 procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
-  DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
+  DestRect: TRect; CenterX, CenterY:double; Angle, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1127,7 +1139,7 @@ begin
 end;
 
 procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
-  DestRect: TRect; CenterX, CenterY, Angle, Alpha: Integer);
+  DestRect: TRect; CenterX, CenterY:double; Angle, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1160,17 +1172,38 @@ end;
 
 procedure TPictureCollectionItem.SetPatternWidth(AValue: Integer);
 begin
-  FPatternWidth := AValue;
+  if AValue >= 0 then
+  begin
+    FPatternWidth := AValue;
+  end
+  else
+  begin
+    FPatternWidth := 0;
+  end;
 end;
 
 procedure TPictureCollectionItem.SetSkipHeight(AValue: integer);
 begin
-  FSkipHeight := AValue;
+  if AValue >= 0 then
+  begin
+    FSkipHeight := AValue;
+  end
+  else
+  begin
+    FSkipHeight := 0;
+  end;
 end;
 
 procedure TPictureCollectionItem.SetSkipWidth(AValue: integer);
 begin
-  FSkipWidth := AValue;
+  if AValue >= 0 then
+  begin
+    FSkipWidth := AValue;
+  end
+  else
+  begin
+    FSkipWidth := 0;
+  end;
 end;
 
 procedure TPictureCollectionItem.SetTexture(AValue: TAdTexture);
@@ -1209,7 +1242,14 @@ end;
 
 procedure TPictureCollectionItem.SetPatternHeight(AValue: Integer);
 begin
-  FPatternHeight := AValue;
+  if AValue >= 0 then
+  begin
+    FPatternHeight := AValue;
+  end
+  else
+  begin
+    FPatternHeight := 0;
+  end;
 end;
 
 function TPictureCollectionItem.GetColor: TAndorraColor;

@@ -779,9 +779,9 @@ begin
           if x < ABmp.Width then
           begin
             ptr32^.a := ($000F and (Cur16^ shr 12))*16;
-            ptr32^.r := ($000F and (Cur16^ shr 8))*16;
+            ptr32^.b := ($000F and (Cur16^ shr 8))*16;
             ptr32^.g := ($000F and (Cur16^ shr 4))*16;
-            ptr32^.b := ($000F and Cur16^)*16;
+            ptr32^.r := ($000F and Cur16^)*16;
             inc(ptr32);
           end;
           inc(Cur16);
