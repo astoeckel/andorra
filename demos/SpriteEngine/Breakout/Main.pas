@@ -54,6 +54,7 @@ type
     AdSpriteEngine:TSpriteEngine;
     AdPerCounter:TPerformanceCounter;
     Bat:TBat;
+    procedure CreateLevel;
     procedure Idle(Sender:TObject; var done:boolean);
   end;
 
@@ -67,9 +68,30 @@ implementation
 
 {$R *.dfm}
 
-procedure TMainDlg.FormCreate(Sender: TObject);
+procedure TMainDlg.CreateLevel;
 var ax,ay:integer;
-    part1,part2:TAdParticle;
+begin
+for ax := 0 to 7 do
+begin
+  for ay := 0 to 7 do
+  begin
+    with TBrickSprite.Create(AdSpriteEngine) do
+    begin
+      Image := AdImgLst.Find('bricks');
+      x := ax * 75;
+      y := ay * 20;
+      case random(3) of
+        0 :  Color := RGB(255,128,128);
+        1 :  Color := RGB(128,150,255);
+        2 :  Color := RGB(128,255,150);
+      end;
+    end;
+  end;
+end;
+end;
+
+procedure TMainDlg.FormCreate(Sender: TObject);
+var part1,part2:TAdParticle;
     bmp:TBitmap;
     adbmp:TAdBitmap;
 begin
@@ -116,24 +138,7 @@ begin
     AdSpriteEngine.Surface := AdDraw1;
 
     Randomize;
-
-    for ax := 0 to 7 do
-    begin
-      for ay := 0 to 7 do
-      begin
-        with TBrickSprite.Create(AdSpriteEngine) do
-        begin
-          Image := AdImgLst.Find('bricks');
-          x := ax * 75;
-          y := ay * 20;
-          case random(3) of
-            0 :  Color := RGB(255,128,128);
-            1 :  Color := RGB(128,150,255);
-            2 :  Color := RGB(128,255,150);
-          end;
-        end;
-      end;
-    end;
+    CreateLevel;
 
     part1 := TAdParticle.Create(nil);
     part1.LoadFromFile(path+'bg.apf');
@@ -195,7 +200,12 @@ begin
   AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
   AdSpriteEngine.Draw;
   AdSpriteEngine.Dead;
+  if AdSpriteEngine.GetCountOfClass(TBrickSprite) = 0 then
+  begin
+    CreateLevel;
+  end;
   
+
   AdDraw1.EndScene;
   AdDraw1.Flip;
 
@@ -354,7 +364,6 @@ begin
   X := X + mx*10*TimeGap;
   if X < 0 then X := 0;
   if X+Width > Engine.SurfaceRect.Right then X := Engine.SurfaceRect.Right-Width;
-  
 end;
 
 procedure TBat.MoveTo(AX: integer);
@@ -362,4 +371,4 @@ begin
   FDestX := round(AX-Width / 2);
 end;
 
-end.
+end.                                     

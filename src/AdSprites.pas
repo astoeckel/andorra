@@ -20,6 +20,8 @@ uses Types,SysUtils,Classes, AdDraws, AdClasses, AdParticles;
 type
   {The sprite engines base class.}
   TSprite = class;
+  {A class of TSprite}
+  TSpriteClass = class of TSprite;
   {The spriteengine itsself.}
   TSpriteEngine = class;
   
@@ -86,6 +88,9 @@ type
       function Collision:integer;
       {Checks whether this sprite collides to the sprite, that wants to know whether it collides with another sprite.}
       procedure Collision2;
+
+      {Returns the count of a sprite class}
+      function GetCountOfClass(AClass:TSpriteClass;SendBy:TSprite=nil):integer;
       
       {Returns a rect which contains the relative coordinates of the sprite.}
       property BoundsRect:TRect read GetBoundsRect;
@@ -391,6 +396,19 @@ end;
 function TSprite.GetBoundsRect: TRect;
 begin
   result := Bounds(Round(WorldX),Round(WorldY),Round(Width),Round(Height));
+end;
+
+function TSprite.GetCountOfClass(AClass: TSpriteClass;SendBy:TSprite=nil): integer;
+var i:integer;
+begin
+  if SendBy = nil then result := 0;
+  for i := 0 to Items.Count - 1 do
+  begin
+    if (Items[i] <> self) and (Items[i].ClassType = AClass) then
+    begin
+      result := result + 1;
+    end;
+  end;
 end;
 
 function TSprite.GetWorldX: double;
