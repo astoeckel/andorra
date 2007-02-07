@@ -125,9 +125,6 @@ begin
   AdDraw.Display.BitCount := Settings.ReadInteger('set','bits',32);
   AdDraw.Display.Freq := Settings.ReadInteger('set','refrate',0);
 
-  ClientWidth := AdDraw.Display.Width;
-  ClientHeight := AdDraw.Display.Height;
-
   if doFullscreen in AdDraw.Options then
   begin
     Top := 0;

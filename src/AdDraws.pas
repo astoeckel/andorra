@@ -15,7 +15,7 @@ unit AdDraws;
 interface
 
 uses Windows, Controls, Math, Types, SysUtils, Classes, AdClasses, AdDllLoader,
-     Graphics, Dialogs, Huffman;
+     Graphics, Huffman;
 
 type
 

@@ -15,7 +15,7 @@ unit AdSprites;
 
 interface
 
-uses Types,SysUtils,Classes, AdDraws, AdClasses;
+uses Types,SysUtils,Classes, AdDraws, AdClasses, AdParticles;
 
 type
   {The sprite engines base class.}
@@ -198,6 +198,7 @@ type
     private
       FAngle:double;
       FAlpha:double;
+      FColor:LongInt;
     protected
       procedure DoDraw;override;
     public
@@ -208,6 +209,8 @@ type
       property Alpha:double read FAlpha write FAlpha;
       //The rotation angle from 0 to 360.
       property Angle:double read FAngle write FAngle;
+      //The color of the sprite
+      property Color:LongInt read FColor write FColor;
   end;
 
   {A sprite which draws the background of a scene.}
@@ -267,6 +270,31 @@ type
       property Color:LongWord read FColor write SetColor;
       {Link back to the TAdLight}
       property Light:TAdLight read FLight;
+  end;
+
+  {A sprite wrapping around the particle system}
+  TParticleSprite = class(TSprite)
+    private
+      FPartSys:TAdParticleSystem;
+      FTime,FWait:double;
+      FEmissionCount:integer;
+      FImage:TPictureCollectionItem;
+      FEmissionX,FEmissionY:double;
+      procedure SetEmissionCount(AValue:integer);
+      procedure SetImage(AValue:TPictureCollectionItem); 
+    protected
+      procedure DoDraw;override;
+      procedure DoMove(TimeGap:double);override;
+      function GetBoundsRect:TRect;override;
+    public
+      constructor Create(AParent:TSprite);override;
+      destructor Destroy;override;
+      procedure Emit(ACount:integer);
+      property PartSys:TAdParticleSystem read FPartSys;
+      property EmissionCount:integer read FEmissionCount write SetEmissionCount;
+      property Image:TPictureCollectionItem read FImage write SetImage;
+      property EmissionX:double read FEmissionX write FEmissionX;
+      property EmissionY:double read FEmissionY write FEmissionY;
   end;
 
 implementation
@@ -694,12 +722,14 @@ constructor TImageSpriteEx.Create(AParent: TSprite);
 begin
   inherited Create(AParent);
   FAlpha := 255;
+  FColor := $FFFFFF;
 end;
 
 procedure TImageSpriteEx.DoDraw;
 begin
   if FImage <> nil then
   begin
+    FImage.Color := FColor;
     if Alpha <> 255 then
     begin
       if Angle <> 0 then
@@ -843,6 +873,76 @@ procedure TLightSprite.SetRange(AValue: double);
 begin
   FRange := AValue;
   FLight.Range := AValue;
+end;
+
+{ TParticleSprite }
+
+constructor TParticleSprite.Create(AParent: TSprite);
+begin
+  inherited;
+  FPartSys := TAdParticleSystem.Create(Engine.Surface);
+  EmissionCount := 0;
+  FWait := 0;
+  CanDoCollisions := false;
+end;
+
+destructor TParticleSprite.Destroy;
+begin
+  FPartSys.Free;
+  inherited;
+end;
+
+procedure TParticleSprite.DoDraw;
+begin
+  FPartSys.Draw(round(Engine.X+WorldX),round(Engine.Y+WorldY));
+  FPartSys.Dead;
+end;
+
+procedure TParticleSprite.DoMove(TimeGap: double);
+var c:integer;
+begin
+  FTime := FTime + TimeGap*1000;
+  if (FTime >= FWait) and (FWait > 0) then
+  begin
+    c := round(FTime / FWait);
+    FTime := FTime - FWait;
+    Emit(c);
+  end;
+  FPartSys.Move(TimeGap);
+end;
+
+procedure TParticleSprite.Emit(ACount: integer);
+begin
+  FPartSys.CreateParticles(ACount,TAdParticle,round(FEmissionX),round(FEmissionY));
+end;
+
+function TParticleSprite.GetBoundsRect: TRect;
+var r:TRect;
+begin
+  r := FPartSys.BoundsRect;
+  result := Rect(
+              round(r.Left+Engine.X+WorldX),
+              round(r.Top+Engine.Y+WorldY),
+              round(r.Right+Engine.X+WorldX),
+              round(r.Bottom+Engine.Y+WorldY));
+end;
+
+procedure TParticleSprite.SetEmissionCount(AValue: integer);
+begin
+  if AValue > 0 then
+  begin
+    FWait := 1000/AValue;
+  end
+  else
+  begin
+    FWait := 0;
+  end;
+end;
+
+procedure TParticleSprite.SetImage(AValue: TPictureCollectionItem);
+begin
+  FImage := AValue;
+  FPartSys.Texture := FImage.Texture;
 end;
 
 end.
