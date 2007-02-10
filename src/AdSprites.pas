@@ -40,6 +40,49 @@ type
       procedure Remove(ASprite:TSprite);
   end;
 
+  TIntegerArray = array of Integer;
+  T2DSpriteListArray = array of array of TSpriteList;
+
+  {A list used to optimize the spriteengine}
+  TAd2DSpriteList = class
+    private
+      FStartX,FStartY:integer;
+      FEndY,FEndX:integer;
+      FUnoptimized:boolean;
+      FOrganisationCols:TIntegerArray;
+      FOrganisationRows:TIntegerArray;
+      FDynField:T2DSpriteListArray;
+      function GetItem(X,Y:integer):TSpriteList;
+    protected
+      function GetCell(X,Y:integer):TPoint;
+      function GetCol(X:integer):Integer;
+      function GetRow(Y:integer):Integer;
+    public
+      procedure Expand(X,Y:integer);
+      {Creates the list and initializes all values}
+      constructor Create;
+      {Destroys the list and all sprites within}
+      destructor Destroy;override;
+      {Add a sprite on specific coordinates to the field}
+      procedure Add(AItem:TSprite;X,Y:integer;Width:integer=1;Height:integer=1);
+      {Delete a sprite item from the list}
+      procedure Delete(AItem:TSprite;X,Y:integer;Width:integer=1;Height:integer=1);
+      {Optimizes the field. Removes empty rows and reorganizes the map structure}
+      procedure Optimize;
+      {Returns the list of sprites in a field}
+      property Items[X,Y:integer]:TSpriteList read GetItem;
+      {The start of the x coordinate}
+      property StartX:integer read FStartX;
+      {The end of the x coordinate}
+      property EndX:integer read FEndX;
+      {The start of the y coordinate}
+      property StartY:integer read FStartY;
+      {The end of the y coordinate}
+      property EndY:integer read FEndY;
+      {Returns weather the field has to be optimized}
+      property Unoptimized:boolean read FUnOptimized;
+  end;
+
   {The sprite engines base class.}
   TSprite = class
     private
@@ -131,9 +174,9 @@ type
       FCollisionSprite:TSprite;
       FCollisionDone:boolean;
       FCollisionRect:TRect;
-      FSurfaceRect:TRect;
       procedure SetSurface(AValue:TAdDraw);
     protected
+      FSurfaceRect:TRect;
       procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);
     public
       //The count of sprites which collide to the collision sprite.
@@ -962,6 +1005,243 @@ procedure TParticleSprite.SetImage(AValue: TPictureCollectionItem);
 begin
   FImage := AValue;
   FPartSys.Texture := FImage.Texture;
+end;
+
+{ TAd2DSpriteList }
+
+procedure TAd2DSpriteList.Add(AItem: TSprite; X, Y, Width, Height: integer);
+var r:TRect;
+    ax,ay:integer;
+begin
+  r := Bounds(X,Y,Width,Height);
+
+  //Resize the field if necessary
+  if (r.Right-1 > FEndX) then Expand(r.Right-FEndX-1,0);
+  if (r.Bottom-1 > FEndY) then Expand(0,r.Bottom-FEndY-1);
+  if (r.Left < FStartX) then Expand(r.Left-FStartX,0);
+  if (r.Top < FStartY) then Expand(0,r.Top-FStartY);
+
+  for ax := r.Left to r.Right-1 do
+  begin
+    for ay := r.Top to r.Bottom-1 do
+    begin
+      Items[ax,ay].Add(AItem);
+    end;  
+  end;
+end;
+
+procedure TAd2DSpriteList.Delete(AItem: TSprite; X, Y, Width, Height: integer);
+begin
+
+end;
+
+constructor TAd2DSpriteList.Create;
+begin
+  inherited Create;
+  SetLength(FDynField,1,1);
+  FDynField[0,0] := TSpriteList.Create;
+  SetLength(FOrganisationCols,1);
+  SetLength(FOrganisationRows,1);
+  FEndX := 0;
+  FStartX := 0;
+  FEndY := 0;
+  FStartY := 0;
+end;
+
+destructor TAd2DSpriteList.Destroy;
+var x,y:integer;
+begin
+  for x := 0 to high(FDynField) do
+  begin
+    for y := 0 to high(FDynField[x]) do
+    begin
+      FDynField[x][y].Free;
+    end;
+  end;
+  inherited Destroy;
+end;
+
+procedure TAd2DSpriteList.Expand(X, Y: integer);
+var i,j:integer;
+begin
+  if X <> 0 then
+  begin
+    //Resize the array
+    SetLength(FDynField,Length(FDynField)+abs(X),Length(FDynField[0]));
+    
+    //Create TSpriteLists for all new fields
+    for i := High(FDynField)-abs(x)+1 to High(FDynField) do
+    begin
+      for j := 0 to High(FDynField[i]) do
+      begin
+        FDynField[i][j] := TSpriteList.Create;
+      end;
+    end;
+
+    //Make the organisation row field longer
+    SetLength(FOrganisationCols,Length(FOrganisationCols)+abs(x));
+
+    //Set new FEndX and FStartX
+    if X > 0 then
+    begin
+      j := 0;
+      for i := High(FOrganisationCols)-abs(x)+1 to High(FOrganisationCols) do
+      begin
+        j := j + 1;
+        FOrganisationCols[i] := FEndX + j;
+      end;
+      FEndX := FEndX + X;
+    end;
+
+    if X < 0 then
+    begin
+      j := 0;
+      for i := High(FOrganisationCols)-abs(x)+1 to High(FOrganisationCols) do
+      begin
+        j := j + 1;
+        FOrganisationCols[i] := FStartX - j;
+      end;
+      FStartX := FStartX + X;
+      FUnoptimized := true;
+    end;
+  end;
+
+  if Y <> 0 then
+  begin
+    //Resize the array
+    SetLength(FDynField,Length(FDynField),Length(FDynField[0])+abs(Y));
+    
+    //Create TSpriteLists for all new fields
+    for i := 0 to High(FDynField) do
+    begin
+      for j :=  High(FDynField[i])-abs(y)+1 to High(FDynField[i]) do
+      begin
+        FDynField[i][j] := TSpriteList.Create;
+      end;
+    end;
+
+    //Make the organisation col field longer
+    SetLength(FOrganisationRows,Length(FOrganisationRows)+abs(Y));
+
+    //Set new FEndY and FStartY
+    if Y > 0 then
+    begin
+      j := 0;
+      for i := High(FOrganisationRows)-abs(Y)+1 to High(FOrganisationRows) do
+      begin
+        j := j + 1;
+        FOrganisationRows[i] := FEndY + j;
+      end;
+      FEndY := FEndY + Y;
+    end;
+
+    if Y < 0 then
+    begin
+      j := 0;
+      for i := High(FOrganisationRows)-abs(Y)+1 to High(FOrganisationRows) do
+      begin
+        j := j + 1;
+        FOrganisationRows[i] := FStartY - j;
+      end;
+      FStartY := FStartY + Y;
+      FUnoptimized := true;
+    end;
+  end;  
+end;
+
+function TAd2DSpriteList.GetCell(X, Y: integer): TPoint;
+begin
+  if FUnOptimized then
+  begin
+    result.X := GetCol(X);
+    result.Y := GetRow(Y);
+  end
+  else
+  begin
+    result.X := X - FStartX;
+    result.Y := Y - FStartY;
+  end;
+end;
+
+function TAd2DSpriteList.GetCol(X: integer): Integer;
+var i:integer;
+begin
+  result := -1;
+  for i := 0 to high(FOrganisationCols) do
+  begin
+    if FOrganisationCols[i] = X then
+    begin
+      result := i;
+      break;
+    end;
+  end;
+end;
+
+function TAd2DSpriteList.GetItem(X, Y: integer): TSpriteList;
+var cell:TPoint;
+begin
+  cell := GetCell(X,Y);
+  result := FDynField[cell.X,cell.Y];
+end;
+
+function TAd2DSpriteList.GetRow(Y: integer): Integer;
+var i:integer;
+begin
+  result := -1;
+  for i := 0 to high(FOrganisationRows) do
+  begin
+    if FOrganisationRows[i] = Y then
+    begin
+      result := i;
+      break;
+    end;
+  end;
+end;
+
+procedure TAd2DSpriteList.Optimize;
+var x,y:integer;
+    OrgRows,OrgCols:TIntegerArray;
+    Field1:T2DSpriteListArray;
+begin
+  if UnOptimized then
+  begin
+
+    //Create a new, tenporary buffer for the organisatrion and the field data
+    SetLength(OrgRows,Length(FOrganisationCols));
+    SetLength(OrgCols,Length(FOrganisationRows));
+    SetLength(Field1,FEndX-FStartX+1,FEndY-FStartY+1);
+
+    //Fill the organisation data
+    for x := 0 to high(OrgRows) do
+    begin
+      OrgRows[x] := FStartX + x;
+    end;
+    for x := 0 to high(OrgCols) do
+    begin
+      OrgCols[x] := FStartY + x;
+    end;
+
+    //Re-Fill the field in optimized order
+    for x := 0 to high(Field1) do
+    begin
+      for y := 0 to high(Field1[x]) do
+      begin
+        Field1[x,y] := FDynField[GetCol(x+FStartX)][GetRow(y+FStartY)];
+      end;
+    end;
+
+    //Finalize the old buffers
+    Finalize(FOrganisationRows);
+    Finalize(FOrganisationCols);
+    Finalize(FDynField);
+
+    //Copy our temoprary buffer in the "global" buffer
+    FDynField := Copy(Field1);
+    FOrganisationRows := Copy(OrgCols);
+    FOrganisationCols := Copy(OrgRows);
+
+    FUnOptimized := false;      
+  end;  
 end;
 
 end.
