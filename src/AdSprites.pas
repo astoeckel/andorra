@@ -15,7 +15,7 @@ unit AdSprites;
 
 interface
 
-uses Types,SysUtils,Classes, AdDraws, AdClasses, AdParticles;
+uses Types, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math;
 
 type
   {The sprite engines base class.}
@@ -83,6 +83,8 @@ type
       property Unoptimized:boolean read FUnOptimized;
   end;
 
+  TCollisionTyp = (ctOptimized, ctNormal);
+
   {The sprite engines base class.}
   TSprite = class
     private
@@ -96,20 +98,34 @@ type
       FVisible:boolean;
       FDoMoving:boolean;
       FDoCollisions:boolean;
+      FSpriteField:TAd2DSpriteList;
+      FGridSize:integer;
+      FAutoOptimize:boolean;
+      FCollisionTyp:TCollisionTyp;
       procedure SetParent(AParent:TSprite);
       procedure Add(ASprite:TSprite);
       procedure Remove(ASprite:TSprite);
       procedure SetZ(AValue:integer);
       function GetWorldY:double;
       function GetWorldX:double;
+      procedure SetGridSize(Value:integer);
+      procedure SetCollisionOptimization(Value:TCollisionTyp);
     protected
+      OldFieldCoords:TRect;
+      DidCollision:boolean;
       function GetBoundsRect:TRect;virtual;
+      function GetFieldCoords:TRect;virtual;
       function TestCollision(Sprite:TSprite):boolean;virtual;
       procedure DoMove(TimeGap:double);virtual;
       procedure DoDraw;virtual;
       procedure DoCollision(Sprite: TSprite; var Done: Boolean); virtual;
       procedure SetX(AValue:double);virtual;
       procedure SetY(AValue:double);virtual;
+      procedure SetWidth(AValue:double);virtual;
+      procedure SetHeight(AValue:double);virtual;
+      procedure RemapField;
+      procedure MoveInField(ASprite:TSprite);
+      property SpriteField:TAd2DSpriteList read FSpriteField;
     public
       {Creates an instance of TSprite.}
       constructor Create(AParent:TSprite);virtual;
@@ -134,11 +150,20 @@ type
 
       {Returns the count of a sprite class}
       function GetCountOfClass(AClass:TSpriteClass):integer;
+
+      {Optimzes the optimization field}
+      procedure Optimize;
       
       {Returns a rect which contains the relative coordinates of the sprite.}
       property BoundsRect:TRect read GetBoundsRect;
       {Contains all child sprites.}
       property Items:TSpriteList read FList;
+
+      {Sets the size of the sprite field}
+      property GridSize:integer read FGridSize write SetGridSize;
+      {Sets the type of the collision optimization.}
+      property CollisionOptimizationTyp:TCollisionTyp read FCollisionTyp write SetCollisionOptimization;
+
     published
       {The absolute X Position of the sprite.}
       property X:double read FX write SetX;
@@ -147,9 +172,9 @@ type
       {The Z order of the sprite.}
       property Z:integer read FZ write SetZ;
       {The width of the sprite.}
-      property Width:double read FWidth write FWidth;
+      property Width:double read FWidth write SetWidth;
       {The height of the sprite.}
-      property Height:double read FHeight write FHeight;
+      property Height:double read FHeight write SetHeight;
       {The relative X Position of the sprite.}
       property WorldX:double read GetWorldX;
       {The relative Y Position of the sprite.}
@@ -163,6 +188,8 @@ type
       property CanDoMoving:boolean read FDoMoving write FDoMoving;
       {Defines whether "DoDraw" is called.}
       property Visible:boolean read FVisible write FVisible;
+      {True if the optimization field should be automatically optimized}
+      property AutoOptimize:boolean read FAutoOptimize write FAutoOptimize;
   end;
 
   {The spriteengine itsself.}
@@ -407,6 +434,7 @@ begin
   FDead := false;
 
   FList := TSpriteList.Create;
+  FSpriteField := TAd2DSpriteList.Create;
 
   FX := 0; FY := 0;
   FWidth := 0; FHeight := 0;
@@ -414,6 +442,9 @@ begin
   FDoCollisions := true;
   FDoMoving := true;
   FVisible := true;
+
+  FGridSize := 128;
+  FAutoOptimize := true;
 end;
 
 procedure TSprite.Dead;
@@ -433,6 +464,7 @@ begin
     FList[i].Free;
   end;    
   FList.Free;
+  FSpriteField.Free;
   inherited Create;
 end;
 
@@ -452,6 +484,20 @@ begin
     begin
       result := result + 1;
     end;
+  end;
+end;
+
+function TSprite.GetFieldCoords: TRect;
+var x1,y1:double;
+begin
+  x1 := X / FParent.GridSize;
+  y1 := Y / FParent.GridSize;
+  with Result do
+  begin
+    Left  := trunc(x1);
+    Top := trunc(y1);
+    Right := ceil(x1 + (Width / Parent.GridSize));
+    Bottom := ceil(y1 + (Height / Parent.GridSize));
   end;
 end;
 
@@ -509,6 +555,67 @@ begin
   end;
 end;
 
+procedure TSprite.MoveInField(ASprite: TSprite);
+var r:TRect;
+begin
+  if ASprite <> nil then
+  begin
+    r := ASprite.GetFieldCoords;
+    if not CompRects(r,ASprite.OldFieldCoords) then
+    begin
+      with ASprite.OldFieldCoords do FSpriteField.Delete(ASprite,Left,Top,Right-Left,Bottom-Top);
+      FSpriteField.Add(ASprite,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+      ASprite.OldFieldCoords := r;
+    end;
+  end;
+end;
+
+procedure TSprite.Optimize;
+begin
+  FSpriteField.Optimize;
+end;
+
+procedure TSprite.RemapField;
+var i:integer;
+    r:TRect;
+begin
+  FSpriteField.Free;
+  FSpriteField := TAd2DSpriteList.Create;
+  for i := 0 to Items.Count - 1 do
+  begin
+    r := Items[i].GetFieldCoords;
+    FSpriteField.Add(Items[i],r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+    Items[i].OldFieldCoords := r;
+    Items[i].RemapField;
+  end;
+end;
+
+procedure TSprite.Remove(ASprite: TSprite);
+begin
+  FList.Remove(ASprite);
+  if ASprite <> nil then
+  begin
+    with ASprite.OldFieldCoords do
+    begin
+      FSpriteField.Delete(ASprite,Left,Top,Right-Left,Bottom-Top);
+    end;
+  end;
+end;
+
+procedure TSprite.Add(ASprite: TSprite);
+var r:TRect;
+begin
+  if ASprite <> nil then
+  begin
+    FList.Add(ASprite);
+
+    r := ASprite.GetFieldCoords;
+    FSpriteField.Add(ASprite,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+    ASprite.OldFieldCoords := r;
+  end;
+end;
+
+
 procedure TSprite.Collision2;
 var
   i: Integer;
@@ -524,7 +631,7 @@ begin
       FEngine.FCollisionSprite.DoCollision(self, FEngine.FCollisionDone);
       if FEngine.FCollisionSprite.Deaded or (not FEngine.FCollisionSprite.CanDoCollisions) then
       begin
-        FEngine.FCollisionDone := true;
+        FEngine.CollisionDone := true;
       end;
     end;
     if not FEngine.FCollisionDone then
@@ -532,7 +639,7 @@ begin
       for i := 0 to FList.Count - 1 do
       begin
         FList[i].Collision2;
-        if FEngine.FCollisionDone then
+        if FEngine.CollisionDone then
         begin
           break;
         end;
@@ -543,30 +650,96 @@ end;
 
 function TSprite.Collision: integer;
 var
-  i: Integer;
+  ax,ay,i: Integer;
+  r:TRect;
+  list:TSpriteList;
+  sx,sy,ex,ey:integer;
 begin
   result := 0;
   
   if (not Deaded) and (FEngine <> nil) and (CanDoCollisions) then
   begin
-    FEngine.FCollisionCount := 0;
-    FEngine.FCollisionSprite := self;
-    FEngine.FCollisionDone := false;
-    FEngine.FCollisionRect := BoundsRect;
+    Engine.CollisionCount := 0;
+    Engine.CollisionSprite := self;
+    Engine.CollisionDone := false;
+    Engine.CollisionRect := BoundsRect;
 
-    for i := 0 to FEngine.FList.Count - 1 do
+    if FCollisionTyp = ctOptimized then
     begin
-      FEngine.FList[i].Collision2;
-      if FEngine.FCollisionDone then
+      r := GetFieldCoords;
+  
+      //Compute bounds in field
+      sx := r.Left - 1;
+      if sx < Engine.SpriteField.StartX then sx := FEngine.SpriteField.StartX;
+      sy := r.Top - 1;
+      if sy < Engine.SpriteField.StartY then sy := FEngine.SpriteField.StartY;
+      ex := r.Right + 1;
+      if ex > Engine.SpriteField.EndX then ex := FEngine.SpriteField.EndX;
+      ey := r.Bottom + 1;
+      if ey > Engine.SpriteField.EndY then ey := FEngine.SpriteField.EndY;
+
+      //Do the collision
+      for ax := sx to ex do
       begin
-        break;
+        for ay := sy to ey do
+        begin
+          list := Engine.SpriteField.Items[ax,ay];
+          i := 0;
+          while i < list.Count do
+          begin
+            if not list[i].DidCollision then
+            begin
+              list[i].DidCollision := true;
+              list[i].Collision2;
+              if Engine.CollisionDone then
+              begin
+                break;
+              end;
+            end;
+            i := i + 1;   
+          end;
+          if Engine.CollisionDone then
+          begin
+            break;
+          end;
+        end;
+        if Engine.CollisionDone then
+        begin
+          break;
+        end;
+      end;
+
+      //Reset the "DidCollision" flag
+      for ax := sx to ex do
+      begin
+        for ay := sy to ey do
+        begin
+          list := Engine.SpriteField.Items[ax,ay];
+          i := 0;
+          while i < list.Count do
+          begin
+            list[i].DidCollision := false;
+            i := i + 1;
+          end;
+        end;
+      end;   
+
+    end
+    else
+    begin
+      for i := 0 to Engine.Items.Count - 1 do
+      begin
+        Engine.Items[i].Collision2;
+        if Engine.CollisionDone then
+        begin
+          break;
+        end;
       end;
     end;
+    Engine.CollisionSprite := nil;
 
-    FEngine.FCollisionSprite := nil;
-
-    result := FEngine.FCollisionCount;
-  end;  
+    result := FEngine.CollisionCount;
+  end;
 end;
 
 procedure TSprite.DoDraw;
@@ -576,7 +749,10 @@ end;
 
 procedure TSprite.DoMove(TimeGap: double);
 begin
-  // Nothing to do yet
+  if FAutoOptimize then
+  begin
+    Optimize;
+  end;
 end;
 
 procedure TSprite.DoCollision(Sprite: TSprite; var Done: Boolean);
@@ -584,30 +760,38 @@ begin
   //Nothing to do yet.
 end;
 
-procedure TSprite.Remove(ASprite: TSprite);
+procedure TSprite.SetCollisionOptimization(Value: TCollisionTyp);
+var i:integer;
 begin
-  FList.Remove(ASprite);
+  FCollisionTyp := Value;
+  for i := 0 to Items.Count - 1 do
+  begin
+    Items[i].CollisionOptimizationTyp := Value;
+  end;
 end;
 
-procedure TSprite.Add(ASprite: TSprite);
+procedure TSprite.SetGridSize(Value: integer);
+var i:integer;
 begin
-  if ASprite <> nil then
+  FGridSize := Value;
+  for i := 0 to Items.Count - 1 do
   begin
-    FList.Add(ASprite);
+    Items[i].GridSize := Value;
   end;
+  RemapField;
 end;
 
 procedure TSprite.SetParent(AParent: TSprite);
 begin
   if AParent <> nil then
   begin
+    FParent := AParent;
+    FEngine := FParent.Engine;
     if FParent <> nil then
     begin
       FParent.FList.Remove(Self);
     end;
     AParent.Add(Self);
-    FParent := AParent;
-    FEngine := FParent.Engine;
   end
   else
   begin
@@ -616,14 +800,28 @@ begin
   end;
 end;
 
+procedure TSprite.SetHeight(AValue: double);
+begin
+  FHeight := AValue;
+  if Parent <> nil then Parent.MoveInField(self);
+end;
+
+procedure TSprite.SetWidth(AValue: double);
+begin
+  FWidth := AValue;
+  if Parent <> nil then Parent.MoveInField(self);
+end;
+
 procedure TSprite.SetX(AValue: double);
 begin
   FX := AValue;
+  if Parent <> nil then Parent.MoveInField(self);
 end;
 
 procedure TSprite.SetY(AValue: double);
 begin
   FY := AValue;
+  if Parent <> nil then Parent.MoveInField(self);
 end;
 
 procedure TSprite.SetZ(AValue: integer);
@@ -1026,13 +1224,20 @@ begin
     for ay := r.Top to r.Bottom-1 do
     begin
       Items[ax,ay].Add(AItem);
-    end;  
+    end;
   end;
 end;
 
 procedure TAd2DSpriteList.Delete(AItem: TSprite; X, Y, Width, Height: integer);
+var ax,ay:integer;
 begin
-
+  for ax := x to x + Width - 1 do
+  begin
+    for ay := y to y + Height - 1 do
+    begin
+      Items[ax,ay].Remove(AItem);
+    end;
+  end;
 end;
 
 constructor TAd2DSpriteList.Create;

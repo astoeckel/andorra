@@ -4,21 +4,21 @@ This roadmap may change!!!!
 
 Project Alpha State
 
-Version 0.1 (Releases: BETA|STABLE)
+Version 0.1 (Releases: BETA)
   Plugin side:
-    - Loading and saving of Textures
-    - Initializing
-    - Finalizing
-    - Using and drawing of Index- and Vertexbuffers
-    - Lights
+    - Loading and saving of Textures [DONE]
+    - Initializing [DONE]
+    - Finalizing [DONE]
+    - Using and drawing of Index- and Vertexbuffers [DONE]
+    - Lights [DONE]
   Application side:
-    - A plugin loader
-    - A simple API for creating an application
-    - A simple API for creating meshs/images
-    - A simple API for loading and saving textures
-    - A image/mesh list
-    - A sprite engine
-    - A particle system engine
+    - A plugin loader [DONE]
+    - A simple API for creating an application [DONE]
+    - A simple API for creating meshs/images [DONE]
+    - A simple API for loading and saving textures [DONE]
+    - A image/mesh list [DONE]
+    - A sprite engine [DONE]
+    - A particle system engine [DONE]
     
 Version 1.5 (Releases: BETA|STABLE)
   Application side:

@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  AdDraws, AdSprites, AdClasses, IniFiles, AdPng;
+  AdDraws, AdSprites, AdClasses, IniFiles, AdPng, StdCtrls;
 
 type
   TForm1 = class(TForm)
@@ -35,7 +35,6 @@ type
     public
       SX,SY:double;
       SourceX,SourceY:integer;
-      Color:TColor;
       Light:TLightSprite;
       procedure DoDraw;override;
       constructor Create(AParent:TSprite);override;
@@ -136,7 +135,7 @@ begin
 
   AdDraw.Initialize;
 
-  AdDraw.AmbientColor := RGB(64,64,64);
+  AdDraw.AmbientColor := RGB(128,128,128);
 
   AdPictureCollection := TPictureCollection.Create(AdDraw);
   with AdPictureCollection.Add('wall')do
@@ -166,8 +165,10 @@ begin
   AdSpriteEngine := TSpriteEngine.Create(nil);
   AdSpriteEngine.Surface := AdDraw;
 
+  AdSpriteEngine.CollisionOptimizationTyp := ctOptimized;
+
   level := TStringList.Create;
-  level.LoadFromFile(path+'level.txt');
+  level.LoadFromFile(path+'level2.txt');
 
   with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
@@ -396,10 +397,9 @@ end;
 
 procedure TBall.DoMove(TimeGap: double);
 begin
+  inherited DoMove(TimeGap);
   if not WillDie then
   begin
-    inherited DoMove(TimeGap);
-
     if Alpha < 255 then
     begin
       Alpha := Alpha + 1000*TimeGap;

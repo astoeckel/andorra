@@ -297,6 +297,7 @@ begin
       Speed := Speed + 1;
     end;
   end;
+  Done := true;
 end;
 
 procedure TBall.DoMove(TimeGap: double);

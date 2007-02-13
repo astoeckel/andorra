@@ -2,8 +2,7 @@ program Breakout;
 
 uses
   Forms,
-  Main in 'Main.pas' {MainDlg},
-  Ad2DList in '..\..\..\src\Ad2DList.pas';
+  Main in 'Main.pas' {MainDlg};
 
 {$R *.res}
 
