@@ -517,6 +517,7 @@ type
     private
     protected
     public
+      
   end;
 
   TAdFontCollection = class
