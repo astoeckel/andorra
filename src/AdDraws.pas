@@ -512,6 +512,19 @@ type
     published
   end;
 
+  //A text output class
+  TAdFont = class
+    private
+    protected
+    public
+  end;
+
+  TAdFontCollection = class
+    private
+    protected
+    public
+  end;
+
   //Class for calculating the FPS
   TPerformanceCounter = class
     private
