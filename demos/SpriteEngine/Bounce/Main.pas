@@ -22,6 +22,10 @@ type
     AdDraw:TAdDraw;
     AdSpriteEngine:TSpriteEngine;
     AdPictureCollection:TPictureCollection;
+    AdPerCounter:TPerformanceCounter;
+    settings:TIniFile;
+    firsttime:boolean;
+    lx,ly:integer;
     procedure ApplicationIdle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -47,12 +51,6 @@ type
 
 var
   Form1: TForm1;
-  lx,ly:integer;
-  timegap:double;
-  lasttime:double;
-  framecount:integer;
-  settings:TIniFile;
-  firsttime:boolean;
 
 const
   path='..\demos\SpriteEngine\Bounce\';
@@ -64,24 +62,12 @@ implementation
 procedure TForm1.ApplicationIdle(Sender: TObject; var Done: boolean);
 var tg:double;
 begin
-  //Calculate FPS
-  tg := (gettickcount-lasttime);
-  timegap := timegap + tg;
-  lasttime := gettickcount;
-  framecount := framecount+1;
-
-  if timegap > 1000 then
-  begin
-    caption := 'FPS: '+inttostr(framecount);
-    timegap := 0;
-    framecount := 0;
-  end;
-
+  AdPerCounter.Calculate;
   if AdDraw.CanDraw then
   begin
     AdDraw.BeginScene;
     AdDraw.ClearSurface(clSkyBlue);
-    AdSpriteEngine.Move(tg/1000);
+    AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
     AdSpriteEngine.Draw;
     AdSpriteEngine.Dead;
     AdDraw.EndScene;
@@ -97,6 +83,8 @@ var
   level:TStringList;
   amessage:TAdLogMessage;
 begin
+  ReportMemoryLeaksOnShutdown := true;
+
   Randomize;
 
   Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+'settings.ini');
@@ -135,7 +123,7 @@ begin
 
   AdDraw.Initialize;
 
-  AdDraw.AmbientColor := RGB(128,128,128);
+  AdDraw.AmbientColor := RGB(96,96,96);
 
   AdPictureCollection := TPictureCollection.Create(AdDraw);
   with AdPictureCollection.Add('wall')do
@@ -219,20 +207,21 @@ begin
     end;
   end;
   level.Free;
-  lasttime := GetTickCount;
 
   Application.OnIdle := ApplicationIdle;
 
   Settings.Free;
 
   firsttime := true;
+
+  AdPerCounter := TPerformanceCounter.Create;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  AdPerCounter.Free;
   AdSpriteEngine.Free;
   AdPictureCollection.Free;
-  AdDraw.Finalize;
   AdDraw.Free;
 end;
 

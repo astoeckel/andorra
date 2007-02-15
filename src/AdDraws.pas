@@ -15,7 +15,7 @@ unit AdDraws;
 interface
 
 uses Windows, Controls, Math, Types, SysUtils, Classes, AdClasses, AdDllLoader,
-     Graphics, Huffman;
+     Graphics, Huffman, AdBlur;
 
 type
 
@@ -515,9 +515,40 @@ type
   //A text output class
   TAdFont = class
     private
+      FTexture:TAdTexture;
+      FMeshList:TPictureCollection;
+      FParent:TAdDraw;
+      FLetterSize:array[0..255] of TPoint;
+      FLetterCount:integer;
+      FLastColor:TAndorraColor;
+      FColor:TColor;
+      FAlpha:byte;
+      FPatternWidth,FPatternHeight:integer;
+      procedure SetColor(AValue:TColor);
+      procedure SetAlpha(AValue:byte);
+      function GetLoaded:boolean;
     protected
     public
-      
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;override;
+
+      procedure CreateFont(AFont:string;AStyle:TFontStyles;ASize:integer;
+        AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
+        AShadowAlpha:byte=64);
+      procedure ClearFont;
+
+      procedure TextOut(AText:string;AX,AY:integer);
+      function TextWidth(AText:string):integer;
+      function TextHeight(AText:string):integer;
+
+      procedure SaveToStream(AStream:TStream);
+      procedure LoadFromStream(AStream:TStream);
+      procedure SaveToFile(AFile:string);
+      procedure LoadFromFile(AFile:string);
+
+      property Loaded:boolean read GetLoaded;
+      property Color:TColor read FColor write SetColor;
+      property Alpha:byte read FAlpha write SetAlpha; 
   end;
 
   TAdFontCollection = class
@@ -696,9 +727,9 @@ var amsg:TAdLogMessage;
 begin
 
   result := false;
-
-  if not Initialized then
+  if AdDllLoader.LibraryLoaded then
   begin
+
     //Create the new Application
     AdAppl := AdDllLoader.CreateApplication;
     if (AdAppl <> nil) and (FParent <> nil) and (AdDllLoader.LibraryLoaded) then
@@ -2176,6 +2207,243 @@ end;
 function TSimpleFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
 begin
   result := (AGraphicClass = TBitmap) or (AGraphicClass = TMetafile) or (AGraphicClass = TIcon);
+end;
+
+{ TAdFont }
+
+constructor TAdFont.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+  FMeshList := TPictureCollection.Create(FParent);
+  FTexture := TAdTexture.Create(FParent);
+  FLetterCount := 0;
+  FColor := clWhite;
+  FAlpha := 255;
+  ClearFont;
+end;
+
+destructor TAdFont.Destroy;
+begin
+  FMeshList.Free;
+  FTexture.Free;
+  inherited;
+end;
+
+procedure TAdFont.CreateFont(AFont: string; AStyle: TFontStyles; ASize: integer;
+  AShadow: boolean; AShadowDepth, AShadowBlur: integer; AShadowAlpha: byte);
+var
+  bmp,bmp2:TBitmap;
+  adbmp:TAdBitmap;
+  maxw,maxh:integer;
+  ax,ay:integer;
+  i: integer;
+begin
+  ClearFont;
+
+  bmp := TBitmap.Create;
+  bmp.Width := 1;
+  bmp.Height := 1;
+  with bmp.Canvas do
+  begin
+    with Font do
+    begin
+      Name := AFont;
+      Style := AStyle;
+      Size := ASize;
+      Color := clWhite;
+    end;
+
+    for i := 0 to 255 do
+    begin
+      ax := TextWidth(chr(i));
+      ay := TextHeight(chr(i));
+      if (i = 0) or (ax > maxw) then maxw := ax;
+      if (i = 0) or (ay > maxh) then maxh := ay;
+      FLetterSize[i] := point(ax,ay);
+    end;
+
+    maxw := maxw + abs(AShadowDepth) + AShadowBlur;
+    maxh := maxh + abs(AShadowDepth) + AShadowBlur;
+    
+    bmp.Width := (maxw+1)*16;
+    bmp.Height := (maxh+1)*16;
+    Brush.Color := clBlack;
+    FillRect(ClipRect);
+
+    Brush.Style := bsClear;
+
+    if AShadow then
+    begin
+      bmp2 := TBitmap.Create;
+      bmp2.Assign(bmp);
+      bmp2.Canvas.Brush.Assign(Brush);
+      bmp2.Canvas.Font.Assign(Font);
+    end;
+
+    bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
+    
+    for ay := 0 to 15 do
+    begin
+      for ax := 0 to 15 do
+      begin
+        if AShadow then
+        begin
+          if AShadowDepth > 0 then
+          begin
+            Textout(ax*(maxw+1),
+                    ay*(maxh+1),chr(ay*16+ax));
+            bmp2.Canvas.Textout(ax*(maxw+1)+AShadowDepth,
+                                ay*(maxh+1)+AShadowDepth,chr(ay*16+ax));
+          end
+          else
+          begin
+            Textout(ax*(maxw+1)+abs(AShadowDepth),
+                    ay*(maxh+1)+abs(AShadowDepth),chr(ay*16+ax));
+            bmp2.Canvas.Textout(ax*(maxw+1),
+                                ay*(maxh+1),chr(ay*16+ax));
+          end;
+        end
+        else
+        begin
+          Textout(ax*(maxw+1),ay*(maxh+1),chr(ay*16+ax));
+        end;
+      end;
+    end;
+  end;
+
+  bmp.Transparent := true;
+  bmp.TransparentColor := clBlack;
+
+  if AShadow then
+  begin
+    if AShadowBlur > 0 then
+    begin
+      BmpGBlur(bmp2,AShadowBlur);
+    end;    
+    bmp2.Canvas.Draw(0,0,bmp);
+    adbmp := TAdBitmap.Create;
+    adbmp.AssignBitmap(bmp);
+    adbmp.AssignAlphaChannel(bmp2);
+    FTexture.Texture.LoadFromBitmap(AdBmp,32);
+    adbmp.Free;
+  end
+  else
+  begin
+    FTexture.LoadFromGraphic(bmp);
+  end;
+
+  FLetterCount := 256;
+
+  for i := 0 to 255 do
+  begin
+    with FMeshList.Add('') do
+    begin
+      Texture := self.FTexture;
+      PatternWidth := maxw;
+      PatternHeight := maxh;
+      SkipWidth := 1;
+      SkipHeight := 1;
+    end;
+  end;
+  FMeshList.Restore;
+
+  FPatternWidth := maxw;
+  FPatternHeight := maxh;
+
+  bmp.Free;
+  if AShadow then bmp2.Free;
+end;
+
+procedure TAdFont.ClearFont;
+var i:integer;
+begin
+  FTexture.Clear;
+  FMeshList.Clear;
+  for i := 0 to 255 do
+  begin
+    FLetterSize[i] := point(0,0);
+  end;
+  FLetterCount := 0;
+end;
+
+function TAdFont.TextHeight(AText: string): integer;
+var i:integer;
+begin
+  result := 0;
+  for i := 1 to length(AText) do
+  begin
+    if (FLetterSize[ord(AText[i])].Y > result) then
+    begin
+      result := FLetterSize[ord(AText[i])].Y;
+    end;
+  end;
+end;
+
+function TAdFont.TextWidth(AText: string): integer;
+var i:integer;
+begin
+  result := 0;
+  for i := 1 to length(AText) do
+  begin
+    result := result + FLetterSize[ord(AText[i])].X;
+  end;
+end;
+
+procedure TAdFont.TextOut(AText: string; AX, AY: integer);
+var i:integer;
+    x:integer;
+    c:byte;
+begin
+  if Loaded then
+  begin
+    x := 0;
+    for i := 1 to length(AText) do
+    begin
+      c := ord(AText[i]);
+      FMeshList[c].DrawAlpha(FParent,bounds(AX+x,AY,FPatternWidth,FPatternHeight),c,Alpha);
+      x := x + FLetterSize[c].X;
+    end;
+  end;
+end;
+
+procedure TAdFont.LoadFromFile(AFile: string);
+begin
+
+end;
+
+procedure TAdFont.LoadFromStream(AStream: TStream);
+begin
+
+end;
+
+procedure TAdFont.SaveToFile(AFile: string);
+begin
+
+end;
+
+procedure TAdFont.SaveToStream(AStream: TStream);
+begin
+
+end;
+
+function TAdFont.GetLoaded: boolean;
+begin
+  result := FTexture.Texture.Loaded and (FMeshList.Count > 0) and (FLetterCount > 0);
+end;
+
+procedure TAdFont.SetAlpha(AValue: byte);
+begin
+  FAlpha := AValue;
+end;
+
+procedure TAdFont.SetColor(AValue: TColor);
+var i:integer;
+begin
+  for i := 0 to FMeshList.Count - 1 do
+  begin
+    FMeshList[i].Color := AValue;
+  end;
 end;
 
 initialization
