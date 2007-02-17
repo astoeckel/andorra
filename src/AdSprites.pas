@@ -13,6 +13,10 @@
 {Contains the Andorra SpriteEngine System.}
 unit AdSprites;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses Types, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math;

@@ -12,6 +12,10 @@
 { Contains the main Andorra Classes for graphic output }
 unit AdDraws;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses Windows, Controls, Math, Types, SysUtils, Classes, AdClasses, AdDllLoader,
@@ -115,7 +119,7 @@ type
     AdDllLoader : TAndorraDllLoader;
     {The Andorra Reference for the DllLoader}
     AdAppl:TAd2DApplication;
-    //This property contains the diplay settings (width, height and bitcount)
+    //This property contains the diplay settings for fullscreen mode (width, height and bitcount)
     Display : TAdDisplay;
 
     //Create the class. AParent is the handle of the control, where displaying should take place.
@@ -572,8 +576,13 @@ type
       constructor Create;
   end;
 
+  //A multimedia timer. Thank you to the DP user CK_CK
+
+
 const
   CanvasPatternSize = 512;
+
+  Time_Elapsed_Msg = WM_User + 311;
 
 var
   //Contains all registered compressors. You must not change the contents.
@@ -2206,7 +2215,11 @@ end;
 
 function TSimpleFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
 begin
-  result := (AGraphicClass = TBitmap) or (AGraphicClass = TMetafile) or (AGraphicClass = TIcon);
+  {$IFDEF FPC}
+    result := (AGraphicClass = TBitmap) or (AGraphicClass = TIcon);
+  {$ELSE}
+    result := (AGraphicClass = TBitmap) or (AGraphicClass = TMetafile) or (AGraphicClass = TIcon);
+  {$ENDIF}
 end;
 
 { TAdFont }
@@ -2319,7 +2332,9 @@ begin
   begin
     if AShadowBlur > 0 then
     begin
+      {$IFDEF FPC}{$ELSE}
       BmpGBlur(bmp2,AShadowBlur);
+      {$ENDIF}
     end;    
     bmp2.Canvas.Draw(0,0,bmp);
     adbmp := TAdBitmap.Create;

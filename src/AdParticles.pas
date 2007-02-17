@@ -13,6 +13,10 @@
 
 unit AdParticles;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses SysUtils, Types, Classes,AdDraws, AdClasses;

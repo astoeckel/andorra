@@ -13,9 +13,13 @@
 {AdClasses.pas contains all classes and types shared between the host and the plugin.}
 unit AdClasses;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
-uses SysUtils, Classes, Graphics, Types;
+uses SysUtils, Classes, Graphics, Types, {$IFDEF FPC}IntfGraphics, FPImage, LclType{$ENDIF};
 
 type
   {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
@@ -609,74 +613,154 @@ begin
 end;
 
 procedure TAdBitmap.AssignAlphaChannel(ABitmap: TBitmap);
-var sl1:PRGBRec;
-    sl2:PRGBARec;
+var sl2:PRGBARec;
     x,y:integer;
+    {$IFDEF FPC}
+      IntfBmp:TLazIntfImage;
+      acol:TFPColor;
+    {$ELSE}
+      sl1:PRGBRec;
+    {$ENDIF}
 begin
-  if Loaded then
-  begin
-    ABitmap.PixelFormat := pf24Bit;
-    sl2 := Scanline;
-    for y := 0 to FHeight - 1 do
+  {$IFDEF FPC}
+    if Loaded then
     begin
-      sl1 := ABitmap.ScanLine[y];
-      for x := 0 to FWidth - 1 do
+      IntfBmp := TLazIntfImage.Create(0,0);
+      IntfBmp.LoadFromBitmap(ABitmap.Handle,ABitmap.MaskHandle);
+      sl2 := Scanline;
+      for x := 0 to FHeight - 1 do
       begin
-        sl2^.a := (sl1^.r+sl1^.g+sl1^.b) div 3;
-        inc(sl1);
-        inc(sl2);
+        for y := 0 to FWidth - 1 do
+        begin
+          acol := IntfBmp.Colors[x,y];
+          sl2^.a := (acol.red +
+                     acol.green +
+                     acol.blue) div 3;
+          inc(sl2);
+        end;
+      end;
+      IntfBmp.Free;
+    end;
+  {$ELSE}
+    if Loaded then
+    begin
+      ABitmap.PixelFormat := pf24Bit;
+      sl2 := Scanline;
+      for y := 0 to FHeight - 1 do
+      begin
+        sl1 := ABitmap.ScanLine[y];
+        for x := 0 to FWidth - 1 do
+        begin
+          sl2^.a := (sl1^.r+sl1^.g+sl1^.b) div 3;
+          inc(sl1);
+          inc(sl2);
+        end;
       end;
     end;
-  end;
+  {$ENDIF}
 end;
 
 procedure TAdBitmap.AssignAlphaChannelToBitmap(ABitmap: TBitmap);
-var sl1:PRGBRec;
-    sl2:PRGBARec;
-    x,y:integer;
+var
+  sl2:PRGBARec;
+  x,y:integer;
+  {$IFDEF FPC}
+    IntfBmp:TLazIntfImage;
+    acol:TFPColor;
+    h1,h2:HBitmap;
+  {$ELSE}
+    sl1:PRGBRec;
+  {$ENDIF}
 begin
-  if Loaded then
-  begin
-    ABitmap.PixelFormat := pf24Bit;
-    ABitmap.Width := FWidth;
-    ABitmap.Height := FHeight;
-    sl2 := Scanline;
-    for y := 0 to FHeight - 1 do
+  {$IFDEF FPC}
+    if Loaded then
     begin
-      sl1 := ABitmap.Scanline[y];
-      for x := 0 to FWidth - 1 do
+      IntfBmp := TLazIntfImage.Create(FWidth,FHeight);
+      sl2 := Scanline;
+      for y := 0 to FHeight - 1 do
       begin
-        sl1^.r := sl2^.a;
-        sl1^.g := sl2^.a;
-        sl1^.b := sl2^.a;
-        inc(sl2);
-        inc(sl1);
+        for x := 0 to FWidth - 1 do
+        begin
+          acol.blue := sl2^.a;
+          acol.red := sl2^.a;
+          acol.green := sl2^.a;
+          IntfBmp.Colors[x,y] := acol;
+          inc(sl2);
+        end;
+      end;
+      ABitmap.FreeImage;
+      IntfBmp.CreateBitmap(h1,h2,false);
+      ABitmap.Handle := h1;
+      ABitmap.MaskHandle := h2;
+      IntfBmp.Free;
+    end;
+  {$ELSE}
+    if Loaded then
+    begin
+      ABitmap.PixelFormat := pf24Bit;
+      ABitmap.Width := FWidth;
+      ABitmap.Height := FHeight;
+      sl2 := Scanline;
+      for y := 0 to FHeight - 1 do
+      begin
+        sl1 := ABitmap.Scanline[y];
+        for x := 0 to FWidth - 1 do
+        begin
+          sl1^.r := sl2^.a;
+          sl1^.g := sl2^.a;
+          sl1^.b := sl2^.a;
+          inc(sl2);
+          inc(sl1);
+        end;
       end;
     end;
-  end;
+  {$ENDIF}
 end;
 
 procedure TAdBitmap.AssignBitmap(ABitmap: TBitmap);
-var sl1:PRGBRec;
-    sl2:PRGBARec;
-    x,y:integer;
-    a:byte;
-    tr,tg,tb:byte;
+var
+  sl2:PRGBARec;
+  x,y:integer;
+  a:byte;
+  tr,tg,tb:byte;
+  {$IFDEF FPC}
+    IntfBmp:TLazIntfImage;
+    acol:TFPColor;
+  {$ELSE}
+    sl1:PRGBRec;
+  {$ENDIF}
 begin
   ReserveMemory(ABitmap.Width,ABitmap.Height);
-  ABitmap.PixelFormat := pf24Bit;
+  
+  {$IFDEF FPC}
+    IntfBmp := TLazIntfImage.Create(0,0);
+    IntfBmp.LoadFromBitmap(ABitmap.Handle,ABitmap.MaskHandle);
+  {$ELSE}
+    ABitmap.PixelFormat := pf24Bit;
+  {$ENDIF}
+
   sl2 := Scanline;
   tr := GetRValue(ABitmap.TransparentColor);
   tg := GetGValue(ABitmap.TransparentColor);
   tb := GetBValue(ABitmap.TransparentColor);
   for y := 0 to FHeight - 1 do
   begin
-    sl1 := ABitmap.ScanLine[y];
+    {$IFDEF FPC}{$ELSE}
+      sl1 := ABitmap.ScanLine[y];
+    {$ENDIF}
     for x := 0 to FWidth - 1 do
     begin
-      sl2^.r := sl1^.r;
-      sl2^.g := sl1^.g;
-      sl2^.b := sl1^.b;
+      {$IFDEF FPC}
+        acol := IntfBmp.Colors[x,y];
+        sl2^.r := acol.red;
+        sl2^.g := acol.green;
+        sl2^.b := acol.blue;
+      {$ELSE}
+        sl2^.r := sl1^.r;
+        sl2^.g := sl1^.g;
+        sl2^.b := sl1^.b;
+        inc(sl1);
+      {$ENDIF}
       if (ABitmap.Transparent) and (sl2^.b = tr) and (sl2^.g = tg) and (sl2^.r = tb) then
       begin
         a := 0;
@@ -686,44 +770,81 @@ begin
         a := 255;
       end;
       sl2^.a := a;
-      inc(sl1);
       inc(sl2);
     end;
   end;
+  {$IFDEF FPC}
+    IntfBmp.Free;
+  {$ENDIF}
 end;
 
 procedure TAdBitmap.AssignToBitmap(ABitmap: TBitmap;AIgnoreAlphaChannel:boolean=true);
-var sl1:PRGBRec;
-    sl2:PRGBARec;
-    x,y:integer;
-    a:single;
+var
+  sl2:PRGBARec;
+  x,y:integer;
+  a:single;
+  {$IFDEF FPC}
+    IntfBmp:TLazIntfImage;
+    acol:TFPColor;
+  {$ELSE}
+    sl1:PRGBRec;
+  {$ENDIF}
 begin
   if Loaded then
   begin
-    ABitmap.PixelFormat := pf24Bit;
-    ABitmap.Width := FWidth;
-    ABitmap.Height := FHeight;
+     ABitmap.PixelFormat := pf24Bit;
+     ABitmap.Width := FWidth;
+     ABitmap.Height := FHeight;
+    {$IFDEF FPC}
+      IntfBmp := TLazIntfImage.Create(0,0);
+      IntfBmp.LoadFromBitmap(ABitmap.Handle,ABitmap.MaskHandle);
+    {$ENDIF}
     sl2 := Scanline;
     for y := 0 to FHeight - 1 do
     begin
-      sl1 := ABitmap.Scanline[y];
+      {$IFDEF FPC}{$ELSE}
+        sl1 := ABitmap.Scanline[y];
+      {$ENDIF}
       for x := 0 to FWidth - 1 do
       begin
         if AIgnoreAlphaChannel then
         begin
-          sl1^.r := sl2^.r;
-          sl1^.g := sl2^.g;
-          sl1^.b := sl2^.b;
+          {$IFDEF FPC}
+            with acol do
+            begin
+              red := sl2^.r;
+              green := sl2^.g;
+              blue := sl2^.b;
+            end;
+            IntfBmp.Colors[x,y] := acol;
+          {$ELSE}
+            sl1^.r := sl2^.r;
+            sl1^.g := sl2^.g;
+            sl1^.b := sl2^.b;
+          {$ENDIF}
         end
         else
         begin
-          a := (sl2^.a/255);
-          sl1^.r := round((sl1^.r*(1-a)) + (sl2^.r*a));
-          sl1^.g := round((sl1^.g*(1-a)) + (sl2^.g*a));
-          sl1^.b := round((sl1^.b*(1-a)) + (sl2^.b*a));
+          a := (sl2^.a / 255);
+          {$IFDEF FPC}
+            acol := IntfBmp.Colors[x,y];
+            with acol do
+            begin
+              red   := round((acol.red*(1-a)) + (sl2^.r*a));
+              green := round((acol.green*(1-a)) + (sl2^.g*a));
+              blue  := round((acol.blue*(1-a)) + (sl2^.b*a));
+            end;
+          {$ELSE}
+            sl1^.r := round((sl1^.r*(1-a)) + (sl2^.r*a));
+            sl1^.g := round((sl1^.g*(1-a)) + (sl2^.g*a));
+            sl1^.b := round((sl1^.b*(1-a)) + (sl2^.b*a));
+          {$ENDIF}
         end;
         inc(sl2);
-        inc(sl1);
+        {$IFDEF FPC}
+        {$ELSE}
+          inc(sl1);
+        {$ENDIF}
       end;
     end;
   end;

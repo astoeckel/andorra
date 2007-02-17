@@ -7,10 +7,13 @@ interface
 uses
   Graphics;
   
+{$IFDEF FPC}{$ELSE}
 procedure BmpGBlur(Bmp: TBitmap; radius: Single);
+{$ENDIF}
 
 implementation
 
+{$IFDEF FPC}{$ELSE}
 procedure BmpGBlur(Bmp: TBitmap; radius: Single);
 Type
   TRGB      = Packed Record b, g, r: Byte End;
@@ -96,5 +99,6 @@ Begin
     End;
   End;
 End;
+{$ENDIF}
 
 end.

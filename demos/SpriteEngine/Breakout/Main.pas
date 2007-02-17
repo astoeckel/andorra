@@ -97,7 +97,7 @@ var part1,part2:TAdParticle;
 begin
   AdDraw1 := TAdDraw.Create(self);
 
-  AdDraw1.DllName := 'AndoradraDX93D.dll';
+  AdDraw1.DllName := 'AndorraDX93D.dll';
 
   Cursor := crNone;
 

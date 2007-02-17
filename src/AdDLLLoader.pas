@@ -8,8 +8,13 @@
 *Comment: Loads the Plugin-DLL
 }
 
+
 //Loads the plugin DLL
 unit AdDLLLoader;
+
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
 
 interface
 
