@@ -19,7 +19,7 @@ unit AdClasses;
 
 interface
 
-uses SysUtils, Classes, Graphics, Types, {$IFDEF FPC}IntfGraphics, FPImage, LclType{$ENDIF};
+uses {$IFDEF FPC}IntfGraphics, FPImage, LclType, {$ENDIF} SysUtils, Classes, Graphics, Types; 
 
 type
   {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}

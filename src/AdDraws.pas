@@ -582,8 +582,6 @@ type
 const
   CanvasPatternSize = 512;
 
-  Time_Elapsed_Msg = WM_User + 311;
-
 var
   //Contains all registered compressors. You must not change the contents.
   RegisteredCompressors:TStringList;
@@ -2267,6 +2265,8 @@ begin
       Color := clWhite;
     end;
 
+    maxw := 0;
+    maxh := 0;
     for i := 0 to 255 do
     begin
       ax := TextWidth(chr(i));
@@ -2292,10 +2292,9 @@ begin
       bmp2.Assign(bmp);
       bmp2.Canvas.Brush.Assign(Brush);
       bmp2.Canvas.Font.Assign(Font);
+      bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
     end;
 
-    bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
-    
     for ay := 0 to 15 do
     begin
       for ax := 0 to 15 do
