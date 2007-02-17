@@ -158,7 +158,7 @@ type
       procedure Assign(AParticle:TAdParticle);
       
       //Called by the particle system, setups the movement (the direction) of the particle.
-      procedure SetupMovement;
+      procedure SetupMovement;virtual;
       
       //Saves the particle's settings to a stream
       procedure SaveToStream(AStream:TStream);
