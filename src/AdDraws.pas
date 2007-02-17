@@ -516,22 +516,31 @@ type
     published
   end;
 
+  //An array class to store the size of each letter of a font
+  TPointArray = array[0..255] of TPoint;
+
   //A text output class
   TAdFont = class
     private
       FTexture:TAdTexture;
       FMeshList:TPictureCollection;
       FParent:TAdDraw;
-      FLetterSize:array[0..255] of TPoint;
+      FLetterSize:TPointArray;
       FLetterCount:integer;
-      FLastColor:TAndorraColor;
       FColor:TColor;
       FAlpha:byte;
       FPatternWidth,FPatternHeight:integer;
+      FCompressor:TCompressorClass;
       procedure SetColor(AValue:TColor);
       procedure SetAlpha(AValue:byte);
       function GetLoaded:boolean;
+      procedure SetCompressor(AValue:TCompressorClass);
     protected
+      property MeshList:TPictureCollection read FMeshList;
+      property LetterSize:TPointArray read FLetterSize;
+      property PatternWidth:integer read FPatternWidth;
+      property PatternHeight:integer read FPatternHeight;
+      property Texture:TAdTexture read FTexture write FTexture;
     public
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
@@ -552,7 +561,8 @@ type
 
       property Loaded:boolean read GetLoaded;
       property Color:TColor read FColor write SetColor;
-      property Alpha:byte read FAlpha write SetAlpha; 
+      property Alpha:byte read FAlpha write SetAlpha;
+      property Compressor:TCompressorClass read FCompressor write SetCompressor;
   end;
 
   TAdFontCollection = class
@@ -2228,6 +2238,7 @@ begin
   FParent := AParent;
   FMeshList := TPictureCollection.Create(FParent);
   FTexture := TAdTexture.Create(FParent);
+  FCompressor := FTexture.Compressor;
   FLetterCount := 0;
   FColor := clWhite;
   FAlpha := 255;
@@ -2422,23 +2433,56 @@ begin
 end;
 
 procedure TAdFont.LoadFromFile(AFile: string);
+var ms:TMemoryStream;
 begin
-
+  ms := TMemoryStream.Create;
+  ms.LoadFromFile(AFile);
+  ms.Position := 0;
+  LoadFromStream(ms);
+  ms.Free;
 end;
 
 procedure TAdFont.LoadFromStream(AStream: TStream);
+var i:integer;
 begin
-
+  ClearFont;
+  AStream.Read(FLetterSize[0],SizeOf(FLetterSize));
+  AStream.Read(FPatternWidth,SizeOf(Integer));
+  AStream.Read(FPatternHeight,SizeOf(Integer));
+  FTexture.LoadFromStream(AStream);
+  if FTexture.FAd2DTexture.Loaded then
+  begin
+    FLetterCount := 255;
+    for i := 0 to 255 do
+    begin
+      with FMeshList.Add('') do
+      begin
+        Texture := self.FTexture;
+        PatternWidth := self.FPatternWidth;
+        PatternHeight := self.FPatternHeight;
+        SkipWidth := 1;
+        SkipHeight := 1;
+      end;
+    end;
+    FMeshList.Restore;
+  end;
 end;
 
 procedure TAdFont.SaveToFile(AFile: string);
+var ms:TMemoryStream;
 begin
-
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.SaveToFile(AFile);
+  ms.Free;
 end;
 
 procedure TAdFont.SaveToStream(AStream: TStream);
 begin
-
+  AStream.Write(FLetterSize[0],SizeOf(FLetterSize));
+  AStream.Write(FPatternWidth,SizeOf(Integer));
+  AStream.Write(FPatternHeight,SizeOf(Integer));
+  FTexture.SaveToStream(AStream);
 end;
 
 function TAdFont.GetLoaded: boolean;
@@ -2458,6 +2502,12 @@ begin
   begin
     FMeshList[i].Color := AValue;
   end;
+end;
+
+procedure TAdFont.SetCompressor(AValue: TCompressorClass);
+begin
+  FTexture.Compressor := AValue;
+  FCompressor := AValue;
 end;
 
 initialization

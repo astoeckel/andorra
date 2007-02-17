@@ -53,6 +53,7 @@ type
     AdImgLst:TPictureCollection;
     AdSpriteEngine:TSpriteEngine;
     AdPerCounter:TPerformanceCounter;
+    AdFont:TAdFont;
     Bat:TBat;
     procedure CreateLevel;
     procedure Idle(Sender:TObject; var done:boolean);
@@ -166,9 +167,9 @@ begin
 
     AdPerCounter := TPerformanceCounter.Create;
 
+    AdFont := TAdFont.Create(AdDraw1);
+    AdFont.CreateFont('Tahoma',[],10,true,2,2,200);
     Application.OnIdle := Idle;
-      
-
   end
   else
   begin
@@ -179,6 +180,7 @@ end;
 
 procedure TMainDlg.FormDestroy(Sender: TObject);
 begin
+  AdFont.Free;
   AdPerCounter.Free;
   AdSpriteEngine.Free;
   AdImgLst.Free;
@@ -204,14 +206,13 @@ begin
   begin
     CreateLevel;
   end;
-  
+  AdFont.TextOut('FPS: '+inttostr(AdPerCounter.FPS),2,2);
+
 
   AdDraw1.EndScene;
   AdDraw1.Flip;
 
   Done := false;
-
-  Caption := 'FPS: '+inttostr(AdPerCounter.FPS);
 end;
 
 { TBrickSprite }
