@@ -49,7 +49,6 @@ begin
     end;
     PartSys := TAdParticleSystem.Create(AdDraw1);
     PartSys.Texture := AdImageList.Items[0].Texture;
-    PartSys.DefaultParticle
   end
   else
   begin
