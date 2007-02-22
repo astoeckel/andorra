@@ -5,7 +5,7 @@
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
-* File: AndorraClasses.pas
+* File: AdClasses.pas
 * Comment: Contains all classes and types which are exchanged between the host
            and the plugin.
 }

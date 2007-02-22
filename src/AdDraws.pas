@@ -493,6 +493,8 @@ type
      	property Items[AIndex:integer]:TPictureCollectionItem read GetItem write SetItem;default;
       //Add a new image to the list.
       function Add(AName:string):TPictureCollectionItem;overload;
+      //Returns the index of a item
+      function IndexOf(AName:string):integer;
       //Find an image in the list.
       function Find(AName:string):TPictureCollectionItem;
       //Call the restore function of every item in the list.
@@ -531,6 +533,7 @@ type
       FAlpha:byte;
       FPatternWidth,FPatternHeight:integer;
       FCompressor:TCompressorClass;
+      FName:string;
       procedure SetColor(AValue:TColor);
       procedure SetAlpha(AValue:byte);
       function GetLoaded:boolean;
@@ -542,6 +545,8 @@ type
       property PatternHeight:integer read FPatternHeight;
       property Texture:TAdTexture read FTexture write FTexture;
     public
+      CreatedByList:boolean;
+
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
 
@@ -563,12 +568,25 @@ type
       property Color:TColor read FColor write SetColor;
       property Alpha:byte read FAlpha write SetAlpha;
       property Compressor:TCompressorClass read FCompressor write SetCompressor;
+      property Name:string read FName write FName;
   end;
 
-  TAdFontCollection = class
+  TAdFontCollection = class(TList)
     private
+      FParent:TAdDraw;
+      procedure SetItem(Index:integer; Value:TAdFont);
+      function GetItem(Index:integer):TAdFont;
+      function GetItemByName(Index:string):TAdFont;
     protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;override;
+      procedure Add(AName,AFont:String;AStyle:TFontStyles;ASize:integer;
+        AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
+        AShadowAlpha:byte=64);overload;
+      property Font[Index:string]:TAdFont read GetItemByName;default;
+      property Items[Index:integer]:TAdFont read GetItem write SetItem;
   end;
 
   //Class for calculating the FPS
@@ -585,9 +603,6 @@ type
       //Creates a new instance of the performance counter
       constructor Create;
   end;
-
-  //A multimedia timer. Thank you to the DP user CK_CK
-
 
 const
   CanvasPatternSize = 512;
@@ -1465,11 +1480,22 @@ function TPictureCollection.Find(AName: string): TPictureCollectionItem;
 var i:integer;
 begin
   result := nil;
+  i := IndexOf(AName);
+  if i > -1 then
+  begin
+    result := Items[i];
+  end;
+end;
+
+function TPictureCollection.IndexOf(AName: string): integer;
+var i:integer;
+begin
+  result := -1;
   for i := 0 to Count - 1 do
   begin
     if Items[i].Name = AName then
     begin
-      result := Items[i];
+      result := i;
       break;
     end;
   end;
@@ -2263,6 +2289,8 @@ var
 begin
   ClearFont;
 
+  FName := AFont+inttostr(ASize);
+
   bmp := TBitmap.Create;
   bmp.Width := 1;
   bmp.Height := 1;
@@ -2508,6 +2536,68 @@ procedure TAdFont.SetCompressor(AValue: TCompressorClass);
 begin
   FTexture.Compressor := AValue;
   FCompressor := AValue;
+end;
+
+{ TAdFontCollection }
+
+procedure TAdFontCollection.Add(AName, AFont: String; AStyle: TFontStyles;
+  ASize: integer; AShadow: boolean; AShadowDepth, AShadowBlur: integer;
+  AShadowAlpha: byte);
+var
+  Font:TAdFont;
+begin
+  font := TAdFont.Create(FParent);
+  font.CreateFont(AFont,AStyle,ASize,AShadow,AShadowDepth,AShadowBlur,AShadowAlpha);
+  font.Name := AName;
+  font.CreatedByList := true;
+  Add(font);
+end;
+
+constructor TAdFontCollection.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+end;
+
+destructor TAdFontCollection.Destroy;
+begin
+  inherited;
+end;
+
+function TAdFontCollection.GetItem(Index: integer): TAdFont;
+begin
+  result := inherited Items[Index];
+end;
+
+function TAdFontCollection.GetItemByName(Index: string): TAdFont;
+var i:integer;
+begin
+  result := nil;
+  for i := 0 to Count-1 do
+  begin
+    if Items[i].Name = Index then
+    begin
+      result := Items[i];
+      break;
+    end;
+  end;
+end;
+
+procedure TAdFontCollection.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  inherited;
+  if Action = lnDeleted then
+  begin
+    if TAdFont(ptr).CreatedByList then
+    begin
+      TAdFont(ptr).Free;
+    end;
+  end;
+end;
+
+procedure TAdFontCollection.SetItem(Index: integer; Value: TAdFont);
+begin
+  inherited Items[Index] := Value;
 end;
 
 initialization

@@ -129,7 +129,8 @@ type
       procedure SetHeight(AValue:double);virtual;
       procedure RemapField;
       procedure MoveInField(ASprite:TSprite);
-      property SpriteField:TAd2DSpriteList read FSpriteField;
+      function GetCollisionField:TRect;virtual;
+      procedure CheckCollisionWith(ASprite:TSprite);virtual;
     public
       {Creates an instance of TSprite.}
       constructor Create(AParent:TSprite);virtual;
@@ -168,6 +169,7 @@ type
       {Sets the type of the collision optimization.}
       property CollisionOptimizationTyp:TCollisionTyp read FCollisionTyp write SetCollisionOptimization;
 
+      property SpriteField:TAd2DSpriteList read FSpriteField;
     published
       {The absolute X Position of the sprite.}
       property X:double read FX write SetX;
@@ -277,6 +279,8 @@ type
     private
       FAngle:double;
       FAlpha:double;
+      FRotationCenterX:double;
+      FRotationCenterY:double;
       FColor:LongInt;
     protected
       procedure DoDraw;override;
@@ -290,6 +294,10 @@ type
       property Angle:double read FAngle write FAngle;
       //The color of the sprite
       property Color:LongInt read FColor write FColor;
+      //The x-rotation center
+      property RotationCenterX:double read FRotationCenterX write FRotationCenterX;
+      //The y-rotation center
+      property RotationCenterY:double read FRotationCenterY write FRotationCenterY;
   end;
 
   {A sprite which draws the background of a scene.}
@@ -359,6 +367,7 @@ type
       FEmissionCount:integer;
       FImage:TPictureCollectionItem;
       FEmissionX,FEmissionY:double;
+      FAutoDeath:boolean;
       procedure SetEmissionCount(AValue:integer);
       procedure SetImage(AValue:TPictureCollectionItem); 
     protected
@@ -374,6 +383,7 @@ type
       property Image:TPictureCollectionItem read FImage write SetImage;
       property EmissionX:double read FEmissionX write FEmissionX;
       property EmissionY:double read FEmissionY write FEmissionY;
+      property AutoDeath:boolean read FAutoDeath write FAutoDeath;
   end;
 
 implementation
@@ -652,12 +662,26 @@ begin
   end;
 end;
 
+function TSprite.GetCollisionField: TRect;
+var r:TRect;
+begin
+  r := GetFieldCoords;
+
+  result.Left := r.Left - 1;
+  if result.Left < Engine.SpriteField.StartX then result.Left := FEngine.SpriteField.StartX;
+  result.Top := r.Top - 1;
+  if result.Top < Engine.SpriteField.StartY then result.Top := FEngine.SpriteField.StartY;
+  result.Right := r.Right + 1;
+  if result.Right > Engine.SpriteField.EndX then result.Right := FEngine.SpriteField.EndX;
+  result.Bottom := r.Bottom + 1;
+  if result.Bottom > Engine.SpriteField.EndY then result.Bottom := FEngine.SpriteField.EndY;
+end;
+
 function TSprite.Collision: integer;
 var
   ax,ay,i: Integer;
-  r:TRect;
   list:TSpriteList;
-  sx,sy,ex,ey:integer;
+  r:TRect;
 begin
   result := 0;
   
@@ -670,22 +694,12 @@ begin
 
     if FCollisionTyp = ctOptimized then
     begin
-      r := GetFieldCoords;
-  
-      //Compute bounds in field
-      sx := r.Left - 1;
-      if sx < Engine.SpriteField.StartX then sx := FEngine.SpriteField.StartX;
-      sy := r.Top - 1;
-      if sy < Engine.SpriteField.StartY then sy := FEngine.SpriteField.StartY;
-      ex := r.Right + 1;
-      if ex > Engine.SpriteField.EndX then ex := FEngine.SpriteField.EndX;
-      ey := r.Bottom + 1;
-      if ey > Engine.SpriteField.EndY then ey := FEngine.SpriteField.EndY;
-
+      r := GetCollisionField;
+      
       //Do the collision
-      for ax := sx to ex do
+      for ax := r.Left to r.Right do
       begin
-        for ay := sy to ey do
+        for ay := r.Top to r.Bottom do
         begin
           list := Engine.SpriteField.Items[ax,ay];
           i := 0;
@@ -694,7 +708,7 @@ begin
             if not list[i].DidCollision then
             begin
               list[i].DidCollision := true;
-              list[i].Collision2;
+              CheckCollisionWith(list[i]);
               if Engine.CollisionDone then
               begin
                 break;
@@ -714,9 +728,9 @@ begin
       end;
 
       //Reset the "DidCollision" flag
-      for ax := sx to ex do
+      for ax := r.Left to r.Right do
       begin
-        for ay := sy to ey do
+        for ay := r.Top to r.Bottom do
         begin
           list := Engine.SpriteField.Items[ax,ay];
           i := 0;
@@ -733,7 +747,7 @@ begin
     begin
       for i := 0 to Engine.Items.Count - 1 do
       begin
-        Engine.Items[i].Collision2;
+        CheckCollisionWith(Engine.Items[i]);
         if Engine.CollisionDone then
         begin
           break;
@@ -744,6 +758,11 @@ begin
 
     result := FEngine.CollisionCount;
   end;
+end;
+
+procedure TSprite.CheckCollisionWith(ASprite: TSprite);
+begin
+  ASprite.Collision2;
 end;
 
 procedure TSprite.DoDraw;
@@ -987,6 +1006,8 @@ begin
   inherited Create(AParent);
   FAlpha := 255;
   FColor := $FFFFFF;
+  FRotationCenterX := 0.5;
+  FRotationCenterY := 0.5;
 end;
 
 procedure TImageSpriteEx.DoDraw;
@@ -1000,7 +1021,7 @@ begin
       begin
         FImage.DrawRotateAlpha(Engine.Surface,BoundsRect.Left,BoundsRect.Top,
           BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
-          Trunc(AnimPos),0.5,0.5,Round(Angle),Round(Alpha));
+          Trunc(AnimPos),FRotationCenterX,FRotationCenterY,Round(Angle),Round(Alpha));
       end
       else
       begin
@@ -1147,6 +1168,7 @@ begin
   FPartSys := TAdParticleSystem.Create(Engine.Surface);
   EmissionCount := 0;
   FWait := 0;
+  FAutoDeath := true;
   CanDoCollisions := false;
 end;
 
@@ -1157,8 +1179,10 @@ begin
 end;
 
 procedure TParticleSprite.DoDraw;
+var r:TRect;
 begin
-  FPartSys.Draw(round(Engine.X+WorldX),round(Engine.Y+WorldY));
+  r := GetBoundsRect;
+  FPartSys.Draw(r.Left-round(FWidth) div 2,r.Top-round(FHeight) div 2);
   FPartSys.Dead;
 end;
 
@@ -1169,10 +1193,14 @@ begin
   if (FTime >= FWait) and (FWait > 0) then
   begin
     c := round(FTime / FWait);
-    FTime := FTime - FWait;
+    FTime := FTime - (FWait*c);
     Emit(c);
   end;
   FPartSys.Move(TimeGap);
+  if (FAutoDeath) and (FPartSys.Items.Count = 0) then
+  begin
+    Dead;
+  end;  
 end;
 
 procedure TParticleSprite.Emit(ACount: integer);
@@ -1182,13 +1210,14 @@ end;
 
 function TParticleSprite.GetBoundsRect: TRect;
 var r:TRect;
+    w,h:integer;
 begin
   r := FPartSys.BoundsRect;
-  result := Rect(
-              round(r.Left+Engine.X+WorldX),
-              round(r.Top+Engine.Y+WorldY),
-              round(r.Right+Engine.X+WorldX),
-              round(r.Bottom+Engine.Y+WorldY));
+  w := r.Right - r.Left;
+  h := r.Bottom - r.Top;
+  result := Bounds(round(WorldX) + w div 2, round(WorldY) + h div 2, w, h);
+  FWidth := w;
+  FHeight := h;
 end;
 
 procedure TParticleSprite.SetEmissionCount(AValue: integer);

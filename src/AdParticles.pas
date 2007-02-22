@@ -36,6 +36,10 @@ type
     public
       //The "items" property of a list.
   	  property Items[AIndex:integer]:TAdParticle read GetItem write SetItem;default;
+      //Add a particle
+      procedure Add(AItem:TAdParticle);
+      //Returns a particle
+      function Find(AName:string):TAdParticle;
   end;
 
   //A Vector
@@ -220,6 +224,25 @@ type
 implementation
 
 { TAdParticleList }
+
+procedure TAdParticleList.Add(AItem: TAdParticle);
+begin
+  inherited Add(AItem);
+end;
+
+function TAdParticleList.Find(AName: string): TAdParticle;
+var i:integer;
+begin
+  result := nil;
+  for i := 0 to Count - 1 do
+  begin
+    if Items[i].Name = AName then
+    begin
+      result := Items[i];
+      break;
+    end;
+  end;
+end;
 
 function TAdParticleList.GetItem(AIndex:integer):TAdParticle;
 begin
