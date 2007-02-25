@@ -1,7 +1,11 @@
 {
-* This program is licensed under the to Common Public License (CPL) Version 1.0
+* This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+* 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
@@ -10,7 +14,7 @@
            at http://pngdelphi.sourceforge.net/
 }
 
-{A PNG loader and compressor. It needs the PNG Delphi Sources which are available at http://pngdelphi.sourceforge.net/}
+{A PNG loader and compressor. It needs the PNG Delphi Sources which are available at http://pngdelphi.sourceforge.net/ and doesn't run with lazarus!}
 unit AdPNG;
 
 interface
@@ -169,32 +173,37 @@ function TPNGFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;
 var png:TPNGObject;
     bmp:TBitmap;
 begin
+  result := true;
   png := TPNGObject.Create;
-  png.LoadFromFile(AFile);
-  if Transparent then
-  begin
-    if png.AlphaScanline[0] <> nil then
+  try
+    png.LoadFromFile(AFile);
+    if Transparent then
     begin
-      ABmp.ReserveMemory(png.Width,png.Height);
-      GetRGB(png,ABmp);
-      GetAlpha(png,ABmp);
+      if png.AlphaScanline[0] <> nil then
+      begin
+        ABmp.ReserveMemory(png.Width,png.Height);
+        GetRGB(png,ABmp);
+        GetAlpha(png,ABmp);
+      end
+      else
+      begin
+        bmp := TBitmap.Create;
+        png.AssignTo(bmp);
+        bmp.TransparentMode := tmFixed;
+        bmp.Transparent := true;
+        bmp.TransparentColor := TransparentColor;
+        ABmp.AssignBitmap(bmp);
+        bmp.Free;
+      end;
     end
     else
     begin
-      bmp := TBitmap.Create;
-      png.AssignTo(bmp);
-      bmp.TransparentMode := tmFixed;
-      bmp.Transparent := true;
-      bmp.TransparentColor := TransparentColor;
-      ABmp.AssignBitmap(bmp);
-      bmp.Free;
+      png.RemoveTransparency;
+      ABmp.ReserveMemory(png.Width,png.Height);
+      GetRGB(png,Abmp,true);
     end;
-  end
-  else
-  begin
-    png.RemoveTransparency;
-    ABmp.ReserveMemory(png.Width,png.Height);
-    GetRGB(png,Abmp,true);
+  except
+    result := false;
   end;
   png.Free;
 end;

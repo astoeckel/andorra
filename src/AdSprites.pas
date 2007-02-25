@@ -1,13 +1,16 @@
 {
-* This program is licensed under the to Common Public License (CPL) Version 1.0
+* This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
-* Author:  Andreas Stoeckel
-* File: AdSprites.pas
-* Comment: This unit contains the sprite system. Please note that most of the things are
-*          adapted from Un/DelphiX! 
+* Author:  Framik
+* File: AdApps.pas
+* Comment: Unit with appication classes for the "Andorra 2D" engine
 }
 
 {Contains the Andorra SpriteEngine System.}
@@ -62,6 +65,7 @@ type
       function GetCol(X:integer):Integer;
       function GetRow(Y:integer):Integer;
     public
+      {Expands the field.}
       procedure Expand(X,Y:integer);
       {Creates the list and initializes all values}
       constructor Create;
@@ -158,6 +162,9 @@ type
 
       {Optimzes the optimization field}
       procedure Optimize;
+
+      {Returns one sprite at the specified position}
+      function GetSpriteAt(X,Y:integer):TSprite;
       
       {Returns a rect which contains the relative coordinates of the sprite.}
       property BoundsRect:TRect read GetBoundsRect;
@@ -284,16 +291,19 @@ type
       FColor:LongInt;
     protected
       procedure DoDraw;override;
+      procedure SetAlpha(AValue:double);virtual;
+      procedure SetAngle(AValue:double);virtual;
+      procedure SetColor(AValue:longint);virtual;
     public
       //Creates an instance of TImageSpriteEx
       constructor Create(AParent:TSprite);override;
     published
       //The alpha blend value of the sprite
-      property Alpha:double read FAlpha write FAlpha;
+      property Alpha:double read FAlpha write SetAlpha;
       //The rotation angle from 0 to 360.
-      property Angle:double read FAngle write FAngle;
+      property Angle:double read FAngle write SetAngle;
       //The color of the sprite
-      property Color:LongInt read FColor write FColor;
+      property Color:LongInt read FColor write SetColor;
       //The x-rotation center
       property RotationCenterX:double read FRotationCenterX write FRotationCenterX;
       //The y-rotation center
@@ -512,6 +522,23 @@ begin
     Top := trunc(y1);
     Right := ceil(x1 + (Width / Parent.GridSize));
     Bottom := ceil(y1 + (Height / Parent.GridSize));
+  end;
+end;
+
+function TSprite.GetSpriteAt(X, Y: integer): TSprite;
+var i:integer;
+    rect:TRect;
+begin
+  result := nil;
+  for i := Items.Count-1 downto 0 do
+  begin
+    rect := Items[i].BoundsRect;
+    if (X >= rect.Left) and (X <= rect.Right) and
+       (Y >= rect.Top) and (Y <= rect.Bottom) then
+    begin
+      result := Items[i];
+      break;
+    end;    
   end;
 end;
 
@@ -1042,6 +1069,21 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TImageSpriteEx.SetAlpha(AValue: double);
+begin
+  FAlpha := AValue;
+end;
+
+procedure TImageSpriteEx.SetAngle(AValue: double);
+begin
+  FAngle := AValue;
+end;
+
+procedure TImageSpriteEx.SetColor(AValue: Integer);
+begin
+  FColor := AValue;
 end;
 
 { TBackgroundSprite }

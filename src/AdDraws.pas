@@ -1,7 +1,11 @@
 {
-* This program is licensed under the to Common Public License (CPL) Version 1.0
+* This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+* 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
@@ -545,32 +549,50 @@ type
       property PatternHeight:integer read FPatternHeight;
       property Texture:TAdTexture read FTexture write FTexture;
     public
+      //If true the TFontCollection will automaticly free this class
       CreatedByList:boolean;
 
+      //Creates an instance of TAdFont
       constructor Create(AParent:TAdDraw);
+      //Destroys the instance of TAdFont
       destructor Destroy;override;
 
+      //Creates a font
       procedure CreateFont(AFont:string;AStyle:TFontStyles;ASize:integer;
         AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
         AShadowAlpha:byte=64);
+      //Removes the font from memory
       procedure ClearFont;
 
+      //Writes the text
       procedure TextOut(AText:string;AX,AY:integer);
+      //Returns the width of a specific text
       function TextWidth(AText:string):integer;
+      //Returns the height of a specific text
       function TextHeight(AText:string):integer;
 
+      //Saves the font to stream
       procedure SaveToStream(AStream:TStream);
+      //Loads the font from a stream
       procedure LoadFromStream(AStream:TStream);
+      //Saves the font to a file
       procedure SaveToFile(AFile:string);
+      //Loads the font from a file
       procedure LoadFromFile(AFile:string);
 
+      //Returns wether a font is loaded.
       property Loaded:boolean read GetLoaded;
+      //The color of the font
       property Color:TColor read FColor write SetColor;
+      //The transparency of the font
       property Alpha:byte read FAlpha write SetAlpha;
+      //The compressor used to save the font
       property Compressor:TCompressorClass read FCompressor write SetCompressor;
+      //The name of the font in the list
       property Name:string read FName write FName;
   end;
 
+  //Contains the fonts
   TAdFontCollection = class(TList)
     private
       FParent:TAdDraw;
@@ -580,12 +602,17 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
+      //Creates an instance of TAdFontCollection
       constructor Create(AParent:TAdDraw);
+      //Destroys the instance
       destructor Destroy;override;
+      //Adds a font to the list. AName specifies the name you can find the font by.
       procedure Add(AName,AFont:String;AStyle:TFontStyles;ASize:integer;
         AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
         AShadowAlpha:byte=64);overload;
+      //Searches for a specific font
       property Font[Index:string]:TAdFont read GetItemByName;default;
+      //Searches for a specific item
       property Items[Index:integer]:TAdFont read GetItem write SetItem;
   end;
 
@@ -603,9 +630,6 @@ type
       //Creates a new instance of the performance counter
       constructor Create;
   end;
-
-const
-  CanvasPatternSize = 512;
 
 var
   //Contains all registered compressors. You must not change the contents.
@@ -2325,6 +2349,7 @@ begin
 
     Brush.Style := bsClear;
 
+    bmp2 := nil;
     if AShadow then
     begin
       bmp2 := TBitmap.Create;
