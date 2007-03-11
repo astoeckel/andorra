@@ -24,7 +24,7 @@ type
     public
       constructor Create;override;
       destructor Destroy;reintroduce;
-      function CreateLight:TAdLight;override;
+      function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
@@ -51,7 +51,7 @@ type
       procedure SetMatrix(AMatrix:TAdMatrix);override;
       constructor Create(AParent:TXXApplication);
       destructor Destroy;override;
-      procedure Draw(ABlendMode:TAd2DBlendMode);override;
+      procedure Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);override;
       procedure Update;override;
   end;
 
@@ -173,7 +173,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TXXMesh.Draw(ABlendMode:TAd2DBlendMode);
+procedure TXXMesh.Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);
 begin
   //Draws the Mesh with the texture and the matrix.
 end;
