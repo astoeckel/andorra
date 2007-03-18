@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses;
+  Dialogs, AdDraws, AdClasses, StdCtrls;
 
 type
   TForm1 = class(TForm)
@@ -40,7 +40,7 @@ begin
   begin
     ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
                 'mode or another video adapter.');
-    Close;
+    halt;
   end;
 end;
 
@@ -51,18 +51,16 @@ begin
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+var i:integer;
 begin
   if AdDraw1.CanDraw then
   begin
     AdPerCounter.Calculate;
-    Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
-
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
     //Your code here
     AdDraw1.EndScene;
-    AdDraw1.Flip;
-
+    AdDraw1.Flip; 
   end;
   Done := false;
 end;

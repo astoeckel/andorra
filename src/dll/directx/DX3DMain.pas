@@ -75,7 +75,7 @@ type
       procedure SetMatrix(AMatrix:TAdMatrix);override;
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
-      procedure Draw(ABlendMode:TAd2DBlendMode);override;
+      procedure Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);override;
       procedure Update;override;
   end;
 
@@ -455,7 +455,8 @@ begin
   inherited Destroy;
 end;
 
-procedure TDXMesh.Draw(ABlendMode:TAd2DBlendMode);
+procedure TDXMesh.Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);
+var Mode:TD3DPrimitiveType;
 begin
   if Loaded then
   begin
@@ -463,6 +464,11 @@ begin
     begin
 
       //Set Blendmode
+      if ABlendMode = bmAlpha then
+      begin
+        Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+        Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      end else      
       if ABlendMode = bmAdd then
       begin
         Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
@@ -472,29 +478,44 @@ begin
       begin
         Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
         Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
-      end else
-      if ABlendMode = bmAlpha then
-      begin
-        Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-        Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       end;
 
       Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), FMatrix);
-      if (FLastTexture <> FTexture) and (FTexture <> nil) and (FTexture.Loaded) then
+      if (FTexture <> nil) and (FTexture.Loaded) then
       begin
-        FLastTexture := FTexture;
-        Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
-      end;
-      Direct3DDevice9.SetStreamSource(0, FVertexBuffer, 0, sizeof(TD3DLVertex));
-      Direct3DDevice9.SetFVF(D3DFVF_TD3DLVertex);
-      if UseIndexBuffer then
-      begin
-        Direct3DDevice9.SetIndices(FIndexBuffer);
-        Direct3DDevice9.DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, VertexCount, 0, FPrimitiveCount);
+        if (FTexture <> FLastTexture) then
+        begin
+          Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
+          FLastTexture := FTexture;
+        end;
       end
       else
       begin
-        Direct3DDevice9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, FPrimitiveCount);
+        Direct3DDevice9.SetTexture(0,nil);
+        FLastTexture := nil;
+      end;
+      Direct3DDevice9.SetStreamSource(0, FVertexBuffer, 0, sizeof(TD3DLVertex));
+      Direct3DDevice9.SetFVF(D3DFVF_TD3DLVertex);
+
+      case ADrawMode of
+        adTriangleStrips: Mode := D3DPT_TRIANGLESTRIP;
+        adTriangles: Mode := D3DPT_TRIANGLELIST;
+        adLines: Mode := D3DPT_LINELIST;
+        adLineStrips: Mode := D3DPT_LINESTRIP;
+        adTriangleFan: Mode := D3DPT_TRIANGLEFAN;
+        adPoints: Mode := D3DPT_POINTLIST;
+      else
+        Mode := D3DPT_TRIANGLESTRIP;
+      end;
+
+      if UseIndexBuffer then
+      begin
+        Direct3DDevice9.SetIndices(FIndexBuffer);
+        Direct3DDevice9.DrawIndexedPrimitive(Mode, 0, 0, VertexCount, 0, FPrimitiveCount);
+      end
+      else
+      begin
+        Direct3DDevice9.DrawPrimitive(Mode, 0, FPrimitiveCount);
       end;
     end;
   end;

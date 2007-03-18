@@ -164,7 +164,7 @@ type
       procedure Optimize;
 
       {Returns one sprite at the specified position}
-      function GetSpriteAt(X,Y:integer):TSprite;
+      function GetSpriteAt(X,Y:integer):TSprite;virtual;
       
       {Returns a rect which contains the relative coordinates of the sprite.}
       property BoundsRect:TRect read GetBoundsRect;

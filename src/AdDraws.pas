@@ -31,6 +31,8 @@ type
   TAdDraw = class;
   //This represents one image in an ImageList.
   TPictureCollectionItem = class;
+  //Represents a simple canvas for simply drawing lines, rectangles, text and circles
+  TAdCanvas = class;
 
   {Specifies a textures texture state.}
   TTextureMode = (tmWrap,tmMirror,tmClamp);
@@ -102,7 +104,8 @@ type
     FAutoLoadLog:boolean;
 
     FSurfaceEventList:TSurfaceEventList;
-    //FCanvas:TSurfaceCanvas;
+    FCanvas:TAdCanvas;
+
 
     procedure SetDllName(val : string);
 
@@ -184,6 +187,8 @@ type
     property AutoLoadLog: boolean read FAutoLoadLog write SetAutoLoadLog;
     //The name of the logfile.
     property LogFileName:string read FLogFileName write FLogFileName;
+    //A simple canvas to draw on
+    property Canvas:TAdCanvas read FCanvas;
   end;
 
   {TAdLight is the representation of a light in your game. Before using lights
@@ -565,7 +570,7 @@ type
       procedure ClearFont;
 
       //Writes the text
-      procedure TextOut(AText:string;AX,AY:integer);
+      procedure TextOut(AX,AY:integer;AText:string);
       //Returns the width of a specific text
       function TextWidth(AText:string):integer;
       //Returns the height of a specific text
@@ -614,6 +619,138 @@ type
       property Font[Index:string]:TAdFont read GetItemByName;default;
       //Searches for a specific item
       property Items[Index:integer]:TAdFont read GetItem write SetItem;
+  end;
+
+  //Represents the pen style
+  TAdPenStyle = (apNone,apSolid);
+
+  //Represents the canvas pen
+  TAdPen = class
+    public
+      Width:integer;
+      Style:TAdPenStyle;
+      Color:TAndorraColor;
+      constructor Create;
+      procedure Assign(APen:TAdPen);
+  end;
+
+  //Represents the brush style
+  TAdBrushStyle = (abClear,abSolid,abGradientHorizontal,abGradientVertical);
+
+  //Represents the canvas brush
+  TAdBrush = class
+    public
+      Style:TAdBrushStyle;
+      Color:TAndorraColor;
+      GradientColor:TAndorraColor;
+      constructor Create;
+      procedure Assign(ABrush:TAdBrush);
+  end;
+
+  //0 - - 1
+  //|     |
+  //|     |
+  //2 - - 3
+
+  //A record containig four colors for filling a rectangle
+  TAdColors4 = array[0..3] of TAndorraColor;
+
+  TAdCanvasObj = class
+    private
+      FParent:TAdDraw;
+    protected
+    public
+      Buffer:TAd2dMesh;
+      VerticesCount:integer;
+      LastUsed:integer;
+      Typ:TAd2dDrawMode;
+      Persistent:boolean;
+      BlendMode:TAd2DBlendMode;
+      constructor Create(AParent:TAdCanvas);
+      destructor Destroy;override;  
+      property Parent:TAdDraw read FParent;
+  end;
+
+  TAdCanvasObjectList = class(TList)
+    private
+    	function GetItem(AIndex:integer):TAdCanvasObj;
+    	procedure SetItem(AIndex:integer;AItem:TAdCanvasObj);
+    protected
+      procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+    public
+    	property Items[AIndex:integer]:TAdCanvasObj read GetItem write SetItem;default;
+      procedure Cleanup;
+  end;
+
+  TAdCanvasBuffer = record
+    Vertices:TAdVertexArray;
+    Typ:TAd2dDrawMode;
+  end;
+
+  TAdPointArray = array of TPoint;
+
+  //Represents a simple canvas for simply drawing lines, rectangles, text and circles
+  TAdCanvas = class
+    private
+      FParent:TAdDraw;
+      FPen:TAdPen;
+      FBrush:TAdBrush;
+      FFont:TAdFont;
+      FOwnFont:boolean;
+      FCircleTesselation:single;
+      FLocked:boolean;
+      FCanvasObjects:TAdCanvasObjectList;
+      FLastPosition:TAdVertex;
+      FCurBuffer:TAdCanvasBuffer;
+      FDisabledLight:boolean;
+      FDisableLight:boolean;
+      FPersistent:boolean;
+      FDrawPersistent:boolean;
+      FBlendMode:TAd2DBlendMode;
+      procedure SetFont(AValue:TAdFont);
+      procedure SetCircleTesselation(AValue:single);
+    protected
+      procedure ClearBuffer;
+      procedure PushObject;
+      procedure SetupDisplay;
+      procedure ResetDisplay;
+      property CanvasObjects:TAdCanvasObjectList read FCanvasObjects;
+    public
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;override;
+
+      procedure MoveTo(AX,AY:integer);overload;
+      procedure LineTo(AX,AY:integer);overload;
+      procedure MoveTo(APoint:TPoint);overload;
+      procedure LineTo(APoint:TPoint);overload;
+
+      procedure Rectangle(AX1,AY1,AX2,AY2:integer);overload;
+      procedure Rectangle(ARect:TRect);overload;
+
+      procedure PlotPixel(AX,AY:integer;AColor:TAndorraColor);overload;
+      procedure PlotPixel(APoint:TPoint;AColor:TAndorraColor);overload;
+
+      procedure Circle(AX,AY,AR:integer);
+
+      procedure Textout(AX,AY:integer;AText:string);
+
+      procedure Polyline(ALine:TAdPointArray);
+
+      procedure StartFrame;
+      procedure Release;
+
+      procedure Clear;
+
+      property Parent:TAdDraw read FParent;
+      property Pen:TAdPen read FPen;
+      property Brush:TAdBrush read FBrush;
+      property Font:TAdFont read FFont write SetFont;
+      property CircleTesselation:single read FCircleTesselation write SetCircleTesselation;
+      property Locked:boolean read FLocked;
+      property DisableLightning:boolean read FDisableLight write FDisableLight;
+      property Persistent:Boolean read FPersistent write FPersistent;
+      property DrawPersistent:Boolean read FDrawPersistent write FDrawPersistent;
+      property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
   end;
 
   //Class for calculating the FPS
@@ -826,6 +963,8 @@ begin
     begin
       CallNotifyEvent(seInitialize);
       CallNotifyEvent(seInitialized);
+
+      FCanvas := TAdCanvas.Create(self);
     end;
   end;
 end;
@@ -839,6 +978,7 @@ begin
 
   if AdAppl <> nil then
   begin
+    if FCanvas <> nil then FCanvas.Free;
     FInitialized := false;
     CallNotifyEvent(seFinalize);
     AdAppl.Finalize;
@@ -871,6 +1011,7 @@ begin
   if AdAppl <> nil then
   begin
     AdAppl.BeginScene;
+    FCanvas.StartFrame;
   end;
 end;
 
@@ -990,7 +1131,8 @@ procedure TPictureCollectionItem.DrawMesh(DestApp: TAdDraw; DestRect,
   BlendMode: TAd2DBlendMode);
 var
   mat1,mat2:TAdMatrix;
-  curx,cury:single;  
+  curx,cury:single;
+  Mode:TAd2DDrawMode;
 begin
   if not CompRects(SourceRect,FSrcRect) then
   begin
@@ -1026,8 +1168,17 @@ begin
   mat2 := AdMatrix_Multiply(mat2,mat1);
 
   AdMesh.SetMatrix(mat2); 
+
+  if AdMesh.UseIndexBuffer then
+  begin
+    Mode := adTriangles;
+  end
+  else
+  begin
+    Mode := adTriangleStrips;
+  end;
   
-  AdMesh.Draw(BlendMode);
+  AdMesh.Draw(BlendMode,Mode);
 end;
 
 procedure TPictureCollectionItem.Assign(AItem: TPictureCollectionItem);
@@ -2468,7 +2619,7 @@ begin
   end;
 end;
 
-procedure TAdFont.TextOut(AText: string; AX, AY: integer);
+procedure TAdFont.TextOut(AX, AY: integer;AText: string);
 var i:integer;
     x:integer;
     c:byte;
@@ -2623,6 +2774,482 @@ end;
 procedure TAdFontCollection.SetItem(Index: integer; Value: TAdFont);
 begin
   inherited Items[Index] := Value;
+end;
+
+{ TAdPen }
+
+procedure TAdPen.Assign(APen: TAdPen);
+begin
+  Width := APen.Width;
+  Style := APen.Style;
+  Color := APen.Color;
+end;
+
+constructor TAdPen.Create;
+begin
+  inherited Create;
+  Width := 1;
+  Style := apSolid;
+  Color := Ad_ARGB(255,255,255,255);
+end;
+
+{ TAdBrush }
+
+procedure TAdBrush.Assign(ABrush: TAdBrush);
+begin
+  Color := ABrush.Color;
+  Style := ABrush.Style;
+end;
+
+constructor TAdBrush.Create;
+begin
+  inherited Create;
+  Color := Ad_ARGB(255,255,255,255);
+  Style := abSolid;
+end;
+
+{ TAdCanvasObjectList }
+
+procedure TAdCanvasObjectList.Cleanup;
+var
+  i: Integer;
+begin
+  i := 0;
+  while i < Count do
+  begin
+    if Items[i].LastUsed > 100 then
+    begin
+      Delete(i);
+    end;
+    i := i + 1;
+  end;
+end;
+
+function TAdCanvasObjectList.GetItem(AIndex:integer):TAdCanvasObj;
+begin
+  result := inherited Items[AIndex];
+end;
+
+procedure TAdCanvasObjectList.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  inherited;
+  if Action = lnDeleted then
+  begin
+    TAdCanvasObj(Ptr).Free;
+  end;
+end;
+
+procedure TAdCanvasObjectList.SetItem(AIndex:integer;AItem:TAdCanvasObj);
+begin
+  inherited Items[AIndex] := AItem;
+end;
+
+{ TAdCanvas }
+
+constructor TAdCanvas.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+  FFont := TAdFont.Create(FParent);
+  FFont.CreateFont('Tahoma',[],10);
+  FOwnFont := true;
+
+  FDisableLight := true;
+
+  FCanvasObjects := TAdCanvasObjectList.Create;
+
+  FPen := TAdPen.Create;
+  FBrush := TAdBrush.Create;
+  FDrawPersistent := true;
+
+  FCircleTesselation := 0.1;
+  FBlendMode := bmAlpha;
+end;
+
+destructor TAdCanvas.Destroy;
+begin
+  FCanvasObjects.Free;
+  FPen.Free;
+  FBrush.Free;
+
+  if FOwnFont then
+  begin
+    FFont.Free;
+  end;
+  inherited;
+end;
+
+procedure TAdCanvas.Circle(AX, AY, AR: integer);
+var u,x,y,i:integer;
+    v:single;
+    color2:TAndorraColor;
+begin
+  PushObject;
+  u := round(Pi * 2 * AR * (CircleTesselation/(AR*0.01)));
+  v := (2 * PI) / u;
+  if Pen.Style <> apNone then
+  begin
+    MoveTo(AX+AR, AY);
+    for i := 1 to u do
+    begin
+      x := AX + round(cos(v*i)*AR);
+      y := AY + round(sin(v*i)*AR);
+      LineTo(x,y);
+    end;
+    LineTo(AX+AR, AY);
+  end;
+  PushObject;
+
+  if Brush.Style <> abClear then
+  begin
+    case Brush.Style of
+      abSolid: Color2 := Brush.Color;
+      abGradientHorizontal: Color2 := Brush.GradientColor;
+      abGradientVertical: Color2 := Brush.GradientColor;
+    end;
+    FCurBuffer.Typ := adTriangleFan;
+    with FCurBuffer do
+    begin
+      SetLength(Vertices,u+2);
+      Vertices[0].Position := AdVector3(AX,AY,0);
+      Vertices[0].Color := Brush.Color;
+      Vertices[0].Normal := AdVector3(0,0,-1);
+      for i := 0 to u do
+      begin
+        x := AX + round(cos(v*i)*AR);
+        y := AY + round(sin(v*i)*AR);
+        Vertices[i+1].Position := AdVector3(x,y,0);
+        Vertices[i+1].Color := Color2;
+        Vertices[i+1].Normal := AdVector3(0,0,-1);
+      end;
+    end;
+    PushObject;
+  end;
+end;
+
+procedure TAdCanvas.LineTo(APoint: TPoint);
+begin
+  LineTo(APoint.X,APoint.Y);
+end;
+
+procedure TAdCanvas.LineTo(AX, AY: integer);
+var curvec:TAdVertex;
+begin
+  if not ((Pen.Width < 1) or (Pen.Style = apNone)) then
+  begin
+    curvec.Position := AdVector3(AX,AY,0);
+    curvec.Color := Pen.Color;
+    curvec.Normal := AdVector3(0,0,-1);
+    if (length(FCurBuffer.Vertices) = 0) or (FCurBuffer.Typ = adLines) then
+    begin
+      if length(FCurBuffer.Vertices) = 0  then
+      begin
+        FCurBuffer.Typ := adLineStrips;
+      end;
+      SetLength(FCurBuffer.Vertices,Length(FCurBuffer.Vertices)+2);
+
+      FCurBuffer.Vertices[high(FCurBuffer.Vertices)-1] := FLastPosition;
+      FCurBuffer.Vertices[high(FCurBuffer.Vertices)] := curvec;
+
+      FLastPosition := curvec;
+    end
+    else
+    begin
+      if length(FCurBuffer.Vertices) = 2 then
+      begin
+        with FCurBuffer.Vertices[high(FCurBuffer.Vertices)] do
+        begin
+          if (FLastPosition.Position.x = Position.x) and
+             (FLastPosition.Position.y = Position.y) and
+             (FLastPosition.Position.z = Position.z) then
+          begin
+            FCurBuffer.Typ := adLineStrips;
+          end
+          else
+          begin
+            FCurBuffer.Typ := adLines;
+          end;
+        end;
+      end;
+      if FCurBuffer.Typ = adLineStrips then
+      begin
+        SetLength(FCurBuffer.Vertices,Length(FCurBuffer.Vertices)+1);
+        FCurBuffer.Vertices[high(FCurBuffer.Vertices)] := curvec;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdCanvas.MoveTo(AX, AY: integer);
+begin
+  if (FCurBuffer.Typ <> adLines) then
+  begin
+    PushObject;
+  end;
+  FLastPosition.Position := AdVector3(AX,AY,0);
+  FLastPosition.Color := Pen.Color;
+  FLastPosition.Normal := AdVector3(0,0,-1);
+end;
+
+procedure TAdCanvas.MoveTo(APoint: TPoint);
+begin
+  MoveTo(APoint.X,APoint.Y);
+end;
+
+procedure TAdCanvas.PlotPixel(AX, AY: integer; AColor: TAndorraColor);
+begin
+  if FCurBuffer.Typ <> adPoints then
+  begin
+    PushObject;
+  end;
+  SetLength(FCurBuffer.Vertices,Length(FCurBuffer.Vertices)+1);
+  FCurBuffer.Typ := adPoints;
+  with FCurBuffer.Vertices[high(FCurBuffer.Vertices)] do
+  begin
+    Position := AdVector3(AX,AY,0);
+    Color := AColor;
+    Normal := AdVector3(0,0,-1);
+  end;
+end;
+
+procedure TAdCanvas.PlotPixel(APoint: TPoint; AColor: TAndorraColor);
+begin
+  PlotPixel(APoint.X,APoint.Y,AColor);
+end;
+
+procedure TAdCanvas.Polyline(ALine: TAdPointArray);
+var i:integer;
+begin
+  if length(ALine) > 1 then
+  begin
+    PushObject;
+    MoveTo(ALine[0]);
+    for i := 1 to High(ALine) do
+    begin
+      LineTo(ALine[i]);
+    end;
+    PushObject;
+  end;
+end;
+
+procedure TAdCanvas.Rectangle(ARect: TRect);
+begin
+  Rectangle(ARect.Left, ARect.Top, ARect.Right, ARect.Bottom);
+end;
+
+procedure TAdCanvas.Rectangle(AX1, AY1, AX2, AY2: integer);
+var Colors:TAdColors4;
+begin
+  if (Pen.Width > 0) and (Pen.Style <> apNone) then
+  begin
+    MoveTo(AX1,AY1);
+    LineTo(AX2,AY1);
+    LineTo(AX2,AY2);
+    LineTo(AX1,AY2);
+    LineTo(AX1,AY1);
+    AX1 := AX1 + 1;
+    AY1 := AY1 + 1;
+  end;
+  if Brush.Style <> abClear then
+  begin
+    PushObject;
+    FCurBuffer.Typ := adTriangleStrips;
+    SetLength(FCurBuffer.Vertices,4);
+    case Brush.Style of
+      abSolid:
+      begin
+        Colors[0] := Brush.Color;
+        Colors[1] := Brush.Color;
+        Colors[2] := Brush.Color;
+        Colors[3] := Brush.Color;
+      end;
+      abGradientHorizontal:
+      begin
+        Colors[0] := Brush.GradientColor;
+        Colors[1] := Brush.Color;
+        Colors[2] := Brush.GradientColor;
+        Colors[3] := Brush.Color;
+      end;
+      abGradientVertical:
+      begin
+        Colors[0] := Brush.Color;
+        Colors[1] := Brush.Color;
+        Colors[2] := Brush.GradientColor;
+        Colors[3] := Brush.GradientColor;
+      end;
+    end;
+
+    with FCurBuffer do
+    begin
+      Vertices[0].Position := AdVector3(AX1,AY2,0);
+      Vertices[0].Color := Colors[0];
+      Vertices[0].Normal := AdVector3(0,0,-1);
+      Vertices[1].Position := AdVector3(AX1,AY1,0);
+      Vertices[1].Color := Colors[1];
+      Vertices[1].Normal := AdVector3(0,0,-1);
+      Vertices[2].Position := AdVector3(AX2,AY2,0);
+      Vertices[2].Color := Colors[2];
+      Vertices[2].Normal := AdVector3(0,0,-1);
+      Vertices[3].Position := AdVector3(AX2,AY1,0);
+      Vertices[3].Color := Colors[3];
+      Vertices[3].Normal := AdVector3(0,0,-1);
+    end;
+    PushObject;
+  end;
+end;
+
+procedure TAdCanvas.SetCircleTesselation(AValue: single);
+begin
+  FCircleTesselation := AValue;
+end;
+
+procedure TAdCanvas.SetFont(AValue: TAdFont);
+begin
+  if FOwnFont then
+  begin
+    FFont.Free;
+  end;
+  FOwnFont := false;
+  FFont := AValue;
+end;
+
+procedure TAdCanvas.ResetDisplay;
+begin    
+  if FDisabledLight then
+  begin
+    FParent.Options := FParent.Options + [doLights];
+  end;                                              
+end;
+
+procedure TAdCanvas.SetupDisplay;
+begin
+  FDisabledLight := false;
+  if (FDisableLight) and (doLights in FParent.Options) then
+  begin
+    FDisabledLight := true;
+    FParent.Options := FParent.Options - [doLights];
+  end;
+end;
+
+procedure TAdCanvas.Textout(AX, AY: integer; AText: string);
+begin
+  SetupDisplay;
+  FFont.TextOut(AX,AY,AText);
+  ResetDisplay;
+end;
+
+procedure TAdCanvas.PushObject;
+var i:integer;
+    l:integer;
+    obj:TAdCanvasObj;
+begin
+  l := length(FCurBuffer.Vertices);
+  if l > 0 then
+  begin
+    obj := nil;
+    for i := 0 to FCanvasObjects.Count-1 do
+    begin
+      if (FCanvasObjects[i].VerticesCount = l) and 
+         (FCanvasObjects[i].LastUsed > 0) and
+         (FCanvasObjects[i].Typ = FCurBuffer.Typ) and
+         (not FCanvasObjects[i].Persistent) then
+      begin
+        obj := FCanvasObjects[i];
+        break;
+      end;      
+    end;
+
+    if obj = nil then
+    begin
+      obj := TAdCanvasObj.Create(self);
+      FCanvasObjects.Add(obj);      
+    end;
+
+    obj.LastUsed := 0;
+    obj.Typ := FCurBuffer.Typ;
+    obj.VerticesCount := l;
+    obj.Buffer.Vertices := FCurBuffer.Vertices;
+    obj.Buffer.IndexBuffer := nil;
+    obj.Buffer.Update;    
+    case obj.Typ of
+      adPoints: obj.Buffer.PrimitiveCount := l;
+      adLines: obj.Buffer.PrimitiveCount := l div 2;
+      adLineStrips: obj.Buffer.PrimitiveCount := l-1;
+      adTriangles: obj.Buffer.PrimitiveCount := l div 3;
+      adTriangleStrips: obj.Buffer.PrimitiveCount := 2;
+      adTriangleFan: obj.Buffer.PrimitiveCount := l-2;
+    end;
+    obj.Persistent := FPersistent;
+    obj.BlendMode := FBlendMode;
+            
+    ClearBuffer;
+  end;
+end;
+
+procedure TAdCanvas.Clear;
+begin
+  FCanvasObjects.Clear;
+end;
+
+procedure TAdCanvas.ClearBuffer;
+begin
+  SetLength(FCurBuffer.Vertices,0);
+end;
+
+procedure TAdCanvas.StartFrame;
+var i:integer;
+begin
+  for i := 0 to FCanvasObjects.Count-1 do
+  begin
+    with FCanvasObjects[i] do
+    begin
+      if Persistent then
+      begin
+        LastUsed := 0;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdCanvas.Release;
+var i:integer;
+begin
+  PushObject;
+  
+  SetupDisplay;
+  for i := 0 to FCanvasObjects.Count-1 do
+  begin
+    with FCanvasObjects[i] do
+    begin
+      if LastUsed = 0 then
+      begin
+        Buffer.SetMatrix(AdMatrix_Identity);
+        if not (Persistent and (not FDrawPersistent)) then
+        begin
+          Buffer.Draw(BlendMode,FCanvasObjects[i].Typ);
+        end;
+      end;
+      LastUsed := LastUsed + 1;
+    end;
+  end;
+  ResetDisplay;
+
+  FCanvasObjects.Cleanup;
+end;
+
+{ TAdCanvasObj }
+
+constructor TAdCanvasObj.Create(AParent: TAdCanvas);
+begin
+  inherited Create;
+  FParent := AParent.FParent;
+  Buffer := FParent.AdAppl.CreateMesh;
+end;
+
+destructor TAdCanvasObj.Destroy;
+begin
+  Buffer.Free;
+  inherited;
 end;
 
 initialization

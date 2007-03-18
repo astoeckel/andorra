@@ -35,13 +35,13 @@ type
   {A simple vector (used for texture formates)}
   TAdVector2 = record
     {Stores the vectors information.}
-    x,y:double;
+    x,y:single;
   end;
 
   {Another simple vector with 3 parameters}
   TAdVector3 = record
     {Stores the vectors information.}
-    x,y,z:double;
+    x,y,z:single;
   end;
 
   {Andorras vertex format}
@@ -63,7 +63,7 @@ type
   TAdIndexArray = array of Word;
 
   {A matrix}
-  TAdMatrix = array[0..3] of array[0..3] of double;
+  TAdMatrix = array[0..3] of array[0..3] of single;
 
   
   {Contains information about how the scene is displayed.}
@@ -159,7 +159,16 @@ type
     bmAdd,//< Additive blending
     bmMask//< The mesh apears black
   );
-  
+
+  {Specifies how the vertices are drawn}
+  TAd2DDrawMode = (
+    adPoints,//<The vertices are drawn as single points
+    adLines,//<The vertices are drawn as lines
+    adLineStrips,//<The vertices are drawn as a line strip
+    adTriangles,//<The vertices are drawn as a list of triangles
+    adTriangleStrips,//<The vertices are drawn as a triangle strip
+    adTriangleFan//<The vertices are drawn as a triangle fan
+  );  
   
   {An abstract class which represents a light in Andorra's engine. }
   TAd2DLight = class;
@@ -300,7 +309,7 @@ type
       {Pushes the data into the graphic system's format.}
       procedure Update;virtual;abstract;
       {Draws the mesh.}
-      procedure Draw(ABlendMode:TAd2DBlendMode);virtual;abstract;
+      procedure Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);virtual;abstract;
       {Sets the transformation matrix.}
       procedure SetMatrix(AMatrix:TAdMatrix);virtual;abstract;
       {Returnes weather data is loaded.}

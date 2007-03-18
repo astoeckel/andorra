@@ -60,7 +60,6 @@ implementation
 {$R *.dfm}
 
 procedure TForm1.ApplicationIdle(Sender: TObject; var Done: boolean);
-var tg:double;
 begin
   AdPerCounter.Calculate;
   if AdDraw.CanDraw then
@@ -70,6 +69,13 @@ begin
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
     AdSpriteEngine.Draw;
     AdSpriteEngine.Dead;
+    with AdDraw.Canvas do
+    begin
+      Textout(0,0,inttostr(AdPerCounter.FPS));
+      MoveTo(0,0);
+      LineTo(100,100);
+      Release;
+    end;
     AdDraw.EndScene;
     AdDraw.Flip;
   end;
