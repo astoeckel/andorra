@@ -8,16 +8,14 @@
 			<Option Name="GUID">{9FD0284B-05EC-4BF6-940D-DD92EAE7DB34}</Option>
 		</Option>
 	</PersonalityInfo>
-	<Default.Personality>  
-    
-    <Projects>
+	<Default.Personality>  <Projects>
       <Projects Name="PartEd.exe">PartEd.bdsproj</Projects>
       <Projects Name="AndorraDX93D.dll">..\..\..\src\dll\directx\AndorraDX93D.bdsproj</Projects>
       <Projects Name="Targets">PartEd.exe AndorraDX93D.dll</Projects>
     </Projects>
     <Dependencies>
       <Dependency GUID="{75A64AA6-D476-485E-9E37-DEDBDDA4FF8F}">
-        <Dependency GUID="{594A5828-07B0-4BDA-BE50-D6368A35A1C0}"/>
+        <Dependency GUID="{53056E3B-E4E0-4B8C-A66D-4CA83A59EEB1}"/>
       </Dependency>
     </Dependencies>
   </Default.Personality>

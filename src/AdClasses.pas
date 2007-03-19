@@ -27,19 +27,19 @@ uses {$IFDEF FPC}IntfGraphics, FPImage, LclType, {$ENDIF} SysUtils, Classes, Gra
 
 type
   {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
-  TAndorraColor = record
+  TAndorraColor = packed record
     {Contains the color informations. They are stored in an integer (not in a byte as usual), because light sources can be more intensive (and each channel can have a value bigger than 255)}
     r,g,b,a:integer;
   end;
 
   {A simple vector (used for texture formates)}
-  TAdVector2 = record
+  TAdVector2 = packed record
     {Stores the vectors information.}
     x,y:single;
   end;
 
   {Another simple vector with 3 parameters}
-  TAdVector3 = record
+  TAdVector3 = packed record
     {Stores the vectors information.}
     x,y,z:single;
   end;
@@ -227,6 +227,10 @@ type
 
       {Prepares a 2D coordinate system }
       procedure Setup2DScene(AWidth,AHeight:integer);virtual;abstract;
+      {Prepares a 3D coordinate system }
+      procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);virtual;abstract;
+      {Prepares gives the possibility to setup the coordinate system manualy}
+      procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);virtual;abstract;
 
       {Returns the width of the engines surface}
       property Width:integer read FWidth;

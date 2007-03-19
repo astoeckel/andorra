@@ -46,6 +46,7 @@ begin
 
   AdDraw1 := TAdDraw.Create(self);
   AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw1.Options := AdDraw1.Options + [doAntialias];
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -59,7 +60,7 @@ begin
 
     with TPhysicalApplication.Create(AdSpriteEngine) do
     begin
-      SolverModel := smLinear;
+      SolverModel := smExact;
     end;
 
     randomize;

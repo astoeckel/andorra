@@ -1136,7 +1136,9 @@ begin
 
     MoveRect(amx,amy,SourceRect);
 
-    Image.StretchBltAlpha(Engine.Surface,SourceRect,Engine.SurfaceRect,0,0,0,255);
+    Image.StretchBltAlpha(Engine.Surface,SourceRect,
+      rect(Engine.SurfaceRect.Left-1,Engine.SurfaceRect.Top-1,
+           Engine.SurfaceRect.Right,Engine.SurfaceRect.Bottom),0,0,0,255);
   end;
 end;
 

@@ -40,6 +40,8 @@ type
       procedure Finalize;override;
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
+      procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
+      procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;
@@ -152,6 +154,7 @@ var
   hw : boolean;
   vp,i : integer;
   hr : HRESULT;
+  level:Integer;
 
   l:Td3dlight9;
 begin
@@ -236,6 +239,19 @@ begin
         exit;
       end;
       BackBufferFormat := afmt;
+
+      if doZBuffer in Options then
+      begin
+        EnableAutoDepthStencil := true;
+        AutoDepthStencilFormat := D3DFMT_D16;
+      end;
+
+      if doAntialias in Options then
+      begin
+        MultisampleType := D3DMULTISAMPLE_NONMASKABLE;
+        Direct3D9.CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, dtype, afmt, Windowed, MultisampleType,  @level);
+        MultisampleQuality := level - 1;
+      end;
     end;
     WriteLog(ltInfo,'Try to initialize the device.');
 
@@ -328,6 +344,7 @@ begin
   if Direct3DDevice9 <> nil then
   begin
     Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
+    Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
   end;
 end;
 
@@ -345,14 +362,29 @@ begin
     Direct3dDevice9.SetTransform(D3DTS_VIEW, matView);
 
     D3DXMatrixOrthoRH( matProj, Awidth, Aheight, 0,100);
-    if Failed(Direct3dDevice9.SetTransform(D3DTS_PROJECTION, matProj)) then
-    begin
-      WriteLog(ltError,'Error while setting new view matrix.');
-    end
-    else
-    begin
-      WriteLog(ltInfo,'Changed point of view to a 2D Szene.');
-    end;
+    Direct3dDevice9.SetTransform(D3DTS_PROJECTION, matProj);
+  end;
+end;
+
+procedure TDXApplication.Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);
+var matView, matProj: TD3DXMatrix;
+begin
+  if Direct3DDevice9 <> nil then
+  begin
+    D3DXMatrixLookAtRH( matView, TD3DVector(APos), TD3DVector(ADir), TD3DVector(AUp));
+    Direct3dDevice9.SetTransform(D3DTS_VIEW, matView);
+
+    D3DXMatrixPerspectiveFovRH( matProj, D3DX_PI / 4, AWidth / AHeight, 1, abs(apos.z)*2);
+    Direct3dDevice9.SetTransform(D3DTS_PROJECTION, matProj);
+  end;
+end;
+
+procedure TDXApplication.SetupManualScene(AMatView, AMatProj: TAdMatrix);
+begin
+  if Direct3DDevice9 <> nil then
+  begin
+    Direct3dDevice9.SetTransform(D3DTS_VIEW, TD3DMatrix(AMatView));
+    Direct3dDevice9.SetTransform(D3DTS_PROJECTION, TD3DMatrix(AMatProj));
   end;
 end;
 
@@ -425,8 +457,16 @@ procedure TDXApplication.ClearSurface(AColor: TAndorraColor);
 begin
   if Direct3DDevice9 <> nil then
   begin
-    Direct3DDevice9.Clear( 0, nil, D3DCLEAR_TARGET, D3DCOLOR_ARGB(AColor.a,AColor.r,AColor.g,AColor.b),
-      1.0, 0);
+    if doZBuffer in Options then
+    begin
+      Direct3DDevice9.Clear( 0, nil, D3DCLEAR_TARGET or D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(AColor.a,AColor.r,AColor.g,AColor.b),
+        1.0, 0);
+    end
+    else
+    begin
+      Direct3DDevice9.Clear( 0, nil, D3DCLEAR_TARGET, D3DCOLOR_ARGB(AColor.a,AColor.r,AColor.g,AColor.b),
+        1.0, 0);
+    end;
   end;
 end;
 
@@ -542,15 +582,8 @@ begin
 end;
 
 procedure TDXMesh.SetMatrix(AMatrix: TAdMatrix);
-var x,y:integer;
 begin
-  for x := 0 to 3 do
-  begin
-    for y := 0 to 3 do
-    begin
-      FMatrix.m[x,y] := AMatrix[x,y];
-    end;
-  end;
+  FMatrix := TD3DMatrix(AMatrix);
 end;
 
 procedure TDXMesh.SetTexture(ATexture: TAd2DTexture);

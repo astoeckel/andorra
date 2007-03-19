@@ -55,6 +55,8 @@ type
     AdPerCounter:TPerformanceCounter;
     AdFont:TAdFont;
     Bat:TBat;
+    CamPos:TAdVector3;
+    VX,VY,VZ:integer;
     procedure CreateLevel;
     procedure Idle(Sender:TObject; var done:boolean);
   end;
@@ -101,6 +103,8 @@ begin
   AdDraw1.DllName := 'AndorraDX93D.dll';
 
   Cursor := crNone;
+
+  AdDraw1.Options := AdDraw1.Options + [doAntialias];
 
   if AdDraw1.Initialize then
   begin
@@ -170,6 +174,11 @@ begin
     AdFont := TAdFont.Create(AdDraw1);
     AdFont.CreateFont('Tahoma',[],10,true,2,2,200);
     Application.OnIdle := Idle;
+
+    CamPos := AdVector3(ClientWidth / 2,ClientHeight /2, -(ClientHeight * 1.2));
+    VX := 100;
+    VY := 100;
+    VZ := 20;
   end
   else
   begin
@@ -196,8 +205,49 @@ end;
 procedure TMainDlg.Idle(Sender: TObject; var done: boolean);
 begin
   AdPerCounter.Calculate;
-  AdDraw1.ClearSurface(clBlack);
   AdDraw1.BeginScene;
+  AdDraw1.ClearSurface(clBlack);
+
+
+  CamPos.x := CamPos.x + VX * AdPerCounter.TimeGap / 1000;
+  CamPos.y := CamPos.y + VY * AdPerCounter.TimeGap / 1000;
+  CamPos.z := CamPos.z - VZ * AdPerCounter.TimeGap / 1000;
+
+  if (CamPos.x > ClientWidth) then
+  begin
+    CamPos.x := ClientWidth;
+    VX := -VX;
+  end;
+  if (CamPos.x < 0) then
+  begin
+    CamPos.x := 0;
+    VX := -VX;
+  end;
+
+  if (CamPos.y > ClientHeight) then
+  begin
+    CamPos.y := ClientHeight;
+    VY := -VY;
+  end;
+  if (CamPos.y < 0) then
+  begin
+    CamPos.y := 0;
+    VY := -VY;
+  end;
+
+  if (CamPos.z < -1000) then
+  begin
+    CamPos.z := -1000;
+    VZ := -VZ;
+  end;
+  if (CamPos.z > -720) then
+  begin
+    CamPos.z := -720;
+    VZ := -VZ;
+  end;
+
+  AdDraw1.AdAppl.Setup3DScene(ClientWidth,ClientHeight,
+      CamPos,AdVector3(ClientWidth / 2,ClientHeight / 2,0),AdVector3(0,-1,0));
 
   AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
   AdSpriteEngine.Draw;
@@ -206,7 +256,14 @@ begin
   begin
     CreateLevel;
   end;
-  AdFont.TextOut('FPS: '+inttostr(AdPerCounter.FPS),2,2);
+  AdFont.TextOut(2,2,'FPS: '+inttostr(AdPerCounter.FPS));
+  with AdDraw1.Canvas do
+  begin
+    Brush.Style := abClear;
+    Pen.Color := Ad_ARGB(255,255,255,255);
+    Rectangle(ClientRect);
+    Release;
+  end;
 
 
   AdDraw1.EndScene;

@@ -71,10 +71,8 @@ begin
     AdSpriteEngine.Dead;
     with AdDraw.Canvas do
     begin
-      Textout(0,0,inttostr(AdPerCounter.FPS));
-      MoveTo(0,0);
-      LineTo(100,100);
       Release;
+      Textout(0,0,inttostr(AdPerCounter.FPS));
     end;
     AdDraw.EndScene;
     AdDraw.Flip;
@@ -96,7 +94,7 @@ begin
   Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+'settings.ini');
 
   AdDraw := TAdDraw.Create(self);
-  AdDraw.Options := AdDraw.Options;
+  AdDraw.Options := AdDraw.Options + [doAntialias];
   AdDraw.DllName := Settings.ReadString('set','dllname','AndorraDX93D.dll');
 
   amessage.Text := 'Starting Application';
