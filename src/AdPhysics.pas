@@ -28,7 +28,7 @@ unit AdPhysics;
 
 interface
 
-uses AdClasses, AdDraws, AdSprites, NewtonImport, Classes, Types, Math;
+uses AdClasses, AdDraws, AdSprites, NewtonImport, Classes, {$INCLUDE AdTypes.inc}, Math;
 
 type
   //A vector for the use with newton

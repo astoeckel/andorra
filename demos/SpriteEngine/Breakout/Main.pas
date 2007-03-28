@@ -104,7 +104,7 @@ begin
 
   Cursor := crNone;
 
-  AdDraw1.Options := AdDraw1.Options + [doAntialias];
+  AdDraw1.Options := AdDraw1.Options+[doAntialias];
 
   if AdDraw1.Initialize then
   begin
@@ -173,12 +173,17 @@ begin
 
     AdFont := TAdFont.Create(AdDraw1);
     AdFont.CreateFont('Tahoma',[],10,true,2,2,200);
+    AdDraw1.Canvas.Font := AdFont;
     Application.OnIdle := Idle;
 
     CamPos := AdVector3(ClientWidth / 2,ClientHeight /2, -(ClientHeight * 1.2));
     VX := 100;
     VY := 100;
     VZ := 20;
+
+    AdDraw1.AdAppl.SetTextureFilter(fmMinFilter,atAnisotropic);
+    AdDraw1.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
+    AdDraw1.AdAppl.SetTextureFilter(fmMipFilter,atAnisotropic);
   end
   else
   begin
@@ -256,9 +261,12 @@ begin
   begin
     CreateLevel;
   end;
-  AdFont.TextOut(2,2,'FPS: '+inttostr(AdPerCounter.FPS));
+
   with AdDraw1.Canvas do
   begin
+    DrawIn2D := true;
+    TextOut(2,2,'FPS: '+inttostr(AdPerCounter.FPS));
+    DrawIn2D := false;
     Brush.Style := abClear;
     Pen.Color := Ad_ARGB(255,255,255,255);
     Rectangle(ClientRect);

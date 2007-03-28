@@ -22,7 +22,7 @@ unit AdSprites;
 
 interface
 
-uses Types, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math;
+uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math;
 
 type
   {The sprite engines base class.}

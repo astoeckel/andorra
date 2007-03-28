@@ -22,7 +22,7 @@ unit AdDLLLoader;
 
 interface
 
-uses SysUtils,Windows,AdClasses;
+uses SysUtils, Windows, AdClasses;
 
 //This is the class which loads the plugin DLL
 type TAndorraDllLoader = class

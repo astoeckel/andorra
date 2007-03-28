@@ -1,16 +1,18 @@
-{
-* This program is licensed under the Common Public License (CPL) Version 1.0
+{* This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
-* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
-* 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
-* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdDraws.pas
-* Comment: This unit contais the main Andorra 2D Component (TAdDraw) comparable to TDXDraw 
+* Comment: This unit contais the main Andorra 2D Component (TAdDraw) comparable to TDXDraw
 }
 
 { Contains the main Andorra Classes for graphic output }
@@ -22,7 +24,7 @@ unit AdDraws;
 
 interface
 
-uses Windows, Controls, Math, Types, SysUtils, Classes, AdClasses, AdDllLoader,
+uses Windows, Controls, Math, {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdClasses, AdDllLoader,
      Graphics, Huffman, AdBlur;
 
 type
@@ -666,6 +668,12 @@ type
       Typ:TAd2dDrawMode;
       Persistent:boolean;
       BlendMode:TAd2DBlendMode;
+
+      Text:string;
+      Font:TAdFont;
+      Color:TColor;
+      Alpha:byte;
+      X,Y:integer;
       constructor Create(AParent:TAdCanvas);
       destructor Destroy;override;  
       property Parent:TAdDraw read FParent;
@@ -685,6 +693,12 @@ type
   TAdCanvasBuffer = record
     Vertices:TAdVertexArray;
     Typ:TAd2dDrawMode;
+
+    Text:string;
+    Font:TAdFont;
+    X,Y:integer;
+    Color:TColor;
+    Alpha:byte;
   end;
 
   TAdPointArray = array of TPoint;
@@ -704,9 +718,12 @@ type
       FCurBuffer:TAdCanvasBuffer;
       FDisabledLight:boolean;
       FDisableLight:boolean;
+      FDrawIn2D:boolean;
+      FDrawedIn2D:boolean;
       FPersistent:boolean;
       FDrawPersistent:boolean;
       FBlendMode:TAd2DBlendMode;
+      FTmpMatView,FTmpMatProj:TAdMatrix;
       procedure SetFont(AValue:TAdFont);
       procedure SetCircleTesselation(AValue:single);
     protected
@@ -748,6 +765,7 @@ type
       property CircleTesselation:single read FCircleTesselation write SetCircleTesselation;
       property Locked:boolean read FLocked;
       property DisableLightning:boolean read FDisableLight write FDisableLight;
+      property DrawIn2D:boolean read FDrawIn2D write FDrawIn2D;
       property Persistent:Boolean read FPersistent write FPersistent;
       property DrawPersistent:Boolean read FDrawPersistent write FDrawPersistent;
       property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
@@ -2159,7 +2177,7 @@ begin
   ms := TMemoryStream.Create;
   ms.LoadFromFile(AFile);
   ms.Position := 0;
-  ms.LoadFromStream(ms);
+  LoadFromStream(ms);
   ms.Free;
 end;
 
@@ -2855,6 +2873,7 @@ begin
   FOwnFont := true;
 
   FDisableLight := true;
+  FDrawIn2d := true;
 
   FCanvasObjects := TAdCanvasObjectList.Create;
 
@@ -3117,8 +3136,14 @@ procedure TAdCanvas.ResetDisplay;
 begin    
   if FDisabledLight then
   begin
+    FDisabledLight := false;
     FParent.Options := FParent.Options + [doLights];
-  end;                                              
+  end;
+  if FDrawedIn2D then
+  begin
+    FDrawedIn2D := false;
+    FParent.AdAppl.SetupManualScene(FTmpMatView,FTmpMatProj);
+  end;
 end;
 
 procedure TAdCanvas.SetupDisplay;
@@ -3129,13 +3154,24 @@ begin
     FDisabledLight := true;
     FParent.Options := FParent.Options - [doLights];
   end;
+  if (FDrawIn2D) then
+  begin
+    FDrawedIn2D := true;
+    FParent.AdAppl.GetScene(FTmpMatView,FTmpMatProj);
+    FParent.Setup2DScene;
+  end;
 end;
 
 procedure TAdCanvas.Textout(AX, AY: integer; AText: string);
 begin
-  SetupDisplay;
-  FFont.TextOut(AX,AY,AText);
-  ResetDisplay;
+  PushObject;
+  FCurBuffer.Font := FFont;
+  FCurBuffer.Color := FFont.Color;
+  FCurBuffer.Text := AText;
+  FCurBuffer.Alpha := FFont.Alpha;
+  FCurBuffer.X := AX;
+  FCurBuffer.Y := AY;
+  PushObject;
 end;
 
 procedure TAdCanvas.PushObject;
@@ -3143,45 +3179,82 @@ var i:integer;
     l:integer;
     obj:TAdCanvasObj;
 begin
-  l := length(FCurBuffer.Vertices);
-  if l > 0 then
+  if FCurBuffer.Font = nil then
+  begin
+    l := length(FCurBuffer.Vertices);
+    if l > 0 then
+    begin
+      obj := nil;
+      for i := 0 to FCanvasObjects.Count-1 do
+      begin
+        if (FCanvasObjects[i].VerticesCount = l) and
+           (FCanvasObjects[i].LastUsed > 0) and
+           (FCanvasObjects[i].Font = nil) and
+           (FCanvasObjects[i].Typ = FCurBuffer.Typ) and
+           (not FCanvasObjects[i].Persistent) then
+        begin
+          obj := FCanvasObjects[i];
+          break;
+        end;
+      end;
+
+      if obj = nil then
+      begin
+        obj := TAdCanvasObj.Create(self);
+        FCanvasObjects.Add(obj);
+      end;
+
+      obj.LastUsed := 0;
+      obj.Typ := FCurBuffer.Typ;
+      obj.VerticesCount := l;
+      obj.Buffer.Vertices := FCurBuffer.Vertices;
+      obj.Buffer.IndexBuffer := nil;
+      obj.Buffer.Update;
+      case obj.Typ of
+        adPoints: obj.Buffer.PrimitiveCount := l;
+        adLines: obj.Buffer.PrimitiveCount := l div 2;
+        adLineStrips: obj.Buffer.PrimitiveCount := l-1;
+        adTriangles: obj.Buffer.PrimitiveCount := l div 3;
+        adTriangleStrips: obj.Buffer.PrimitiveCount := 2;
+        adTriangleFan: obj.Buffer.PrimitiveCount := l-2;
+      end;
+      obj.Persistent := FPersistent;
+      obj.BlendMode := FBlendMode;
+
+      ClearBuffer;
+    end;
+  end
+  else
   begin
     obj := nil;
+
     for i := 0 to FCanvasObjects.Count-1 do
     begin
-      if (FCanvasObjects[i].VerticesCount = l) and 
-         (FCanvasObjects[i].LastUsed > 0) and
-         (FCanvasObjects[i].Typ = FCurBuffer.Typ) and
-         (not FCanvasObjects[i].Persistent) then
+      if (FCanvasObjects[i].LastUsed > 0) and
+         (not FCanvasObjects[i].Persistent) and
+         (FCanvasObjects[i].Font = FCurBuffer.Font) then
       begin
         obj := FCanvasObjects[i];
         break;
-      end;      
+      end;
     end;
 
     if obj = nil then
     begin
       obj := TAdCanvasObj.Create(self);
-      FCanvasObjects.Add(obj);      
+      FCanvasObjects.Add(obj);
     end;
 
     obj.LastUsed := 0;
-    obj.Typ := FCurBuffer.Typ;
-    obj.VerticesCount := l;
-    obj.Buffer.Vertices := FCurBuffer.Vertices;
-    obj.Buffer.IndexBuffer := nil;
-    obj.Buffer.Update;    
-    case obj.Typ of
-      adPoints: obj.Buffer.PrimitiveCount := l;
-      adLines: obj.Buffer.PrimitiveCount := l div 2;
-      adLineStrips: obj.Buffer.PrimitiveCount := l-1;
-      adTriangles: obj.Buffer.PrimitiveCount := l div 3;
-      adTriangleStrips: obj.Buffer.PrimitiveCount := 2;
-      adTriangleFan: obj.Buffer.PrimitiveCount := l-2;
-    end;
+    obj.Text := FCurBuffer.Text;
+    obj.X := FCurBuffer.X;
+    obj.Y := FCurBuffer.Y;
+    obj.Color := FCurBuffer.Color;
+    obj.Alpha := FCurBuffer.Alpha;
+    obj.Font := FCurBuffer.Font;
     obj.Persistent := FPersistent;
     obj.BlendMode := FBlendMode;
-            
+
     ClearBuffer;
   end;
 end;
@@ -3194,6 +3267,7 @@ end;
 procedure TAdCanvas.ClearBuffer;
 begin
   SetLength(FCurBuffer.Vertices,0);
+  FCurBuffer.Font := nil;
 end;
 
 procedure TAdCanvas.StartFrame;
@@ -3203,19 +3277,22 @@ begin
   begin
     with FCanvasObjects[i] do
     begin
+      LastUsed := LastUsed + 1;
       if Persistent then
       begin
         LastUsed := 0;
       end;
     end;
   end;
+
+  FCanvasObjects.Cleanup;
 end;
 
 procedure TAdCanvas.Release;
 var i:integer;
 begin
   PushObject;
-  
+
   SetupDisplay;
   for i := 0 to FCanvasObjects.Count-1 do
   begin
@@ -3223,18 +3300,24 @@ begin
     begin
       if LastUsed = 0 then
       begin
-        Buffer.SetMatrix(AdMatrix_Identity);
-        if not (Persistent and (not FDrawPersistent)) then
+        if Font = nil then
         begin
-          Buffer.Draw(BlendMode,FCanvasObjects[i].Typ);
+          Buffer.SetMatrix(AdMatrix_Identity);
+          if not (Persistent and (not FDrawPersistent)) then
+          begin
+            Buffer.Draw(BlendMode,FCanvasObjects[i].Typ);
+          end;
+        end
+        else
+        begin
+          Font.Color := Color;
+          Font.Alpha := Alpha;
+          Font.TextOut(X,Y,Text);
         end;
       end;
-      LastUsed := LastUsed + 1;
     end;
   end;
   ResetDisplay;
-
-  FCanvasObjects.Cleanup;
 end;
 
 { TAdCanvasObj }

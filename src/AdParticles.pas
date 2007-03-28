@@ -23,7 +23,7 @@ unit AdParticles;
 
 interface
 
-uses SysUtils, Types, Classes,AdDraws, AdClasses;
+uses SysUtils, {$INCLUDE AdTypes.inc}, Classes,AdDraws, AdClasses;
 
 type
 

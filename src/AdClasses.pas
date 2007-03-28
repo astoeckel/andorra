@@ -23,7 +23,7 @@ unit AdClasses;
 
 interface
 
-uses {$IFDEF FPC}IntfGraphics, FPImage, LclType, {$ENDIF} SysUtils, Classes, Graphics, Types; 
+uses {$IFDEF FPC}IntfGraphics, FPImage, LclType, {$ENDIF} SysUtils, Classes, {$INCLUDE AdTypes.inc},Graphics; 
 
 type
   {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
@@ -90,6 +90,8 @@ type
     //The horizontal refresh rate. Can be zero to use the desktops refresh rate.
     Freq:integer;
   end;
+
+  PByte = ^Byte;
 
   {A 32-Bit Bitmap}
   TAdBitmap = class
@@ -168,7 +170,19 @@ type
     adTriangles,//<The vertices are drawn as a list of triangles
     adTriangleStrips,//<The vertices are drawn as a triangle strip
     adTriangleFan//<The vertices are drawn as a triangle fan
-  );  
+  );
+
+  TAd2DFilterMode = (
+    fmMagFilter,//< Filter for textures, which are displayed bigger than in original size
+    fmMinFilter,//< Filter for textures, which are displayed smaller than in original size
+    fmMipFilter//< Filter for the translation between mipmaps
+  );
+
+  TAd2DTextureFilter = (
+    atPoint,//<Badest picture quality, default filter
+    atLinear,//<Good filter quality
+    atAnisotropic//<Another good filter ^^
+  );
   
   {An abstract class which represents a light in Andorra's engine. }
   TAd2DLight = class;
@@ -231,6 +245,11 @@ type
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);virtual;abstract;
       {Prepares gives the possibility to setup the coordinate system manualy}
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);virtual;abstract;
+      {Returns the current view and projection matrix}
+      procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);virtual;abstract;
+
+      {Set the texture filter for better picture quality}
+      procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);virtual;abstract;
 
       {Returns the width of the engines surface}
       property Width:integer read FWidth;

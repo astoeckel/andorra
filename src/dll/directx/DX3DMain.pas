@@ -42,6 +42,9 @@ type
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
+      procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
+
+      procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;
@@ -348,6 +351,23 @@ begin
   end;
 end;
 
+procedure TDXApplication.SetTextureFilter(AFilterMode: TAd2DFilterMode;
+  AFilter: TAd2DTextureFilter);
+var aval:DWORD;
+begin
+  case AFilter of
+    atLinear:aval := D3DTEXF_LINEAR;
+    atAnisotropic:aval := D3DTEXF_ANISOTROPIC;
+  else
+    aval := D3DTEXF_POINT;
+  end;
+  case AFilterMode of
+    fmMagFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, aval);
+    fmMinFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, aval);
+    fmMipFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, aval);
+  end;
+end;
+
 procedure TDXApplication.Setup2DScene(AWidth, AHeight: integer);
 var pos, dir, up : TD3DXVector3;
     matView, matProj: TD3DXMatrix;
@@ -451,6 +471,12 @@ begin
   SetLength(FLights,length(FLights)+1);
   FLights[high(FLights)] := true;
   result := high(FLights);
+end;
+
+procedure TDXApplication.GetScene(out AMatView, AMatProj: TAdMatrix);
+begin
+  Direct3DDevice9.GetTransform(D3DTS_PROJECTION, TD3DMatrix(AMatProj));
+  Direct3DDevice9.GetTransform(D3DTS_VIEW, TD3DMatrix(AMatView));
 end;
 
 procedure TDXApplication.ClearSurface(AColor: TAndorraColor);
