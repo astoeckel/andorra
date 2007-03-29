@@ -1,4 +1,5 @@
-{* This program is licensed under the Common Public License (CPL) Version 1.0
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
 * informations.

@@ -89,6 +89,8 @@ type
       FParent:TAdDraw;
       procedure SetItem(Index:integer;Value:TAdSkinItem);
       function GetItem(Index:integer):TAdSkinItem;
+      procedure SetNamedItem(Index:string;Value:TAdSkinItem);
+      function GetNamedItem(Index:string):TAdSkinItem;
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
@@ -107,7 +109,9 @@ type
       function Add(Item:TAdSkinItem):integer;overload;
       function Add(Name:string):integer;overload;
 
+      function IndexOf(Name:string):integer;overload;
       property Items[Index:integer]:TAdSkinItem read GetItem write SetItem;default;
+      property ItemNamed[Index:string]:TAdSkinItem read GetNamedItem write SetNamedItem;
       property Parent:TAdDraw read FParent;
   end;
 
@@ -363,6 +367,48 @@ end;
 function TAdSkin.GetItem(Index: integer): TAdSkinItem;
 begin
   result := inherited Items[Index];
+end;
+
+function TAdSkin.GetNamedItem(Index: string): TAdSkinItem;
+var
+  i:integer;
+begin
+  result := nil;
+  i := IndexOf(Index);
+  if i <> -1 then
+  begin
+    result := Items[i];
+  end;
+end;
+
+function TAdSkin.IndexOf(Name: string): integer;
+var
+  i:integer;
+begin
+  result := -1;
+  for i := 0 to Count - 1 do
+  begin
+    if lowercase(Items[i].Name) = lowercase(Name) then
+    begin
+      result := i;
+      break;
+    end;
+  end;
+end;
+
+procedure TAdSkin.SetNamedItem(Index: string; Value: TAdSkinItem);
+var
+  i:integer;
+begin
+  i := IndexOf(Index);
+  if i <> -1 then
+  begin
+    Items[i] := Value;
+  end
+  else
+  begin
+    raise EListError.Create('Element not found.');
+  end;  
 end;
 
 procedure TAdSkin.Notify(Ptr: Pointer; Action: TListNotification);

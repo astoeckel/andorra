@@ -46,12 +46,24 @@ procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='d
 var data:string;
     i:integer;
     b:byte;
+    ms:TMemoryStream;
 begin
-  data := XMLElem.Properties.Value('data','');
-  for i := 1 to length(data) div 2 do
+  if XMLElem.Properties.Value('source','') <> '' then
   begin
-    b := strtoint('$'+copy(data,((i-1)*2)+1,2));
-    AStream.Write(b,1);
+    ms := TMemoryStream.Create;
+    ms.LoadFromFile(XMLElem.Properties.Value('source',''));
+    ms.Position := 0;
+    AStream.CopyFrom(ms,ms.Size);    
+    ms.Free;
+  end
+  else
+  begin
+    data := XMLElem.Properties.Value('data','');
+    for i := 1 to length(data) div 2 do
+    begin
+      b := strtoint('$'+copy(data,((i-1)*2)+1,2));
+      AStream.Write(b,1);
+    end;
   end;
 end;
 
