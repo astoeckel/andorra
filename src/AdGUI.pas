@@ -21,7 +21,7 @@ unit AdGUI;
 interface
 
 uses SysUtils, Classes, JvSimpleXML, AdDraws, AdSkin, AdClasses, {$I AdTypes.inc},
-     AdXML;
+     AdXML, Controls;
 
 const
   Opac = 255;
@@ -55,10 +55,29 @@ type
       FName:string;
       FFocused:boolean;
       FKeyPreview:boolean;
+      FMousePreview:boolean;
       FCanGetFocus:boolean;
       FSubComponent:boolean;
       FSpacerTop,FSpacerLeft,FSpacerRight,FSpacerBottom:integer;
       FCurrentCursor:string;
+
+      FMouseOver:boolean;
+      FMouseDownIn:TAdDownRgn;
+      FOX,FOY:integer;
+
+
+      FOnMouseDown:TMouseEvent;
+      FOnMouseUp:TMouseEvent;
+      FOnMouseMove:TMouseMoveEvent;
+      FOnDblClick:TNotifyEvent;
+      FOnClick:TNotifyEvent;
+      FOnKeyPress:TKeyPressEvent;
+      FOnKeyUp:TKeyEvent;
+      FOnKeyDown:TKeyEvent;
+      FOnMouseEnter:TNotifyEvent;
+      FOnMouseLeave:TNotifyEvent;
+      FOnMouseWheel:TMouseWheelEvent; 
+
       procedure SetSkin(Value:TAdSkin);
       procedure SetAdDraw(Value:TAdDraw);
       procedure SetDesignMode(Value:boolean);
@@ -77,7 +96,24 @@ type
       procedure LoadSkinItem;virtual;
       procedure SetCurrentCursor(Value:string);virtual;
 
+      procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);virtual;
+      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);virtual;
+      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);virtual;
+      procedure DoMouseEnter;virtual;
+      procedure DoMouseLeave;virtual;
+      procedure DoClick;virtual;
+      procedure DoDblClick;virtual;
+      procedure DoKeyPress(key:Char);virtual;
+      procedure DoKeyUp(key:Word;Shift:TShiftState);virtual;
+      procedure DoKeyDown(key:Word;Shift:TShiftState);virtual;
+      procedure DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);virtual;
+
+      procedure DesignSize(X,Y:integer);
+      function GetDownRgn(AX,AY:integer):TAdDownRgn;      
+      procedure CheckMouseEnter(oldvalue:boolean);
+      
       property KeyPreview:boolean read FKeyPreview write FKeyPreview;
+      property MousePreview:boolean read FMousePreview write FMousePreview;
       property SpacerTop:integer read FSpacerTop write FSpacerTop;
       property SpacerBottom:integer read FSpacerBottom write FSpacerBottom;
       property SpacerLeft:integer read FSpacerLeft write FSpacerLeft;
@@ -85,11 +121,26 @@ type
       property Focused:boolean read FFocused write SetFocus;
       property CanGetFocus:boolean read FCanGetFocus write FCanGetFocus;
       property SubComponent:boolean read FSubComponent write FSubComponent;
+
+      property MouseOver:boolean read FMouseOver write FMouseOver;
+      property OX:integer read FOX write FOX;
+      property OY:integer read FOY write FOY;
+      property MouseDownIn:TAdDownRgn read FMouseDownIn write FMouseDownIn;
     public
       procedure Draw;
       procedure Move(TimeGap:double);
 
       procedure AddComponent(AComponent:TAdComponent);virtual;
+
+      procedure DblClick(X,Y:integer);
+      procedure Click(X,Y:integer);
+      procedure MouseMove(Shift: TShiftState; X, Y: Integer);
+      procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+      procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+      procedure MouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+      procedure KeyPress(Key: Char);
+      procedure KeyDown(Key: Word;Shift:TShiftState);
+      procedure KeyUp(Key: Word;Shift:TShiftState);
 
       constructor Create(AParent:TAdComponent);
       destructor Destroy;override;
@@ -112,6 +163,18 @@ type
       property Alpha:byte read FAlpha write FAlpha;
       property Visible:boolean read FVisible write FVisible;
       property Enabled:boolean read FEnabled write FEnabled;
+
+      property OnClick:TNotifyEvent read FOnClick write FOnClick;
+      property OnDblClick:TNotifyEvent read FOnDblClick write FOnDblClick;
+      property OnMouseMove:TMouseMoveEvent read FOnMouseMove write FOnMouseMove;
+      property OnMouseUp:TMouseEvent read FOnMouseUp write FOnMouseUp;
+      property OnMouseDown:TMouseEvent read FOnMouseDown write FOnMouseDown;
+      property OnMouseEnter:TNotifyEvent read FOnMouseEnter write FOnMouseEnter;
+      property OnMouseLeave:TNotifyEvent read FOnMouseLeave write FOnMouseLeave;
+      property OnMouseWheel:TMouseWheelEvent read FOnMouseWheel write FOnMouseWheel;
+      property OnKeyPress:TKeyPressEvent read FOnKeyPress write FOnKeyPress;
+      property OnKeyUp:TKeyEvent read FOnKeyUp write FOnKeyUp;
+      property OnKeyDown:TKeyEvent read FOnKeyDown write FOnKeyDown;
   end;
 
   TAdMouseLibrary = class;
@@ -189,15 +252,20 @@ type
   TAdGUI = class(TAdComponent)
     private
       FMouse:TAdMouseLibrary;
+      FMouseX,FMouseY:integer;
     protected
       procedure SetCurrentCursor(Value:string);override;
-    public
+
+      procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
+     public
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
 
       procedure Update(TimeGap:double);
 
       property Cursors:TAdMouseLibrary read FMouse;
+      property MouseX:integer read FMouseX;
+      property MouseY:integer read FMouseY;
   end;
 
 
@@ -254,7 +322,7 @@ begin
     FParent.AddComponent(self);
     FEnabled := FParent.Enabled;
     FDesignMode := FParent.DesignMode;
-    FSkin := FParent.Skin;
+    Skin := FParent.Skin;
   end;
 
   FAlpha := 255;
@@ -375,8 +443,6 @@ begin
 end;
 
 procedure TAdComponent.SetFocus(Value: boolean);
-var
-  i: integer;
 begin
   if Value = true then
   begin
@@ -466,6 +532,426 @@ begin
   //
 end;
 
+{Event-Handling}
+
+
+procedure TAdComponent.Click(X, Y: integer);
+var
+  clicked:boolean;
+  i:integer;
+begin
+  if (visible) and (InRect(x,y,boundsrect)) then
+  begin
+    clicked := true;
+    for i := Components.Count-1 downto 0 do
+    begin
+      if InRect(x,y,Components[i].BoundsRect) then
+      begin
+        clicked := false;
+        Components[i].Click(X,Y);
+        break;
+      end;
+    end;
+    if (clicked) and ((enabled) or (designmode)) then
+    begin
+      if not DesignMode then
+      begin
+        DoDblClick;
+      end
+      else
+      begin
+        SetFocused;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdComponent.DblClick(X, Y: integer);
+var
+  clicked:boolean;
+  i:integer;
+begin
+  if (visible) and (InRect(x,y,boundsrect)) then
+  begin
+    clicked := true;
+    for i := Components.Count-1 downto 0 do
+    begin
+      if InRect(x,y,Components[i].BoundsRect) then
+      begin
+        clicked := false;
+        Components[i].DblClick(X,Y);
+        break;
+      end;
+    end;
+    if (clicked) and ((enabled) or (designmode)) then
+    begin
+      if not DesignMode then
+      begin
+        DoDblClick;
+      end
+      else
+      begin
+        SetFocused;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdComponent.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+var clicked:boolean;
+    i:integer;
+begin
+  if visible and InRect(x,y,boundsrect) then
+  begin
+    clicked := true;
+    for i := Components.Count-1 downto 0 do
+    begin
+      if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
+      begin
+        clicked := false;
+        Components[i].MouseDown(Button,Shift,X,Y);
+        break;
+      end;
+    end;
+    if clicked and enabled then
+    begin
+      if not DesignMode then
+      begin
+        DoMouseDown(Button,Shift,X,Y);
+      end
+      else
+      begin
+        MouseDownIn := GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top);
+      end;
+    end;
+  end;
+end;
+
+procedure TAdComponent.MouseMove(Shift: TShiftState; X, Y: Integer);
+var clicked:boolean;
+    overcomp:TAdComponent;
+    i:integer;
+    om:boolean;
+begin
+  om := FMouseOver;
+  overcomp := nil;
+  FMouseOver := false;
+  DesignSize(X,Y);
+  if (visible) and ((InRect(x,y,boundsrect)) or FMousePreview) then
+  begin
+    clicked := true;
+    for i := Components.Count-1 downto 0 do
+    begin
+      if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
+      begin
+        Components[i].MouseMove(Shift,X,Y);
+        clicked := false;
+        FMouseOver := false;
+        overcomp := Components[i];
+        break;
+      end
+      else
+      begin
+        Components[i].DesignSize(X,Y);
+      end;
+    end;
+
+    if FMousePreview and enabled then
+    begin
+      DoMouseMove(Shift,X,Y);
+    end;
+
+    if (clicked) and enabled then
+    begin
+      if not DesignMode then
+      begin
+        FMouseOver := true;
+        DoMouseMove(Shift,X,Y);
+        for i := 0 to Components.Count-1 do
+        begin
+          if (Components[i] <> overcomp) then
+          begin
+            Components[i].FMouseOver := false;
+            Components[i].CheckMouseEnter(true);
+          end;
+        end;
+      end
+      else
+      begin
+        if not Focused then
+        begin
+          AdDraw.Parent.Cursor := crDefault;
+        end
+        else
+        begin
+          if ClassType.ClassName <> 'TDXComponent' then
+          begin
+            case GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top) of
+              drNone:AdDraw.Parent.Cursor := crDefault;
+              drMiddle:AdDraw.Parent.Cursor := crSizeAll;
+              drLeftTop:AdDraw.Parent.Cursor := crSizeNWSE;
+              drLeftBottom:AdDraw.Parent.Cursor := crSizeNESW;
+              drRightBottom:AdDraw.Parent.Cursor := crSizeNWSE;
+              drRightTop:AdDraw.Parent.Cursor := crSizeNESW;
+            end;
+          end;
+        end;
+      end;
+    end
+    else
+    begin
+      if enabled and (not DesignMode) then
+      begin
+        for i := 0 to Components.Count-1 do
+        begin
+          if (Components[i] <> overcomp) then
+          begin
+            Components[i].MouseOver := false;
+            Components[i].CheckMouseEnter(true);
+          end;
+        end;
+      end;
+    end;
+  end;
+  CheckMouseEnter(om);
+end;
+
+procedure TAdComponent.MouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+var clicked:boolean;
+    i:integer;
+begin
+  if visible and InRect(x,y,boundsrect) then
+  begin
+    clicked := true;
+    for i := Components.Count-1 downto 0 do
+    begin
+      if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
+      begin
+        clicked := false;
+        Components[i].MouseUp(Button, Shift,X,Y);
+        break;
+      end
+      else
+      begin
+        if DesignMode then
+        begin
+          Components[i].MouseDownIn := drNone;
+        end;
+      end;
+    end;
+    if clicked and enabled then
+    begin
+      if not DesignMode then DoMouseUp(Button, Shift,X,Y);
+    end;
+  end;
+  if DesignMode then
+  begin
+    MouseDownIn := drNone;
+  end;
+end;
+
+procedure TAdComponent.MouseWheel(Shift: TShiftState; WheelDelta: Integer;
+  MousePos: TPoint; var Handled: Boolean);
+var clicked:boolean;
+    i:integer;
+begin
+  if (visible) and (InRect(mousepos.x,mousepos.y,boundsrect)) then
+  begin
+    clicked := true;
+    for i := Components.Count-1 downto 0 do
+    begin
+      if Components[i].Visible and InRect(mousepos.x,mousepos.y,Components[i].BoundsRect) then
+      begin
+        clicked := false;
+        Components[i].MouseWheel(Shift,WheelDelta,MousePos,Handled);
+        break;
+      end;
+    end;
+    if (clicked) and (enabled) then
+    begin
+      if not DesignMode then DoMouseWheel(Shift,WheelDelta,MousePos,Handled);
+    end;
+  end;
+end;
+
+procedure TAdComponent.KeyDown(Key: Word; Shift: TShiftState);
+var i:integer;
+begin
+  if visible and (Focused or FKeyPreview) and enabled then
+  begin
+    if not DesignMode then DoKeyDown(Key,Shift);
+  end
+  else
+  begin
+    for i := 0 to Components.Count-1 do
+    begin
+      Components[i].KeyDown(Key,Shift);
+    end;
+  end;
+end;
+
+procedure TAdComponent.KeyPress(Key: Char);
+var i:integer;
+begin
+  if visible and (Focused or FKeyPreview) and enabled then
+  begin
+    if not DesignMode then DoKeyPress(Key);
+  end
+  else
+  begin
+    for i := 0 to Components.Count-1 do
+    begin
+      Components[i].KeyPress(Key);
+    end;
+  end;
+end;
+
+procedure TAdComponent.KeyUp(Key: Word; Shift: TShiftState);
+var i:integer;
+begin
+  if visible and (Focused or FKeyPreview) and enabled then
+  begin
+    if not DesignMode then DoKeyUp(Key,Shift);
+  end
+  else
+  begin
+    for i := 0 to Components.Count-1 do
+    begin
+      Components[i].KeyUp(Key,Shift);
+    end;
+  end;
+end;
+
+procedure TAdComponent.DoClick;
+begin
+  if assigned(OnClick) then OnClick(self);
+end;
+
+procedure TAdComponent.DoDblClick;
+begin
+  if assigned(OnDblClick) then OnDblClick(self);
+end;
+
+procedure TAdComponent.DoKeyDown(key: Word; Shift: TShiftState);
+begin
+  if assigned(OnKeyDown) then OnKeyDown(Self,Key,Shift);
+end;
+
+procedure TAdComponent.DoKeyPress(key: Char);
+begin
+  if assigned(OnKeyPress) then OnKeyPress(Self,Key);
+end;
+
+procedure TAdComponent.DoKeyUp(key: Word; Shift: TShiftState);
+begin
+  if assigned(OnKeyUp) then OnKeyUp(Self,Key,Shift);
+end;
+
+procedure TAdComponent.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if assigned(OnMouseMove) then OnMouseMove(Self,Shift,X,Y);
+end;
+
+procedure TAdComponent.DoMouseEnter;
+begin
+  if enabled and assigned(OnMouseEnter) then OnMouseEnter(self);
+  CurrentCursor := Cursor;
+end;
+
+procedure TAdComponent.DoMouseLeave;
+begin
+  if enabled and assigned(OnMouseLeave) then OnMouseLeave(self);
+end;
+
+procedure TAdComponent.DoMouseMove(Shift: TShiftState; X, Y: Integer);
+begin
+  if assigned(OnMouseMove) then OnMouseMove(Self,Shift,X,Y);
+end;
+
+procedure TAdComponent.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if assigned(OnMouseUp) then OnMouseUp(Self,Button,Shift,X,Y);
+end;
+
+procedure TAdComponent.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+  if assigned(OnMouseWheel) then OnMouseWheel(self,shift,wheeldelta,mousepos,handled);
+end;
+
+function TAdComponent.GetDownRgn(AX, AY: integer): TAdDownRgn;
+var w,h:integer;
+begin
+  result := drNone;
+  w := round(Width);
+  h := round(Height);
+  if InRect(AX,AY,rect(0,0,w,h)) then
+  begin
+    result := drMiddle;
+    if InRect(AX,AY,rect(0,0,4,4)) then result := drLeftTop;
+    if InRect(AX,AY,rect(w-4,0,w,4)) then result := drRightTop;
+    if InRect(AX,AY,rect(0,h-4,4,h)) then result := drLeftBottom;
+    if InRect(AX,AY,rect(w-4,h-4,w,h)) then result := drRightBottom;
+  end;
+end;
+
+procedure TAdComponent.CheckMouseEnter(oldvalue: boolean);
+begin
+  if visible and not DesignMode then
+  begin
+    if oldvalue and (not FMouseOver) then
+    begin
+      DoMouseLeave;
+    end;
+    if (not oldvalue) and (FMouseOver) then
+    begin
+      DoMouseEnter;
+    end;
+  end;
+end;
+
+procedure TAdComponent.DesignSize(X,Y:integer);
+begin
+  if DesignMode and (FMouseDownIn <> drNone) and
+     (ClassType.ClassName <> 'TAdComponent') then
+  begin
+    if FMouseDownIn = drMiddle then
+    begin
+      FX := FX + (X-FOX);
+      FY := FY + (Y-FOY);
+    end;
+    if FMouseDownIn = drLeftTop then
+    begin
+      FX := FX + (X-FOX);
+      FY := FY + (Y-FOY);
+      FWidth := FWidth - (X-FOX);
+      FHeight := FHeight - (Y-FOY);
+    end;
+    if FMouseDownIn = drLeftBottom then
+    begin
+      FX := FX + (X-FOX);
+      FWidth := FWidth - (X-FOX);
+      FHeight := FHeight + (Y-FOY);
+    end;
+    if FMouseDownIn = drRightBottom then
+    begin
+      FWidth := FWidth + (X-FOX);
+      FHeight := FHeight + (Y-FOY);
+    end;
+    if FMouseDownIn = drRightTop then
+    begin
+      FY := FY + (Y-FOY);
+      FWidth := FWidth + (X-FOX);
+      FHeight := FHeight - (Y-FOY);
+    end;
+  end;
+  FOX := X;
+  FOY := Y;
+end;
 
 { TAdMouseCursor }
 
@@ -729,11 +1215,11 @@ end;
 constructor TAdGUI.Create(AParent: TAdDraw);
 begin
   inherited Create(nil);
-  AdDraw := AParent;
-  
+  AdDraw := AParent;   
   Skin := TAdSkin.Create(AdDraw);
   FMouse := TAdMouseLibrary.Create(AdDraw);
-  CurrentCursor := 'default'
+  CurrentCursor := 'default';
+  MousePreview := true;
 end;
 
 destructor TAdGUI.Destroy;
@@ -741,6 +1227,13 @@ begin
   Skin.Free;
   FMouse.Free;
   inherited;
+end;
+
+procedure TAdGUI.DoMouseMove(Shift: TShiftState; X, Y: Integer);
+begin
+  inherited;
+  FMouseX := X;
+  FMouseY := Y;
 end;
 
 procedure TAdGUI.SetCurrentCursor(Value: string);
@@ -751,10 +1244,16 @@ end;
 
 procedure TAdGUI.Update(TimeGap:double);
 begin
-  Cursors.Move(TimeGap);
-  Cursors.Draw;
+  Width := AdDraw.DisplayRect.Right;
+  Height := AdDraw.DisplayRect.Bottom;
+
   Move(TimeGap);
   Draw;
+
+  Cursors.X := FMouseX;
+  Cursors.Y := FMouseY;
+  Cursors.Move(TimeGap);
+  Cursors.Draw;
 end;
 
 initialization

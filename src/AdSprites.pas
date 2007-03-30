@@ -229,7 +229,7 @@ type
       property CollisionRect:TRect read FCollisionRect write FCollisionRect;
 
       //Creates an instance of TSprite
-      constructor Create(AParent:TSprite);override;
+      constructor Create(AParent:TAdDraw);
       //Destroyes the instance
       destructor Destroy;override;
       //Kills all sprites which want to be dead.
@@ -891,13 +891,14 @@ end;
 
 { TSpriteEngine }
 
-constructor TSpriteEngine.Create(AParent: TSprite);
+constructor TSpriteEngine.Create(AParent: TAdDraw);
 begin
   inherited Create(nil);
   FParent := nil;
   FEngine := Self;
-
   FDeadList := TList.Create;
+
+  Surface := AParent;
 end; 
 
 procedure TSpriteEngine.Dead;
