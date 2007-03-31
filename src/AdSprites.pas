@@ -992,10 +992,6 @@ begin
   begin
     AValue := AnimCount-1;
   end;
-  if AValue > AnimStop then
-  begin
-    AValue := AnimStop;
-  end;
   FAnimStart := AValue;
 end;
 
@@ -1004,10 +1000,6 @@ begin
   if Abs(AValue) >= AnimCount then
   begin
     AValue := AnimCount-1;
-  end;
-  if Abs(AValue) < AnimStart then
-  begin
-    AValue := AnimStart;
   end;
   FAnimStop := Abs(AValue);
 end;
