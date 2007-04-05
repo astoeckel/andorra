@@ -482,7 +482,7 @@ type
       property Texture:TAdTexture read FTexture write SetTexture;
       //Returns the count of the patterns.
       property PatternCount:integer read GetPatternCount;
-      //Here you can dye an image.
+      //Here you can set the fonts color
       property Color:TColor read FColor write FColor;
       //Name of the image in the imagelist.
       property Name:string read FName write FName;
@@ -2721,9 +2721,11 @@ end;
 procedure TAdFont.SetColor(AValue: TColor);
 var i:integer;
 begin
+  FColor := AValue;
   for i := 0 to FMeshList.Count - 1 do
   begin
     FMeshList[i].Color := AValue;
+    FMeshList[i].Restore;
   end;
 end;
 

@@ -25,14 +25,19 @@ Version 0.1.5 (Releases: BETA)
   Application side:
     - Improve SpriteEngine [DONE]
         
-Version 0.2 (Releases: BETA|STABLE)
+Version 0.2 (Releases: BETA)
   Plugin side:
     - Transform the view matrix to a 3D view [DONE]
+    - Draw lines [DONE]
   Application side:
     - Canvas [DONE]
     - GUI [In progress]
+    
+Version 0.2.5 (Releases: BETA|STABLE)
+  Application side:
     - Load 3D objects [50%]
     - TGA etc. texture loader and compressor
+    - Expand Newton-Unit
 
 Version 0.3
   Plugin side:    
@@ -41,7 +46,7 @@ Version 0.3
 
 Projects Beta State
 
-Planing in progress
+  Planing in progress
   
 Projects stable state
   

@@ -31,12 +31,49 @@ type
 
   TAdComponent = class;
 
+  TAdHint = class
+    private
+      FShowTime:single;
+      FWaitTime:single;
+      FX,FY:integer;
+      FText:string;
+      FShowedTime:single;
+      FColor:longint;
+
+      FAlpha:byte;
+      FCurrentAlpha:single;
+      FParent:TAdDraw;
+      FVisible:boolean;
+      FFadeTime:single;
+      FFadeIn,FFadeOut:boolean;
+      FTextColor:longint;
+      FBorderColor:longint;
+      procedure SetAlpha(Value:byte);
+    public
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;
+      procedure Show(MouseX,MouseY:integer; Text:string;Sender:TAdComponent);virtual;
+      procedure Hide;virtual;
+      procedure Draw;virtual;
+      procedure Move(TimeGap:double);virtual;
+      
+      property ShowTime:single read FShowTime write FShowTime;
+      property WaitTime:single read FWaitTime write FWaitTime;
+      property Color:longint read FColor write FColor;
+      property Alpha:byte read FAlpha write SetAlpha;
+      property Parent:TAdDraw read FParent;
+      property Visible:boolean read FVisible write FVisible;
+      property FadeTime:single read FFadeTime write FFadeTime;
+      property BorderColor:longint read FBordercolor write FBorderColor;
+      property TextColor:longint read FTextColor write FTextColor;
+  end;
+
   TAdComponents = class(TList)
-  private
-    procedure SetItem(Index:integer;AValue:TAdComponent);
-    function GetItem(Index:integer):TAdComponent;
-  public
-    property Items[index:integer]:TAdComponent read GetItem write SetItem; default;
+    private
+      procedure SetItem(Index:integer;AValue:TAdComponent);
+      function GetItem(Index:integer):TAdComponent;
+    public
+      property Items[index:integer]:TAdComponent read GetItem write SetItem; default;
   end;
 
   TAdComponent = class(TPersistent)
@@ -62,6 +99,7 @@ type
       FCurrentCursor:string;
 
       FMouseOver:boolean;
+      FMouseOverTime:single;
       FMouseDownIn:TAdDownRgn;
       FOX,FOY:integer;
 
@@ -76,13 +114,21 @@ type
       FOnKeyDown:TKeyEvent;
       FOnMouseEnter:TNotifyEvent;
       FOnMouseLeave:TNotifyEvent;
-      FOnMouseWheel:TMouseWheelEvent; 
+      FOnMouseWheel:TMouseWheelEvent;
+
+      FHint:string;
+      FShowHint:boolean;
+      FShowedHint:boolean;
+      FHintWnd:TAdHint;
+
+      FMouseX,FMouseY:integer;
 
       procedure SetSkin(Value:TAdSkin);
       procedure SetAdDraw(Value:TAdDraw);
       procedure SetDesignMode(Value:boolean);
       procedure SetName(Value:string);
       procedure SetFocus(Value:boolean);
+      procedure SetHintWnd(Value:TAdHint);
     protected
       function GetBoundsRect:TRect;
       function GetClientRect:TRect;
@@ -123,9 +169,15 @@ type
       property SubComponent:boolean read FSubComponent write FSubComponent;
 
       property MouseOver:boolean read FMouseOver write FMouseOver;
+      property MouseOverTime:single read FMouseOverTime;
       property OX:integer read FOX write FOX;
       property OY:integer read FOY write FOY;
       property MouseDownIn:TAdDownRgn read FMouseDownIn write FMouseDownIn;
+      
+      property ShowedHint:boolean read FShowedHint write FShowedHint;
+
+      property MouseX:integer read FMouseX;
+      property MouseY:integer read FMouseY;
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -142,6 +194,9 @@ type
       procedure KeyDown(Key: Word;Shift:TShiftState);
       procedure KeyUp(Key: Word;Shift:TShiftState);
 
+      function ClientToScreen(p:TPoint):TPoint;
+      function ScreenToClient(p:TPoint):TPoint;
+
       constructor Create(AParent:TAdComponent);
       destructor Destroy;override;
 
@@ -153,6 +208,7 @@ type
       property BoundsRect:TRect read GetBoundsRect;
       property ClientRect:TRect read GetClientRect;
       property CurrentCursor:string read FCurrentCursor write SetCurrentCursor;
+      property HintWnd:TAdHint read FHintWnd write SetHintWnd;
     published
       property Name:string read FName write SetName;
       property Cursor:string read FCursor write FCursor;
@@ -163,6 +219,9 @@ type
       property Alpha:byte read FAlpha write FAlpha;
       property Visible:boolean read FVisible write FVisible;
       property Enabled:boolean read FEnabled write FEnabled;
+
+      property Hint:string read FHint write FHint;
+      property ShowHint:boolean read FShowHint write FShowHint;
 
       property OnClick:TNotifyEvent read FOnClick write FOnClick;
       property OnDblClick:TNotifyEvent read FOnDblClick write FOnDblClick;
@@ -266,6 +325,8 @@ type
       property Cursors:TAdMouseLibrary read FMouse;
       property MouseX:integer read FMouseX;
       property MouseY:integer read FMouseY;
+
+      property HintWnd;
   end;
 
 
@@ -322,6 +383,7 @@ begin
     FParent.AddComponent(self);
     FEnabled := FParent.Enabled;
     FDesignMode := FParent.DesignMode;
+    FHintWnd := FParent.HintWnd;
     Skin := FParent.Skin;
   end;
 
@@ -359,7 +421,20 @@ end;
 
 procedure TAdComponent.DoMove(TimeGap:double);
 begin
-  //
+  if MouseOver then
+  begin
+    FMouseOverTime := FMouseOverTime + TimeGap;
+    if (FShowHint) and (FHintWnd <> nil) and (not FShowedHint) and
+       (FMouseOverTime > FHintWnd.FWaitTime) then
+    begin
+      FHintWnd.Show(MouseX + 16,MouseY + 16,FHint,self);
+      FShowedHint := true;
+    end;
+  end
+  else
+  begin
+    FMouseOverTime := 0;
+  end;
 end;
 
 procedure TAdComponent.Draw;
@@ -471,6 +546,17 @@ begin
   end;
 end;
 
+procedure TAdComponent.SetHintWnd(Value: TAdHint);
+var
+  i: Integer;
+begin
+  FHintWnd := Value;
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].HintWnd := FHintWnd;
+  end;
+end;
+
 function TAdComponent.GetFocusedComponent: TAdComponent;
 var
   i:integer;
@@ -566,6 +652,24 @@ begin
   end;
 end;
 
+function TAdComponent.ClientToScreen(p: TPoint): TPoint;
+begin
+  with result do
+  begin
+    x := p.X + ClientRect.Left;
+    y := p.Y + ClientRect.Top;
+  end;
+end;
+
+function TAdComponent.ScreenToClient(p: TPoint): TPoint;
+begin
+  with result do
+  begin
+    x := p.X - ClientRect.Left;
+    y := p.Y - ClientRect.Top;
+  end;
+end;
+
 procedure TAdComponent.DblClick(X, Y: integer);
 var
   clicked:boolean;
@@ -638,9 +742,12 @@ begin
   overcomp := nil;
   FMouseOver := false;
   DesignSize(X,Y);
+
   if (visible) and ((InRect(x,y,boundsrect)) or FMousePreview) then
   begin
     clicked := true;
+    FMouseX := X;
+    FMouseY := Y;
     for i := Components.Count-1 downto 0 do
     begin
       if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
@@ -864,6 +971,11 @@ end;
 procedure TAdComponent.DoMouseLeave;
 begin
   if enabled and assigned(OnMouseLeave) then OnMouseLeave(self);
+  if (FShowedHint) and (FHintWnd <> nil) then
+  begin
+    FHintWnd.Hide;
+    FShowedHint := false;
+  end;
 end;
 
 procedure TAdComponent.DoMouseMove(Shift: TShiftState; X, Y: Integer);
@@ -1220,12 +1332,16 @@ begin
   FMouse := TAdMouseLibrary.Create(AdDraw);
   CurrentCursor := 'default';
   MousePreview := true;
+
+  HintWnd := TAdHint.Create(AdDraw);
 end;
 
 destructor TAdGUI.Destroy;
 begin
   Skin.Free;
   FMouse.Free;
+  HintWnd.Free;
+  HintWnd := nil;
   inherited;
 end;
 
@@ -1250,10 +1366,131 @@ begin
   Move(TimeGap);
   Draw;
 
+  HintWnd.Move(TimeGap);
+  HintWnd.Draw;
+
+  AdDraw.Canvas.Release;
+
   Cursors.X := FMouseX;
   Cursors.Y := FMouseY;
   Cursors.Move(TimeGap);
   Cursors.Draw;
+
+end;
+
+{ TAdHint }
+
+constructor TAdHint.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+  FColor := $00AAAA11;
+  FTextColor := $00FFFFFF;
+  FBorderColor := $00FFFFFF;
+  FAlpha := 200;
+  FShowTime := 3;
+  FWaitTime := 0.2;
+  FVisible := false;
+  FX := 0;
+  FY := 0;
+  FText := '';
+  FCurrentAlpha := 0;
+  FAlpha := 220;
+  FFadeTime := 0.2;
+end;
+
+destructor TAdHint.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TAdHint.Draw;
+var Width,Height:integer;
+    tmp1:byte;
+    tmp2:longint;
+begin
+  if Visible then
+  begin
+    with FParent.Canvas do
+    begin
+      Width := Font.TextWidth(FText);
+      Height := Font.TextHeight(FText);
+      Pen.Style := apSolid;
+      Pen.Color := ad_ARGB(round(FCurrentAlpha),GetRValue(BorderColor),GetGValue(BorderColor),GetBValue(BorderColor));
+      Brush.Style := abSolid;
+      Brush.Color := ad_ARGB(round(FCurrentAlpha),GetRValue(Color),GetGValue(Color),GetBValue(Color));
+      Rectangle(FX,FY,FX+Width+4,FY+Height+4);
+
+      tmp1 := Font.Alpha;
+      tmp2 := Font.Color;
+      Font.Color := FTextColor;
+      Font.Alpha := round(FCurrentAlpha);
+//      Font.Restore;
+
+      Textout(FX+2,FY+2,FText);
+      Font.Alpha := tmp1;
+      Font.Color := tmp2;
+    end;
+  end;
+end;
+
+procedure TAdHint.Move(TimeGap: double);
+begin
+  if FVisible then
+  begin
+    FShowedTime := FShowedTime + TimeGap;
+    if FShowedTime > FShowTime then
+    begin
+      Hide;
+    end;
+    if FFadeIn then
+    begin
+      if FCurrentAlpha < FAlpha then
+      begin
+        FCurrentAlpha := FCurrentAlpha + (FAlpha * TimeGap / FadeTime);
+      end
+      else
+      begin
+        FFadeIn := false;
+      end;
+    end;
+    if FFadeOut then
+    begin
+      if FCurrentAlpha > 1 then
+      begin
+        FCurrentAlpha := FCurrentAlpha - (FAlpha * TimeGap / FadeTime);
+      end
+      else
+      begin
+        FFadeOut := false;
+        FVisible := false;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdHint.SetAlpha(Value: byte);
+begin
+  FAlpha := Value;
+end;
+
+procedure TAdHint.Show(MouseX, MouseY: integer; Text: string;
+  Sender: TAdComponent);
+begin
+  FVisible := true;
+  FX := MouseX;
+  FY := MouseY;
+  FText := Text;
+  FShowedTime := 0;
+  FFadeOut := false;
+  FFadeIn := true;
+  FCurrentAlpha := 0;
+end;
+
+procedure TAdHint.Hide;
+begin
+  FFadeOut := true;
+  FFadeIn := false;
 end;
 
 initialization

@@ -392,8 +392,7 @@ function Ad_RGB(r,g,b:byte):TAndorraColor;
 {Converts an AndorraColor into a string.}
 function AdColorToString(AColor:TAndorraColor):string;
 {Converts a string into an andorra color.}
-function StringToAdColor(AString:string):TAndorraColor;
-
+function StringToAdColor(AString:string):TAndorraColor;    
 {Converts a TAndorraColor into a TColor value.}
 function AdColorToColor(AAdColor:TAndorraColor):LongWord;
 
