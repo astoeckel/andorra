@@ -2721,11 +2721,14 @@ end;
 procedure TAdFont.SetColor(AValue: TColor);
 var i:integer;
 begin
-  FColor := AValue;
-  for i := 0 to FMeshList.Count - 1 do
+  if FColor <> AValue then
   begin
-    FMeshList[i].Color := AValue;
-    FMeshList[i].Restore;
+    FColor := AValue;
+    for i := 0 to FMeshList.Count - 1 do
+    begin
+      FMeshList[i].Color := AValue;
+      FMeshList[i].Restore;
+    end;
   end;
 end;
 
@@ -3235,7 +3238,8 @@ begin
     begin
       if (FCanvasObjects[i].LastUsed > 0) and
          (not FCanvasObjects[i].Persistent) and
-         (FCanvasObjects[i].Font = FCurBuffer.Font) then
+         (FCanvasObjects[i].Font = FCurBuffer.Font) and
+         (FCanvasObjects[i].Text = FCurBuffer.Text) then
       begin
         obj := FCanvasObjects[i];
         break;

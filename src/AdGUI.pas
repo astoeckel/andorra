@@ -312,6 +312,8 @@ type
     private
       FMouse:TAdMouseLibrary;
       FMouseX,FMouseY:integer;
+      FOwnHintWnd:boolean;
+      procedure SetHintWnd(Value:TAdHint);
     protected
       procedure SetCurrentCursor(Value:string);override;
 
@@ -326,7 +328,7 @@ type
       property MouseX:integer read FMouseX;
       property MouseY:integer read FMouseY;
 
-      property HintWnd;
+      property HintWnd write SetHintWnd;
   end;
 
 
@@ -1333,15 +1335,19 @@ begin
   CurrentCursor := 'default';
   MousePreview := true;
 
-  HintWnd := TAdHint.Create(AdDraw);
+  FOwnHintWnd := true;
+  FHintWnd := TAdHint.Create(AdDraw);
 end;
 
 destructor TAdGUI.Destroy;
 begin
   Skin.Free;
   FMouse.Free;
-  HintWnd.Free;
-  HintWnd := nil;
+  if FOwnHintWnd then
+  begin
+    HintWnd := nil;
+    FHintWnd.Free;
+  end;
   inherited;
 end;
 
@@ -1356,6 +1362,18 @@ procedure TAdGUI.SetCurrentCursor(Value: string);
 begin
   inherited;
   Cursors.CurrentCursor := Value;
+end;
+
+procedure TAdGUI.SetHintWnd(Value: TAdHint);
+begin
+  if FOwnHintWnd then
+  begin
+    FHintWnd.Free;
+    FOwnHintWnd := false;
+  end;
+  FHintWnd := Value;
+
+  inherited SetHintWnd(Value);
 end;
 
 procedure TAdGUI.Update(TimeGap:double);
@@ -1425,7 +1443,6 @@ begin
       tmp2 := Font.Color;
       Font.Color := FTextColor;
       Font.Alpha := round(FCurrentAlpha);
-//      Font.Restore;
 
       Textout(FX+2,FY+2,FText);
       Font.Alpha := tmp1;
@@ -1443,6 +1460,7 @@ begin
     begin
       Hide;
     end;
+
     if FFadeIn then
     begin
       if FCurrentAlpha < FAlpha then
@@ -1459,6 +1477,7 @@ begin
       if FCurrentAlpha > 1 then
       begin
         FCurrentAlpha := FCurrentAlpha - (FAlpha * TimeGap / FadeTime);
+        if FCurrentAlpha < 0 then FCurrentAlpha := 0;        
       end
       else
       begin
