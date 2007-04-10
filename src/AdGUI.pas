@@ -101,8 +101,8 @@ type
       FMouseOver:boolean;
       FMouseOverTime:single;
       FMouseDownIn:TAdDownRgn;
+      FDraging:boolean;
       FOX,FOY:integer;
-
 
       FOnMouseDown:TMouseEvent;
       FOnMouseUp:TMouseEvent;
@@ -123,12 +123,22 @@ type
 
       FMouseX,FMouseY:integer;
 
+      FFont:TAdFont;
+
+      FGridX,FGridY:integer;
+      FGrid:Boolean;
+
       procedure SetSkin(Value:TAdSkin);
       procedure SetAdDraw(Value:TAdDraw);
       procedure SetDesignMode(Value:boolean);
       procedure SetName(Value:string);
       procedure SetFocus(Value:boolean);
       procedure SetHintWnd(Value:TAdHint);
+      function GetFont:TAdFont;
+      procedure SetFont(Value:TAdFont);
+      procedure SetGridX(Value:integer);
+      procedure SetGridY(Value:integer);
+      procedure SetGrid(Value:boolean);
     protected
       function GetBoundsRect:TRect;
       function GetClientRect:TRect;
@@ -157,7 +167,9 @@ type
       procedure DesignSize(X,Y:integer);
       function GetDownRgn(AX,AY:integer):TAdDownRgn;      
       procedure CheckMouseEnter(oldvalue:boolean);
-      
+
+      procedure SetSpacer(ASkinItem:TAdSkinItem);
+
       property KeyPreview:boolean read FKeyPreview write FKeyPreview;
       property MousePreview:boolean read FMousePreview write FMousePreview;
       property SpacerTop:integer read FSpacerTop write FSpacerTop;
@@ -178,6 +190,7 @@ type
 
       property MouseX:integer read FMouseX;
       property MouseY:integer read FMouseY;
+      property Draging:boolean read FDraging write FDraging;
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -200,6 +213,13 @@ type
       constructor Create(AParent:TAdComponent);
       destructor Destroy;override;
 
+      procedure SaveToFile(AFile:string);
+      procedure LoadFromFile(AFile:string);
+      procedure SaveToStream(AStream:TStream);
+      procedure LoadFromStream(AStream:TStream);
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
+      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+
       property Skin:TAdSkin read FSkin write SetSkin;
       property Parent:TAdComponent read FParent write FParent;
       property Components:TAdComponents read FComponents;
@@ -209,6 +229,11 @@ type
       property ClientRect:TRect read GetClientRect;
       property CurrentCursor:string read FCurrentCursor write SetCurrentCursor;
       property HintWnd:TAdHint read FHintWnd write SetHintWnd;
+      property Font:TAdFont read GetFont write SetFont;
+
+      property GridX:integer read FGridY write SetGridY;
+      property GridY:integer read FGridX write SetGridX;
+      property Grid:boolean read FGrid write SetGrid;
     published
       property Name:string read FName write SetName;
       property Cursor:string read FCursor write FCursor;
@@ -318,7 +343,7 @@ type
       procedure SetCurrentCursor(Value:string);override;
 
       procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
-     public
+    public
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
 
@@ -331,19 +356,19 @@ type
       property HintWnd write SetHintWnd;
   end;
 
-
 type TAdComponentClass = class of TAdComponent;
 
-procedure RegisterComponent(AClass:TClass);
+procedure RegisterComponent(AClass:TClass;ACard:string);
 
 var
   RegisteredComponents:TStringList;
 
 implementation
 
-procedure RegisterComponent(AClass:TClass);
+procedure RegisterComponent(AClass:TClass;ACard:string);
 begin
   RegisteredComponents.Add(AClass.ClassName);
+  RegisteredComponents.Values[AClass.ClassName] := ACard;
   RegisterClass(TPersistentClass(AClass));
 end;
 
@@ -387,6 +412,7 @@ begin
     FDesignMode := FParent.DesignMode;
     FHintWnd := FParent.HintWnd;
     Skin := FParent.Skin;
+    FFont := FParent.Font;
   end;
 
   FAlpha := 255;
@@ -394,6 +420,10 @@ begin
   FVisible := true;
   FCursor := 'default';
   FCanGetFocus := true;
+
+  FGrid := true;
+  FGridX := 5;
+  FGridY := 5;
 end;
 
 destructor TAdComponent.Destroy;
@@ -416,9 +446,136 @@ begin
   Components.Add(AComponent);
 end;
 
-procedure TAdComponent.DoDraw;
+//Load/Save
+
+procedure TAdComponent.LoadFromFile(AFile: string);
+var XML:TJvSimpleXML;
 begin
-  //
+  XML := TJvSimpleXML.Create(nil);
+  XML.LoadFromFile(AFile);
+  LoadFromXML(XML.Root);
+  XML.Free;
+end;
+
+procedure TAdComponent.SaveToFile(AFile: string);
+var XML:TJvSimpleXML;
+begin
+  XML := TJvSimpleXML.Create(nil);
+  SaveToXML(XML.Root.Items);
+  XML.SaveToFile(AFile);
+  XML.Free;
+end;
+
+procedure TAdComponent.LoadFromStream(AStream: TStream);
+var XML:TJvSimpleXML;
+begin
+  XML := TJvSimpleXML.Create(nil);
+  XML.LoadFromStream(AStream);
+  XML.Free;
+end;
+
+procedure TAdComponent.SaveToStream(AStream: TStream);
+var XML:TJvSimpleXML;
+begin
+  XML := TJvSimpleXML.Create(nil);
+  XML.Free;
+end;
+
+procedure TAdComponent.LoadFromXML(aroot: TJvSimpleXMLElem);
+var
+  i:integer;
+  cref:TPersistentClass;
+begin
+  FName := aroot.Properties.Value('name','');
+  FAlpha := aroot.Properties.IntValue('alpha',255);
+  FCursor := aroot.Properties.Value('cursor','default');
+  FEnabled := aroot.Properties.BoolValue('enabled',true);
+  FVisible := aroot.Properties.BoolValue('visble',true);
+  FHint := aroot.Properties.Value('hint','');
+  FShowHint := aroot.Properties.BoolValue('showhint',false);
+  FWidth := aroot.Properties.IntValue('width',100);
+  FHeight := aroot.Properties.IntValue('height',100);
+  FX := aroot.Properties.IntValue('x',0);
+  FY := aroot.Properties.IntValue('y',0);
+
+  for i := 0 to aroot.Items.Count - 1 do
+  begin
+    cref := GetClass(aroot.Items[i].Name);
+    if cref <> nil then
+    begin
+      with TAdComponent(TAdComponentClass(cref).Create(self)) do
+      begin
+        LoadFromXML(aroot.Items[i]);
+      end;
+    end;
+  end;
+end;
+
+function TAdComponent.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+var
+  i: Integer;
+begin
+  result := aroot.Add(ClassName);
+
+  for i := 0 to Components.Count-1 do
+  begin
+    Components[i].SaveToXML(result.Items);
+  end;
+
+  with result.Properties do
+  begin
+    Add('name',FName);
+    Add('alpha',FAlpha);
+    Add('cursor',FCursor);
+    Add('enabled',FEnabled);
+    Add('height',round(FHeight));
+    Add('width',round(FWidth));
+    Add('hint',FHint);
+    Add('showhint',FShowHint);
+    Add('visible',FVisible);
+    Add('x',round(FX));
+    Add('y',round(FY));
+  end;
+end;
+
+procedure TAdComponent.DoDraw;
+var
+  r:TRect;
+  ax,ay:integer;
+begin
+  if FDesignMode then
+  begin
+    with AdDraw.Canvas do
+    begin
+      r := BoundsRect;
+      if Focused then
+      begin
+        Pen.Color := ad_argb(128,64,64,255);
+        Brush.Style := abClear;
+
+        Rectangle(r);
+
+        Brush.Color := ad_argb(64,64,64,255);
+        Rectangle(Bounds(r.Left,r.Top,4,4));
+        Rectangle(Bounds(r.Left,r.Bottom-4,4,4));
+        Rectangle(Bounds(r.Right-4,r.Top,4,4));
+        Rectangle(Bounds(r.Right-4,r.Bottom-4,4,4));
+      end;
+      if Grid then
+      begin
+        for ax := 0 to round(Width) div FGridX do
+        begin
+          for ay := 0 to round(Height) div FGridY do
+          begin
+            PlotPixel((r.Left div FGridX)*FGridX + ax*FGridX,
+                      (r.Top  div FGridY)*FGridY + ay*FGridY,
+                      ad_ARGB(64,128,128,128))
+          end;
+        end;
+      end;
+      if Grid or Focused then Release;
+    end;
+  end;
 end;
 
 procedure TAdComponent.DoMove(TimeGap:double);
@@ -484,8 +641,8 @@ begin
   rect := GetBoundsRect;
   result.Left := rect.Left + FSpacerLeft;
   result.Top := rect.Top + FSpacerTop;
-  result.Right := rect.Right + FSpacerRight;
-  result.Bottom := rect.Bottom + FSpacerBottom;
+  result.Right := rect.Right - FSpacerRight;
+  result.Bottom := rect.Bottom - FSpacerBottom;
 end;
 
 procedure TAdComponent.SetAdDraw(Value: TAdDraw);
@@ -545,6 +702,56 @@ begin
       Components[i].LooseFocus(self);
     end;
     FFocused := true;
+  end;
+end;
+
+function TAdComponent.GetFont: TAdFont;
+begin
+  result := FFont;
+  if result = nil then
+  begin
+    result := AdDraw.Canvas.Font;
+  end;
+end;
+
+procedure TAdComponent.SetFont(Value: TAdFont);
+var
+  i: Integer;
+begin
+  FFont := Value;
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].Font := FFont;
+  end;
+end;
+
+procedure TAdComponent.SetGrid(Value: boolean);
+var i:integer;
+begin
+  FGrid := Value;
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].Grid := Value;
+  end;
+end;
+
+procedure TAdComponent.SetGridX(Value: integer);
+var i:integer;
+begin
+  FGridX := Value;
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].GridX := Value;
+  end;
+end;
+
+procedure TAdComponent.SetGridY(Value: integer);
+var i:integer;
+begin
+  FGridY := Value;
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].GridY := Value;
   end;
 end;
 
@@ -615,6 +822,21 @@ begin
   LoadSkinItem;
 end;
 
+procedure TAdComponent.SetSpacer(ASkinItem: TAdSkinItem);
+var i:integer;
+begin
+  for i := 0 to ASkinItem.Elements.Count-1 do
+  begin
+    if ASkinItem.Elements.Items[i].ClientRect then
+    begin
+      SpacerLeft := ASkinItem.Elements[i].X1;
+      SpacerTop := ASkinItem.Elements[i].Y1;
+      SpacerRight := ASkinItem.BaseWidth - ASkinItem.Elements[i].X2;
+      SpacerBottom := ASkinItem.BaseHeight - ASkinItem.Elements[i].Y2;
+    end;
+  end;
+end;
+
 procedure TAdComponent.LoadSkinItem;
 begin
   //
@@ -644,7 +866,7 @@ begin
     begin
       if not DesignMode then
       begin
-        DoDblClick;
+        DoClick;
       end
       else
       begin
@@ -658,8 +880,8 @@ function TAdComponent.ClientToScreen(p: TPoint): TPoint;
 begin
   with result do
   begin
-    x := p.X + ClientRect.Left;
-    y := p.Y + ClientRect.Top;
+    x := p.X + BoundsRect.Left;
+    y := p.Y + BoundsRect.Top;
   end;
 end;
 
@@ -667,8 +889,8 @@ function TAdComponent.ScreenToClient(p: TPoint): TPoint;
 begin
   with result do
   begin
-    x := p.X - ClientRect.Left;
-    y := p.Y - ClientRect.Top;
+    x := p.X - BoundsRect.Left;
+    y := p.Y - BoundsRect.Top;
   end;
 end;
 
@@ -729,6 +951,7 @@ begin
       else
       begin
         MouseDownIn := GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top);
+        FDraging := true;
       end;
     end;
   end;
@@ -752,13 +975,16 @@ begin
     FMouseY := Y;
     for i := Components.Count-1 downto 0 do
     begin
-      if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
+      if Components[i].Visible and (InRect(x,y,Components[i].BoundsRect)) then
       begin
         Components[i].MouseMove(Shift,X,Y);
         clicked := false;
         FMouseOver := false;
         overcomp := Components[i];
-        break;
+        if overcomp.FDraging then
+        begin
+          break;
+        end;
       end
       else
       begin
@@ -785,27 +1011,6 @@ begin
             Components[i].CheckMouseEnter(true);
           end;
         end;
-      end
-      else
-      begin
-        if not Focused then
-        begin
-          AdDraw.Parent.Cursor := crDefault;
-        end
-        else
-        begin
-          if ClassType.ClassName <> 'TDXComponent' then
-          begin
-            case GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top) of
-              drNone:AdDraw.Parent.Cursor := crDefault;
-              drMiddle:AdDraw.Parent.Cursor := crSizeAll;
-              drLeftTop:AdDraw.Parent.Cursor := crSizeNWSE;
-              drLeftBottom:AdDraw.Parent.Cursor := crSizeNESW;
-              drRightBottom:AdDraw.Parent.Cursor := crSizeNWSE;
-              drRightTop:AdDraw.Parent.Cursor := crSizeNESW;
-            end;
-          end;
-        end;
       end;
     end
     else
@@ -830,6 +1035,7 @@ procedure TAdComponent.MouseUp(Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer);
 var clicked:boolean;
     i:integer;
+    overcomp:TAdComponent;
 begin
   if visible and InRect(x,y,boundsrect) then
   begin
@@ -839,8 +1045,11 @@ begin
       if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
       begin
         clicked := false;
-        Components[i].MouseUp(Button, Shift,X,Y);
-        break;
+        overcomp := Components[i];
+        if overcomp.FDraging then
+        begin
+          break;
+        end;
       end
       else
       begin
@@ -850,14 +1059,23 @@ begin
         end;
       end;
     end;
-    if clicked and enabled then
+    if clicked then
     begin
-      if not DesignMode then DoMouseUp(Button, Shift,X,Y);
+      if (not DesignMode) and Enabled then
+      begin
+        DoMouseUp(Button, Shift, X, Y);
+      end;
+    end
+    else
+    begin
+      overcomp.MouseUp(Button, Shift, X, Y);
+      overcomp.FDraging := false;
     end;
   end;
   if DesignMode then
   begin
     MouseDownIn := drNone;
+    FDraging := false;
   end;
 end;
 
@@ -1029,17 +1247,47 @@ begin
 end;
 
 procedure TAdComponent.DesignSize(X,Y:integer);
-begin
-  if DesignMode and (FMouseDownIn <> drNone) and
-     (ClassType.ClassName <> 'TAdComponent') then
+var gx,gy:integer;
+  procedure SnapLeftTop;
   begin
+    if (round(FX) mod gx <> 0) or (round(FY) mod gy <> 0) then
+    begin
+      FX := round(FX) div gx * gx;
+      FY := round(FY) div gy * gy;
+    end;
+  end;
+  procedure SnapRightBottom;
+  begin
+    if (round(FWidth) mod gx <> 0) or (round(FHeight) mod gy <> 0) then
+    begin
+      FWidth := round(FWidth) div gx * gx;
+      FHeight := round(FHeight) div gy * gy;
+    end;
+  end;
+begin
+  if DesignMode and (FMouseDownIn <> drNone) then
+  begin
+    if not FGrid then
+    begin
+      gx := 1;
+      gy := 1;
+    end
+    else
+    begin
+      gx := FGridX;
+      gy := FGridY;
+    end;
+    X := X div gx * gx;
+    Y := Y div gy * gy;
     if FMouseDownIn = drMiddle then
     begin
-      FX := FX + (X-FOX);
-      FY := FY + (Y-FOY);
+      SnapLeftTop;
+      FX := FX + X-FOX;
+      FY := FY + Y-FOY;
     end;
     if FMouseDownIn = drLeftTop then
     begin
+      SnapLeftTop;
       FX := FX + (X-FOX);
       FY := FY + (Y-FOY);
       FWidth := FWidth - (X-FOX);
@@ -1047,17 +1295,20 @@ begin
     end;
     if FMouseDownIn = drLeftBottom then
     begin
+      SnapRightBottom;
       FX := FX + (X-FOX);
       FWidth := FWidth - (X-FOX);
       FHeight := FHeight + (Y-FOY);
     end;
     if FMouseDownIn = drRightBottom then
     begin
+      SnapRightBottom;
       FWidth := FWidth + (X-FOX);
       FHeight := FHeight + (Y-FOY);
     end;
     if FMouseDownIn = drRightTop then
     begin
+      SnapRightBottom;
       FY := FY + (Y-FOY);
       FWidth := FWidth + (X-FOX);
       FHeight := FHeight - (Y-FOY);
@@ -1378,6 +1629,8 @@ end;
 
 procedure TAdGUI.Update(TimeGap:double);
 begin
+  X := 0;
+  Y := 0;
   Width := AdDraw.DisplayRect.Right;
   Height := AdDraw.DisplayRect.Bottom;
 
@@ -1514,7 +1767,8 @@ end;
 
 initialization
   RegisteredComponents := TStringList.Create;
-  RegisterComponent(TAdComponent);
+  RegisterComponent(TAdComponent,'');
+  RegisterComponent(TAdGUI,'');
 
 finalization
   RegisteredComponents.Free;

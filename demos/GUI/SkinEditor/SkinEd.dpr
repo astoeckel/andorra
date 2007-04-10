@@ -2,7 +2,8 @@ program SkinEd;
 
 uses
   Forms,
-  MainEd in 'MainEd.pas' {MainDlg};
+  MainEd in 'MainEd.pas' {MainDlg},
+  CompDlg in 'CompDlg.pas' {Compressors};
 
 {$R *.res}
 

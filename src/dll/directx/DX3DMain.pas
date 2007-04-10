@@ -13,7 +13,7 @@ unit DX3DMain;
 
 interface
 
-uses d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils;
+uses d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils, Dialogs;
 
 type
   TDXApplication = class(TAd2DApplication)
@@ -21,6 +21,7 @@ type
       FLights:array of Boolean;
       FLastTexture:TAd2DTexture;
       FCurrentLights:integer;
+      FPresent:TD3DPresentParameters;
     protected
       function GetFreeLight:integer;
       procedure ReleaseLight(alight:integer);
@@ -43,6 +44,8 @@ type
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
+
+      procedure Resize(AWidth,AHeight:integer);override;
 
       procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
@@ -258,6 +261,8 @@ begin
     end;
     WriteLog(ltInfo,'Try to initialize the device.');
 
+    FPresent := d3dpp;
+
     //Create device
     hr := Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype, AWnd, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
@@ -326,6 +331,13 @@ begin
   begin
     SetLength(FLights,high(FLights));
   end;
+end;
+
+procedure TDXApplication.Resize(AWidth, AHeight: integer);
+begin
+  FPresent.BackBufferWidth := AWidth;
+  FPresent.BackBufferHeight := AHeight;
+//  Direct3dDevice9.Reset(FPresent);
 end;
 
 procedure TDXApplication.Finalize;

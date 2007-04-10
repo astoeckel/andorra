@@ -248,6 +248,9 @@ type
       {Returns the current view and projection matrix}
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);virtual;abstract;
 
+      {Resize the viewport}
+      procedure Resize(AWidth,AHeight:integer);virtual;abstract;
+
       {Set the texture filter for better picture quality}
       procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);virtual;abstract;
 

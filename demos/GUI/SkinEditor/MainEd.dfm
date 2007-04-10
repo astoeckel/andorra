@@ -35,7 +35,6 @@ object MainDlg: TMainDlg
     BevelOuter = bvNone
     BorderWidth = 5
     TabOrder = 0
-    ExplicitHeight = 571
     object Splitter2: TSplitter
       Left = 5
       Top = 198
@@ -57,8 +56,6 @@ object MainDlg: TMainDlg
       Align = alTop
       Caption = 'Menu:'
       TabOrder = 0
-      ExplicitLeft = 4
-      ExplicitTop = 2
       object Panel3: TPanel
         Left = 2
         Top = 15
@@ -265,7 +262,6 @@ object MainDlg: TMainDlg
       Align = alClient
       Caption = 'Items'
       TabOrder = 1
-      ExplicitHeight = 365
       object Panel2: TPanel
         Left = 2
         Top = 15
@@ -275,7 +271,6 @@ object MainDlg: TMainDlg
         BevelOuter = bvNone
         BorderWidth = 3
         TabOrder = 0
-        ExplicitHeight = 307
         object ListBox1: TListBox
           Left = 3
           Top = 3
@@ -285,7 +280,6 @@ object MainDlg: TMainDlg
           ItemHeight = 13
           TabOrder = 0
           OnClick = ListBox1Click
-          ExplicitHeight = 301
         end
       end
       object Panel7: TPanel
@@ -296,7 +290,6 @@ object MainDlg: TMainDlg
         Align = alBottom
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitTop = 322
         object Button5: TSpeedButton
           Left = 3
           Top = 6
@@ -380,8 +373,6 @@ object MainDlg: TMainDlg
     BevelOuter = bvNone
     BorderWidth = 5
     TabOrder = 1
-    ExplicitLeft = 205
-    ExplicitTop = 11
     object Label1: TLabel
       Left = 5
       Top = 5
@@ -426,7 +417,6 @@ object MainDlg: TMainDlg
       BevelOuter = bvNone
       BevelWidth = 2
       TabOrder = 0
-      ExplicitHeight = 289
       object Panel8: TPanel
         Left = 0
         Top = 0
@@ -435,7 +425,6 @@ object MainDlg: TMainDlg
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 0
-        ExplicitHeight = 289
         object Splitter3: TSplitter
           Left = 226
           Top = 0
@@ -455,26 +444,25 @@ object MainDlg: TMainDlg
           Align = alRight
           Caption = 'Tool-Box:'
           TabOrder = 0
-          ExplicitHeight = 289
           object ScrollBox1: TScrollBox
             Left = 2
             Top = 15
             Width = 202
             Height = 292
+            VertScrollBar.Position = 51
             Align = alClient
             BevelInner = bvNone
             BevelOuter = bvNone
             BorderStyle = bsNone
             TabOrder = 0
-            ExplicitLeft = 1
-            ExplicitTop = 14
-            ExplicitHeight = 272
+            ExplicitLeft = -6
+            ExplicitTop = 16
             DesignSize = (
               185
               292)
             object Button9: TSpeedButton
               Left = 4
-              Top = 3
+              Top = -48
               Width = 194
               Height = 25
               Anchors = [akLeft, akTop, akRight]
@@ -510,7 +498,7 @@ object MainDlg: TMainDlg
             end
             object Button10: TSpeedButton
               Left = 3
-              Top = 34
+              Top = -17
               Width = 194
               Height = 25
               Anchors = [akLeft, akTop, akRight]
@@ -547,7 +535,7 @@ object MainDlg: TMainDlg
             end
             object GroupBox7: TGroupBox
               Left = 4
-              Top = 65
+              Top = 14
               Width = 194
               Height = 104
               Anchors = [akLeft, akTop, akRight]
@@ -592,9 +580,9 @@ object MainDlg: TMainDlg
             end
             object GroupBox8: TGroupBox
               Left = 4
-              Top = 172
+              Top = 121
               Width = 194
-              Height = 117
+              Height = 133
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Position:'
               TabOrder = 0
@@ -662,10 +650,19 @@ object MainDlg: TMainDlg
                 Text = '0'
                 OnChange = Edit1Change
               end
+              object CheckBox5: TCheckBox
+                Left = 16
+                Top = 113
+                Width = 121
+                Height = 17
+                Caption = 'Use as clientrect'
+                TabOrder = 4
+                OnClick = CheckBox5Click
+              end
             end
             object GroupBox9: TGroupBox
               Left = 4
-              Top = 295
+              Top = 260
               Width = 194
               Height = 286
               Anchors = [akLeft, akTop, akRight]
@@ -812,7 +809,6 @@ object MainDlg: TMainDlg
           Color = clBtnFace
           ParentColor = False
           TabOrder = 1
-          ExplicitHeight = 289
           object Panel9: TPanel
             Left = 2
             Top = 15
@@ -822,7 +818,6 @@ object MainDlg: TMainDlg
             BevelOuter = bvNone
             BorderWidth = 5
             TabOrder = 0
-            ExplicitHeight = 272
             object Panel10: TPanel
               Left = 5
               Top = 5
@@ -835,8 +830,6 @@ object MainDlg: TMainDlg
               OnMouseMove = Panel10MouseMove
               OnMouseUp = Panel10MouseUp
               OnResize = Panel10Resize
-              ExplicitLeft = 6
-              ExplicitTop = 11
             end
           end
         end
@@ -885,9 +878,6 @@ object MainDlg: TMainDlg
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 1
-          ExplicitLeft = 2
-          ExplicitWidth = 429
-          ExplicitHeight = 305
           object Button7: TSpeedButton
             Left = 3
             Top = 5
@@ -1011,6 +1001,8 @@ object MainDlg: TMainDlg
           Align = alLeft
           BevelOuter = bvNone
           TabOrder = 1
+          ExplicitLeft = 125
+          ExplicitTop = 3
           DesignSize = (
             107
             122)
@@ -1062,6 +1054,16 @@ object MainDlg: TMainDlg
             OnClick = Button4Click
             ExplicitWidth = 87
           end
+          object Button20: TButton
+            Left = 3
+            Top = 95
+            Width = 101
+            Height = 25
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Set Compressor...'
+            TabOrder = 0
+            OnClick = Button20Click
+          end
         end
         object Panel12: TPanel
           Left = 236
@@ -1072,8 +1074,6 @@ object MainDlg: TMainDlg
           BevelOuter = bvNone
           BorderWidth = 2
           TabOrder = 2
-          ExplicitLeft = 222
-          ExplicitWidth = 209
           object Image2: TImage
             Left = 2
             Top = 2
@@ -1099,7 +1099,6 @@ object MainDlg: TMainDlg
     Height = 19
     Panels = <>
     SimplePanel = True
-    ExplicitTop = 571
   end
   object XPManifest1: TXPManifest
     Left = 120

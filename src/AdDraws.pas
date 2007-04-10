@@ -258,6 +258,17 @@ type
   //An error raised if the compressor used isn't found.
   ENoCompressor = class(ELoad);
 
+  {A compressor which doesn't compress}
+  TBMPCompressor = class(TCompressor)
+    public
+      //Returns the initial letters of this compressor. Will be calles without creating the object!!!
+      function GetInitial:TInitialLetters;override;
+      //Writes the bitmap into a stream
+      procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
+      //Reads the bitmap from the stream
+      procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
+  end;
+
   {The standard compressor. The data will be compressed with the "Huffman"
   Algorithm. Uses an Huffman-Algorithm written by Marc Schmitz. Available on http://www.delphipraxis.net/topic51522_huffman+algorithmus.html&highlight=huffman}
   THAICompressor = class(TCompressor)
@@ -629,12 +640,17 @@ type
 
   //Represents the canvas pen
   TAdPen = class
+    private
+      FWidth:integer;
+      FStyle:TAdPenStyle;
+      FColor:TAndorraColor;
+      procedure SetColor(Value:TAndorraColor);
     public
-      Width:integer;
-      Style:TAdPenStyle;
-      Color:TAndorraColor;
       constructor Create;
       procedure Assign(APen:TAdPen);
+      property Width:integer read FWidth write FWidth;
+      property Style:TAdPenStyle read FStyle write FStyle;
+      property Color:TAndorraColor read FColor write SetColor;
   end;
 
   //Represents the brush style
@@ -642,12 +658,18 @@ type
 
   //Represents the canvas brush
   TAdBrush = class
+    private
+      FColor:TAndorraColor;
+      FGradientColor:TAndorraColor;
+      FStyle:TAdBrushStyle;
+      procedure SetColor(Value:TAndorraColor);
+      procedure SetGradientColor(Value:TAndorraColor);
     public
-      Style:TAdBrushStyle;
-      Color:TAndorraColor;
-      GradientColor:TAndorraColor;
       constructor Create;
       procedure Assign(ABrush:TAdBrush);
+      property Color:TAndorraColor read FColor write SetColor;
+      property GradientColor:TAndorraColor read FGradientColor write SetColor;
+      property Style:TAdBrushStyle read FStyle write FStyle;
   end;
 
   //0 - - 1
@@ -2804,32 +2826,50 @@ end;
 
 procedure TAdPen.Assign(APen: TAdPen);
 begin
-  Width := APen.Width;
-  Style := APen.Style;
-  Color := APen.Color;
+  FWidth := APen.Width;
+  FStyle := APen.Style;
+  FColor := APen.Color;
 end;
 
 constructor TAdPen.Create;
 begin
   inherited Create;
-  Width := 1;
-  Style := apSolid;
-  Color := Ad_ARGB(255,255,255,255);
+  FWidth := 1;
+  FStyle := apSolid;
+  FColor := Ad_ARGB(255,255,255,255);
+end;
+
+procedure TAdPen.SetColor(Value: TAndorraColor);
+begin
+  FColor := Value;
+  FStyle := apSolid;
 end;
 
 { TAdBrush }
 
 procedure TAdBrush.Assign(ABrush: TAdBrush);
 begin
-  Color := ABrush.Color;
-  Style := ABrush.Style;
+  FColor := ABrush.Color;
+  FStyle := ABrush.Style;
 end;
 
 constructor TAdBrush.Create;
 begin
   inherited Create;
-  Color := Ad_ARGB(255,255,255,255);
+  FColor := Ad_ARGB(255,255,255,255);
+  FStyle := abSolid;
+end;
+
+procedure TAdBrush.SetColor(Value: TAndorraColor);
+begin
+  FColor := Value;
   Style := abSolid;
+end;
+
+procedure TAdBrush.SetGradientColor(Value: TAndorraColor);
+begin
+  FGradientColor := Value;
+  FStyle := abGradientHorizontal;
 end;
 
 { TAdCanvasObjectList }
@@ -3313,6 +3353,10 @@ begin
           if not (Persistent and (not FDrawPersistent)) then
           begin
             Buffer.Draw(BlendMode,FCanvasObjects[i].Typ);
+            if not Persistent then
+            begin
+              LastUsed := LastUsed + 1;
+            end;
           end;
         end
         else
@@ -3342,9 +3386,27 @@ begin
   inherited;
 end;
 
+{ TBMPCompressor }
+
+function TBMPCompressor.GetInitial: TInitialLetters;
+begin
+  result := #5+'BMP'
+end;
+
+procedure TBMPCompressor.Read(AStream: TStream; ABmp: TAdBitmap);
+begin
+  ABmp.LoadFromStream(AStream);
+end;
+
+procedure TBMPCompressor.Write(AStream: TStream; ABmp: TAdBitmap);
+begin
+  ABmp.SaveToStream(AStream);
+end;
+
 initialization
   RegisteredCompressors := TStringList.Create;
   RegisteredFormats := TStringList.Create;
+  RegisterCompressor(TBMPCompressor);
   RegisterCompressor(THAICompressor);
   RegisterFormat(TSimpleFormat);
 

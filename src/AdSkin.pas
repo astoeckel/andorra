@@ -31,6 +31,7 @@ type
       X1,X2,Y1,Y2:integer;
       ImgSrcX1,ImgSrcX2,ImgSrcY1,ImgSrcY2:integer;
       Selected:boolean;
+      ClientRect:boolean;
       Images:array of integer;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
@@ -532,6 +533,7 @@ begin
   inherited Create;
   Anchors := [aaLeft,aaTop];
   Typ := dtStretch;
+  ClientRect := false;
 end;
 
 destructor TAdSkinElem.Destroy;
@@ -552,6 +554,7 @@ begin
   imgsrcy1 := aroot.Properties.IntValue('imgsrcy1',0);
   imgsrcx2 := aroot.Properties.IntValue('imgsrcx2',0);
   imgsrcy2 := aroot.Properties.IntValue('imgsrcy2',0);
+  clientrect := aroot.Properties.BoolValue('clientrect',false);
 
   s := lowercase(aroot.Properties.Value('typ','dtStretch'));
   if s = 'dtwrap' then typ := dtWrap;
@@ -586,6 +589,8 @@ begin
   result.Properties.Add('imgsrcy1',imgsrcy1);
   result.Properties.Add('imgsrcx2',imgsrcx2);
   result.Properties.Add('imgsrcy2',imgsrcy2);
+  result.Properties.Add('clientrect',clientrect);
+  
   case typ of
     dtWrap: result.Properties.Add('typ','dtWrap');
     dtStretch: result.Properties.Add('typ','dtStretch');

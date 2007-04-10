@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, Menus, XPMan, ComCtrls, Tabs, AdSkin, AdDraws,
-  AdClasses, ExtDlgs, AdPng, Buttons;
+  AdClasses, ExtDlgs, AdPng, Buttons, CompDlg;
 
 type
   TRHandleTyp = (rhLT,rhRT,rhLB,rhRB);
@@ -112,6 +112,8 @@ type
     SpeedButton5: TSpeedButton;
     SaveDialog1: TSaveDialog;
     OpenDialog1: TOpenDialog;
+    CheckBox5: TCheckBox;
+    Button20: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure Panel10Resize(Sender: TObject);
@@ -145,6 +147,8 @@ type
     procedure SpeedButton2Click(Sender: TObject);
     procedure SpeedButton5Click(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
+    procedure CheckBox5Click(Sender: TObject);
+    procedure Button20Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -290,6 +294,22 @@ begin
   end;
 end;
 
+procedure TMainDlg.Button20Click(Sender: TObject);
+var dlg:TCompressors;
+    i:integer;
+begin
+  dlg := TCompressors.Create(self);
+  if dlg.ShowModal = mrOk then
+  begin
+    for i := 0 to AdSkin.Count-1 do
+    begin
+      AdSkin[i].Images.Compressor :=
+        TCompressorClass(GetClass(dlg.ListBox1.Items[dlg.ListBox1.ItemIndex]));
+    end;
+  end;
+  dlg.Free;
+end;
+
 procedure TMainDlg.Button2Click(Sender: TObject);
 begin
   AdSkin.SaveToFile('test.xml');
@@ -394,6 +414,17 @@ begin
       SelElem.Anchors := SelElem.Anchors + [aaBottom];
     end;
   end;
+end;
+
+procedure TMainDlg.CheckBox5Click(Sender: TObject);
+var
+  i:integer;
+begin
+  for i := 0 to SelItem.Elements.Count - 1 do
+  begin
+    SelItem.Elements[i].ClientRect := false;
+  end;
+  SelElem.ClientRect := true;
 end;
 
 procedure TMainDlg.ComboBox1Change(Sender: TObject);
@@ -932,6 +963,7 @@ begin
     CheckBox2.Checked := aaRight in SelElem.Anchors;
     CheckBox3.Checked := aaTop in SelElem.Anchors;
     CheckBox4.Checked := aaBottom in SelElem.Anchors;
+    CheckBox5.Checked := SelElem.ClientRect;
     Edit1.Text := IntToStr(Round(SelElem.X1));
     Edit2.Text := IntToStr(Round(SelElem.Y1));
     Edit3.Text := IntToStr(Round(SelElem.X2));
