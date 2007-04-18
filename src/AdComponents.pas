@@ -15,7 +15,6 @@ type
       FSkinItem:TAdSkinItem;
       FAlignment:TAdAlignment;
       FTextPos:TAdTextPos;
-      procedure SetCaption(const Value: string);
     protected
       procedure LoadSkinItem;override;
       procedure DoDraw;override;
@@ -68,6 +67,10 @@ begin
     FSkinItem.Draw(0,rect.Left,rect.Top,round(Width),round(Height),Alpha);
 
     rect := ClientRect;
+
+    ax := 0;
+    ay := 0;
+
     if FCaption <> '' then
     begin
       case FAlignment of
@@ -115,11 +118,6 @@ begin
     Add('alignment',ord(FAlignment));
     Add('caption',FCaption);
   end;
-end;
-
-procedure TAdPanel.SetCaption(const Value: string);
-begin
-  FCaption := Value;
 end;
 
 { TAdButton }
@@ -195,6 +193,7 @@ end;
 procedure TAdButton.LoadSkinItem;
 begin
   FSkinItem := Skin.ItemNamed['button'];
+  SetSpacer(FSkinItem);
   GetStateNr;
 end;
 

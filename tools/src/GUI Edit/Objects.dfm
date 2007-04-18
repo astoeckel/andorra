@@ -1,0 +1,31 @@
+object ObjectsDlg: TObjectsDlg
+  Left = 0
+  Top = 0
+  BorderStyle = bsSizeToolWin
+  Caption = 'Objectinspector'
+  ClientHeight = 383
+  ClientWidth = 240
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  OldCreateOrder = False
+  ScreenSnap = True
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  PixelsPerInch = 96
+  TextHeight = 13
+  object ComboBox1: TComboBox
+    Left = 0
+    Top = 0
+    Width = 240
+    Height = 21
+    Align = alTop
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 0
+    OnChange = ComboBox1Change
+  end
+end

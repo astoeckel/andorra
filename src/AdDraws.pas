@@ -668,7 +668,7 @@ type
       constructor Create;
       procedure Assign(ABrush:TAdBrush);
       property Color:TAndorraColor read FColor write SetColor;
-      property GradientColor:TAndorraColor read FGradientColor write SetColor;
+      property GradientColor:TAndorraColor read FGradientColor write SetGradientColor;
       property Style:TAdBrushStyle read FStyle write FStyle;
   end;
 

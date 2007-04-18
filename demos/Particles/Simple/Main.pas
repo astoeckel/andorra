@@ -78,6 +78,7 @@ begin
     PartSys.CreateParticles(1,TAdParticle,0,0);
     PartSys.Move(AdPerCounter.TimeGap / 1000);
     PartSys.Draw(AdDraw1.DisplayRect.Right / 2, AdDraw1.DisplayRect.Bottom / 2);
+    PartSys.Dead;
     AdDraw1.EndScene;
     AdDraw1.Flip;
 

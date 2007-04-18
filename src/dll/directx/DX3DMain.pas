@@ -6,14 +6,14 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: DX3DMain.pas
-* Comment: The Direct 3D DLL unit 
+* Comment: The Direct 3D DLL unit
 }
 
 unit DX3DMain;
 
 interface
 
-uses d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math, SysUtils, Dialogs;
+uses SysUtils, d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math;
 
 type
   TDXApplication = class(TAd2DApplication)
@@ -650,9 +650,9 @@ begin
     Vertices[i].position.x := FVertices[i].Position.x;
     Vertices[i].position.y := FVertices[i].Position.y;
     Vertices[i].position.z := FVertices[i].Position.z;
-    Vertices[i].normale.x := FVertices[i].Position.x;
-    Vertices[i].normale.y := FVertices[i].Position.y;
-    Vertices[i].normale.z := FVertices[i].Position.z;
+    Vertices[i].normale.x := FVertices[i].Normal.x;
+    Vertices[i].normale.y := FVertices[i].Normal.y;
+    Vertices[i].normale.z := FVertices[i].Normal.z;
     Vertices[i].diffuse := D3DCOLOR_ARGB(FVertices[i].Color.a,FVertices[i].Color.r,
       FVertices[i].Color.g,FVertices[i].Color.b);
     Vertices[i].textur1.x := FVertices[i].Texture.x;

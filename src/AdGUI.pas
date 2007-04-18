@@ -51,7 +51,7 @@ type
       procedure SetAlpha(Value:byte);
     public
       constructor Create(AParent:TAdDraw);
-      destructor Destroy;
+      destructor Destroy; override;
       procedure Show(MouseX,MouseY:integer; Text:string;Sender:TAdComponent);virtual;
       procedure Hide;virtual;
       procedure Draw;virtual;
@@ -128,6 +128,11 @@ type
       FGridX,FGridY:integer;
       FGrid:Boolean;
 
+      FMinWidth:integer;
+      FMinHeight:integer;
+      FMaxWidth:integer;
+      FMaxHeight:integer;
+
       procedure SetSkin(Value:TAdSkin);
       procedure SetAdDraw(Value:TAdDraw);
       procedure SetDesignMode(Value:boolean);
@@ -139,13 +144,14 @@ type
       procedure SetGridX(Value:integer);
       procedure SetGridY(Value:integer);
       procedure SetGrid(Value:boolean);
+      procedure SetWidth(Value:single);
+      procedure SetHeight(Value:single);
     protected
       function GetBoundsRect:TRect;
       function GetClientRect:TRect;
       procedure DoDraw;virtual;
       procedure DoMove(TimeGap:double);virtual;
 
-      procedure SetFocused;
       procedure LooseFocus(Sender:TAdComponent);
       function GetFocusedComponent:TAdComponent;
       
@@ -191,6 +197,11 @@ type
       property MouseX:integer read FMouseX;
       property MouseY:integer read FMouseY;
       property Draging:boolean read FDraging write FDraging;
+
+      property MinWidth:integer read FMinWidth write FMinWidth;
+      property MaxWidth:integer read FMaxWidth write FMaxWidth;
+      property MinHeight:integer read FMinHeight write FMinHeight;
+      property MaxHeight:integer read FMaxHeight write FMaxHeight;
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -220,6 +231,12 @@ type
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
 
+      procedure BringToFront;
+      procedure SendToBack;
+
+      function GetUniqueName(AName:string; AForceNumber:boolean=false):string;
+      function NameExists(AName:string):boolean;
+
       property Skin:TAdSkin read FSkin write SetSkin;
       property Parent:TAdComponent read FParent write FParent;
       property Components:TAdComponents read FComponents;
@@ -234,13 +251,16 @@ type
       property GridX:integer read FGridY write SetGridY;
       property GridY:integer read FGridX write SetGridX;
       property Grid:boolean read FGrid write SetGrid;
+
+      property FocusedComponent:TAdComponent read GetFocusedComponent;
+      procedure SetFocused;
     published
       property Name:string read FName write SetName;
       property Cursor:string read FCursor write FCursor;
       property X:single read FX write FX;
       property Y:single read FY write FY;
-      property Width:single read FWidth write FWidth;
-      property Height:single read FHeight write FHeight;
+      property Width:single read FWidth write SetWidth;
+      property Height:single read FHeight write SetHeight;
       property Alpha:byte read FAlpha write FAlpha;
       property Visible:boolean read FVisible write FVisible;
       property Enabled:boolean read FEnabled write FEnabled;
@@ -308,6 +328,7 @@ type
       FParent:TAdDraw;
       FCurrentCursor:TAdMouseCursor;
       FCurrentCursorString:string;
+      FVisible:boolean;
       procedure SetCurrentCursor(Value:string);
       function GetItem(Index:integer):TAdMouseCursor;
       procedure SetItem(Index:integer;Value:TAdMouseCursor);
@@ -331,6 +352,7 @@ type
       property Y:integer read FY write FY;
       property Parent:TAdDraw read FParent write FParent;
       property CurrentCursor:string read FCurrentCursorString write SetCurrentCursor;
+      property Visible:boolean read FVisible write FVisible;
   end;
 
   TAdGUI = class(TAdComponent)
@@ -367,8 +389,7 @@ implementation
 
 procedure RegisterComponent(AClass:TClass;ACard:string);
 begin
-  RegisteredComponents.Add(AClass.ClassName);
-  RegisteredComponents.Values[AClass.ClassName] := ACard;
+  RegisteredComponents.Add(AClass.ClassName+'='+ACard);
   RegisterClass(TPersistentClass(AClass));
 end;
 
@@ -404,6 +425,15 @@ begin
 
   FComponents := TAdComponents.Create;
 
+  FGrid := true;
+  FGridX := 5;
+  FGridY := 5;
+
+  FMinWidth := 0;
+  FMinHeight := 0;
+  FMaxWidth := -1;
+  FMaxHeight := -1;
+
   if FParent <> nil then
   begin
     AdDraw := FParent.AdDraw;
@@ -413,6 +443,9 @@ begin
     FHintWnd := FParent.HintWnd;
     Skin := FParent.Skin;
     FFont := FParent.Font;
+    FGrid := FParent.Grid;
+    FGridX := FParent.GridX;
+    FGridY := FParent.GridY;
   end;
 
   FAlpha := 255;
@@ -421,9 +454,7 @@ begin
   FCursor := 'default';
   FCanGetFocus := true;
 
-  FGrid := true;
-  FGridX := 5;
-  FGridY := 5;
+  FName := GetUniqueName(copy(ClassName,2,length(ClassName)-1),true);
 end;
 
 destructor TAdComponent.Destroy;
@@ -471,6 +502,7 @@ var XML:TJvSimpleXML;
 begin
   XML := TJvSimpleXML.Create(nil);
   XML.LoadFromStream(AStream);
+  LoadFromXML(XML.Root);
   XML.Free;
 end;
 
@@ -478,6 +510,8 @@ procedure TAdComponent.SaveToStream(AStream: TStream);
 var XML:TJvSimpleXML;
 begin
   XML := TJvSimpleXML.Create(nil);
+  SaveToXML(XML.Root.Items);
+  XML.SaveToStream(AStream);
   XML.Free;
 end;
 
@@ -808,7 +842,7 @@ end;
 
 procedure TAdComponent.SetName(Value: string);
 begin
-  FName := Value;
+  FName := GetUniqueName(Value, false);
 end;
 
 procedure TAdComponent.SetSkin(Value: TAdSkin);
@@ -833,6 +867,11 @@ begin
       SpacerTop := ASkinItem.Elements[i].Y1;
       SpacerRight := ASkinItem.BaseWidth - ASkinItem.Elements[i].X2;
       SpacerBottom := ASkinItem.BaseHeight - ASkinItem.Elements[i].Y2;
+
+      FMinWidth := SpacerLeft + SpacerRight + 1;
+      FMinHeight := SpacerTop + SpacerBottom + 1;
+
+      break;
     end;
   end;
 end;
@@ -842,8 +881,85 @@ begin
   //
 end;
 
-{Event-Handling}
+procedure TAdComponent.BringToFront;
+begin
+  if FParent <> nil then
+  begin
+    FParent.Components.Remove(self);
+    FParent.AddComponent(self);
+  end;
+end;
 
+procedure TAdComponent.SendToBack;
+begin
+  if FParent <> nil then
+  begin
+    FParent.Components.Remove(self);
+    FParent.Components.Insert(0,self);
+  end;
+end;
+
+function TAdComponent.GetUniqueName(AName: string; AForceNumber:boolean): string;
+var i:integer;
+begin
+  if FParent <> nil then
+  begin
+    result := FParent.GetUniqueName(AName, AForceNumber);
+  end
+  else
+  begin
+    if NameExists(AName) or AForceNumber then
+    begin
+      i := 0;
+      repeat
+        i := i + 1;
+      until NameExists(AName+inttostr(i)) = false;
+      result := AName+inttostr(i);
+    end
+    else
+    begin
+      result := AName;
+    end;
+  end;
+end;
+
+function TAdComponent.NameExists(AName: string): boolean;
+var
+  i:integer;
+begin
+  result := FName = AName;
+  if not Result then
+  begin
+    for i := 0 to Components.Count - 1 do
+    begin
+      result := Components[i].NameExists(AName);
+      if result then
+      begin
+        break;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdComponent.SetWidth(Value: single);
+begin
+  FWidth := Value;
+  if (FWidth > FMaxWidth) and (FMaxWidth > 0) then
+    FWidth := FMaxWidth;
+  if FWidth < FMinWidth then
+    FWidth := FMinWidth;
+end;
+
+procedure TAdComponent.SetHeight(Value: single);
+begin
+  FHeight := Value;
+  if (FHeight > FMaxHeight) and (FMaxWidth > 0) then
+    FHeight := FMaxHeight;
+  if FHeight < FMinHeight then
+    FHeight := FMinHeight;
+end;
+
+{Event-Handling}
 
 procedure TAdComponent.Click(X, Y: integer);
 var
@@ -1037,6 +1153,7 @@ var clicked:boolean;
     i:integer;
     overcomp:TAdComponent;
 begin
+  overcomp := nil;
   if visible and InRect(x,y,boundsrect) then
   begin
     clicked := true;
@@ -1046,7 +1163,7 @@ begin
       begin
         clicked := false;
         overcomp := Components[i];
-        if overcomp.FDraging then
+        if Components[i].FDraging then
         begin
           break;
         end;
@@ -1068,8 +1185,11 @@ begin
     end
     else
     begin
-      overcomp.MouseUp(Button, Shift, X, Y);
-      overcomp.FDraging := false;
+      if overcomp <> nil then
+      begin
+        overcomp.MouseUp(Button, Shift, X, Y);
+        overcomp.FDraging := false;
+      end;
     end;
   end;
   if DesignMode then
@@ -1447,6 +1567,7 @@ begin
   FImages := TPictureCollection.Create(FParent);
   FCurrentCursorString := '';
   FCurrentCursor := nil;
+  FVisible := true;
 end;
 
 destructor TAdMouseLibrary.Destroy;
@@ -1457,7 +1578,7 @@ end;
 
 procedure TAdMouseLibrary.Draw;
 begin
-  if FCurrentCursor <> nil then
+  if (FCurrentCursor <> nil) and (FVisible) then
   begin
     FCurrentCursor.Draw(FX,FY);
   end;
