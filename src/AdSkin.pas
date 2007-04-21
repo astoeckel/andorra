@@ -47,8 +47,6 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
       property Items[Index:integer]:TAdSkinElem read GetItem write SetItem;default;
       property OnAdd:TNotifyEvent read FOnAdd write FOnAdd;
   end;
@@ -60,7 +58,7 @@ type
       FSkinElems:TAdSkinElemList;
       FBaseWidth,FBaseHeight:integer;
       FName:string;
-      FImages:TPictureCollection;
+      FImages:TAdImageList;
       procedure SetBaseWidth(Value:integer);
       procedure SetBaseHeight(Value:integer);
     protected
@@ -82,7 +80,7 @@ type
       property BaseWidth:integer read FBaseWidth write SetBaseWidth;
       property BaseHeight:integer read FBaseHeight write SetBaseHeight;
       property Name:string read FName write FName;
-      property Images:TPictureCollection read FImages write FImages;
+      property Images:TAdImageList read FImages write FImages;
   end;
 
   TAdSkin = class(TList)
@@ -150,7 +148,7 @@ begin
   FBaseWidth := 100;
   FBaseHeight := 100;
 
-  FImages := TPictureCollection.Create(FParent);
+  FImages := TAdImageList.Create(FParent);
 
   FStates := TStringlist.Create;
   FStates.OnChange := ChangeStates;
@@ -362,6 +360,7 @@ end;
 
 destructor TAdSkin.Destroy;
 begin  
+  Clear;
   inherited Destroy;
 end;
 
@@ -475,6 +474,7 @@ begin
   begin
     tmp := TAdSkinItem.Create(FParent);
     tmp.LoadFromXML(aroot.Items[i]);
+    tmp.CreatedByList := true;
     Add(tmp);
   end;
 end;
@@ -509,16 +509,6 @@ begin
   begin
     TAdSkinElem(Ptr).Free;
   end;
-end;
-
-procedure TAdSkinElemList.LoadFromXML(aroot: TJvSimpleXMLElem);
-begin
-
-end;
-
-function TAdSkinElemList.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
-begin
-
 end;
 
 procedure TAdSkinElemList.SetItem(Index: integer; Value: TAdSkinElem);

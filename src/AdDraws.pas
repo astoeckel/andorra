@@ -33,7 +33,7 @@ type
   {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
   TAdDraw = class;
   //This represents one image in an ImageList.
-  TPictureCollectionItem = class;
+  TAdImage = class;
   //Represents a simple canvas for simply drawing lines, rectangles, text and circles
   TAdCanvas = class;
 
@@ -383,7 +383,7 @@ type
   end;
 
   //This represents one image in an ImageList.
-  TPictureCollectionItem = class
+  TAdImage = class
     private
       FParent:TAdDraw;
       FWidth,FHeight:integer;
@@ -474,7 +474,7 @@ type
       //Loads the image from a file
       procedure LoadFromFile(AFile:string);
       //Assings the settings of another item
-      procedure Assign(AItem:TPictureCollectionItem);
+      procedure Assign(AItem:TAdImage);
       //Returns the parent you've set in the constructor
       property Parent:TAdDraw read FParent write FParent;
       //Returns the width of the image.
@@ -502,24 +502,24 @@ type
   end;
 
   //Administrates the images
-  TPictureCollection = class(TList)
+  TAdImageList = class(TList)
     private
       FParent:TAdDraw;
       FCompressor:TCompressorClass;
-     	function GetItem(AIndex:integer):TPictureCollectionItem;
-     	procedure SetItem(AIndex:integer;AItem:TPictureCollectionItem);
+     	function GetItem(AIndex:integer):TAdImage;
+     	procedure SetItem(AIndex:integer;AItem:TAdImage);
       procedure SetCompressor(ACompressor:TCompressorClass);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
       //Returns you an item
-     	property Items[AIndex:integer]:TPictureCollectionItem read GetItem write SetItem;default;
+     	property Items[AIndex:integer]:TAdImage read GetItem write SetItem;default;
       //Add a new image to the list.
-      function Add(AName:string):TPictureCollectionItem;overload;
+      function Add(AName:string):TAdImage;overload;
       //Returns the index of a item
       function IndexOf(AName:string):integer;
       //Find an image in the list.
-      function Find(AName:string):TPictureCollectionItem;
+      function Find(AName:string):TAdImage;
       //Call the restore function of every item in the list.
       procedure Restore;
       //A constructor
@@ -548,7 +548,7 @@ type
   TAdFont = class
     private
       FTexture:TAdTexture;
-      FMeshList:TPictureCollection;
+      FMeshList:TAdImageList;
       FParent:TAdDraw;
       FLetterSize:TPointArray;
       FLetterCount:integer;
@@ -562,7 +562,7 @@ type
       function GetLoaded:boolean;
       procedure SetCompressor(AValue:TCompressorClass);
     protected
-      property MeshList:TPictureCollection read FMeshList;
+      property MeshList:TAdImageList read FMeshList;
       property LetterSize:TPointArray read FLetterSize;
       property PatternWidth:integer read FPatternWidth;
       property PatternHeight:integer read FPatternHeight;
@@ -1141,7 +1141,7 @@ end;
 
 {TPictureCollectionItem}
 
-constructor TPictureCollectionItem.Create(AAdDraw:TAdDraw);
+constructor TAdImage.Create(AAdDraw:TAdDraw);
 begin
   inherited Create;
   FTexture := TAdTexture.Create(AAdDraw);
@@ -1155,7 +1155,7 @@ begin
   Initialize;
 end;
 
-destructor TPictureCollectionItem.Destroy;
+destructor TAdImage.Destroy;
 begin
   if FOwnTexture then
   begin
@@ -1167,7 +1167,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TPictureCollectionItem.DrawMesh(DestApp: TAdDraw; DestRect,
+procedure TAdImage.DrawMesh(DestApp: TAdDraw; DestRect,
   SourceRect: TRect; Rotation: integer; RotCenterX, RotCenterY: single;
   BlendMode: TAd2DBlendMode);
 var
@@ -1222,7 +1222,7 @@ begin
   AdMesh.Draw(BlendMode,Mode);
 end;
 
-procedure TPictureCollectionItem.Assign(AItem: TPictureCollectionItem);
+procedure TAdImage.Assign(AItem: TAdImage);
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1232,7 +1232,7 @@ begin
   ms.Free;
 end;
 
-procedure TPictureCollectionItem.BuildVertices;
+procedure TAdImage.BuildVertices;
 var
   Vertices:TAdVertexArray;
   Indices:TAdIndexArray;
@@ -1300,7 +1300,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.CreatePatternRects;
+procedure TAdImage.CreatePatternRects;
 var ax,ay:integer;
 begin
   Rects.Clear;
@@ -1322,7 +1322,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
+procedure TAdImage.Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1334,7 +1334,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
+procedure TAdImage.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1346,7 +1346,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
+procedure TAdImage.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1358,7 +1358,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawMask(Dest: TAdDraw; const DestRect: TRect;
+procedure TAdImage.DrawMask(Dest: TAdDraw; const DestRect: TRect;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1370,7 +1370,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
+procedure TAdImage.DrawRotate(Dest: TAdDraw; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1382,7 +1382,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
+procedure TAdImage.DrawRotateAdd(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
@@ -1395,7 +1395,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
+procedure TAdImage.DrawRotateAlpha(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
@@ -1408,7 +1408,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.DrawRotateMask(Dest: TAdDraw; X, Y, Width,
+procedure TAdImage.DrawRotateMask(Dest: TAdDraw; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
@@ -1421,7 +1421,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.StretchBltAdd(Dest: TAdDraw; SourceRect,
+procedure TAdImage.StretchBltAdd(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY:double; Angle, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1431,7 +1431,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.StretchBltAlpha(Dest: TAdDraw; SourceRect,
+procedure TAdImage.StretchBltAlpha(Dest: TAdDraw; SourceRect,
   DestRect: TRect; CenterX, CenterY:double; Angle, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1441,7 +1441,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
+procedure TAdImage.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1452,7 +1452,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.Restore;
+procedure TAdImage.Restore;
 begin
   FWidth := Texture.Texture.BaseWidth;
   FHeight := Texture.Texture.BaseHeight;
@@ -1463,7 +1463,7 @@ begin
   BuildVertices;
 end;
 
-procedure TPictureCollectionItem.SetPatternWidth(AValue: Integer);
+procedure TAdImage.SetPatternWidth(AValue: Integer);
 begin
   if AValue >= 0 then
   begin
@@ -1475,7 +1475,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.SetSkipHeight(AValue: integer);
+procedure TAdImage.SetSkipHeight(AValue: integer);
 begin
   if AValue >= 0 then
   begin
@@ -1487,7 +1487,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.SetSkipWidth(AValue: integer);
+procedure TAdImage.SetSkipWidth(AValue: integer);
 begin
   if AValue >= 0 then
   begin
@@ -1499,7 +1499,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.SetTexture(AValue: TAdTexture);
+procedure TAdImage.SetTexture(AValue: TAdTexture);
 begin
   if FOwnTexture then
   begin
@@ -1509,7 +1509,7 @@ begin
   FTexture := AValue;
 end;
 
-procedure TPictureCollectionItem.SetCurrentColor(Alpha: byte);
+procedure TAdImage.SetCurrentColor(Alpha: byte);
 var CurCol:TAndorraColor;
 begin
   if Texture.Texture.Loaded then
@@ -1524,7 +1524,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.SetDetails(AValue: integer);
+procedure TAdImage.SetDetails(AValue: integer);
 begin
   if (AValue > 0) and (AValue <> FDetails) then
   begin
@@ -1533,7 +1533,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.SetPatternHeight(AValue: Integer);
+procedure TAdImage.SetPatternHeight(AValue: Integer);
 begin
   if AValue >= 0 then
   begin
@@ -1545,26 +1545,26 @@ begin
   end;
 end;
 
-function TPictureCollectionItem.GetColor: TAndorraColor;
+function TAdImage.GetColor: TAndorraColor;
 begin
   result := Ad_ARGB(FAlpha,GetRValue(FColor),GetGValue(FColor),GetBValue(FColor));
 end;
 
-function TPictureCollectionItem.GetHeight: integer;
+function TAdImage.GetHeight: integer;
 begin
   Result := FPatternHeight;
   if (Result<=0) then
     Result := FHeight;
 end;
 
-function TPictureCollectionItem.GetWidth: integer;
+function TAdImage.GetWidth: integer;
 begin
   Result := FPatternWidth;
   if (Result<=0) then
     Result := FWidth;
 end;
 
-procedure TPictureCollectionItem.Initialize;
+procedure TAdImage.Initialize;
 begin
   if AdMesh <> nil then
   begin
@@ -1573,7 +1573,7 @@ begin
   AdMesh := FParent.AdAppl.CreateMesh;
 end;
 
-procedure TPictureCollectionItem.LoadFromFile(AFile: string);
+procedure TAdImage.LoadFromFile(AFile: string);
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1583,7 +1583,7 @@ begin
   ms.Free;
 end;
 
-procedure TPictureCollectionItem.SaveToFile(AFile: string);
+procedure TAdImage.SaveToFile(AFile: string);
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1592,7 +1592,7 @@ begin
   ms.Free;
 end;
 
-procedure TPictureCollectionItem.LoadFromStream(AStream: TStream);
+procedure TAdImage.LoadFromStream(AStream: TStream);
 var s:string;
     c:char;
     l:integer;
@@ -1619,7 +1619,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.SaveToStream(AStream: TStream);
+procedure TAdImage.SaveToStream(AStream: TStream);
 var c:char;
     l:integer;
 begin
@@ -1636,7 +1636,7 @@ begin
   AStream.Write(FSkipHeight,SizeOf(FSkipHeight));
 end;
 
-procedure TPictureCollectionItem.Finalize;
+procedure TAdImage.Finalize;
 begin
   if AdMesh <> nil then
   begin
@@ -1644,7 +1644,7 @@ begin
   end;
 end;
 
-procedure TPictureCollectionItem.Notify(ASender: TObject;AEvent: TSurfaceEventState);
+procedure TAdImage.Notify(ASender: TObject;AEvent: TSurfaceEventState);
 begin
   if AEvent = seFinalize then
   begin
@@ -1660,12 +1660,12 @@ begin
   end;
 end;
 
-function TPictureCollectionItem.GetPatternCount: integer;
+function TAdImage.GetPatternCount: integer;
 begin
   result := Rects.Count;
 end;
 
-function TPictureCollectionItem.GetPatternRect(ANr: Integer):TRect;
+function TAdImage.GetPatternRect(ANr: Integer):TRect;
 begin
   result := Rects[ANr];
 end;
@@ -1673,26 +1673,26 @@ end;
 
 {TPictureCollection}
 
-function TPictureCollection.Add(AName: string): TPictureCollectionItem;
+function TAdImageList.Add(AName: string): TAdImage;
 begin
-  result := TPictureCollectionItem.Create(FParent);
+  result := TAdImage.Create(FParent);
   result.Name := AName;
   result.FreeByList := true;
   inherited Add(result);
 end;
 
-constructor TPictureCollection.Create(AAdDraw: TAdDraw);
+constructor TAdImageList.Create(AAdDraw: TAdDraw);
 begin
   inherited Create;
   FParent := AAdDraw;
 end;
 
-destructor TPictureCollection.Destroy;
+destructor TAdImageList.Destroy;
 begin
   inherited Destroy;
 end;
 
-function TPictureCollection.Find(AName: string): TPictureCollectionItem;
+function TAdImageList.Find(AName: string): TAdImage;
 var i:integer;
 begin
   result := nil;
@@ -1703,7 +1703,7 @@ begin
   end;
 end;
 
-function TPictureCollection.IndexOf(AName: string): integer;
+function TAdImageList.IndexOf(AName: string): integer;
 var i:integer;
 begin
   result := -1;
@@ -1717,12 +1717,12 @@ begin
   end;
 end;
 
-function TPictureCollection.GetItem(AIndex:integer):TPictureCollectionItem;
+function TAdImageList.GetItem(AIndex:integer):TAdImage;
 begin
  result := inherited Items[AIndex];
 end;
 
-procedure TPictureCollection.SaveToFile(AFile: string);
+procedure TAdImageList.SaveToFile(AFile: string);
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1731,7 +1731,7 @@ begin
   ms.Free;
 end;
 
-procedure TPictureCollection.LoadFromFile(AFile: string);
+procedure TAdImageList.LoadFromFile(AFile: string);
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1741,7 +1741,7 @@ begin
   ms.Free;
 end;
 
-procedure TPictureCollection.SaveToStream(AStream: TStream);
+procedure TAdImageList.SaveToStream(AStream: TStream);
 var i:integer;
     s:string;
     ms:TMemoryStream;
@@ -1763,12 +1763,12 @@ begin
   end;
 end;
 
-procedure TPictureCollection.LoadFromStream(AStream: TStream);
+procedure TAdImageList.LoadFromStream(AStream: TStream);
 var i,c:integer;
     s:string;
     ms:TMemoryStream;
     size:int64;
-    temp:TPictureCollectionItem;
+    temp:TAdImage;
 begin
   SetLength(s,10);
   AStream.Read(s[1],10);
@@ -1782,7 +1782,7 @@ begin
       ms := TMemoryStream.Create;
       ms.CopyFrom(AStream,size);
       ms.Position := 0;
-      temp := TPictureCollectionItem.Create(FParent);
+      temp := TAdImage.Create(FParent);
       with temp do
       begin
         FreeByList := true;
@@ -1798,11 +1798,11 @@ begin
   end;
 end;
 
-procedure TPictureCollection.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TAdImageList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   if Action = lnDeleted then
   begin
-    with TPictureCollectionItem(Ptr) do
+    with TAdImage(Ptr) do
     begin
       if FreeByList then
       begin
@@ -1812,7 +1812,7 @@ begin
   end;
 end;
 
-procedure TPictureCollection.Restore;
+procedure TAdImageList.Restore;
 var i:integer;
 begin
   for i := 0 to Count - 1 do
@@ -1821,7 +1821,7 @@ begin
   end;
 end;
 
-procedure TPictureCollection.SetCompressor(ACompressor: TCompressorClass);
+procedure TAdImageList.SetCompressor(ACompressor: TCompressorClass);
 var i:integer;
 begin
   FCompressor := ACompressor;
@@ -1831,7 +1831,7 @@ begin
   end;
 end;
 
-procedure TPictureCollection.SetItem(AIndex:integer;AItem:TPictureCollectionItem);
+procedure TAdImageList.SetItem(AIndex:integer;AItem:TAdImage);
 begin
  inherited Items[AIndex] := AItem;
 end;
@@ -2130,8 +2130,8 @@ begin
   if FCache <> nil then
   begin
     FreeAndNil(FCache);
-    Texture.FlushTexture;
   end;
+  Texture.FlushTexture;
 end;
 
 constructor TAdTexture.Create(AParent:TAdDraw);
@@ -2478,7 +2478,7 @@ constructor TAdFont.Create(AParent: TAdDraw);
 begin
   inherited Create;
   FParent := AParent;
-  FMeshList := TPictureCollection.Create(FParent);
+  FMeshList := TAdImageList.Create(FParent);
   FTexture := TAdTexture.Create(FParent);
   FCompressor := FTexture.Compressor;
   FLetterCount := 0;

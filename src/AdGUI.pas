@@ -207,6 +207,7 @@ type
       procedure Move(TimeGap:double);
 
       procedure AddComponent(AComponent:TAdComponent);virtual;
+      procedure Clear;
 
       procedure DblClick(X,Y:integer);
       procedure Click(X,Y:integer);
@@ -236,6 +237,7 @@ type
 
       function GetUniqueName(AName:string; AForceNumber:boolean=false):string;
       function NameExists(AName:string):boolean;
+      function FindComponent(AName:string):TAdComponent;
 
       property Skin:TAdSkin read FSkin write SetSkin;
       property Parent:TAdComponent read FParent write FParent;
@@ -287,7 +289,7 @@ type
     private
       FParent:TAdDraw;
       FLib:TAdMouseLibrary;
-      FImage:TPictureCollectionItem;
+      FImage:TAdImage;
       FAnimPos:single;
       FAnimStart:integer;
       FAnimStop:integer;
@@ -314,7 +316,7 @@ type
       property AnimSpeed:integer read FAnimSpeed write FAnimSpeed;
       property AnimStart:integer read FAnimStart write FAnimStart;
       property AnimStop:integer read FAnimStop write FAnimStop;
-      property Image:TPictureCollectionItem read FImage;
+      property Image:TAdImage read FImage;
       property MouseLibrary:TAdMouseLibrary read FLib write FLib;
 
       property HotSpotX:integer read FHotSpotX write FHotSpotX;
@@ -323,7 +325,7 @@ type
 
   TAdMouseLibrary = class(TList)
     private
-      FImages:TPictureCollection;
+      FImages:TAdImageList;
       FX,FY:integer;
       FParent:TAdDraw;
       FCurrentCursor:TAdMouseCursor;
@@ -347,7 +349,7 @@ type
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
 
       property Items[Index:integer]:TAdMouseCursor read GetItem write SetItem;
-      property Images:TPictureCollection read FImages write FImages;
+      property Images:TAdImageList read FImages write FImages;
       property X:integer read FX write FX;
       property Y:integer read FY write FY;
       property Parent:TAdDraw read FParent write FParent;
@@ -520,6 +522,8 @@ var
   i:integer;
   cref:TPersistentClass;
 begin
+  Clear;
+
   FName := aroot.Properties.Value('name','');
   FAlpha := aroot.Properties.IntValue('alpha',255);
   FCursor := aroot.Properties.Value('cursor','default');
@@ -634,12 +638,34 @@ procedure TAdComponent.Draw;
 var
   i:integer;
 begin
-  if FVisible then
+  if FVisible or FDesignMode then
   begin
     DoDraw;
     for i := 0 to Components.Count - 1 do
     begin
       Components[i].Draw;
+    end;
+  end;
+end;
+
+function TAdComponent.FindComponent(AName: string): TAdComponent;
+var
+  i:integer;
+begin
+  if Name = AName then
+  begin
+    result := self;
+  end
+  else
+  begin
+    result := nil;
+    for i := 0 to Components.Count - 1 do
+    begin
+      result := Components[i].FindComponent(AName);
+      if result <> nil then
+      begin
+        break;
+      end;
     end;
   end;
 end;
@@ -961,12 +987,23 @@ end;
 
 {Event-Handling}
 
+procedure TAdComponent.Clear;
+var
+  i:integer;
+begin
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].Free;
+  end;
+  Components.Clear;
+end;
+
 procedure TAdComponent.Click(X, Y: integer);
 var
   clicked:boolean;
   i:integer;
 begin
-  if (visible) and (InRect(x,y,boundsrect)) then
+  if (visible or designmode) and (InRect(x,y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -996,8 +1033,8 @@ function TAdComponent.ClientToScreen(p: TPoint): TPoint;
 begin
   with result do
   begin
-    x := p.X + BoundsRect.Left;
-    y := p.Y + BoundsRect.Top;
+    x := p.X + ClientRect.Left;
+    y := p.Y + ClientRect.Top;
   end;
 end;
 
@@ -1005,8 +1042,8 @@ function TAdComponent.ScreenToClient(p: TPoint): TPoint;
 begin
   with result do
   begin
-    x := p.X - BoundsRect.Left;
-    y := p.Y - BoundsRect.Top;
+    x := p.X - ClientRect.Left;
+    y := p.Y - ClientRect.Top;
   end;
 end;
 
@@ -1015,7 +1052,7 @@ var
   clicked:boolean;
   i:integer;
 begin
-  if (visible) and (InRect(x,y,boundsrect)) then
+  if (visible or designmode) and (InRect(x,y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -1046,12 +1083,12 @@ procedure TAdComponent.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
 var clicked:boolean;
     i:integer;
 begin
-  if visible and InRect(x,y,boundsrect) then
+  if (visible or designmode) and InRect(x,y,boundsrect) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
     begin
-      if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
+      if (Components[i].Visible or DesignMode) and InRect(x,y,Components[i].BoundsRect) then
       begin
         clicked := false;
         Components[i].MouseDown(Button,Shift,X,Y);
@@ -1084,14 +1121,14 @@ begin
   FMouseOver := false;
   DesignSize(X,Y);
 
-  if (visible) and ((InRect(x,y,boundsrect)) or FMousePreview) then
+  if (visible or designmode) and ((InRect(x,y,boundsrect)) or FMousePreview) then
   begin
     clicked := true;
     FMouseX := X;
     FMouseY := Y;
     for i := Components.Count-1 downto 0 do
     begin
-      if Components[i].Visible and (InRect(x,y,Components[i].BoundsRect)) then
+      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect)) then
       begin
         Components[i].MouseMove(Shift,X,Y);
         clicked := false;
@@ -1154,12 +1191,12 @@ var clicked:boolean;
     overcomp:TAdComponent;
 begin
   overcomp := nil;
-  if visible and InRect(x,y,boundsrect) then
+  if (visible or designmode) and InRect(x,y,boundsrect) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
     begin
-      if Components[i].Visible and InRect(x,y,Components[i].BoundsRect) then
+      if (Components[i].Visible or DesignMode) and InRect(x,y,Components[i].BoundsRect) then
       begin
         clicked := false;
         overcomp := Components[i];
@@ -1204,12 +1241,12 @@ procedure TAdComponent.MouseWheel(Shift: TShiftState; WheelDelta: Integer;
 var clicked:boolean;
     i:integer;
 begin
-  if (visible) and (InRect(mousepos.x,mousepos.y,boundsrect)) then
+  if (visible or designmode) and (InRect(mousepos.x,mousepos.y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
     begin
-      if Components[i].Visible and InRect(mousepos.x,mousepos.y,Components[i].BoundsRect) then
+      if (Components[i].Visible or DesignMode) and InRect(mousepos.x,mousepos.y,Components[i].BoundsRect) then
       begin
         clicked := false;
         Components[i].MouseWheel(Shift,WheelDelta,MousePos,Handled);
@@ -1226,7 +1263,7 @@ end;
 procedure TAdComponent.KeyDown(Key: Word; Shift: TShiftState);
 var i:integer;
 begin
-  if visible and (Focused or FKeyPreview) and enabled then
+  if (visible or designmode) and (Focused or FKeyPreview) and enabled then
   begin
     if not DesignMode then DoKeyDown(Key,Shift);
   end
@@ -1242,7 +1279,7 @@ end;
 procedure TAdComponent.KeyPress(Key: Char);
 var i:integer;
 begin
-  if visible and (Focused or FKeyPreview) and enabled then
+  if (visible or designmode) and (Focused or FKeyPreview) and enabled then
   begin
     if not DesignMode then DoKeyPress(Key);
   end
@@ -1258,7 +1295,7 @@ end;
 procedure TAdComponent.KeyUp(Key: Word; Shift: TShiftState);
 var i:integer;
 begin
-  if visible and (Focused or FKeyPreview) and enabled then
+  if (visible or designmode) and (Focused or FKeyPreview) and enabled then
   begin
     if not DesignMode then DoKeyUp(Key,Shift);
   end
@@ -1521,7 +1558,7 @@ begin
       ReadStream(ms,aroot.Items[i]);
       FOwnImage := true;
       ms.Position := 0;
-      FImage := TPictureCollectionItem.Create(FParent);
+      FImage := TAdImage.Create(FParent);
       FImage.LoadFromStream(ms);
       FImage.Restore;
       ms.Free;
@@ -1564,7 +1601,7 @@ constructor TAdMouseLibrary.Create(AParent: TAdDraw);
 begin
   inherited Create;
   FParent := AParent;
-  FImages := TPictureCollection.Create(FParent);
+  FImages := TAdImageList.Create(FParent);
   FCurrentCursorString := '';
   FCurrentCursor := nil;
   FVisible := true;
@@ -1701,7 +1738,7 @@ end;
 constructor TAdGUI.Create(AParent: TAdDraw);
 begin
   inherited Create(nil);
-  AdDraw := AParent;   
+  AdDraw := AParent;
   Skin := TAdSkin.Create(AdDraw);
   FMouse := TAdMouseLibrary.Create(AdDraw);
   CurrentCursor := 'default';

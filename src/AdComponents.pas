@@ -9,6 +9,22 @@ type
   TAdAlignment = (alLeft,alCenter,alRight);
   TAdTextPos = (tpTop,tpCenter,tpBottom);
 
+  TAdForm = class(TAdComponent)
+    private
+      FCaption:string;
+      FSkinItem:TAdSkinItem;
+      FFixedPosition:boolean;
+    protected
+      procedure LoadSkinItem;override;
+      procedure DoDraw;override;
+    public
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+    published
+      property Caption:string read FCaption write FCaption;
+      property FixedPosition:boolean read FFixedPosition write FFixedPosition;
+  end;
+
   TAdPanel = class(TAdComponent)
     private
       FCaption:string;
@@ -48,9 +64,9 @@ type
       destructor Destroy;override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      property State:TAdButtonState read FState;
     published
       property Caption:string read FCaption write FCaption;
-      property State:TAdButtonState read FState;
   end;
 
 implementation
@@ -229,7 +245,44 @@ begin
   end;
 end;
 
+{ TAdForm }
+
+procedure TAdForm.DoDraw;
+var
+  rect:TRect;
+begin
+  rect := BoundsRect;
+  FSkinItem.Draw(0,rect.Left,rect.Top,round(Width),round(Height),Alpha);
+  Font.TextOut(rect.Left+SpacerLeft,rect.Top+(SpacerTop - Font.TextHeight(FCaption)) div 2,FCaption);
+  inherited DoDraw;
+end;
+
+procedure TAdForm.LoadFromXML(aroot: TJvSimpleXMLElem);
+begin
+  inherited;
+  with aroot.Properties do
+  begin
+    FCaption := Value('caption','');
+  end;
+end;
+
+function TAdForm.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  result := inherited SaveToXML(aroot);
+  with result.Properties do
+  begin
+    Add('caption',FCaption);
+  end;
+end;
+
+procedure TAdForm.LoadSkinItem;
+begin
+  FSkinItem := Skin.ItemNamed['form'];
+  SetSpacer(FSkinItem);
+end;
+
 initialization
+  RegisterComponent(TAdForm,'Standard');
   RegisterComponent(TAdPanel,'Standard');
   RegisterComponent(TAdButton,'Standard');
 
