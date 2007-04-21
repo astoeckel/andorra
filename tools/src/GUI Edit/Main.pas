@@ -7,7 +7,7 @@ uses
   Dialogs, Menus, ComCtrls, XPMan, Designer, ImgList, Objects, Structure,
 
   //Add all units with components here
-  AdGUI, AdComponents;
+  AdGUI, AdComponents, ExtDlgs;
 
 type
   TMainDlg = class(TForm)
@@ -39,6 +39,18 @@ type
     N10x101: TMenuItem;
     ImageList1: TImageList;
     Structure1: TMenuItem;
+    Help1: TMenuItem;
+    About1: TMenuItem;
+    N6: TMenuItem;
+    BgImage1: TMenuItem;
+    OpenPictureDialog1: TOpenPictureDialog;
+    SaveDialog1: TSaveDialog;
+    OpenDialog1: TOpenDialog;
+    ImageList2: TImageList;
+    Clearbackgroundimage1: TMenuItem;
+    N7: TMenuItem;
+    Loadskin1: TMenuItem;
+    OpenDialog2: TOpenDialog;
     procedure Exit1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -50,6 +62,14 @@ type
     procedure N10x101Click(Sender: TObject);
     procedure Objectinspector1Click(Sender: TObject);
     procedure Structure1Click(Sender: TObject);
+    procedure BgImage1Click(Sender: TObject);
+    procedure NewGUI1Click(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure Loadfile1Click(Sender: TObject);
+    procedure SaveGUIas1Click(Sender: TObject);
+    procedure Savefileas1Click(Sender: TObject);
+    procedure Clearbackgroundimage1Click(Sender: TObject);
+    procedure Loadskin1Click(Sender: TObject);
   private
     procedure ToolButtonClick(Sender: TObject);
     procedure GetComponents(Component:TAdComponent;Node:TTreeNode);
@@ -57,9 +77,17 @@ type
     Designer:TDesignerDlg;
     Objects:TObjectsDlg;
     Structure:TStructureDlg;
+    OpenedFile:string;
+    Saved:boolean;
     procedure FocusObject(Sender:TObject);
     procedure ChangeList(Sender:TObject);
     procedure ClickListEntry(Sender:TObject);
+    function CheckSaved:boolean;
+    function Save:boolean;
+    function SaveAs:boolean;
+    procedure Load(AFile:string);
+    procedure RecentClick(Sender:TObject);
+    procedure AddRecent(AFile:string);
   end;
 
 var
@@ -73,6 +101,7 @@ procedure TMainDlg.ToolButtonClick(Sender: TObject);
 begin
   Designer.AddComponent(TAdComponentClass(GetClass((Sender as TToolButton).Hint)));
   SetForegroundWindow(Designer.Handle);
+  Saved := false;
 end;
 
 procedure TMainDlg.Designmode1Click(Sender: TObject);
@@ -122,6 +151,11 @@ begin
   Structure.TreeView1.Items[0].Expand(true);
 end;
 
+procedure TMainDlg.Clearbackgroundimage1Click(Sender: TObject);
+begin
+  Designer.AdImage.Texture.Clear;
+end;
+
 procedure TMainDlg.ClickListEntry(Sender: TObject);
 begin
   if Sender is TAdComponent then
@@ -131,11 +165,25 @@ begin
   end;
 end;
 
+procedure TMainDlg.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  if CheckSaved then
+  begin
+    Action := caFree;
+  end
+  else
+  begin
+    Action := caNone;
+  end;
+end;
+
 procedure TMainDlg.FormCreate(Sender: TObject);
 var i,img:integer;
     page:TTabSheet;
     bar:TToolBar;
     bmp:TBitmap;
+    recent:TStringList;
+    mi:TMenuItem;
 
   function GetPage(name:string):TTabSheet;
   var i:integer;
@@ -151,6 +199,33 @@ var i,img:integer;
     end;
   end;
 begin
+  recent := TStringList.Create;
+  if FileExists('gui.recent') then
+  begin
+    recent.LoadFromFile('gui.recent');
+    if recent.Count > 0 then
+    begin
+      LoadRecent1.Clear;
+    end;
+    for i := 0 to recent.Count - 1 do
+    begin
+      if FileExists(recent[i]) then
+      begin
+        mi := TMenuItem.Create(LoadRecent1);
+        with mi do
+        begin
+          Caption := recent[i];
+          OnClick := RecentClick;
+        end;
+        LoadRecent1.Add(mi);
+      end;
+    end;
+  end;
+  recent.Free;
+
+  OpenedFile := '';
+  Saved := true;
+
   Designer := TDesignerDlg.Create(self);
   Designer.Show;
   Designer.OnFocus := FocusObject;
@@ -163,6 +238,7 @@ begin
   Structure := TStructureDlg.Create(self);
   Structure.Show;
   Structure.OnClickListEntry := ClickListEntry;
+  Structure.GUI := Designer.AdGUI;
 
   Top := 0;
   Left := 0;
@@ -234,11 +310,14 @@ begin
 
   ChangeList(nil);
   ClickListEntry(Designer.AdGUI);
+
 end;
 
 procedure TMainDlg.FormDestroy(Sender: TObject);
 begin
   Designer.Free;
+  Objects.Free;
+  Structure.Free;
 end;
 
 procedure TMainDlg.Grid1Click(Sender: TObject);
@@ -257,6 +336,68 @@ begin
   end;
 end;
 
+procedure TMainDlg.Load(AFile: string);
+begin
+  if CheckSaved then
+  begin
+    AddRecent(AFile);
+    Designer.AdGUI.LoadFromFile(AFile);
+    OpenedFile := AFile;
+    Saved := true;
+    ChangeList(nil);
+  end;
+end;
+
+procedure TMainDlg.Loadfile1Click(Sender: TObject);
+begin
+  if OpenDialog1.Execute then
+  begin
+    Load(OpenDialog1.FileName);
+  end;
+end;
+
+
+procedure TMainDlg.Loadskin1Click(Sender: TObject);
+begin
+  if OpenDialog2.Execute then
+  begin
+    Designer.AdGUI.Skin.LoadFromFile(OpenDialog2.FileName);
+  end;
+end;
+
+procedure TMainDlg.AddRecent(AFile: string);
+var recent:TStringlist;
+begin
+  recent := TStringlist.Create;
+  if FileExists('gui.recent') then
+  begin
+    recent.LoadFromFile('gui.recent');
+  end;
+  if recent.IndexOf(AFile) > -1 then
+  begin
+    recent.Delete(recent.IndexOf(AFile));
+  end;
+  recent.Insert(0,AFile);
+  if recent.Count > 20 then
+  begin
+    recent.Delete(recent.Count-1);
+  end;
+  try
+    recent.SaveToFile('gui.recent');
+  finally
+    recent.Free;
+  end;
+end;
+
+procedure TMainDlg.BgImage1Click(Sender: TObject);
+begin
+  if OpenPictureDialog1.Execute then
+  begin
+    Designer.AdImage.Texture.LoadGraphicFromFile(OpenPictureDialog1.FileName,true,clNone);
+    Designer.AdImage.Restore;
+  end;
+end;
+
 procedure TMainDlg.N10x101Click(Sender: TObject);
 begin
   Designer.AdGUI.Grid := TMenuItem(Sender).Tag <> 1;
@@ -264,9 +405,25 @@ begin
   Designer.AdGUI.GridY := TMenuItem(Sender).Tag;
 end;
 
+procedure TMainDlg.NewGUI1Click(Sender: TObject);
+begin
+  if CheckSaved then
+  begin
+    Designer.AdGUI.Clear;
+  end;
+end;
+
 procedure TMainDlg.Project1Click(Sender: TObject);
 begin
   Designmode1.Checked := Designer.AdGUI.DesignMode;
+end;
+
+procedure TMainDlg.RecentClick(Sender: TObject);
+begin
+  if FileExists(TMenuItem(sender).Caption) then
+  begin
+    Load(TMenuItem(sender).Caption);
+  end;
 end;
 
 procedure TMainDlg.Windows1Click(Sender: TObject);
@@ -284,6 +441,73 @@ end;
 procedure TMainDlg.Objectinspector1Click(Sender: TObject);
 begin
   Objects.Visible := not Objectinspector1.Checked;
+end;
+
+function TMainDlg.Save:boolean;
+begin
+  if OpenedFile = '' then
+  begin
+    result := SaveAs;
+  end
+  else
+  begin
+    AddRecent(OpenedFile);
+    Designer.AdGUI.SaveToFile(OpenedFile);
+    result := true;
+    Saved := true;
+  end;
+end;
+
+function TMainDlg.SaveAs:boolean;
+begin
+  result := false;
+  if SaveDialog1.Execute then
+  begin
+    if SaveDialog1.FilterIndex = 1 then
+    begin
+      OpenedFile := ChangeFileExt(SaveDialog1.FileName,'.axg');
+    end
+    else
+    begin
+      OpenedFile := SaveDialog1.FileName;
+    end;
+    Save;
+    result := true;
+  end;
+end;
+
+procedure TMainDlg.Savefileas1Click(Sender: TObject);
+begin
+  SaveAs;
+end;
+
+procedure TMainDlg.SaveGUIas1Click(Sender: TObject);
+begin
+  Save;
+end;
+
+function TMainDlg.CheckSaved: boolean;
+var
+  id:integer;
+begin
+  if saved then
+  begin
+    result := true;
+  end
+  else
+  begin
+    id := Application.MessageBox('You probably did''t save your project. Do you want to save it now?',
+          'Question',MB_YESNOCANCEL or MB_ICONQUESTION);
+    if id = ID_YES then
+    begin
+      result := Save;
+    end else
+    if id = ID_NO then
+    begin
+      result := true;
+    end else
+      result := false;       
+  end;
 end;
 
 procedure TMainDlg.Structure1Click(Sender: TObject);

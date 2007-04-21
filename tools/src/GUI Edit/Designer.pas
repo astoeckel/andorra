@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls, AdSkin, AdGUI, AdPNG,
-  ExtCtrls, AdGUIConnector, Menus, ClipBrd, JvSimpleXML;
+  ExtCtrls, AdGUIConnector, Menus, ClipBrd, JvSimpleXML, ImgList, XMLEdit;
 
 type
   TDesignerDlg = class(TForm)
@@ -19,9 +19,12 @@ type
     Sendtoback1: TMenuItem;
     Bringtofront1: TMenuItem;
     N3: TMenuItem;
-    EditXML1: TMenuItem;
+    Export1: TMenuItem;
     N4: TMenuItem;
     Delete1: TMenuItem;
+    ImageList1: TImageList;
+    EditXML1: TMenuItem;
+    SaveDialog1: TSaveDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -38,6 +41,8 @@ type
     procedure Copy1Click(Sender: TObject);
     procedure FormClick(Sender: TObject);
     procedure Cut1Click(Sender: TObject);
+    procedure Export1Click(Sender: TObject);
+    procedure EditXML1Click(Sender: TObject);
   private
     AddComp:TAdComponentClass;
     AddRect:TRect;
@@ -46,7 +51,7 @@ type
     AdDraw1:TAdDraw;
     AdPerCounter:TPerformanceCounter;
     AdGUI:TAdGUI;
-    AdImage:TPictureCollectionItem;
+    AdImage:TAdImage;
     AdFonts:TAdFontCollection;
     AdConnector:TAdGUIConnector;
     OnFocus:TNotifyEvent;
@@ -142,6 +147,48 @@ begin
   Delete;
 end;
 
+procedure TDesignerDlg.EditXML1Click(Sender: TObject);
+var
+  Edit:TXMLEditor;
+  ms:TMemoryStream;
+begin
+  Edit := TXMLEditor.Create(nil);
+  ms := TMemoryStream.Create;
+  AdGUI.SaveToStream(ms);
+  ms.Position := 0;
+  Edit.Memo1.Lines.LoadFromStream(ms);
+  if Edit.ShowModal = mrOk then
+  begin
+    ms.Clear;
+    Edit.Memo1.Lines.SaveToStream(ms);
+    ms.Position := 0;
+    AdGUI.LoadFromStream(ms);
+  end;
+  ms.Free;
+  Edit.Free;
+end;
+
+procedure TDesignerDlg.Export1Click(Sender: TObject);
+var
+  filename:string;
+begin
+  if (AdGUI.FocusedComponent <> nil) then
+  begin
+    if SaveDialog1.Execute then
+    begin
+      if SaveDialog1.FilterIndex = 1 then
+      begin
+        filename := ChangeFileExt(SaveDialog1.FileName,'.axc');
+      end
+      else
+      begin
+        filename := SaveDialog1.FileName;
+      end;
+      AdGUI.FocusedComponent.SaveToFile(filename);
+    end;
+  end;
+end;
+
 procedure TDesignerDlg.Copy;
 var ms:TMemoryStream;
 begin
@@ -235,6 +282,8 @@ begin
   begin
     Application.OnIdle := Idle;
 
+    AdImage := TAdImage.Create(AdDraw1);
+
     AdGUI := TAdGUI.Create(AdDraw1);
     AdGUI.Skin.LoadFromFile('sunna.axs');
     AdGUI.Cursors.LoadFromFile('cursors.xml');
@@ -263,8 +312,8 @@ begin
   AdFonts.Free;
   AdGUI.Free;
   AdPerCounter.Free;
-  AdDraw1.Free;
   AdImage.Free;
+  AdDraw1.Free;
 end;
 
 procedure TDesignerDlg.FormKeyDown(Sender: TObject; var Key: Word;
@@ -309,7 +358,7 @@ begin
     AddRect.Right := (X div AdGUI.GridX) * AdGUI.GridX;
     AddRect.Bottom := (Y div AdGUI.GridY) * AdGUI.GridY;
   end;
-  if Button = mbRight then
+  if (Button = mbRight) and (AdGUI.DesignMode) then
   begin
     AdGUI.Click(X,Y);
     AdConnector.RestoreEventHandlers;
@@ -414,6 +463,8 @@ begin
     begin
       ClearSurface(ColorToRGB(clBtnFace));
       BeginScene;
+      AdImage.StretchDraw(AdDraw1,AdDraw1.DisplayRect,0);
+
       AdGUI.Update(AdPerCounter.TimeGap / 1000);
 
       if (AddComp <> nil) and (FirstPoint) then

@@ -5,7 +5,8 @@ uses
   Designer in 'Designer.pas' {DesignerDlg},
   Main in 'Main.pas' {MainDlg},
   Objects in 'Objects.pas' {ObjectsDlg},
-  Structure in 'Structure.pas' {StructureDlg};
+  Structure in 'Structure.pas' {StructureDlg},
+  XMLEdit in 'XMLEdit.pas' {XMLEditor};
 
 {$R *.res}
 

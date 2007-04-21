@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, ImgList;
+  Dialogs, ComCtrls, ImgList, AdGUI;
 
 type
   TStructureDlg = class(TForm)
@@ -14,6 +14,7 @@ type
   private
     { Private-Deklarationen }
   public
+    GUI:TAdGUI;
     OnClickListEntry:TNotifyEvent;
     { Public-Deklarationen }
   end;
@@ -24,7 +25,13 @@ implementation
 
 procedure TStructureDlg.TreeView1Click(Sender: TObject);
 begin
-  //
+  if TreeView1.Selected <> nil then
+  begin
+    if Assigned(OnClickListEntry) then
+    begin
+      OnClickListEntry(GUI.FindComponent(TreeView1.Selected.Text));
+    end;
+  end;
 end;
 
 end.
