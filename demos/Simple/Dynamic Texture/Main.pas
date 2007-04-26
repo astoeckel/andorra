@@ -18,7 +18,7 @@ type
     { Private-Deklarationen }
   public
     AdDraw1:TAdDraw;
-    AdImageList1:TPictureCollection;
+    AdImageList1:TAdImageList;
     AdPerCounter:TPerformanceCounter;
     Bmp:TBitmap;
     Ico:TIcon;
@@ -49,7 +49,7 @@ begin
     Bmp.Transparent := true;
     Bmp.TransparentMode := tmFixed;
     Bmp.TransparentColor := clWhite;
-    AdImageList1 := TPictureCollection.Create(AdDraw1);
+    AdImageList1 := TAdImageList.Create(AdDraw1);
     with AdImageList1.Add('surface') do
     begin
       Texture.LoadFromGraphic(Bmp);

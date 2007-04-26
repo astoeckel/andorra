@@ -11,9 +11,10 @@ object Form1: TForm1
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnMouseMove = FormMouseMove
+  OnResize = FormResize
   PixelsPerInch = 96
   TextHeight = 13
 end

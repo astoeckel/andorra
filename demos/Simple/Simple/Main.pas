@@ -10,7 +10,7 @@ type
   TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormResize(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -22,7 +22,6 @@ type
 
 var
   Form1: TForm1;
-  mx,my:integer;
 
 implementation
 
@@ -52,40 +51,24 @@ begin
   AdDraw1.Free;
 end;
 
-procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
+procedure TForm1.FormResize(Sender: TObject);
 begin
-  mx := x;
-  my := y;
+  //Resize the Backbuffer
+  if AdDraw1.Initialized then
+  begin
+    AdDraw1.Finalize;
+    AdDraw1.Initialize;
+  end;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
-var i:integer;
 begin
   if AdDraw1.CanDraw then
   begin
     AdPerCounter.Calculate;
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
-    with AdDraw1.Canvas do
-    begin
-      Pen.Color := Ad_ARGB(255,0,255,0);
-      Brush.Style := abGradientHorizontal;
-      Brush.Color := Ad_ARGB(255,255,0,0);
-      Brush.GradientColor := Ad_ARGB(255,0,0,255);
-      Circle(50,50,100);
-      Rectangle(100,100,200,200);
-      Pen.Style := apNone;
-      BlendMode := bmAdd;
-      Brush.Style := abGradientHorizontal;
-      Brush.Color := Ad_ARGB(255,255,255,255);
-      Brush.GradientColor := Ad_ARGB(0,0,0,0);
-      Circle(mx,my,100);
-      BlendMode := bmAlpha;
-      Release;
-      Pen.Style := apSolid;
-      Textout(0,0,Inttostr(AdPerCounter.FPS));
-    end;
+    //Your code here
     AdDraw1.EndScene;
     AdDraw1.Flip; 
   end;

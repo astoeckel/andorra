@@ -16,7 +16,7 @@ type
     AdDraw1:TAdDraw;
     AdPerCounter:TPerformanceCounter;
     PartSys:TAdParticleSystem;
-    AdImageList:TPictureCollection;
+    AdImageList:TAdImageList;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -41,7 +41,7 @@ begin
   begin
     Application.OnIdle := Idle;
 
-    AdImageList := TPictureCollection.Create(AdDraw1);
+    AdImageList := TAdImageList.Create(AdDraw1);
     with AdImageList.Add('particle') do
     begin
       Texture.LoadGraphicFromFile(path+'part2.png',true,clNone);
