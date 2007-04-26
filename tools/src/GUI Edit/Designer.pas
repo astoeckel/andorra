@@ -52,7 +52,6 @@ type
     AdPerCounter:TPerformanceCounter;
     AdGUI:TAdGUI;
     AdImage:TAdImage;
-    AdFonts:TAdFontCollection;
     AdConnector:TAdGUIConnector;
     OnFocus:TNotifyEvent;
     OnChangeList:TNotifyEvent;
@@ -309,7 +308,6 @@ end;
 procedure TDesignerDlg.FormDestroy(Sender: TObject);
 begin
   AdConnector.Free;
-  AdFonts.Free;
   AdGUI.Free;
   AdPerCounter.Free;
   AdImage.Free;

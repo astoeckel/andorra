@@ -26,7 +26,7 @@ type
   public
     AdDraw1:TAdDraw;
     AdPerCounter:TPerformanceCounter;
-    AdImageList1:TPictureCollection;
+    AdImageList1:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
@@ -55,7 +55,7 @@ begin
   begin
     Application.OnIdle := Idle;
 
-    AdImageList1 := TPictureCollection.Create(AdDraw1);
+    AdImageList1 := TAdImageList.Create(AdDraw1);
     with AdImageList1.Add('figur') do
     begin
       Texture.LoadGraphicFromFile(path+'boy.bmp',true,clFuchsia);

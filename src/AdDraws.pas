@@ -544,6 +544,16 @@ type
   //An array class to store the size of each letter of a font
   TPointArray = array[0..255] of TPoint;
 
+  TFontMetadata = record
+    Name:string[50];
+    Size:integer;
+    Style:TFontStyles;
+    Shadow:boolean;
+    ShadowDepth:integer;
+    ShadowBlur:integer;
+    ShadowAlpha:byte;
+  end;
+
   //A text output class
   TAdFont = class
     private
@@ -557,6 +567,8 @@ type
       FPatternWidth,FPatternHeight:integer;
       FCompressor:TCompressorClass;
       FName:string;
+      FOnlyMetadata:boolean;
+      FMetadata:TFontMetadata;
       procedure SetColor(AValue:TColor);
       procedure SetAlpha(AValue:byte);
       function GetLoaded:boolean;
@@ -568,7 +580,7 @@ type
       property PatternHeight:integer read FPatternHeight;
       property Texture:TAdTexture read FTexture write FTexture;
     public
-      //If true the TFontCollection will automaticly free this class
+      //If true the TAdFontCollection will automaticly free this class
       CreatedByList:boolean;
 
       //Creates an instance of TAdFont
@@ -609,13 +621,19 @@ type
       property Compressor:TCompressorClass read FCompressor write SetCompressor;
       //The name of the font in the list
       property Name:string read FName write FName;
+      //Defines wether only metadata to reconstruct the font is saved in files or streams
+      property SaveOnlyMetadata:boolean read FOnlyMetadata write FOnlyMetadata;
+      //Contains informations about the current font
+      property Metadata:TFontMetadata read FMetadata; 
   end;
 
   //Contains the fonts
   TAdFontCollection = class(TList)
     private
       FParent:TAdDraw;
+      FOnlyMetadata:boolean;
       procedure SetItem(Index:integer; Value:TAdFont);
+      procedure SetOnlyMetadata(Value:boolean);
       function GetItem(Index:integer):TAdFont;
       function GetItemByName(Index:string):TAdFont;
     protected
@@ -626,13 +644,24 @@ type
       //Destroys the instance
       destructor Destroy;override;
       //Adds a font to the list. AName specifies the name you can find the font by.
-      procedure Add(AName,AFont:String;AStyle:TFontStyles;ASize:integer;
+      function Add(AName,AFont:String;AStyle:TFontStyles;ASize:integer;
         AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
-        AShadowAlpha:byte=64);overload;
+        AShadowAlpha:byte=64):TAdFont;overload;
       //Searches for a specific font
       property Font[Index:string]:TAdFont read GetItemByName;default;
       //Searches for a specific item
       property Items[Index:integer]:TAdFont read GetItem write SetItem;
+      //Defines weather only metadata to reconstruct the fonts is saved in streams or files
+      property SaveOnlyMetadata:boolean read FOnlyMetadata write SetOnlyMetadata;
+      
+      //Saves the whole collection to a stream
+      procedure SaveToStream(AStream:TStream);
+      //Loads the whole collection from a stream
+      procedure LoadFromStream(AStream:TStream);
+      //Saves the whole collection to a file
+      procedure SaveToFile(AFile:string);
+      //Loads the whole collection from file
+      procedure LoadFromFile(AFile:string);
   end;
 
   //Represents the pen style
@@ -698,7 +727,7 @@ type
       Alpha:byte;
       X,Y:integer;
       constructor Create(AParent:TAdCanvas);
-      destructor Destroy;override;  
+      destructor Destroy;override;
       property Parent:TAdDraw read FParent;
   end;
 
@@ -2484,6 +2513,7 @@ begin
   FLetterCount := 0;
   FColor := clWhite;
   FAlpha := 255;
+  CreatedByList := false;
   ClearFont;
 end;
 
@@ -2493,6 +2523,17 @@ begin
   FTexture.Free;
   inherited;
 end;
+
+{$IFDEF WIN32}
+procedure SetFontQuality (aFont: TFont;  aQuality: Byte);
+var
+  LF : TLogFont;
+begin
+  GetObject(aFont.Handle, SizeOf(TLogFont), @LF);
+  LF.lfQuality := aQuality;
+  aFont.Handle := CreateFontIndirect(LF);
+end;
+{$ENDIF}
 
 procedure TAdFont.CreateFont(AFont: string; AStyle: TFontStyles; ASize: integer;
   AShadow: boolean; AShadowDepth, AShadowBlur: integer; AShadowAlpha: byte);
@@ -2504,6 +2545,17 @@ var
   i: integer;
 begin
   ClearFont;
+
+  with FMetadata do
+  begin
+    Name := AFont;
+    Style := AStyle;
+    Size := ASize;
+    Shadow := AShadow;
+    ShadowDepth := ShadowDepth;
+    ShadowBlur := ShadowBlur;
+    ShadowAlpha := ShadowAlpha;
+  end;
 
   FName := AFont+inttostr(ASize);
 
@@ -2551,6 +2603,10 @@ begin
       bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
     end;
 
+    {$IFDEF WIN32}
+      SetFontQuality (bmp.Canvas.Font, NONANTIALIASED_QUALITY);
+    {$ENDIF}
+
     for ay := 0 to 15 do
     begin
       for ax := 0 to 15 do
@@ -2590,7 +2646,7 @@ begin
       {$IFDEF FPC}{$ELSE}
       BmpGBlur(bmp2,AShadowBlur);
       {$ENDIF}
-    end;    
+    end;
     bmp2.Canvas.Draw(0,0,bmp);
     adbmp := TAdBitmap.Create;
     adbmp.AssignBitmap(bmp);
@@ -2688,28 +2744,46 @@ begin
 end;
 
 procedure TAdFont.LoadFromStream(AStream: TStream);
-var i:integer;
+var
+  i,l:integer;
+  c:char;
 begin
-  ClearFont;
-  AStream.Read(FLetterSize[0],SizeOf(FLetterSize));
-  AStream.Read(FPatternWidth,SizeOf(Integer));
-  AStream.Read(FPatternHeight,SizeOf(Integer));
-  FTexture.LoadFromStream(AStream);
-  if FTexture.FAd2DTexture.Loaded then
+  AStream.Read(l,SizeOf(l));
+  SetLength(FName,l);
+  AStream.Read(FName[1],l);
+  AStream.Read(c,1);
+  if c = 'R' then
   begin
-    FLetterCount := 255;
-    for i := 0 to 255 do
+    ClearFont;
+    AStream.Read(FLetterSize[0],SizeOf(FLetterSize));
+    AStream.Read(FPatternWidth,SizeOf(Integer));
+    AStream.Read(FPatternHeight,SizeOf(Integer));
+    FTexture.LoadFromStream(AStream);
+    if FTexture.FAd2DTexture.Loaded then
     begin
-      with FMeshList.Add('') do
+      FLetterCount := 255;
+      for i := 0 to 255 do
       begin
-        Texture := self.FTexture;
-        PatternWidth := self.FPatternWidth;
-        PatternHeight := self.FPatternHeight;
-        SkipWidth := 1;
-        SkipHeight := 1;
+        with FMeshList.Add('') do
+        begin
+          Texture := self.FTexture;
+          PatternWidth := self.FPatternWidth;
+          PatternHeight := self.FPatternHeight;
+          SkipWidth := 1;
+          SkipHeight := 1;
+        end;
       end;
+      FMeshList.Restore;
     end;
-    FMeshList.Restore;
+  end
+  else
+  begin
+    AStream.Read(FMetadata,SizeOf(TFontMetadata));
+    with FMetadata do
+    begin
+      CreateFont(Name,Style,Size,Shadow,ShadowDepth,ShadowBlur,ShadowAlpha);
+    end;
+    FOnlyMetadata := true;
   end;
 end;
 
@@ -2723,11 +2797,28 @@ begin
 end;
 
 procedure TAdFont.SaveToStream(AStream: TStream);
+var
+  c:char;
+  l:integer;
 begin
-  AStream.Write(FLetterSize[0],SizeOf(FLetterSize));
-  AStream.Write(FPatternWidth,SizeOf(Integer));
-  AStream.Write(FPatternHeight,SizeOf(Integer));
-  FTexture.SaveToStream(AStream);
+  l := Length(FName);
+  AStream.Write(l,SizeOf(l));
+  AStream.Write(FName[1],l);
+  if FOnlyMetadata then
+  begin
+    c := 'M';
+    AStream.Write(c,1);
+    AStream.Write(FMetadata,SizeOf(TFontMetadata));
+  end
+  else
+  begin
+    c := 'R';
+    AStream.Write(c,1);
+    AStream.Write(FLetterSize[0],SizeOf(FLetterSize));
+    AStream.Write(FPatternWidth,SizeOf(Integer));
+    AStream.Write(FPatternHeight,SizeOf(Integer));
+    FTexture.SaveToStream(AStream);
+  end;
 end;
 
 function TAdFont.GetLoaded: boolean;
@@ -2762,17 +2853,16 @@ end;
 
 { TAdFontCollection }
 
-procedure TAdFontCollection.Add(AName, AFont: String; AStyle: TFontStyles;
+function TAdFontCollection.Add(AName, AFont: String; AStyle: TFontStyles;
   ASize: integer; AShadow: boolean; AShadowDepth, AShadowBlur: integer;
-  AShadowAlpha: byte);
-var
-  Font:TAdFont;
+  AShadowAlpha: byte):TAdFont;
 begin
-  font := TAdFont.Create(FParent);
-  font.CreateFont(AFont,AStyle,ASize,AShadow,AShadowDepth,AShadowBlur,AShadowAlpha);
-  font.Name := AName;
-  font.CreatedByList := true;
-  Add(font);
+  result := TAdFont.Create(FParent);
+  result.CreateFont(AFont,AStyle,ASize,AShadow,AShadowDepth,AShadowBlur,AShadowAlpha);
+  result.Name := AName;
+  result.CreatedByList := true;
+  result.SaveOnlyMetadata := SaveOnlyMetadata;
+  Add(result);
 end;
 
 constructor TAdFontCollection.Create(AParent: TAdDraw);
@@ -2810,7 +2900,7 @@ begin
   inherited;
   if Action = lnDeleted then
   begin
-    if TAdFont(ptr).CreatedByList then
+    if (ptr <> nil) and TAdFont(ptr).CreatedByList then
     begin
       TAdFont(ptr).Free;
     end;
@@ -2820,6 +2910,66 @@ end;
 procedure TAdFontCollection.SetItem(Index: integer; Value: TAdFont);
 begin
   inherited Items[Index] := Value;
+end;
+
+procedure TAdFontCollection.SetOnlyMetadata(Value: boolean);
+var
+  i:integer;
+begin
+  FOnlyMetadata := Value;
+  for i := 0 to Count - 1 do
+  begin
+    Items[i].SaveOnlyMetadata := Value;
+  end;
+end;
+
+procedure TAdFontCollection.LoadFromFile(AFile: string);
+var
+  ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  ms.LoadFromFile(AFile);
+  ms.Position := 0;
+  LoadFromStream(ms);
+  ms.Free;
+end;
+
+procedure TAdFontCollection.SaveToFile(AFile: string);
+var
+  ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.SaveToFile(AFile);
+  ms.Free;
+end;
+
+procedure TAdFontCollection.LoadFromStream(AStream: TStream);
+var
+  c,i:integer;
+  tmp:TAdFont;
+begin
+  Clear;
+  AStream.Read(c,SizeOf(c));
+  for i := 0 to c - 1 do
+  begin
+    tmp := TAdFont.Create(FParent);
+    tmp.LoadFromStream(AStream);
+    tmp.CreatedByList := true;
+    Add(tmp);    
+  end;
+end;
+
+procedure TAdFontCollection.SaveToStream(AStream: TStream);
+var
+  c,i:integer;
+begin
+  c := Count;
+  AStream.Write(c,SizeOf(c));
+  for i := 0 to Count - 1 do
+  begin
+    Items[i].SaveToStream(AStream);
+  end;
 end;
 
 { TAdPen }

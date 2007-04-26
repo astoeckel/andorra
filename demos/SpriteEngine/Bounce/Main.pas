@@ -21,7 +21,7 @@ type
   public
     AdDraw:TAdDraw;
     AdSpriteEngine:TSpriteEngine;
-    AdPictureCollection:TPictureCollection;
+    AdPictureCollection:TAdImageList;
     AdPerCounter:TPerformanceCounter;
     settings:TIniFile;
     firsttime:boolean;
@@ -129,7 +129,7 @@ begin
 
   AdDraw.AmbientColor := RGB(96,96,96);
 
-  AdPictureCollection := TPictureCollection.Create(AdDraw);
+  AdPictureCollection := TAdImageList.Create(AdDraw);
   with AdPictureCollection.Add('wall')do
   begin
     Texture.LoadGraphicFromFile(path+'texture.bmp',false,clWhite);

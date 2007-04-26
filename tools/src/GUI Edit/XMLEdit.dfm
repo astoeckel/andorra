@@ -27,11 +27,8 @@ object XMLEditor: TXMLEditor
     Font.Name = 'Courier New'
     Font.Style = []
     ParentFont = False
+    ScrollBars = ssBoth
     TabOrder = 0
-    ExplicitLeft = 232
-    ExplicitTop = 240
-    ExplicitWidth = 185
-    ExplicitHeight = 89
   end
   object Panel1: TPanel
     Left = 0

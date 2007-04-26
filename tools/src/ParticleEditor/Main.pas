@@ -164,7 +164,7 @@ type
   public
 
     AdDraw1:TAdDraw;
-    AdImg1:TPictureCollectionItem;
+    AdImg1:TAdImage;
 
     PerCount:TPerformanceCounter;
     PartSys:TAdParticleSystem;
@@ -228,7 +228,7 @@ begin
   begin
     bmp := TBitmap.Create;
     bmp.LoadFromFile(OpenPictureDialog1.FileName);
-    AdImg1 := TPictureCollectionItem.Create(AdDraw1);
+    AdImg1 := TAdImage.Create(AdDraw1);
     adbmp := TAdBitmap.Create;
     adbmp.AssignBitmap(bmp);
     adbmp.AssignAlphaChannel(bmp);
@@ -494,7 +494,7 @@ begin
   end;
   Image2.Picture.Bitmap.Assign(bmp);
   adbmp := TAdBitmap.Create;
-  AdImg1 := TPictureCollectionItem.Create(AdDraw1);
+  AdImg1 := TAdImage.Create(AdDraw1);
   adbmp.AssignBitmap(bmp);
   adbmp.AssignAlphaChannel(bmp);
   AdImg1.Texture.Texture.LoadFromBitmap(adbmp);

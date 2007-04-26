@@ -124,6 +124,9 @@ type
       FMouseX,FMouseY:integer;
 
       FFont:TAdFont;
+      FFonts:TAdFontCollection;
+      FFontFromCollection:boolean;
+      FSaveFont:boolean;
 
       FGridX,FGridY:integer;
       FGrid:Boolean;
@@ -146,6 +149,8 @@ type
       procedure SetGrid(Value:boolean);
       procedure SetWidth(Value:single);
       procedure SetHeight(Value:single);
+      procedure SetFonts(Value:TAdFontCollection);
+      procedure SetSaveFont(Value:boolean);
     protected
       function GetBoundsRect:TRect;
       function GetClientRect:TRect;
@@ -202,6 +207,10 @@ type
       property MaxWidth:integer read FMaxWidth write FMaxWidth;
       property MinHeight:integer read FMinHeight write FMinHeight;
       property MaxHeight:integer read FMaxHeight write FMaxHeight;
+
+      property Fonts:TAdFontCollection read FFonts write SetFonts;
+      property FontFromCollection:boolean read FFontFromCollection;
+      property SaveFont:boolean read FSaveFont write SetSaveFont;
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -248,7 +257,6 @@ type
       property ClientRect:TRect read GetClientRect;
       property CurrentCursor:string read FCurrentCursor write SetCurrentCursor;
       property HintWnd:TAdHint read FHintWnd write SetHintWnd;
-      property Font:TAdFont read GetFont write SetFont;
 
       property GridX:integer read FGridY write SetGridY;
       property GridY:integer read FGridX write SetGridX;
@@ -269,6 +277,8 @@ type
 
       property Hint:string read FHint write FHint;
       property ShowHint:boolean read FShowHint write FShowHint;
+
+      property Font:TAdFont read GetFont write SetFont;
 
       property OnClick:TNotifyEvent read FOnClick write FOnClick;
       property OnDblClick:TNotifyEvent read FOnDblClick write FOnDblClick;
@@ -362,14 +372,18 @@ type
       FMouse:TAdMouseLibrary;
       FMouseX,FMouseY:integer;
       FOwnHintWnd:boolean;
+      FOwnFonts:boolean;
       procedure SetHintWnd(Value:TAdHint);
+      procedure SetFonts(Value:TAdFontCollection);
     protected
       procedure SetCurrentCursor(Value:string);override;
-
       procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
     public
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
+
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
 
       procedure Update(TimeGap:double);
 
@@ -378,6 +392,8 @@ type
       property MouseY:integer read FMouseY;
 
       property HintWnd write SetHintWnd;
+      property Fonts write SetFonts;
+      property SaveFont;
   end;
 
 type TAdComponentClass = class of TAdComponent;
@@ -435,6 +451,7 @@ begin
   FMinHeight := 0;
   FMaxWidth := -1;
   FMaxHeight := -1;
+  FSaveFont := true;
 
   if FParent <> nil then
   begin
@@ -448,6 +465,8 @@ begin
     FGrid := FParent.Grid;
     FGridX := FParent.GridX;
     FGridY := FParent.GridY;
+    FFonts := FParent.Fonts;
+    FSaveFont := FParent.SaveFont;
   end;
 
   FAlpha := 255;
@@ -547,6 +566,15 @@ begin
       end;
     end;
   end;
+
+  if FFonts <> nil then
+  begin
+    if aroot.Properties.Value('font','') <> '' then
+    begin
+      Font := Fonts.Font[aroot.Properties.Value('font','')];
+      SaveFont := true;
+    end;
+  end;
 end;
 
 function TAdComponent.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
@@ -573,6 +601,10 @@ begin
     Add('visible',FVisible);
     Add('x',round(FX));
     Add('y',round(FY));
+    if FSaveFont and FFontFromCollection and (FFont <> nil) then
+    begin
+      Add('font',FFont.Name);
+    end;
   end;
 end;
 
@@ -779,9 +811,22 @@ var
   i: Integer;
 begin
   FFont := Value;
+  FFontFromCollection := (FFonts <> nil) and (FFonts.IndexOf(Value) <> -1);  
   for i := 0 to Components.Count - 1 do
   begin
     Components[i].Font := FFont;
+  end;
+end;
+
+procedure TAdComponent.SetFonts(Value: TAdFontCollection);
+var
+  i:integer;
+begin
+  FFonts := Value;
+  FFontFromCollection := (FFonts <> nil) and (FFonts.IndexOf(Value) <> -1);
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].Fonts := FFonts;
   end;
 end;
 
@@ -869,6 +914,17 @@ end;
 procedure TAdComponent.SetName(Value: string);
 begin
   FName := GetUniqueName(Value, false);
+end;
+
+procedure TAdComponent.SetSaveFont(Value: boolean);
+var
+  i:integer;
+begin
+  FSaveFont := Value;
+  for i := 0 to Components.Count - 1 do
+  begin
+    Components[i].SaveFont := Value;
+  end;
 end;
 
 procedure TAdComponent.SetSkin(Value: TAdSkin);
@@ -1746,6 +1802,11 @@ begin
 
   FOwnHintWnd := true;
   FHintWnd := TAdHint.Create(AdDraw);
+  SaveFont := true;
+
+  FOwnFonts := true;
+  FFonts := TAdFontCollection.Create(AdDraw);
+  FFonts.SaveOnlyMetadata := true;
 end;
 
 destructor TAdGUI.Destroy;
@@ -1757,6 +1818,10 @@ begin
     HintWnd := nil;
     FHintWnd.Free;
   end;
+  if (FFonts <> nil) and FOwnFonts then
+  begin
+    FFonts.Free;
+  end;
   inherited;
 end;
 
@@ -1767,10 +1832,58 @@ begin
   FMouseY := Y;
 end;
 
+procedure TAdGUI.LoadFromXML(aroot: TJvSimpleXMLElem);
+var
+  ms:TMemoryStream;
+begin
+  if aroot.Properties.Value('fonts','') <> '' then
+  begin
+    if (FFonts <> nil) and FOwnFonts then
+    begin
+      FFonts.Free;
+    end;
+    FFonts := TAdFontCollection.Create(AdDraw);
+    FOwnFonts := true;
+    FSaveFont := true;
+
+    ms := TMemoryStream.Create;
+    ReadStreamFromString(ms,aroot.Properties.Value('fonts',''));
+    ms.Position := 0;
+    FFonts.LoadFromStream(ms);
+    ms.Free;
+  end;
+  inherited;
+end;
+
+function TAdGUI.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+var
+  ms:TMemoryStream;
+begin
+  result := inherited SaveToXML(aroot);
+  if SaveFont and (Fonts <> nil) then
+  begin
+    ms := TMemoryStream.Create;
+    FFonts.SaveToStream(ms);
+    ms.Position := 0;
+    result.Properties.Add('fonts',WriteStreamToString(ms));
+    ms.Free;
+  end;
+end;
+
 procedure TAdGUI.SetCurrentCursor(Value: string);
 begin
   inherited;
   Cursors.CurrentCursor := Value;
+end;
+
+procedure TAdGUI.SetFonts(Value: TAdFontCollection);
+begin
+  if FOwnFonts then
+  begin
+    FFonts.Free;
+    FOwnFonts := false;
+  end;
+  inherited;
 end;
 
 procedure TAdGUI.SetHintWnd(Value: TAdHint);

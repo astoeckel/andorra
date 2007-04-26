@@ -4,10 +4,11 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Menus, ComCtrls, XPMan, Designer, ImgList, Objects, Structure,
+  Dialogs, Menus, ComCtrls, XPMan, Designer, ImgList, Objects, Structure, ExtDlgs,
+  FontCollection,
 
   //Add all units with components here
-  AdGUI, AdComponents, ExtDlgs;
+  AdGUI, AdComponents;
 
 type
   TMainDlg = class(TForm)
@@ -88,6 +89,7 @@ type
     procedure Load(AFile:string);
     procedure RecentClick(Sender:TObject);
     procedure AddRecent(AFile:string);
+    procedure DblClickFont(Sender:TObject);
   end;
 
 var
@@ -199,6 +201,8 @@ var i,img:integer;
     end;
   end;
 begin
+  ReportMemoryLeaksOnShutdown := true;
+
   recent := TStringList.Create;
   if FileExists('gui.recent') then
   begin
@@ -234,6 +238,7 @@ begin
   Objects := TObjectsDlg.Create(self);
   Objects.Show;
   Objects.OnClickListEntry := ClickListEntry;
+  Objects.OnDblClickFont := DblClickFont;
 
   Structure := TStructureDlg.Create(self);
   Structure.Show;
@@ -431,6 +436,18 @@ begin
   Designer1.Checked := Designer.Visible;
   Objectinspector1.Checked := Objects.Visible;
   Structure1.Checked := Structure.Visible;
+end;
+
+procedure TMainDlg.DblClickFont(Sender: TObject);
+var
+  dlg:TFontColl;
+begin
+  dlg := TFontColl.Create(nil);
+  if dlg.ShowDlg(Designer.AdGUI) = mrOk then
+  begin
+    Designer.AdGUI.FocusedComponent.Font := Designer.AdGUI.Fonts.Items[dlg.ListBox1.ItemIndex];
+  end;
+  dlg.Free;
 end;
 
 procedure TMainDlg.Designer1Click(Sender: TObject);

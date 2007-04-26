@@ -21,7 +21,7 @@ type
     AdDraw1:TAdDraw;
     AdPerCounter:TPerformanceCounter;
     AdSpriteEngine:TSpriteEngine;
-    AdImageList:TPictureCollection;
+    AdImageList:TAdImageList;
     Selected:TSprite;
     dx,dy:integer;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -54,7 +54,7 @@ begin
     AdSpriteEngine := TSpriteEngine.Create(nil);
     AdSpriteEngine.Surface := AdDraw1;
 
-    AdImageList := TPictureCollection.Create(AdDraw1);
+    AdImageList := TAdImageList.Create(AdDraw1);
     AdImageList.LoadFromFile(path+'main.ail');
     AdImageList.Restore;
 

@@ -245,14 +245,14 @@ type
   {A sprite which draws sprites.}
   TImageSprite = class(TSprite)
     private
-      FImage:TPictureCollectionItem;
+      FImage:TAdImage;
       FAnimLoop: Boolean;
       FAnimPos: Double;
       FAnimSpeed: Double;
       FAnimStart: Integer;
       FAnimStop: Integer;
       FAnimActive: Boolean;
-      procedure SetImage(AValue:TPictureCollectionItem);
+      procedure SetImage(AValue:TAdImage);
       function GetAnimCount:integer;
       procedure SetAnimStart(AValue:integer);
       procedure SetAnimStop(AValue:integer);
@@ -263,7 +263,7 @@ type
       //Creates an instance of TImageSprite
       constructor Create(AParent:TSprite);override;
       //The image which is drawn by the sprite.
-      property Image:TPictureCollectionItem read FImage write SetImage;
+      property Image:TAdImage read FImage write SetImage;
     published
       //The count of patterns the image has.
       property AnimCount:Integer read GetAnimCount;
@@ -313,7 +313,7 @@ type
   {A sprite which draws the background of a scene.}
   TBackgroundSprite = class(TSprite)
     private
-      FImage:TPictureCollectionItem;
+      FImage:TAdImage;
       FTile:boolean;
       FDepth:single;
       FXTiles,FYTiles:integer;
@@ -331,7 +331,7 @@ type
       {Defines whether the sprites is drawn patterned.}
       property Tiled:boolean read FTile write FTile;
       {The image which is drawn}
-      property Image:TPictureCollectionItem read FImage write FImage;
+      property Image:TAdImage read FImage write FImage;
       {The number of tiles in X direction if tiled is false.}
       property XTiles:integer read FXTiles write FXTiles;
       {The number of tiles in Y direction if tiled is false.}
@@ -375,11 +375,11 @@ type
       FPartSys:TAdParticleSystem;
       FTime,FWait:double;
       FEmissionCount:integer;
-      FImage:TPictureCollectionItem;
+      FImage:TAdImage;
       FEmissionX,FEmissionY:double;
       FAutoDeath:boolean;
       procedure SetEmissionCount(AValue:integer);
-      procedure SetImage(AValue:TPictureCollectionItem); 
+      procedure SetImage(AValue:TAdImage);
     protected
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
@@ -390,7 +390,7 @@ type
       procedure Emit(ACount:integer);
       property PartSys:TAdParticleSystem read FPartSys;
       property EmissionCount:integer read FEmissionCount write SetEmissionCount;
-      property Image:TPictureCollectionItem read FImage write SetImage;
+      property Image:TAdImage read FImage write SetImage;
       property EmissionX:double read FEmissionX write FEmissionX;
       property EmissionY:double read FEmissionY write FEmissionY;
       property AutoDeath:boolean read FAutoDeath write FAutoDeath;
@@ -604,7 +604,12 @@ begin
     r := ASprite.GetFieldCoords;
     if not CompRects(r,ASprite.OldFieldCoords) then
     begin
-      with ASprite.OldFieldCoords do FSpriteField.Delete(ASprite,Left,Top,Right-Left,Bottom-Top);
+      with ASprite.OldFieldCoords do 
+      begin
+        //Remove the Sprite from the old position
+        FSpriteField.Delete(ASprite,Left,Top,Right-Left,Bottom-Top);
+      end;
+      //Add the sprite on the new position
       FSpriteField.Add(ASprite,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
       ASprite.OldFieldCoords := r;
     end;
@@ -1004,7 +1009,7 @@ begin
   FAnimStop := Abs(AValue);
 end;
 
-procedure TImageSprite.SetImage(AValue: TPictureCollectionItem);
+procedure TImageSprite.SetImage(AValue: TAdImage);
 begin
   if AValue <> nil then
   begin
@@ -1269,7 +1274,7 @@ begin
   end;
 end;
 
-procedure TParticleSprite.SetImage(AValue: TPictureCollectionItem);
+procedure TParticleSprite.SetImage(AValue: TAdImage);
 begin
   FImage := AValue;
   FPartSys.Texture := FImage.Texture;

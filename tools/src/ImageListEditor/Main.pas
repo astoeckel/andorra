@@ -106,10 +106,10 @@ type
     { Private-Deklarationen }
   public
     AdDraw1:TAdDraw;
-    AdImageList:TPictureCollection;
+    AdImageList:TAdImageList;
     AdPerCounter:TPerformanceCounter;
-    TextLabel:TPictureCollectionItem;
-    Tiles:TPictureCollectionItem;
+    TextLabel:TAdImage;
+    Tiles:TAdImage;
     AColor:TColor;
 
     OffsetX,OffsetY:integer;
@@ -342,14 +342,14 @@ begin
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
-    AdImageList := TPictureCollection.Create(AdDraw1);
+    AdImageList := TAdImageList.Create(AdDraw1);
     AColor := ColorToRGB(clBtnFace);
 
     CreateFilter;
 
-    TextLabel := TPictureCollectionItem.Create(AdDraw1);
+    TextLabel := TAdImage.Create(AdDraw1);
 
-    Tiles := TPictureCollectionItem.Create(AdDraw1);
+    Tiles := TAdImage.Create(AdDraw1);
     Tiles.Texture.LoadFromGraphic(Image2.Picture.Bitmap);    
     Tiles.Restore;
     
@@ -506,7 +506,7 @@ end;
 
 procedure TMainDlg.ListView1DragDrop(Sender, Source: TObject; X, Y: Integer);
 var index1,index2:integer; 
-    item:TPictureCollectionItem;
+    item:TAdImage;
 begin
   index1 := ListView1.ItemFocused.Index;
   if ListView1.GetItemAt(X,Y) <> nil then

@@ -30,7 +30,6 @@ object MainDlg: TMainDlg
     OnMouseDown = Panel1MouseDown
     OnMouseMove = Panel1MouseMove
     OnResize = Panel1Resize
-    ExplicitHeight = 565
   end
   object Panel2: TPanel
     Left = 0
@@ -41,7 +40,6 @@ object MainDlg: TMainDlg
     BevelOuter = bvNone
     BorderWidth = 5
     TabOrder = 1
-    ExplicitHeight = 565
     object Splitter1: TSplitter
       Left = 5
       Top = 401
@@ -68,7 +66,6 @@ object MainDlg: TMainDlg
       Padding.Right = 2
       Padding.Bottom = 2
       TabOrder = 0
-      ExplicitHeight = 376
       object Image2: TImage
         Left = 120
         Top = 240
@@ -140,7 +137,6 @@ object MainDlg: TMainDlg
         OnDragDrop = ListView1DragDrop
         OnDragOver = ListView1DragOver
         OnKeyDown = ListView1KeyDown
-        ExplicitHeight = 355
       end
     end
     object GroupBox1: TGroupBox
@@ -156,7 +152,6 @@ object MainDlg: TMainDlg
       Padding.Bottom = 3
       TabOrder = 1
       Visible = False
-      ExplicitTop = 384
       object ListView2: TListView
         Left = 5
         Top = 42
@@ -317,7 +312,6 @@ object MainDlg: TMainDlg
     Align = alBottom
     TabOrder = 3
     Visible = False
-    ExplicitTop = 589
   end
   object MainMenu1: TMainMenu
     Images = ImageList1
@@ -397,7 +391,7 @@ object MainDlg: TMainDlg
   object ImageList1: TImageList
     Top = 160
     Bitmap = {
-      494C01010C000E00040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C01010C000E00040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -929,7 +923,8 @@ object MainDlg: TMainDlg
       000100010000C000000000000000C000000000000000C000000000000000C000
       000000000000C000000000000000C000000000000000C000000000000000C000
       000000000000400000000001000000008080000300000001FFC080FF00000003
-      FF8080FF00000007FFD1FFFF000100FF}
+      FF8080FF00000007FFD1FFFF000100FF00000000000000000000000000000000
+      000000000000}
   end
   object ImageList2: TImageList
     BkColor = clWhite

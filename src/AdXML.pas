@@ -19,34 +19,49 @@ interface
 
 uses JvSimpleXML, Classes, AdDraws, AdClasses, SysUtils;
 
+function WriteStreamToString(AStream:TStream):string;
+procedure ReadStreamFromString(AStream:TStream;AString:string);
 procedure WriteStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
 procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
 
 implementation
 
-procedure WriteStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
-var data:string;
-    i:integer;
-    b:byte;
+function WriteStreamToString(AStream:TStream):string;
+var
+  i:integer;
+  b:byte;
 begin
-  AStream.Position := 0;
-
-  data := '';
-
+  result := '';
   for i := 0 to AStream.Size-1 do
   begin
     AStream.Read(b,1);
-    data := data + inttohex(b,2);
-  end;  
+    result := result + inttohex(b,2);
+  end;
+end;
 
-  XMLElem.Properties.Add('data',data);
+procedure ReadStreamFromString(AStream:TStream;AString:string);
+var
+  i:integer;
+  b:byte;
+begin
+  for i := 1 to length(AString) div 2 do
+  begin
+    b := strtoint('$'+copy(AString,((i-1)*2)+1,2));
+    AStream.Write(b,1);
+  end;
+end;
+
+procedure WriteStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
+begin
+  AStream.Position := 0;
+  XMLElem.Properties.Add('data',WriteStreamToString(AStream));
 end;
 
 procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
-var data:string;
-    i:integer;
-    b:byte;
-    ms:TMemoryStream;
+var
+  i:integer;
+  b:byte;
+  ms:TMemoryStream;
 begin
   if XMLElem.Properties.Value('source','') <> '' then
   begin
@@ -58,12 +73,7 @@ begin
   end
   else
   begin
-    data := XMLElem.Properties.Value('data','');
-    for i := 1 to length(data) div 2 do
-    begin
-      b := strtoint('$'+copy(data,((i-1)*2)+1,2));
-      AStream.Write(b,1);
-    end;
+    ReadStreamFromString(AStream, XMLElem.Properties.Value('data',''));
   end;
 end;
 

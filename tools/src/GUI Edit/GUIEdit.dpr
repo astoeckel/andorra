@@ -6,7 +6,8 @@ uses
   Main in 'Main.pas' {MainDlg},
   Objects in 'Objects.pas' {ObjectsDlg},
   Structure in 'Structure.pas' {StructureDlg},
-  XMLEdit in 'XMLEdit.pas' {XMLEditor};
+  XMLEdit in 'XMLEdit.pas' {XMLEditor},
+  FontCollection in 'FontCollection.pas' {FontColl};
 
 {$R *.res}
 

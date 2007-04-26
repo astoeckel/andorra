@@ -3,8 +3,8 @@ object MainDlg: TMainDlg
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Andorra 2D - GUI Editor'
-  ClientHeight = 74
-  ClientWidth = 664
+  ClientHeight = 57
+  ClientWidth = 663
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,11 +22,10 @@ object MainDlg: TMainDlg
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 664
-    Height = 74
+    Width = 663
+    Height = 57
     Align = alClient
     TabOrder = 0
-    ExplicitHeight = 81
   end
   object MainMenu1: TMainMenu
     Images = ImageList2

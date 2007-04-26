@@ -60,7 +60,7 @@ type
     ChangedImages:boolean;
     procedure ViewCompressors;
     procedure MakeMask(c:TColor;add:boolean);
-    function InsprectImage(AImage:TPictureCollectionItem):TModalResult;
+    function InsprectImage(AImage:TAdImage):TModalResult;
     { Public-Deklarationen }
   end;
 
@@ -159,7 +159,7 @@ begin
   end;
 end;
 
-function TSettings.InsprectImage(AImage: TPictureCollectionItem):TModalResult;
+function TSettings.InsprectImage(AImage: TAdImage):TModalResult;
 var bmp:TBitmap;
     adbmp:TAdBitmap;
     bits:byte;

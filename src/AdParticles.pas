@@ -79,7 +79,7 @@ type
   TAdParticleSystem = class
     private
       FTexture:TAdTexture;
-      FImages:TPictureCollection;
+      FImages:TAdImageList;
       FDraw:TAdDraw;
       FParticles:TAdParticleList;
       FDefault:TAdParticle;
@@ -103,7 +103,7 @@ type
       //Creates a new image in the systems imagelist with a specific color.
       procedure CreateImage(AColor:TAndorraColor);
       //Returns an image with a specific color or "nil" if the image isn't found.
-      function GetImage(AColor:TAndorraColor):TPictureCollectionItem;
+      function GetImage(AColor:TAndorraColor):TAdImage;
       //Specifies the texture of all particles
       property Texture:TAdTexture read FTexture write SetTexture;
       //The parent sourface
@@ -111,7 +111,7 @@ type
       //All particles in the system
       property Items:TAdParticleList read FParticles;
       //A link to the system's image list.
-      property Images:TPictureCollection read FImages;
+      property Images:TAdImageList read FImages;
       //The relative rect of all particles
       property BoundsRect:TRect read GetBoundsRect;
       //A particle which settings are automaticly copied when creating new particles
@@ -131,7 +131,7 @@ type
       FColors:TAdColorList;
       FDeaded:boolean;
       FSystem:TAdParticleSystem;
-      FLastImage:TPictureCollectionItem;
+      FLastImage:TAdImage;
       FDrawMask:boolean;
       FColor:TAndorraColor;
       FSizeStart,FSizeEnd:double;
@@ -145,7 +145,7 @@ type
       function GetBoundsRect:TRect;
       function GetValue(StartPos,EndPos,Max,Pos:double):double;
     protected
-      function GetImage:TPictureCollectionItem;virtual;
+      function GetImage:TAdImage;virtual;
     public
       //Creates an instance of the particle
       constructor Create(ASystem:TAdParticleSystem);
@@ -180,7 +180,7 @@ type
       //Specifies whether the backgroundmask should be drawn by the DoPreDraw function.
       property DrawMask:boolean read FDrawMask write FDrawMask;
       //The image of the particle
-      property Image:TPictureCollectionItem read GetImage;
+      property Image:TAdImage read GetImage;
       //The parent particle system.
       property Parent:TAdParticleSystem read FSystem;
       //Specifies whether the particle wants to be killed.
@@ -377,7 +377,7 @@ constructor TAdParticleSystem.Create(ADraw: TAdDraw);
 begin
   inherited Create;
   FDraw := ADraw;
-  FImages := TPictureCollection.Create(FDraw);
+  FImages := TAdImageList.Create(FDraw);
   FParticles := TAdParticleList.Create;
   FDefault := TAdParticle.Create(nil);
 end;
@@ -466,8 +466,7 @@ begin
   end;
 end;
 
-function TAdParticleSystem.GetImage(
-  AColor: TAndorraColor): TPictureCollectionItem;
+function TAdParticleSystem.GetImage(AColor: TAndorraColor): TAdImage;
 begin
   result := FImages.Find(AdColorToString(AColor));
 end;
@@ -542,7 +541,7 @@ begin
 end;
 
 procedure TAdParticle.DoDraw(AX, AY: double);
-var aimg:TPictureCollectionItem;
+var aimg:TAdImage;
     arect:TRect;
     w,h:integer;
 begin
@@ -571,7 +570,7 @@ begin
 end;
 
 procedure TAdParticle.DoPreDraw(AX, AY: double);
-var aimg:TPictureCollectionItem;
+var aimg:TAdImage;
     arect:TRect;
     w,h:integer;
 begin
@@ -621,7 +620,7 @@ begin
                  round(FY+(Parent.Texture.Texture.BaseHeight)*s / 2));
 end;
 
-function TAdParticle.GetImage: TPictureCollectionItem;
+function TAdParticle.GetImage: TAdImage;
 var acolor:TAndorraColor;
 begin
   acolor := FColors.GetColor(FLifeTime,FLifedTime);

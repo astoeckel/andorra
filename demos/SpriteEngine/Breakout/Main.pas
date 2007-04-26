@@ -19,7 +19,7 @@ type
     protected
       FPart1,FPart2:TAdParticle;
       FPartSprite:TParticleSprite;
-      FImg:TPictureCollectionItem;
+      FImg:TAdImage;
     public
       XDir,YDir:double;
       Speed:double;
@@ -28,7 +28,7 @@ type
       procedure ChangeDir(top:boolean);
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var done:boolean);override;
-      procedure SetParticles(APart1,APart2:TAdParticle;AImg:TPictureCollectionItem);
+      procedure SetParticles(APart1,APart2:TAdParticle;AImg:TAdImage);
   end;
 
   TBat = class (TImageSprite)
@@ -50,7 +50,7 @@ type
     { Private-Deklarationen }
   public
     AdDraw1:TAdDraw;
-    AdImgLst:TPictureCollection;
+    AdImgLst:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
     AdPerCounter:TPerformanceCounter;
     AdFont:TAdFont;
@@ -108,7 +108,7 @@ begin
 
   if AdDraw1.Initialize then
   begin
-    AdImgLst := TPictureCollection.Create(AdDraw1);
+    AdImgLst := TAdImageList.Create(AdDraw1);
 
     with AdImgLst.Add('bricks') do
     begin
@@ -401,7 +401,7 @@ begin
   FPartSprite.EmissionY := Y+Height/2;
 end;
 
-procedure TBall.SetParticles(APart1, APart2: TAdParticle;AImg:TPictureCollectionItem);
+procedure TBall.SetParticles(APart1, APart2: TAdParticle;AImg:TAdImage);
 begin
   FPart1.Assign(APart1);
   FPart2.Assign(APart2);
