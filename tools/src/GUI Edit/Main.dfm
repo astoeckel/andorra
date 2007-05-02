@@ -1,6 +1,6 @@
 object MainDlg: TMainDlg
-  Left = 0
-  Top = 0
+  Left = 44
+  Top = 47
   BorderStyle = bsToolWindow
   Caption = 'Andorra 2D - GUI Editor'
   ClientHeight = 57
@@ -13,6 +13,7 @@ object MainDlg: TMainDlg
   Font.Style = []
   Menu = MainMenu1
   OldCreateOrder = False
+  Position = poDesigned
   ScreenSnap = True
   OnClose = FormClose
   OnCreate = FormCreate

@@ -28,11 +28,11 @@ type
   TOGLApplication = class(TAd2DApplication)
     private
       {$IFDEF UseComponents}
+      FBox : TOpenGlBox;
+      {$ELSE}
       FDC : HDC;
       FRC : HGLRC;
       FWnd: LongWord;
-      {$ELSE}
-      FBox : TOpenGlBox;
       {$ENDIF}
       FLastTexture:TAd2dTexture;
     protected
@@ -355,11 +355,9 @@ end;
 
 procedure TOGLMesh.Update;
 begin
-  //Takes the data from FVertices and FIndices and writes it into the graphic system's vertex- and indexbuffer.
-  //A new buffer will only be created if the count of the vertices/indices has changed.
+  //Nothing to do now.
 end;
-                           {$DEFINE UseGtkGLX}
-  {$DEFINE OpenGLTargetDefined}
+
 { TOGLBitmapTexture }
 
 constructor TOGLBitmapTexture.Create(AParent: TOGLApplication);

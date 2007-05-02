@@ -8,7 +8,8 @@ uses JvSimpleXML, AdGUI, AdSkin, AdClasses, AdDraws, {$I AdTypes.inc}, Controls,
 type
   TAdAlignment = (alLeft,alCenter,alRight);
   TAdTextPos = (tpTop,tpCenter,tpBottom);
-
+  TAdAlignmentEx = (axLeft, axRight, axTop, axBottom);
+  
   TAdForm = class(TAdComponent)
     private
       FCaption:string;
@@ -68,6 +69,33 @@ type
     published
       property Caption:string read FCaption write FCaption;
   end;
+
+  TAdCheckBox = class(TAdComponent)
+    private
+      FState: TAdButtonState;
+      FCaption: String;
+      FSkinItem: TAdSkinItem;
+      FCheckedItem: TAdSkinItem;
+      FChecked: Boolean;
+      FAlignment: TAdAlignmentEx;
+    protected
+      procedure LoadSkinItem; override;
+      procedure DoDraw; override;
+      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
+      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
+      procedure DoMouseEnter; override;
+      procedure DoMouseLeave; override;
+    public
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+    published
+      property Checked:Boolean read FChecked write FChecked;
+      property Caption:String read FCaption write FCaption;
+      property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
+  end;
+
+ const
+   SPACING = 5;
 
 implementation
 
@@ -281,10 +309,122 @@ begin
   SetSpacer(FSkinItem);
 end;
 
+{ TAdCheckBox }
+
+procedure TAdCheckBox.DoDraw;
+var Rect: TRect;
+begin
+  if (FSkinItem <> nil) and (FCheckedItem <> nil) then
+ begin
+    Rect := BoundsRect;
+    Font.Alpha := Alpha;
+    case FAlignment of
+      axLeft  : begin
+                  FSkinItem.Draw(Integer(FState),Rect.Left,Rect.Top,FSkinItem.BaseWidth,FSkinItem.BaseHeight,Alpha);
+                  if FChecked then
+                    FCheckedItem.Draw(0,Rect.Left + Round(FSkinItem.BaseWidth / 2) - Round(FCheckedItem.BaseWidth / 2),
+                                        Rect.Top + Round(FSkinItem.BaseHeight / 2) - Round(FCheckedItem.BaseHeight / 2),FCheckedItem.BaseWidth,
+                                        FCheckedItem.BaseHeight,Alpha);
+                  Font.TextOut(Rect.Left + FSkinItem.BaseWidth + SPACING,Rect.Top +
+                               Round(FSkinItem.BaseHeight / 2) - (Font.TextHeight(FCaption) div 2),
+                               FCaption);
+                end;
+      axRight : begin
+                  FSkinItem.Draw(Integer(FState),Rect.Right - Round(FSkinItem.BaseWidth),Rect.Top,FSkinItem.BaseWidth,
+                    FSkinItem.BaseHeight,Alpha);
+                  if FChecked then
+                    FCheckedItem.Draw(0,Rect.Right - Round(FSkinItem.BaseWidth / 2) - Round(FCheckedItem.BaseWidth / 2),
+                                        Rect.Top + Round(FSkinItem.BaseHeight / 2) - Round(FCheckedItem.BaseHeight / 2),
+                                      FCheckedItem.BaseWidth, FCheckedItem.BaseHeight,Alpha);
+                  Font.TextOut(Rect.Left + Round(Width-FSkinItem.BaseWidth) - Font.TextWidth(FCaption) - SPACING,
+                               Rect.Top + Round(FSkinItem.BaseHeight / 2) - (Font.TextHeight(FCaption) div 2) ,
+                               FCaption);
+                end;
+      axTop   : begin
+                  FSkinItem.Draw(Integer(FState),Rect.Left + Round(Width / 2) - Round(FSkinItem.BaseWidth / 2),
+                                        Rect.Top,FSkinItem.BaseWidth, FSkinItem.BaseHeight,Alpha);
+                  if FChecked then
+                  FCheckedItem.Draw(0,Rect.Left + Round(Width / 2) - Round(FCheckedItem.BaseWidth / 2),
+                                      Rect.Top + Round(FSkinItem.BaseHeight / 2) - Round(FCheckedItem.BaseHeight / 2),FCheckedItem.BaseWidth, FCheckedItem.BaseHeight, Alpha);
+                  Font.TextOut(Rect.Left + Round(Width / 2) - Round(Font.TextWidth(FCaption) / 2),
+                               Rect.Top + FSkinItem.BaseHeight + SPACING, FCaption);
+                end;
+      axBottom: begin
+                  FSkinItem.Draw(Integer(FState),Rect.Left + Round(Width / 2) - Round(FSkinItem.BaseWidth / 2),
+                                        Rect.Bottom - FSkinItem.BaseHeight,FSkinItem.BaseWidth, FSkinItem.BaseHeight,Alpha);
+                  if FChecked then
+                    FCheckedItem.Draw(0,Rect.Left + Round(Width / 2) - Round(FCheckedItem.BaseWidth / 2),
+                                      Rect.Bottom - Round(FSkinItem.BaseHeight / 2) - Round(FCheckedItem.BaseHeight / 2),
+                                      FCheckedItem.BaseWidth, FCheckedItem.BaseHeight,Alpha);
+                  Font.TextOut(Rect.Left + Round(Width / 2) - Round(Font.TextWidth(FCaption) / 2),
+                               Rect.Bottom - FSkinItem.BaseHeight - Font.TextHeight(FCaption) - SPACING,
+                               FCaption);
+                end;
+    end;
+  end;
+  inherited DoDraw;
+end;
+
+procedure TAdCheckBox.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer);
+begin
+  inherited;
+  FState := bsDown;
+end;
+
+procedure TAdCheckBox.DoMouseEnter;
+begin
+  inherited;
+  FState := bsHover;
+end;
+
+procedure TAdCheckBox.DoMouseLeave;
+begin
+  inherited;
+  FState := bsNormal;
+end;
+
+procedure TAdCheckBox.DoMouseUp(Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer);
+begin
+  inherited;
+  FChecked := not FChecked;
+  FState := bsHover;
+end;
+
+procedure TAdCheckBox.LoadFromXML(ARoot: TJvSimpleXMLElem);
+begin
+  inherited;
+  with ARoot.Properties do
+  begin
+    FCaption := Value('caption','');
+    FChecked := ARoot.Properties.BoolValue('checked',false);
+  end;
+end;
+
+procedure TAdCheckBox.LoadSkinItem;
+begin
+  FSkinItem := Skin.ItemNamed['checkbox'];
+  SetSpacer(FSkinItem);
+  FCheckedItem := Skin.ItemNamed['checkboxhook'];
+  SetSpacer(FCheckedItem);
+end;
+
+function TAdCheckBox.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  Result := inherited SaveToXML(aroot);
+  with Result.Properties do
+  begin
+    Add('caption',FCaption);
+    Add('checked',FChecked);
+  end;
+end;
+
 initialization
   RegisterComponent(TAdForm,'Standard');
   RegisterComponent(TAdPanel,'Standard');
   RegisterComponent(TAdButton,'Standard');
+  RegisterComponent(TAdCheckbox,'Standard');
 
 finalization
 

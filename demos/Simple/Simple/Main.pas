@@ -33,7 +33,7 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraOGL.dll';
+  AdDraw1.DllName := 'AndorraDX93D.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;

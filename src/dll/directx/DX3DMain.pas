@@ -30,7 +30,7 @@ type
     public
       Direct3D9:IDirect3D9;
       Direct3DDevice9:IDirect3DDevice9;
-      constructor Create;override;
+      constructor Create;
       destructor Destroy;reintroduce;
       function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
