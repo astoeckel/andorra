@@ -1073,7 +1073,7 @@ end;
 
 procedure TAdDraw.ClearSurface(Color:TColor);
 begin
-  AdAppl.ClearSurface(Ad_RGB(GetRValue(Color),GetGValue(Color),GetBValue(Color)));
+  AdAppl.ClearSurface(Ad_ARGB(255,GetRValue(Color),GetGValue(Color),GetBValue(Color)));
 end;
 
 procedure TAdDraw.BeginScene;

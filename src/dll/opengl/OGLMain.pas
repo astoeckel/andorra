@@ -152,6 +152,8 @@ begin
 
     glEnable(GL_BLEND);
     glDisable(GL_CULL_FACE);
+//    glEnable(GL_ALPHA_TEST);
+//    glAlphaFunc(GL_GREATER, 0.001);
   end
   else
   begin
@@ -162,11 +164,11 @@ end;
 procedure TOGLApplication.Finalize;
 begin
   WriteLog(ltNone,'Finalize Andorra OpenGL Plugin');
-  {$IFNDEF UseComponents}
+  {$IFDEF UseComponents}
+  {$ELSE}
   DeactivateRenderingContext;
   DestroyRenderingContext(FRC);
   ReleaseDC(FWnd, FDC);
-  {$ELSE}
   {$ENDIF}
 end;
 
@@ -247,7 +249,7 @@ end;
 
 procedure TOGLApplication.ClearSurface(AColor: TAndorraColor);
 begin
-  //glClearColor(AColor.r / 255, AColor.g / 255, AColor.b / 255, 0);
+  glClearColor(AColor.r / 255, AColor.g / 255, AColor.b / 255, 0);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 end;
 
@@ -274,9 +276,9 @@ begin
     with FParent do
     begin
       case ABlendMode of
-        bmAlpha: glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
+        bmAlpha: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         bmAdd: glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        bmMask: glBlendFunc(GL_ZERO, GL_DST_ALPHA);
+        bmMask: glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
       end;
 
       if (FTexture <> nil) and (FTexture.Loaded) then
