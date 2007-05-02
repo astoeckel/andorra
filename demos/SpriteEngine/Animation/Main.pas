@@ -49,7 +49,7 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw1.DllName := 'AndorraOGL.dll';
 
   if AdDraw1.Initialize then
   begin
@@ -103,8 +103,8 @@ procedure TForm1.FormResize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    AdDraw1.Finalize;
-    AdDraw1.Initialize;
+    //AdDraw1.Finalize;
+    //AdDraw1.Initialize;
   end;
 end;
 

@@ -81,7 +81,7 @@ begin
     AdDraw1.ClearSurface(clSilver);
     AdDraw1.BeginScene;
 
-    AdImageList1.Find('logo').Draw(AdDraw1,0,0,0);
+    AdImageList1.Find('logo').DrawMask(AdDraw1,rect(100,100,300,300),0,128);
     AdDraw1.EndScene;
     AdDraw1.Flip;
 

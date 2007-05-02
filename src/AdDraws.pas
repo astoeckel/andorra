@@ -2524,7 +2524,7 @@ begin
   inherited;
 end;
 
-{$IFDEF WIN32}
+{$IFDEF FPC}{$ELSE}
 procedure SetFontQuality (aFont: TFont;  aQuality: Byte);
 var
   LF : TLogFont;
@@ -2603,7 +2603,7 @@ begin
       bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
     end;
 
-    {$IFDEF WIN32}
+    {$IFDEF FPC}{$ELSE}
       SetFontQuality (bmp.Canvas.Font, NONANTIALIASED_QUALITY);
     {$ENDIF}
 

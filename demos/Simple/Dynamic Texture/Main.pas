@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, StdCtrls;
+  Dialogs, AdDraws, StdCtrls, AdClasses;
 
 type
   TForm1 = class(TForm)
@@ -36,7 +36,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw1.DllName := 'AndorraOGL.dll';
 
   ReportMemoryLeaksOnShutDown := True;
 

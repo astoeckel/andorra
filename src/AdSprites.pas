@@ -911,8 +911,8 @@ var i:integer;
 begin
   for i := 0 to FDeadList.Count - 1 do
   begin
-    TSprite(FDeadList[i]).Free;
     Remove(TSprite(FDeadList[i]));
+    TSprite(FDeadList[i]).Free;
   end;
   FDeadList.Clear;
 end;

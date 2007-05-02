@@ -33,6 +33,13 @@ type
       procedure Finalize;override;
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
+      procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
+      procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
+      procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
+
+      procedure Resize(AWidth,AHeight:integer);override;
+
+      procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;

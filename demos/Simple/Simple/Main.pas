@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, StdCtrls;
+  Dialogs, AdDraws, AdClasses, StdCtrls, AdPNG;
 
 type
   TForm1 = class(TForm)
@@ -16,6 +16,7 @@ type
   public
     AdDraw1:TAdDraw;
     AdPerCounter:TPerformanceCounter;
+    AdImage:TAdImage;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -32,10 +33,13 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw1.DllName := 'AndorraOGL.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
+    AdImage := TAdImage.Create(AdDraw1);
+    AdImage.Texture.LoadGraphicFromFile('Icon64.png',true,clNone);
+    AdImage.Restore;
   end
   else
   begin
@@ -47,6 +51,7 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  AdImage.Free;
   AdPerCounter.Free;
   AdDraw1.Free;
 end;
@@ -54,11 +59,7 @@ end;
 procedure TForm1.FormResize(Sender: TObject);
 begin
   //Resize the Backbuffer
-  if AdDraw1.Initialized then
-  begin
-    AdDraw1.Finalize;
-    AdDraw1.Initialize;
-  end;
+  AdDraw1.Setup2DScene;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
@@ -68,7 +69,7 @@ begin
     AdPerCounter.Calculate;
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
-    //Your code here
+    AdImage.Draw(AdDraw1,0,0,0);
     AdDraw1.EndScene;
     AdDraw1.Flip; 
   end;

@@ -19,11 +19,15 @@ unit AdClasses;
 
 {$IFDEF FPC}
   {$MODE DELPHI}
+  
+  {$IFNDEF WIN32}
+    {$DEFINE UseComponents}
+  {$ENDIF}
 {$ENDIF}
 
 interface
 
-uses {$IFDEF FPC}IntfGraphics, FPImage, LclType, {$ENDIF} SysUtils, Classes, {$INCLUDE AdTypes.inc},Graphics; 
+uses {$IFDEF FPC}intfgraphics, FPImage, LclType,{$ENDIF}{$IFDEF UseComponents} Controls, {$ENDIF} SysUtils, Classes, {$INCLUDE AdTypes.inc},Graphics;
 
 type
   {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
@@ -121,6 +125,10 @@ type
       procedure SaveToStream(AStream:TStream);
       {Loads a bitmap from a stream}
       procedure LoadFromStream(AStream:TStream);
+      {Saves the bitmap to a file}
+      procedure SaveToFile(AFile:string);
+      {Loads a bitmap from a file}
+      procedure LoadFromFile(AFile:string);
       {Returns a pointer on the first pixel of a line.}
       function ScanLine(AY:integer):pointer;overload;
       {Returns a pointer on the first pixel in the bitmap.}
@@ -179,7 +187,7 @@ type
   );
 
   TAd2DTextureFilter = (
-    atPoint,//<Badest picture quality, default filter
+    atPoint,//<Worst picture quality, default filter
     atLinear,//<Good filter quality
     atAnisotropic//<Another good filter ^^
   );
@@ -209,9 +217,6 @@ type
       procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
       procedure SetAmbientLight(AValue:TAndorraColor);virtual;
     public
-      { Creates an instance of TAd2DApplication}
-      constructor Create;virtual;abstract;
-
       {Creates and returns a TAd2DLight}
       function CreateLight:TAd2DLight;virtual;abstract;
       {Creates and returns a TAd2DBitmapTexture}
@@ -226,7 +231,11 @@ type
       procedure SetLogProc(ALogProc:TAdLogProc);
 
       {Initializes the engine. AWnd is the handle to the window.}
+      {$IFDEF UseComponents}
+      function Initialize(AWnd:TComponent; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
+      {$ELSE}
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
+      {$ENDIF}
       {Finalizes the engine.}
       procedure Finalize;virtual;abstract;
 
@@ -790,9 +799,10 @@ begin
     begin
       {$IFDEF FPC}
         acol := IntfBmp.Colors[x,y];
-        sl2^.r := acol.red;
+        //The lazarus bitmap seems to be BGR and not RGB
+        sl2^.r := acol.blue;
         sl2^.g := acol.green;
-        sl2^.b := acol.blue;
+        sl2^.b := acol.red;
       {$ELSE}
         sl2^.r := sl1^.r;
         sl2^.g := sl1^.g;
@@ -850,9 +860,10 @@ begin
           {$IFDEF FPC}
             with acol do
             begin
-              red := sl2^.r;
+              //The lazarus bitmap seems to be BGR and not RGB
+              blue := sl2^.r;
               green := sl2^.g;
-              blue := sl2^.b;
+              red := sl2^.b;
             end;
             IntfBmp.Colors[x,y] := acol;
           {$ELSE}
@@ -907,6 +918,27 @@ begin
   AStream.Read(FHeight,SizeOf(FHeight));
   ReserveMemory(FWidth,FHeight);
   AStream.Read(FMemory^,ASize)
+end;
+
+procedure TAdBitmap.LoadFromFile(AFile: string);
+var
+  ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  ms.LoadFromFile(AFile);
+  ms.Position := 0;
+  LoadFromStream(ms);
+  ms.Free;
+end;
+
+procedure TAdBitmap.SaveToFile(AFile: string);
+var
+  ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.SaveToFile(AFile);
+  ms.Free;
 end;
 
 function TAdBitmap.Loaded: boolean;

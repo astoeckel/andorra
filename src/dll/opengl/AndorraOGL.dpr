@@ -11,18 +11,16 @@
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
-* Author:  Andreas Stoeckel
-* File: AndorraDX93D.dpr
-* Comment: The directx 9 library
+* Author: Andreas Stöckel
+* Filename: AndorraOGL.dpr
 }
 
-library AndorraDX93D;
+library AndorraOGL;
 
 uses
   SysUtils,
-  Classes,
   AdClasses,
-  DX3DMain in 'DX3DMain.pas';
+  OGLMain in 'OGLMain.pas';
 
 {$E .dll}
 
@@ -30,7 +28,7 @@ uses
 
 function CreateApplication:TAd2DApplication;stdcall;
 begin
-  result := TDXApplication.Create;
+  result := TOGLApplication.Create;
 end;
 
 exports
@@ -38,3 +36,4 @@ exports
 
 begin
 end.
+
