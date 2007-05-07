@@ -143,7 +143,7 @@
         <panel.png data="50495402504E4789504E470D0A1A0A0000000D4948445200000046000000460806000000712EE284000001F44944415478DAEDDCBF4B02611CC7F1E7498D3C5B1417C51F43ABE096D0817A8A53734B34B5D6E07FA243ED0AE5A0829CE2249EA770826D826B833FD04574C933FC913D5751D7EEE47DDEE333BEE0BB3CC387EE763BA2954EA74F1D0EC78DCD668B9ACD66BFC9643A220668BBDD7E6C369BFE62B19067B3D95332997CD3DEA906C350CE7C3EDF4330188C399DCE63163152ABD58A4CA7D355B7DB950683C13DC379A5A954CAEAF7FB0BE170F892E33862E4545525AD56ABDAEFF7AF68369BBDE579FED1ED769F1044C6E3F1BBA22877B4582C3E2712896B8BC50215D67ABD26B55A2D4745515418CC0548FE62306D5AA9543AF178FC1C1C7FD5EBF517C0000630FB812997CB80010C60000318C000063080018C416062B118607449920418C000063080010C60000398838411040130BA1A8D0660000318C000063080010C600E0E461445C000063080010C60000318C000C62030D1681430BA6459060C60000318C00006308001CC41C2442211C0E86A369B80010C60F604532A951441103061F0FFDBA14DF3F9FC3383C1E8C54FDAE80583C9D14C26731B0A851E5D2E1766525893C9E4BDD3E9DC7D0DEB78BDDE02CFF39756ABD5D028CBE592288A521D0E8757BF534C1E8FE72110087C4D3119EDACB4F3D1A6987ABD9E341A8DBEA798F4E35D76BBFD86E338438E77A9AA2ACFE7F3DFF1AE4F3A36378CFC4453610000000049454E44AE426082200900000070616E656C2E706E670100000000000000000000000000000000000000"/>
       </images>
     </item>
-    <item name="checkbox" basewidth="40" baseheight="42">
+    <item name="checkbox" basewidth="20" baseheight="20">
       <states>
         <standard/>
         <down/>
@@ -159,7 +159,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="34" y1="0" x2="40" y2="6" imgsrcx1="23" imgsrcy1="0" imgsrcx2="29" imgsrcy2="6" clientrect="0" typ="dtStretch" anchors="aaRight;aaTop;">
+        <element x1="14" y1="0" x2="20" y2="6" imgsrcx1="23" imgsrcy1="0" imgsrcx2="29" imgsrcy2="6" clientrect="0" typ="dtStretch" anchors="aaRight;aaTop;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -167,7 +167,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="6" y1="6" x2="34" y2="36" imgsrcx1="6" imgsrcy1="6" imgsrcx2="23" imgsrcy2="25" clientrect="0" typ="dtStretch" anchors="aaLeft;aaRight;aaTop;aaBottom;">
+        <element x1="6" y1="6" x2="14" y2="14" imgsrcx1="6" imgsrcy1="6" imgsrcx2="23" imgsrcy2="25" clientrect="0" typ="dtStretch" anchors="aaLeft;aaRight;aaTop;aaBottom;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -175,7 +175,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="34" y1="36" x2="40" y2="42" imgsrcx1="23" imgsrcy1="25" imgsrcx2="29" imgsrcy2="31" clientrect="0" typ="dtStretch" anchors="aaRight;aaBottom;">
+        <element x1="14" y1="14" x2="20" y2="20" imgsrcx1="23" imgsrcy1="25" imgsrcx2="29" imgsrcy2="31" clientrect="0" typ="dtStretch" anchors="aaRight;aaBottom;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -183,7 +183,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="0" y1="36" x2="6" y2="42" imgsrcx1="0" imgsrcy1="25" imgsrcx2="6" imgsrcy2="31" clientrect="0" typ="dtStretch" anchors="aaLeft;aaBottom;">
+        <element x1="0" y1="14" x2="6" y2="20" imgsrcx1="0" imgsrcy1="25" imgsrcx2="6" imgsrcy2="31" clientrect="0" typ="dtStretch" anchors="aaLeft;aaBottom;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -191,7 +191,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="6" y1="0" x2="34" y2="6" imgsrcx1="6" imgsrcy1="0" imgsrcx2="23" imgsrcy2="6" clientrect="0" typ="dtStretch" anchors="aaLeft;aaRight;aaTop;">
+        <element x1="6" y1="0" x2="14" y2="6" imgsrcx1="6" imgsrcy1="0" imgsrcx2="23" imgsrcy2="6" clientrect="0" typ="dtStretch" anchors="aaLeft;aaRight;aaTop;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -199,7 +199,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="6" y1="36" x2="34" y2="42" imgsrcx1="6" imgsrcy1="25" imgsrcx2="23" imgsrcy2="31" clientrect="0" typ="dtStretch" anchors="aaLeft;aaRight;aaBottom;">
+        <element x1="6" y1="14" x2="14" y2="20" imgsrcx1="6" imgsrcy1="25" imgsrcx2="23" imgsrcy2="31" clientrect="0" typ="dtStretch" anchors="aaLeft;aaRight;aaBottom;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -207,7 +207,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="34" y1="6" x2="40" y2="36" imgsrcx1="23" imgsrcy1="6" imgsrcx2="29" imgsrcy2="25" clientrect="-1" typ="dtStretch" anchors="aaRight;aaTop;aaBottom;">
+        <element x1="14" y1="6" x2="20" y2="14" imgsrcx1="23" imgsrcy1="6" imgsrcx2="29" imgsrcy2="25" clientrect="-1" typ="dtStretch" anchors="aaRight;aaTop;aaBottom;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>
@@ -215,7 +215,7 @@
             <stateimg index="1"/>
           </images>
         </element>
-        <element x1="0" y1="6" x2="6" y2="36" imgsrcx1="0" imgsrcy1="6" imgsrcx2="6" imgsrcy2="23" clientrect="0" typ="dtStretch" anchors="aaLeft;aaTop;aaBottom;">
+        <element x1="0" y1="6" x2="6" y2="14" imgsrcx1="0" imgsrcy1="6" imgsrcx2="6" imgsrcy2="23" clientrect="0" typ="dtStretch" anchors="aaLeft;aaTop;aaBottom;">
           <images>
             <stateimg index="3"/>
             <stateimg index="0"/>

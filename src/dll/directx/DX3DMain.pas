@@ -45,8 +45,6 @@ type
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
 
-      procedure Resize(AWidth,AHeight:integer);override;
-
       procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
@@ -331,13 +329,6 @@ begin
   begin
     SetLength(FLights,high(FLights));
   end;
-end;
-
-procedure TDXApplication.Resize(AWidth, AHeight: integer);
-begin
-  FPresent.BackBufferWidth := AWidth;
-  FPresent.BackBufferHeight := AHeight;
-//  Direct3dDevice9.Reset(FPresent);
 end;
 
 procedure TDXApplication.Finalize;

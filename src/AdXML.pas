@@ -32,7 +32,7 @@ var
   b:byte;
 begin
   result := '';
-  for i := 0 to AStream.Size-1 do
+  for i := AStream.Position to AStream.Size-1 do
   begin
     AStream.Read(b,1);
     result := result + inttohex(b,2);

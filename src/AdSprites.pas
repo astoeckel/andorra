@@ -229,7 +229,7 @@ type
       property CollisionRect:TRect read FCollisionRect write FCollisionRect;
 
       //Creates an instance of TSprite
-      constructor Create(AParent:TAdDraw);
+      constructor Create(AParent:TAdDraw);reintroduce;
       //Destroyes the instance
       destructor Destroy;override;
       //Kills all sprites which want to be dead.

@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Menus, ComCtrls, XPMan, Designer, ImgList, Objects, Structure, ExtDlgs,
-  FontCollection,
+  FontCollection, ImageEditor, AdClasses, AdPNG, PngImage,
 
   //Add all units with components here
   AdGUI, AdComponents;
@@ -90,6 +90,7 @@ type
     procedure RecentClick(Sender:TObject);
     procedure AddRecent(AFile:string);
     procedure DblClickFont(Sender:TObject);
+    procedure DblClickImage(Sender:TObject);
   end;
 
 var
@@ -239,6 +240,7 @@ begin
   Objects.Show;
   Objects.OnClickListEntry := ClickListEntry;
   Objects.OnDblClickFont := DblClickFont;
+  Objects.OnDblClickImage := DblClickImage;
 
   Structure := TStructureDlg.Create(self);
   Structure.Show;
@@ -446,6 +448,90 @@ begin
   if dlg.ShowDlg(Designer.AdGUI) = mrOk then
   begin
     Designer.AdGUI.FocusedComponent.Font := Designer.AdGUI.Fonts.Items[dlg.ListBox1.ItemIndex];
+  end;
+  dlg.Free;
+end;
+
+procedure TMainDlg.DblClickImage(Sender: TObject);
+
+  procedure AddAlpha(APNG:TPNGObject;ABMP:TAdBitmap);
+  var x,y:integer;
+      sl1:PByteArray;
+      sl2:PRGBARec;
+  begin
+    sl2 := ABMP.ScanLine;
+    for y := 0 to APNG.Height-1 do
+    begin
+      sl1 := APNG.AlphaScanline[y];
+      for x := 0 to APNG.Width - 1 do
+      begin
+        sl1[x] := sl2^.a;
+        inc(sl2);
+      end;
+    end;
+  end;
+
+  procedure AddRGB(APNG:TPNGObject;ABMP:TAdBitmap);
+  var Bmp:TBitmap;
+  begin
+    Bmp := TBitmap.Create;
+    ABMP.AssignToBitmap(Bmp);
+    APNG.Assign(Bmp);
+    Bmp.Free;
+  end;
+
+var
+  dlg:TImages;
+  png:TPngObject;
+  adbmp:TAdBitmap;
+begin
+  png := nil;
+  dlg := TImages.Create(nil);
+  
+  if TAdResourceImage(Sender).Loaded then
+  begin
+    png := TPngObject.Create;
+    adbmp := TAdBitmap.Create;
+
+    with TAdResourceImage(Sender).Picture.Texture.Texture do
+    begin
+      adbmp.ReserveMemory(BaseWidth,BaseHeight);
+      SaveToBitmap(adbmp);
+    end;
+
+    AddRGB(PNG,adbmp);
+    PNG.CreateAlpha;
+    AddAlpha(PNG,adbmp);
+
+    dlg.Image1.Picture.Graphic := png;
+
+    adbmp.Free;
+  end;
+
+  if dlg.ShowModal = mrOk then
+  begin
+    if dlg.Image1.Picture.Graphic <> nil then
+    begin
+      with TAdResourceImage(Sender).Picture do
+      begin
+        Texture.LoadFromGraphic(dlg.Image1.Picture.Graphic);
+        Restore;
+      end;
+      TAdResourceImage(Sender).Compressor := TPNGCompressor;
+    end
+    else
+    begin
+      with TAdResourceImage(Sender).Picture do
+      begin
+        Texture.Clear;
+        Restore;
+      end;
+    end;
+  end;
+
+  if png <> nil then
+  begin
+    png.Free;
   end;
   dlg.Free;
 end;

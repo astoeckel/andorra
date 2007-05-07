@@ -231,7 +231,7 @@ type
       function ClientToScreen(p:TPoint):TPoint;
       function ScreenToClient(p:TPoint):TPoint;
 
-      constructor Create(AParent:TAdComponent);
+      constructor Create(AParent:TAdComponent);virtual;
       destructor Destroy;override;
 
       procedure SaveToFile(AFile:string);
@@ -1392,7 +1392,7 @@ end;
 procedure TAdComponent.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer);
 begin
-  if assigned(OnMouseMove) then OnMouseMove(Self,Shift,X,Y);
+  if assigned(OnMouseDown) then OnMouseDown(Self,Button,Shift,X,Y);
 end;
 
 procedure TAdComponent.DoMouseEnter;
@@ -1900,10 +1900,13 @@ end;
 
 procedure TAdGUI.Update(TimeGap:double);
 begin
-  X := 0;
-  Y := 0;
-  Width := AdDraw.DisplayRect.Right;
-  Height := AdDraw.DisplayRect.Bottom;
+  if DesignMode then
+  begin
+    X := 0;
+    Y := 0;
+    Width := AdDraw.DisplayRect.Right;
+    Height := AdDraw.DisplayRect.Bottom;
+  end;
 
   Move(TimeGap);
   Draw;
@@ -1917,7 +1920,6 @@ begin
   Cursors.Y := FMouseY;
   Cursors.Move(TimeGap);
   Cursors.Draw;
-
 end;
 
 { TAdHint }

@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, Menus, XPMan, ComCtrls, Tabs, AdSkin, AdDraws,
-  AdClasses, ExtDlgs, AdPng, Buttons, CompDlg;
+  AdClasses, ExtDlgs, AdPng, Buttons, CompDlg, Wizzard;
 
 type
   TRHandleTyp = (rhLT,rhRT,rhLB,rhRB);
@@ -114,6 +114,7 @@ type
     OpenDialog1: TOpenDialog;
     CheckBox5: TCheckBox;
     Button20: TButton;
+    SpeedButton6: TSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure Panel10Resize(Sender: TObject);
@@ -149,6 +150,7 @@ type
     procedure SpeedButton1Click(Sender: TObject);
     procedure CheckBox5Click(Sender: TObject);
     procedure Button20Click(Sender: TObject);
+    procedure SpeedButton6Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -1099,6 +1101,124 @@ begin
     Saved := true;
     StatusBar1.SimpleText := CurrentFile;
   end;
+end;
+
+procedure TMainDlg.SpeedButton6Click(Sender: TObject);
+var
+  elem:TElemWzrd;
+  el:TAdSkinElem;
+  w,h,bl,bt,br,bb:integer;
+begin
+  elem := TElemWzrd.Create(nil);
+  if (SelItem <> nil) and (elem.ShowModal = mrOk) then
+  begin
+    SelItem.Elements.Clear;
+
+    w := StrToInt(elem.Edit6.Text);
+    h := StrToInt(elem.Edit5.Text);
+    bl := StrToInt(elem.Edit1.Text);
+    bt := StrToInt(elem.Edit3.Text);
+    br := StrToInt(elem.Edit2.Text);
+    bb := StrToInt(elem.Edit4.Text);
+
+    SelItem.BaseWidth := w;
+    SelItem.BaseHeight := h;
+
+    //Top-Left
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := 0; X2 := bl; Y1 := 0; Y2 := bt;
+      ImgSrcX1 := 0; ImgSrcX2 := bl; ImgSrcY1 := 0; ImgSrcY2 := br;
+      Anchors := [aaLeft,aaTop];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Top
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := bl; X2 := w-br; Y1 := 0; Y2 := bt;
+      ImgSrcX1 := 0; ImgSrcX2 := w-br; ImgSrcY1 := 0; ImgSrcY2 := bt;
+      Anchors := [aaLeft,aaTop,aaRight];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Top-Right
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := w-br; X2 := w; Y1 := 0; Y2 := bt;
+      ImgSrcX1 := w-br; ImgSrcX2 := w; ImgSrcY1 := 0; ImgSrcY2 := bt;
+      Anchors := [aaTop,aaRight];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Client
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := bl; X2 := w-br; Y1 := bt; Y2 := h-bb;
+      ImgSrcX1 := bl; ImgSrcX2 := w-br; ImgSrcY1 := bt; ImgSrcY2 := h-bb;
+      Anchors := [aaTop,aaLeft,aaRight,aaBottom];
+      ClientRect := true;
+    end;
+    SelItem.Elements.Add(el);
+
+    //Left
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := 0; X2 := bl; Y1 := bt; Y2 := h-bb;
+      ImgSrcX1 := 0; ImgSrcX2 := bl; ImgSrcY1 := bt; ImgSrcY2 := h-bb;
+      Anchors := [aaTop,aaLeft,aaBottom];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Right
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := w-br; X2 := w; Y1 := bt; Y2 := h-bb;
+      ImgSrcX1 := w-br; ImgSrcX2 := w; ImgSrcY1 := bt; ImgSrcY2 := h-bb;
+      Anchors := [aaTop,aaRight,aaBottom];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Bottom
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := bl; X2 := w-br; Y1 := h-bb; Y2 := h;
+      ImgSrcX1 := bl; ImgSrcX2 := w-br; ImgSrcY1 := h-bb; ImgSrcY2 := h;
+      Anchors := [aaLeft,aaRight,aaBottom];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Bottom-Left
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := 0; X2 := bl; Y1 := h-bb; Y2 := h;
+      ImgSrcX1 := 0; ImgSrcX2 := bl; ImgSrcY1 := h-bb; ImgSrcY2 := h;
+      Anchors := [aaLeft,aaBottom];
+    end;
+    SelItem.Elements.Add(el);
+
+    //Bottom-Left
+    el := TAdSkinElem.Create;
+    with el do
+    begin
+      X1 := w-br; X2 := w; Y1 := h-bb; Y2 := h;
+      ImgSrcX1 := w-br; ImgSrcX2 := w; ImgSrcY1 := h-bb; ImgSrcY2 := h;
+      Anchors := [aaRight,aaBottom];
+    end;
+    SelItem.Elements.Add(el);
+    
+    SelElem := nil;
+    SelectElem;
+  end;
+  elem.Free;
 end;
 
 { THandleList }

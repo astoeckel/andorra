@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, JvComponentBase, JvInspector, JvExControls, JvComponent, ExtCtrls,
-  StdCtrls;
+  StdCtrls, TypInfo;
 
 type
   TObjectsDlg = class(TForm)
@@ -19,6 +19,7 @@ type
   public
     OnClickListEntry:TNotifyEvent;
     OnDblClickFont:TNotifyEvent;
+    OnDblClickImage:TNotifyEvent;
     Inspector:TJvInspector;
     Painter:TJvInspectorBorlandPainter;
     Change:boolean;
@@ -58,10 +59,17 @@ end;
 
 procedure TObjectsDlg.ItemDoubleClicked(Sender: TObject;
   Item: TJvCustomInspectorItem);
+var
+  PropInfo:PPropInfo;
 begin
   if (Item.Name = 'Font') and Assigned(OnDblClickFont) then
   begin
     OnDblClickFont(Self);
+  end;
+  if (Item.DisplayValue = '(TAdResourceImage)') and Assigned(OnDblClickFont) then
+  begin
+    PropInfo := GetPropInfo(Inspector.InspectObject.ClassInfo, Item.Name);
+    OnDblClickImage(GetObjectProp(Inspector.InspectObject,Item.Name));
   end;
 end;
 

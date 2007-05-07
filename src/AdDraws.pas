@@ -25,7 +25,7 @@ unit AdDraws;
 
 interface
 
-uses Windows, Controls, Math, {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdClasses, AdDllLoader,
+uses {$IFDEF WIN32}Windows,{$ELSE}Libc,{$ENDIF}Controls, Math, {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdClasses, AdDLLLoader,
      Graphics, Huffman, AdBlur;
 
 type
@@ -995,11 +995,12 @@ begin
 
     //Create the new Application
     AdAppl := AdDllLoader.CreateApplication;
+    
     if (AdAppl <> nil) and (FParent <> nil) and (AdDllLoader.LibraryLoaded) then
     begin
       //Give the Plugin the possibility to send logs
       AdAppl.SetLogProc(LogProc);
-
+      
       FDisplayRect := GetDisplayRect;
       Display.Width := FDisplayRect.Right;
       Display.Height := FDisplayRect.Bottom;
@@ -2023,6 +2024,17 @@ begin
 end;
 
 { TPerformanceCounter }
+
+{$IFNDEF WIN32}
+function GetTickCount:Cardinal;
+var
+  tv:timeval;
+begin
+  GetTimeOfDay(tv, nil);
+  result := int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
+end;
+{$ENDIF}
+
 
 procedure TPerformanceCounter.Calculate;
 var t:integer;

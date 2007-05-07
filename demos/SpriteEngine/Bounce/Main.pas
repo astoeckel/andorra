@@ -160,15 +160,15 @@ begin
   AdSpriteEngine.CollisionOptimizationTyp := ctOptimized;
 
   level := TStringList.Create;
-  level.LoadFromFile(path+'level2.txt');
+  level.LoadFromFile(path+'level.txt');
 
-  with TBackgroundSprite.Create(AdSpriteEngine) do
+  {with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
     Z := -10;
     Image := AdPictureCollection.Find('sky');
     Tiled := true;
     Depth := 10;
-  end;
+  end;         }
 
   for ay := 0 to level.Count - 1 do
   begin

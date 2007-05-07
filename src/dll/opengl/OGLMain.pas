@@ -13,22 +13,31 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: OGLMain.pas
-* Comment: The OpenGL Main unit for Windows and Linux
+* Comment: The OpenGL Main unit for Windows and Linux. The OpenGL Initialisation Routine is taken from...
 }
 
 unit OGLMain;
 
+{$IFDEF FPC}
+  {$IFNDEF WIN32}
+    {$DEFINE AdLinux}
+  {$ENDIF}
+{$ENDIF}
+
 interface
 
-uses AdClasses, Classes, Math,
-     {$IFDEF UseComponents}gl, Interfaces, Controls, openglboxcomponent;
-     {$ELSE}dglOpenGL, Windows;{$ENDIF}
+uses AdClasses, Classes, Math, dglOpenGL,
+     {$IFDEF AdLinux}glx, gtk, gdk, x, xlib, xutil, Controls;
+     {$ELSE}Windows;{$ENDIF}
 
 type
   TOGLApplication = class(TAd2DApplication)
     private
-      {$IFDEF UseComponents}
-      FBox : TOpenGlBox;
+      {$IFDEF AdLinux}
+      {FRC: GLXContext;
+      FDisplay: xlib.PDisplay;
+      FWindow: x.TWindow;
+      FGLWin: x.TWindow;}
       {$ELSE}
       FDC : HDC;
       FRC : HGLRC;
@@ -44,19 +53,13 @@ type
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
-      {$IFDEF UseComponents}
-      function Initialize(AWnd:TComponent; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
-      {$ELSE}
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
-      {$ENDIF}
       procedure Finalize;override;
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
-
-      procedure Resize(AWidth,AHeight:integer);override;
 
       procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
@@ -129,16 +132,50 @@ begin
 
 end;    }
 
-{$IFNDEF UseComponents}
 function TOGLApplication.Initialize(AWnd: LongWord; AOptions: TAdOptions;
   ADisplay: TAdDisplay):boolean;
-{$ELSE}
-function TOGLApplication.Initialize(AWnd: TComponent; AOptions: TAdOptions;
-  ADisplay: TAdDisplay):boolean;
+{$IFDEF AdLinux}
+var
+  GWindow: gdk.PGdkWindow;
+  XVInfo: PXVisualInfo;
+  AttrList: array [0..12] of Integer;
+  WinAttr: TXSetWindowAttributes;
+  CMap: TColormap;
 {$ENDIF}
 begin
   result := false;
   WriteLog(ltNone,'Try to init Andorra OpenGL Plugin.');
+  {$IFDEF AdLinux}
+  {//This part is taken from the TOpenGLBox component by Kostas "Bad Sector" Michalopoulos
+  GWindow:=PGtkWidget(AWnd)^.window;
+  FWindow:=PGdkWindowPrivate(GWindow)^.xwindow;
+  FDisplay:=PGdkWindowPrivate(GWindow)^.xdisplay;
+  AttrList[0]:=GLX_RGBA;
+  AttrList[1]:=GLX_DOUBLEBUFFER;
+  AttrList[2]:=GLX_RED_SIZE;
+  AttrList[3]:=8;
+  AttrList[4]:=GLX_GREEN_SIZE;
+  AttrList[5]:=8;
+  AttrList[6]:=GLX_BLUE_SIZE;
+  AttrList[7]:=8;
+  AttrList[8]:=GLX_DEPTH_SIZE;
+  AttrList[9]:=8;
+  AttrList[10]:=GLX_STENCIL_SIZE;
+  AttrList[11]:=8;
+  AttrList[12]:=0;
+  XVInfo:=glXChooseVisual(FDisplay, DefaultScreen(FDisplay), @AttrList[0]);
+
+  CMap:=XCreateColormap(FDisplay, FWindow, XVInfo^.visual, AllocNone);
+
+  FillChar(WinAttr, SizeOf(WinAttr), 0);
+  WinAttr.event_mask:=ExposureMask;
+  WinAttr.colormap:=CMap;
+
+  FGLWin:=XCreateWindow(FDisplay, FWindow, 0, 0, Width, Height, 0, XVInfo^.depth, InputOutput, XVInfo^.visual, CWColormap, @WinAttr);
+
+  FRC:=glXCreateContext(FDisplay, XVInfo, nil, True);
+  glXMakeCurrent(FDisplay, FGLWin, FRC); }
+  {$ELSE}
   if InitOpenGL then
   begin
     FOptions := AOptions;
@@ -152,19 +189,20 @@ begin
 
     glEnable(GL_BLEND);
     glDisable(GL_CULL_FACE);
-//    glEnable(GL_ALPHA_TEST);
-//    glAlphaFunc(GL_GREATER, 0.001);
   end
   else
   begin
     WriteLog(ltFatalError,'Error while initializing OpenGL');
   end;  
+  {$ENDIF}
 end;
 
 procedure TOGLApplication.Finalize;
 begin
   WriteLog(ltNone,'Finalize Andorra OpenGL Plugin');
-  {$IFDEF UseComponents}
+  {$IFDEF AdLinux}
+  //glXDestroyContext(FDisplay, FRC);
+  //XDestroyWindow(FDisplay, FGLWin);
   {$ELSE}
   DeactivateRenderingContext;
   DestroyRenderingContext(FRC);
@@ -217,11 +255,6 @@ begin
   glGetFloatv(GL_MODELVIEW_MATRIX, @AMatView);
 end;
 
-procedure TOGLApplication.Resize(AWidth,AHeight:integer);
-begin
-
-end;
-
 procedure TOGLApplication.SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);
 begin
 
@@ -244,7 +277,14 @@ end;
 
 procedure TOGLApplication.Flip;
 begin
+  {$IFDEF AdLinux}
+  //if not (FGLWin=0) then
+  //begin
+  //  glXSwapBuffers(FDisplay, FGLWin);
+  //end;
+  {$ELSE}
   SwapBuffers(FDC);
+  {$ENDIF}
 end;
 
 procedure TOGLApplication.ClearSurface(AColor: TAndorraColor);

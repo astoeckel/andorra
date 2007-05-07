@@ -2,8 +2,8 @@ unit AdComponents;
 
 interface
 
-uses JvSimpleXML, AdGUI, AdSkin, AdClasses, AdDraws, {$I AdTypes.inc}, Controls,
-     Classes;
+uses JvSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, {$I AdTypes.inc}, Controls,
+     Classes, Graphics;
 
 type
   TAdAlignment = (alLeft,alCenter,alRight);
@@ -44,7 +44,7 @@ type
       property Alignment:TAdAlignment read FAlignment write FAlignment;
   end;
 
-  TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus);
+  TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus, bsDisabled);
 
   TAdButton = class(TAdComponent)
     private
@@ -61,7 +61,7 @@ type
       procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
       procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
     public
-      constructor Create(AParent:TAdComponent);
+      constructor Create(AParent:TAdComponent);override;
       destructor Destroy;override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
@@ -70,6 +70,7 @@ type
       property Caption:string read FCaption write FCaption;
   end;
 
+  //Written by Michael Morstein alias Neutral General
   TAdCheckBox = class(TAdComponent)
     private
       FState: TAdButtonState;
@@ -94,8 +95,69 @@ type
       property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
   end;
 
- const
-   SPACING = 5;
+  TAdResourceImage = class
+    private
+      FImage:TAdImage;
+      FParent:TAdDraw;
+      FTransparent:boolean;
+      FTransparentColor:TColor;
+      FCompressor:TCompressorClass;
+      procedure SetTransparent(AValue:boolean);
+      procedure SetTransparentColor(AValue:TColor);
+      procedure SetCompressor(ACompressor:TCompressorClass);
+      procedure UpdateTransparency;
+      function GetLoaded:boolean;
+    public
+      constructor Create(AParent:TAdDraw);
+      destructor Destroy;override;
+      procedure LoadFromFile(AFile:string;ATransparent:boolean;ATransparentColor:LongInt);
+      procedure LoadFromGraphic(AGraphic:TGraphic);
+      procedure Draw(X,Y:integer);
+      procedure LoadFromString(AString:string);
+      function SaveToString:string;
+      procedure LoadFromStream(AStream:TStream);
+      procedure SaveToStream(AStream:TStream);
+      property Picture:TAdImage read FImage;
+      property Transparent:boolean read FTransparent write SetTransparent;
+      property TransparentColor:TColor read FTransparentColor write SetTransparentColor;
+      property Parent:TAdDraw read FParent;
+      property Compressor:TCompressorClass read FCompressor write SetCompressor;
+      property Loaded:boolean read GetLoaded;
+  end;
+
+  TAdBitmapButton = class(TAdComponent)
+    private
+      FImgHover:TAdResourceImage;
+      FImgDown:TAdResourceImage;
+      FImgDisabled:TAdResourceImage;
+      FImgNormal:TAdResourceImage;
+      FState:TAdButtonState;
+      FDown:boolean;
+      FCheckButton:boolean;
+      procedure SetDown(AValue:boolean);
+    protected
+      procedure DoDraw; override;
+      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
+      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
+      procedure DoMouseEnter; override;
+      procedure DoMouseLeave; override;
+    public
+      constructor Create(AParent:TAdComponent);override;
+      destructor Destroy;override;
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      property State:TAdButtonState read FState;
+    published
+      property ImgNormal:TAdResourceImage read FImgNormal;
+      property ImgHover:TAdResourceImage read FImgHover;
+      property ImgDown:TAdResourceImage read FImgDown;
+      property ImgDisabled:TAdResourceImage read FImgDisabled;
+      property Down:boolean read FDown write SetDown;
+      property CheckButton:boolean read FCheckButton write FCheckButton;
+  end;
+
+  const               
+    SPACING = 5;
 
 implementation
 
@@ -392,22 +454,23 @@ begin
   FState := bsHover;
 end;
 
-procedure TAdCheckBox.LoadFromXML(ARoot: TJvSimpleXMLElem);
-begin
-  inherited;
-  with ARoot.Properties do
-  begin
-    FCaption := Value('caption','');
-    FChecked := ARoot.Properties.BoolValue('checked',false);
-  end;
-end;
-
 procedure TAdCheckBox.LoadSkinItem;
 begin
   FSkinItem := Skin.ItemNamed['checkbox'];
   SetSpacer(FSkinItem);
   FCheckedItem := Skin.ItemNamed['checkboxhook'];
   SetSpacer(FCheckedItem);
+end;
+
+procedure TAdCheckBox.LoadFromXML(ARoot: TJvSimpleXMLElem);
+begin
+  inherited;
+  with ARoot.Properties do
+  begin
+    FCaption := Value('caption','');
+    FChecked := BoolValue('checked',false);
+    FAlignment := TAdAlignmentEx(IntValue('align',Ord(axLeft)));
+  end;
 end;
 
 function TAdCheckBox.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
@@ -417,6 +480,282 @@ begin
   begin
     Add('caption',FCaption);
     Add('checked',FChecked);
+    Add('align',Ord(FAlignment));
+  end;
+end;
+
+{ TAdRecourceImage }
+
+constructor TAdResourceImage.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+  FParent := AParent;
+  FImage := TAdImage.Create(AParent);
+end;
+
+destructor TAdResourceImage.Destroy;
+begin
+  FImage.Free;
+  inherited Destroy;
+end;
+
+procedure TAdResourceImage.Draw(X, Y: integer);
+begin
+  FImage.Draw(FParent,X,Y,0);
+end;
+
+function TAdResourceImage.GetLoaded: boolean;
+begin
+  result := FImage.Texture.Texture.Loaded;
+end;
+
+procedure TAdResourceImage.LoadFromFile(AFile: string; ATransparent: boolean;
+  ATransparentColor: Integer);
+begin
+  FImage.Texture.LoadGraphicFromFile(AFile,ATransparent,ATransparentColor);
+  FTransparent := false;
+  FTransparentColor := clNone;
+end;
+
+procedure TAdResourceImage.LoadFromGraphic(AGraphic: TGraphic);
+begin
+  FImage.Texture.LoadFromGraphic(AGraphic);
+  FTransparent := false;
+  FTransparentColor := clNone;
+end;
+
+function TAdResourceImage.SaveToString: string;
+var ms:TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.Position := 0;
+  result := WriteStreamToString(ms);
+  ms.Free;
+end;
+
+procedure TAdResourceImage.LoadFromString(AString: string);
+var
+  ms:TMemoryStream;
+begin
+  if AString <> '' then
+  begin
+    ms := TMemoryStream.Create;
+    ReadStreamFromString(ms,AString);
+    ms.Position := 0;
+    LoadFromStream(ms);
+    ms.Free;
+  end;
+end;
+
+procedure TAdResourceImage.SaveToStream(AStream: TStream);
+begin
+  AStream.Write(FTransparent,SizeOf(FTransparent));
+  AStream.Write(FTransparentColor,SizeOf(FTransparentColor));
+  FImage.SaveToStream(AStream);
+end;
+
+procedure TAdResourceImage.LoadFromStream(AStream: TStream);
+begin
+  AStream.Read(FTransparent,SizeOf(FTransparent));
+  AStream.Read(FTransparentColor,SizeOf(FTransparentColor));
+  try
+    FImage.LoadFromStream(AStream);
+  except
+    FImage.Texture.Clear;
+  end;
+end;
+
+procedure TAdResourceImage.SetCompressor(ACompressor: TCompressorClass);
+begin
+  if ACompressor <> FCompressor then
+  begin
+    FCompressor := ACompressor;
+    FImage.Texture.Compressor := ACompressor;
+  end;
+end;
+
+procedure TAdResourceImage.SetTransparent(AValue: boolean);
+begin
+  if AValue <> FTransparent then
+  begin
+    FTransparent := AValue;
+    UpdateTransparency;
+  end;
+end;
+
+procedure TAdResourceImage.SetTransparentColor(AValue: TColor);
+begin
+  if AValue <> FTransparentColor then
+  begin
+    FTransparentColor := AValue;
+    UpdateTransparency;
+  end;
+end;
+
+procedure TAdResourceImage.UpdateTransparency;
+var
+  bmp:TBitmap;
+  adbmp:TAdBitmap;
+begin
+  if FImage.Texture.Texture.Loaded then
+  begin
+    adbmp := TAdBitmap.Create;
+    adbmp.ReserveMemory(FImage.Texture.Texture.BaseWidth,FImage.Texture.Texture.BaseHeight);
+    FImage.Texture.Texture.SaveToBitmap(adbmp);
+    bmp := TBitmap.Create;
+    adbmp.AssignToBitmap(bmp);
+    adbmp.Free;
+    bmp.Transparent := FTransparent;
+    bmp.TransparentMode := tmFixed;
+    bmp.TransparentColor := FTransparentColor;
+    adbmp := TAdBitmap.Create;
+    adbmp.AssignBitmap(bmp);
+    FImage.Texture.Texture.LoadFromBitmap(adbmp,32);
+    adbmp.Free;
+    bmp.Free;
+  end;
+end;
+
+{ TAdBitmapButton }
+
+constructor TAdBitmapButton.Create(AParent: TAdComponent);
+begin
+  inherited Create(AParent);
+  FImgHover := TAdResourceImage.Create(AdDraw);
+  FImgDown := TAdResourceImage.Create(AdDraw);
+  FImgNormal := TAdResourceImage.Create(AdDraw);
+  FImgDisabled := TAdResourceImage.Create(AdDraw);
+end;
+
+destructor TAdBitmapButton.Destroy;
+begin
+  FImgHover.Free;
+  FImgDown.Free;
+  FImgNormal.Free;
+  FImgDisabled.Free;
+  inherited;
+end;
+
+procedure TAdBitmapButton.DoDraw;
+begin
+  if DesignMode then
+  begin
+    with AdDraw.Canvas do
+    begin
+      Brush.Style := abClear;
+      Pen.Color := Ad_RGB(0,0,0);
+      Rectangle(BoundsRect);
+    end;
+  end;
+  
+  if (Enabled) or (not FImgDisabled.Loaded) then  
+  begin
+    if (State = bsNormal) and (FImgNormal.Loaded) then
+    begin
+      FImgNormal.Picture.StretchDraw(AdDraw,Boundsrect,0);
+    end;
+    if (State = bsDown) and (FImgDown.Loaded) then
+    begin
+      FImgDown.Picture.StretchDraw(AdDraw,Boundsrect,0);
+    end;
+    if (State = bsHover) and (FImgHover.Loaded) then
+    begin
+      FImgHover.Picture.StretchDraw(AdDraw,Boundsrect,0);
+    end;
+  end
+  else
+  begin
+    FImgDisabled.Picture.StretchDraw(AdDraw,Boundsrect,0);
+  end;
+
+  inherited;
+end;
+
+procedure TAdBitmapButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer);
+begin
+  inherited;
+  if FImgDown.Loaded then
+  begin
+    FState := bsDown;
+    if FCheckButton then
+    begin
+      FDown := not FDown;
+    end;
+  end;
+end;
+
+procedure TAdBitmapButton.DoMouseEnter;
+begin
+  inherited;
+  if FImgHover.Loaded and ((not FCheckButton) or (not FDown)) then
+  begin
+    FState := bsHover;
+  end;
+end;
+
+procedure TAdBitmapButton.DoMouseLeave;
+begin
+  inherited;
+  if FImgNormal.Loaded and ((not FCheckButton) or (not FDown)) then
+  begin
+    FState := bsNormal;
+  end;
+end;
+
+procedure TAdBitmapButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited;
+  if FImgNormal.Loaded then
+  begin
+    if (not FCheckButton) or (not FDown) then
+    begin
+      FState := bsNormal;
+    end;
+  end;
+end;
+
+procedure TAdBitmapButton.LoadFromXML(aroot: TJvSimpleXMLElem);
+begin
+  inherited;
+  with aroot.Properties do
+  begin
+    FImgNormal.LoadFromString(Value('imgnormal',''));
+    FImgDown.LoadFromString(Value('imgdown',''));
+    FImgHover.LoadFromString(Value('imghover',''));
+    FImgDisabled.LoadFromString(Value('imgdisabled',''));
+    FCheckButton := BoolValue('checkbutton',false);
+    FDown := BoolValue('down',false);
+  end;
+end;
+
+function TAdBitmapButton.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  Result := inherited SaveToXML(aroot);
+  with Result.Properties do
+  begin
+    Add('imgnormal',FImgNormal.SaveToString);
+    Add('imgdown',FImgDown.SaveToString);
+    Add('imghover',FImgHover.SaveToString);
+    Add('imgdisabled',FImgDisabled.SaveToString);
+    Add('checkbutton',FCheckButton);
+    Add('down',FDown);
+  end;
+end;
+
+procedure TAdBitmapButton.SetDown(AValue: boolean);
+begin
+  FCheckButton := true;
+  FDown := AValue;
+  if FDown then
+  begin
+    FState := bsDown;
+  end
+  else
+  begin
+    FState := bsNormal;
   end;
 end;
 
@@ -425,6 +764,7 @@ initialization
   RegisterComponent(TAdPanel,'Standard');
   RegisterComponent(TAdButton,'Standard');
   RegisterComponent(TAdCheckbox,'Standard');
+  RegisterComponent(TAdBitmapButton, 'Standard');
 
 finalization
 

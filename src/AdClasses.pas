@@ -17,17 +17,9 @@
 {AdClasses.pas contains all classes and types shared between the host and the plugin.}
 unit AdClasses;
 
-{$IFDEF FPC}
-  {$MODE DELPHI}
-  
-  {$IFNDEF WIN32}
-    {$DEFINE UseComponents}
-  {$ENDIF}
-{$ENDIF}
-
 interface
 
-uses {$IFDEF FPC}intfgraphics, FPImage, LclType,{$ENDIF}{$IFDEF UseComponents} Controls, {$ENDIF} SysUtils, Classes, {$INCLUDE AdTypes.inc},Graphics;
+uses {$IFDEF FPC}intfgraphics, FPImage, LclType,{$ENDIF} SysUtils, Classes, {$INCLUDE AdTypes.inc},Graphics;
 
 type
   {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
@@ -231,11 +223,7 @@ type
       procedure SetLogProc(ALogProc:TAdLogProc);
 
       {Initializes the engine. AWnd is the handle to the window.}
-      {$IFDEF UseComponents}
-      function Initialize(AWnd:TComponent; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
-      {$ELSE}
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
-      {$ENDIF}
       {Finalizes the engine.}
       procedure Finalize;virtual;abstract;
 
@@ -256,9 +244,6 @@ type
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);virtual;abstract;
       {Returns the current view and projection matrix}
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);virtual;abstract;
-
-      {Resize the viewport}
-      procedure Resize(AWidth,AHeight:integer);virtual;abstract;
 
       {Set the texture filter for better picture quality}
       procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);virtual;abstract;

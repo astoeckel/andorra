@@ -7,7 +7,8 @@ uses
   Objects in 'Objects.pas' {ObjectsDlg},
   Structure in 'Structure.pas' {StructureDlg},
   XMLEdit in 'XMLEdit.pas' {XMLEditor},
-  FontCollection in 'FontCollection.pas' {FontColl};
+  FontCollection in 'FontCollection.pas' {FontColl},
+  ImageEditor in 'ImageEditor.pas' {Images};
 
 {$R *.res}
 

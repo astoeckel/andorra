@@ -444,26 +444,27 @@ object MainDlg: TMainDlg
           Align = alRight
           Caption = 'Tool-Box:'
           TabOrder = 0
+          ExplicitLeft = 230
+          ExplicitTop = 20
           object ScrollBox1: TScrollBox
             Left = 2
             Top = 15
             Width = 202
             Height = 292
-            VertScrollBar.Position = 51
             Align = alClient
             BevelInner = bvNone
             BevelOuter = bvNone
             BorderStyle = bsNone
             TabOrder = 0
-            ExplicitLeft = -6
-            ExplicitTop = 16
+            ExplicitLeft = 1
+            ExplicitTop = 14
             DesignSize = (
               185
               292)
             object Button9: TSpeedButton
               Left = 4
-              Top = -48
-              Width = 194
+              Top = 3
+              Width = 177
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Add Element'
@@ -495,11 +496,12 @@ object MainDlg: TMainDlg
                 A6FF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF
                 00FFFF00FFFF00FF2F31A4020EAAFF00FFFF00FFFF00FFFF00FF}
               OnClick = Button9Click
+              ExplicitWidth = 194
             end
             object Button10: TSpeedButton
-              Left = 3
-              Top = -17
-              Width = 194
+              Left = 4
+              Top = 34
+              Width = 177
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Delete Element'
@@ -533,10 +535,48 @@ object MainDlg: TMainDlg
                 00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FF}
               OnClick = Button10Click
             end
-            object GroupBox7: TGroupBox
+            object SpeedButton6: TSpeedButton
               Left = 4
-              Top = 14
-              Width = 194
+              Top = 65
+              Width = 177
+              Height = 25
+              Anchors = [akLeft, akTop, akRight]
+              Caption = 'Wizzard....'
+              Glyph.Data = {
+                6E030000424D6E030000000000006E0200002800000010000000100000000100
+                08000000000000010000120B0000120B00008E0000008E00000000000000FFFF
+                FF00FF00FF00BFD6B80042894000009D0000009A000000990100009800000093
+                0000008C0000008A0000007C000000790000007700000075000000710000006D
+                0000006C0000006B000000650000006400000063000000620000019201001A75
+                1900018208000CA9180002780C00078012000D851900005B0A00047811000881
+                1900148F270011872A00159731001DB43D001FB43D0021AB3D0022BC460025BF
+                4B002CC65A002FC9630035D26B0037D86E0037D36E0036D06D0036D5700036D2
+                6F001E654600004B3D000283B3008BA8B4000469940003537800024A6D000359
+                82000676AB0004527800066EA100055A8300076EA200076B9D00034163000340
+                610004426400065B8800054C740005476B00064D740007507900064061000640
+                6000063F5F00063D5C000F48670003335100043B5B0006446800074C7500074A
+                710007497000063E5F00063D5E000C4B72000C4B710006416A00083B5D001057
+                88001059880025649000266591004CB5FF004CB6FF003F96D3003E93CF000548
+                780023669A00328DD2003992D40047B0FF0047AFFE0048B0FF004AB3FF004BB2
+                FC00426A870008487C00105790001A5C91002982CA0041A8FC0043AAFF0043AB
+                FD0044ADFF0043AAFC003784C0008CA6BB002983D3002E86D600389EFC003BA2
+                FE003CA4FF003CA5FF003DA5FE003DA3FC000F559C002379D1003599FB00379D
+                FF00379DFE002D8CF3002F8DF6002E8CF1003090F9003292FD001A65C0002B82
+                ED00145CB9002574E0001F6CDA00FFFFFF000202020214151617171716130202
+                020202020217120B08061B280D051611020202020217100A07293124041A090C
+                1402020202170E182A2F2B190120250F15020202500217262E2C1D03011C301E
+                150202026A4E02172723327535212D22150202026A4E0202337E888C8A611F16
+                020202026A4E40577F878683898B6B02020202026A504176777A797880846D02
+                020202026A4E596E6272716F7D82856C020202024F515A58745E6866737C816C
+                02020202545243585C5B606967707B4C020202024A463F345858555F5D656D4C
+                0202020248363C34344744566463424C0202020202583D3A3E37373737394D02
+                020202020202494B53023B38450202020202}
+              OnClick = SpeedButton6Click
+            end
+            object GroupBox7: TGroupBox
+              Left = 5
+              Top = 96
+              Width = 177
               Height = 104
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Anchors:'
@@ -579,9 +619,9 @@ object MainDlg: TMainDlg
               end
             end
             object GroupBox8: TGroupBox
-              Left = 4
-              Top = 121
-              Width = 194
+              Left = 5
+              Top = 203
+              Width = 177
               Height = 133
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Position:'
@@ -662,24 +702,23 @@ object MainDlg: TMainDlg
             end
             object GroupBox9: TGroupBox
               Left = 4
-              Top = 260
-              Width = 194
-              Height = 286
+              Top = 336
+              Width = 177
+              Height = 283
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Images:'
               TabOrder = 1
               DesignSize = (
-                194
-                286)
+                177
+                283)
               object GroupBox3: TGroupBox
                 Left = 3
                 Top = 16
-                Width = 183
+                Width = 166
                 Height = 113
                 Anchors = [akLeft, akTop, akRight]
                 Caption = 'Source rectangle:'
                 TabOrder = 0
-                ExplicitWidth = 166
                 object Label6: TLabel
                   Left = 16
                   Top = 16
@@ -748,14 +787,13 @@ object MainDlg: TMainDlg
               object GroupBox11: TGroupBox
                 Left = 5
                 Top = 135
-                Width = 181
+                Width = 164
                 Height = 138
                 Anchors = [akLeft, akTop, akRight]
                 Caption = 'Image:'
                 TabOrder = 1
-                ExplicitWidth = 164
                 DesignSize = (
-                  181
+                  164
                   138)
                 object Label10: TLabel
                   Left = 16
@@ -774,26 +812,24 @@ object MainDlg: TMainDlg
                 object ComboBox1: TComboBox
                   Left = 16
                   Top = 43
-                  Width = 149
+                  Width = 132
                   Height = 21
                   Style = csDropDownList
                   Anchors = [akLeft, akTop, akRight]
                   ItemHeight = 13
                   TabOrder = 0
                   OnChange = ComboBox1Change
-                  ExplicitWidth = 132
                 end
                 object ComboBox2: TComboBox
                   Left = 16
                   Top = 91
-                  Width = 149
+                  Width = 132
                   Height = 21
                   Style = csDropDownList
                   Anchors = [akLeft, akTop, akRight]
                   ItemHeight = 13
                   TabOrder = 1
                   OnChange = ComboBox2Change
-                  ExplicitWidth = 132
                 end
               end
             end
@@ -1001,8 +1037,6 @@ object MainDlg: TMainDlg
           Align = alLeft
           BevelOuter = bvNone
           TabOrder = 1
-          ExplicitLeft = 125
-          ExplicitTop = 3
           DesignSize = (
             107
             122)
