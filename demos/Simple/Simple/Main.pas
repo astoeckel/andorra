@@ -11,6 +11,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormResize(Sender: TObject);
+    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
   private
     { Private-Deklarationen }
   public
@@ -23,6 +24,7 @@ type
 
 var
   Form1: TForm1;
+  w,h:integer;
 
 implementation
 
@@ -33,7 +35,7 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraOGL.dll';
+  AdDraw1.DllName := 'AndorraDX93D.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -56,6 +58,13 @@ begin
   AdDraw1.Free;
 end;
 
+procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  w := x;
+  h := y;
+end;
+
 procedure TForm1.FormResize(Sender: TObject);
 begin
   //Resize the Backbuffer
@@ -70,6 +79,10 @@ begin
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
     AdImage.Draw(AdDraw1,0,0,0);
+    with AdDraw1.Canvas.Font do
+    begin
+      TextOutEx(Rect(0,0,w,h),'Dies'+#10#13+'ist ein "Test Text", der mit '+#10#13+inttostr(AdPerCounter.FPS)+'FPS gezeichnet wird!',[dtCenter,dtMiddle,dtWordWrap,dtDoLineFeeds])
+    end;
     AdDraw1.EndScene;
     AdDraw1.Flip; 
   end;
