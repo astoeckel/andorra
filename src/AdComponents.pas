@@ -87,6 +87,7 @@ type
       procedure DoMouseEnter; override;
       procedure DoMouseLeave; override;
     public
+      constructor Create(AParent:TAdComponent);override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
@@ -233,6 +234,7 @@ begin
   inherited;
   FStateNr := 0;
   FState := bsNormal;
+  AcceptChildComponents := false;
 end;
 
 destructor TAdButton.Destroy;
@@ -372,6 +374,12 @@ begin
 end;
 
 { TAdCheckBox }
+
+constructor TAdCheckBox.Create(AParent: TAdComponent);
+begin
+  inherited;
+  AcceptChildComponents := false;
+end;
 
 procedure TAdCheckBox.DoDraw;
 var Rect: TRect;
@@ -626,6 +634,7 @@ begin
   FImgDown := TAdResourceImage.Create(AdDraw);
   FImgNormal := TAdResourceImage.Create(AdDraw);
   FImgDisabled := TAdResourceImage.Create(AdDraw);
+  AcceptChildComponents := false;
 end;
 
 destructor TAdBitmapButton.Destroy;
@@ -712,7 +721,7 @@ begin
   begin
     if (not FCheckButton) or (not FDown) then
     begin
-      FState := bsNormal;
+      FState := bsHover;
     end;
   end;
 end;

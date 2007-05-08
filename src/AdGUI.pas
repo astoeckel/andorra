@@ -84,8 +84,8 @@ type
       FAdDraw:TAdDraw;
       FDesignMode:boolean;
       FCursor:string;
-      FX,FY:single;
-      FWidth,FHeight:single;
+      FX,FY:integer;
+      FWidth,FHeight:integer;
       FAlpha:byte;
       FEnabled:boolean;
       FVisible:boolean;
@@ -136,6 +136,8 @@ type
       FMaxWidth:integer;
       FMaxHeight:integer;
 
+      FAcceptChildComponents:boolean;
+
       procedure SetSkin(Value:TAdSkin);
       procedure SetAdDraw(Value:TAdDraw);
       procedure SetDesignMode(Value:boolean);
@@ -147,8 +149,8 @@ type
       procedure SetGridX(Value:integer);
       procedure SetGridY(Value:integer);
       procedure SetGrid(Value:boolean);
-      procedure SetWidth(Value:single);
-      procedure SetHeight(Value:single);
+      procedure SetWidth(Value:integer);
+      procedure SetHeight(Value:integer);
       procedure SetFonts(Value:TAdFontCollection);
       procedure SetSaveFont(Value:boolean);
     protected
@@ -211,6 +213,8 @@ type
       property Fonts:TAdFontCollection read FFonts write SetFonts;
       property FontFromCollection:boolean read FFontFromCollection;
       property SaveFont:boolean read FSaveFont write SetSaveFont;
+
+      property AcceptChildComponents:boolean read FAcceptChildComponents write FAcceptChildComponents;
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -267,10 +271,10 @@ type
     published
       property Name:string read FName write SetName;
       property Cursor:string read FCursor write FCursor;
-      property X:single read FX write FX;
-      property Y:single read FY write FY;
-      property Width:single read FWidth write SetWidth;
-      property Height:single read FHeight write SetHeight;
+      property X:integer read FX write FX;
+      property Y:integer read FY write FY;
+      property Width:integer read FWidth write SetWidth;
+      property Height:integer read FHeight write SetHeight;
       property Alpha:byte read FAlpha write FAlpha;
       property Visible:boolean read FVisible write FVisible;
       property Enabled:boolean read FEnabled write FEnabled;
@@ -434,6 +438,8 @@ end;
 { TAdComponent }
 
 constructor TAdComponent.Create(AParent: TAdComponent);
+var
+  tmp:TAdComponent;
 begin
   inherited Create;
 
@@ -453,8 +459,16 @@ begin
   FMaxHeight := -1;
   FSaveFont := true;
 
+  FAcceptChildComponents := true;
+
   if FParent <> nil then
   begin
+    tmp := FParent;
+    while not tmp.AcceptChildComponents do
+    begin
+      tmp := tmp.FParent;
+    end;
+    FParent := tmp;
     AdDraw := FParent.AdDraw;
     FParent.AddComponent(self);
     FEnabled := FParent.Enabled;
@@ -1023,7 +1037,7 @@ begin
   end;
 end;
 
-procedure TAdComponent.SetWidth(Value: single);
+procedure TAdComponent.SetWidth(Value: integer);
 begin
   FWidth := Value;
   if (FWidth > FMaxWidth) and (FMaxWidth > 0) then
@@ -1032,7 +1046,7 @@ begin
     FWidth := FMinWidth;
 end;
 
-procedure TAdComponent.SetHeight(Value: single);
+procedure TAdComponent.SetHeight(Value: integer);
 begin
   FHeight := Value;
   if (FHeight > FMaxHeight) and (FMaxWidth > 0) then

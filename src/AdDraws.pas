@@ -541,6 +541,24 @@ type
     published
   end;
 
+  //Defines how the output of the TextOut-Ex function will be
+  TAdFontDrawType = (
+    dtBottom,
+    dtTop,
+    dtMiddle,
+    dtLeft,
+    dtRight,
+    dtCenter,
+    dtClip,
+    dtWordWrap,
+    dtDoTabs,
+    dtDoLineFeeds,
+    dtMakePoints
+   );
+
+  //A set of the draw type, used by TAdFont.FontOutEx
+  TAdFontDrawTypes = set of TAdFontDrawType;
+
   //An array class to store the size of each letter of a font
   TPointArray = array[0..255] of TPoint;
 
@@ -597,6 +615,8 @@ type
 
       //Writes the text
       procedure TextOut(AX,AY:integer;AText:string);
+      //An extended Textout function.
+      procedure TextOutEx(ARect:TRect);
       //Returns the width of a specific text
       function TextWidth(AText:string):integer;
       //Returns the height of a specific text
