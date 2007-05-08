@@ -44,6 +44,25 @@ type
       property Alignment:TAdAlignment read FAlignment write FAlignment;
   end;
 
+  TAdLabel = class(TAdComponent)
+    private
+      FCaption:string;
+      FAlignment:TAdAlignment;
+      FTextPos:TAdTextPos;
+      FWordWrap:boolean;
+    protected
+      procedure DoDraw;override;
+    public
+      constructor Create(AParent:TAdComponent);override;
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+    published
+      property Caption:string read FCaption write FCaption;
+      property TextPos:TAdTextPos read FTextPos write FTextPos;
+      property Alignment:TAdAlignment read FAlignment write FAlignment;
+      property WordWrap:boolean read FWordWrap write FWordWrap;
+  end;
+
   TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus, bsDisabled);
 
   TAdButton = class(TAdComponent)
@@ -653,7 +672,7 @@ begin
     with AdDraw.Canvas do
     begin
       Brush.Style := abClear;
-      Pen.Color := Ad_RGB(0,0,0);
+      Pen.Color := Ad_ARGB(200,128,128,128);
       Rectangle(BoundsRect);
     end;
   end;
@@ -768,12 +787,78 @@ begin
   end;
 end;
 
+{ TAdLabel }
+
+constructor TAdLabel.Create(AParent: TAdComponent);
+begin
+  inherited;
+  AcceptChildComponents := false;
+end;
+
+procedure TAdLabel.DoDraw;
+var
+  opt:TAdFontDrawTypes;
+begin
+  if DesignMode then
+  begin
+    with AdDraw.Canvas do
+    begin
+      Brush.Style := abClear;
+      Pen.Color := Ad_ARGB(200,128,128,128);
+      Rectangle(BoundsRect);
+    end;
+  end;
+
+  opt := [dtDoLineFeeds];
+  case FAlignment of
+    alLeft: opt := opt + [dtLeft];
+    alCenter: opt := opt + [dtCenter];
+    alRight: opt := opt + [dtRight];
+  end;
+  case FTextPos of
+    tpTop: opt := opt + [dtTop];
+    tpCenter: opt := opt + [dtMiddle];
+    tpBottom: opt := opt + [dtBottom];
+  end;
+  if FWordWrap then
+  begin
+    opt := opt + [dtWordWrap];
+  end;
+  Font.TextOutEx(ClientRect,FCaption,opt);
+  inherited;
+end;
+
+procedure TAdLabel.LoadFromXML(aroot: TJvSimpleXMLElem);
+begin
+  inherited;
+  with aroot.Properties do
+  begin
+    FTextPos := TAdTextPos(IntValue('textpos',ord(tpCenter)));
+    FAlignment := TAdAlignment(IntValue('alignment',ord(alCenter)));
+    FCaption := Value('caption','');
+    FWordWrap := BoolValue('wordwrap',false);
+  end;
+end;
+
+function TAdLabel.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  result := inherited SaveToXML(aroot);
+  with result.Properties do
+  begin
+    Add('textpos',ord(FTextPos));
+    Add('alignment',ord(FAlignment));
+    Add('caption',FCaption);
+    Add('wordwrap',FWordWrap);
+  end;
+end;
+
 initialization
-  RegisterComponent(TAdForm,'Standard');
-  RegisterComponent(TAdPanel,'Standard');
+  RegisterComponent(TAdBitmapButton, 'Standard');
   RegisterComponent(TAdButton,'Standard');
   RegisterComponent(TAdCheckbox,'Standard');
-  RegisterComponent(TAdBitmapButton, 'Standard');
+  RegisterComponent(TAdLabel,'Standard');
+  RegisterComponent(TAdPanel,'Standard');
+  RegisterComponent(TAdForm,'Standard');
 
 finalization
 

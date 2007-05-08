@@ -551,10 +551,8 @@ type
     dtCenter,
     dtClip,
     dtWordWrap,
-    dtDoTabs,
-    dtDoLineFeeds,
-    dtMakePoints
-   );
+    dtDoLineFeeds
+  );
 
   //A set of the draw type, used by TAdFont.FontOutEx
   TAdFontDrawTypes = set of TAdFontDrawType;
@@ -616,7 +614,7 @@ type
       //Writes the text
       procedure TextOut(AX,AY:integer;AText:string);
       //An extended Textout function.
-      //procedure TextOutEx(ARect:TRect);
+      procedure TextOutEx(ARect:TRect;AText:string;ADrawType:TAdFontDrawTypes);
       //Returns the width of a specific text
       function TextWidth(AText:string):integer;
       //Returns the height of a specific text
@@ -2556,7 +2554,7 @@ begin
   inherited;
 end;
 
-{$IFDEF FPC}{$ELSE}
+{$IFNDEF FPC}
 procedure SetFontQuality (aFont: TFont;  aQuality: Byte);
 var
   LF : TLogFont;
@@ -2635,7 +2633,7 @@ begin
       bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
     end;
 
-    {$IFDEF FPC}{$ELSE}
+    {$IFNDEF FPC}
       SetFontQuality (bmp.Canvas.Font, NONANTIALIASED_QUALITY);
     {$ENDIF}
 
@@ -2763,6 +2761,99 @@ begin
       x := x + FLetterSize[c].X;
     end;
   end;
+end;
+
+procedure TAdFont.TextOutEx(ARect: TRect; AText:string; ADrawType: TAdFontDrawTypes);
+var
+  lines:TStringList;
+  w,h,i,y,lastspace,lastpos:integer;
+  s:string;
+begin
+  lines := TStringList.Create;
+  
+  w := ARect.Right - ARect.Left;
+
+  //Calculate text lines if neccessary
+  if dtWordWrap in ADrawType then
+  begin
+    s := '';
+    i := 0;
+    lastspace := -1;
+    while i < length(AText) do
+    begin
+      i := i + 1;
+      if ((AText[i] = #10) or (AText[i] = #13)) and (dtDoLineFeeds in ADrawType) then
+      begin
+        lines.Add(s);
+        lastspace := -1;
+        lastpos := i;
+        s := '';
+      end
+      else
+      begin
+        s := s + AText[i];
+        if AText[i] = ' ' then
+        begin
+          lastspace := length(s);
+          lastpos := i;
+        end;
+        if (TextWidth(s) > w) and (lastspace <> -1) then
+        begin
+          i := lastpos;
+          s := Copy(s,1,lastspace-1);
+          lines.Add(s);
+          lastspace := -1;
+          s := '';
+        end;
+      end;
+    end;
+    lines.Add(s);
+  end
+  else
+  begin
+    lines.Add(AText);
+  end;
+
+  h := 0;
+  if (dtMiddle in ADrawType) or (dtBottom in ADrawType) then
+  begin
+    for i := 0 to lines.Count - 1 do
+    begin
+      h := h + TextHeight(lines[i]);
+    end;
+  end;
+
+  if (dtTop in ADrawType) then
+  begin
+    y := ARect.Top;
+  end else
+  if dtBottom in ADrawType then
+  begin
+    y := ARect.Bottom - h;
+  end else
+  if dtMiddle in ADrawType then
+  begin
+    y := ARect.Top + (ARect.Bottom - ARect.Top - h) div 2;
+  end;
+
+  for i := 0 to lines.Count - 1 do
+  begin
+    if dtLeft in ADrawType then
+    begin
+      TextOut(ARect.Left,y,lines[i]);
+    end else
+    if dtRight in ADrawType then
+    begin
+      TextOut(ARect.Right-TextWidth(lines[i]),y,lines[i]);
+    end else
+    if dtCenter in ADrawType then
+    begin
+      TextOut(ARect.Left+(w-TextWidth(lines[i])) div 2,y,lines[i]);
+    end;
+    y := y + TextHeight(lines[i]);
+  end;
+  
+  lines.Free;
 end;
 
 procedure TAdFont.LoadFromFile(AFile: string);
