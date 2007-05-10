@@ -149,13 +149,16 @@ type
     private
       FImgHover:TAdResourceImage;
       FImgDown:TAdResourceImage;
+      FImgCheckedHover:TAdResourceImage;
       FImgDisabled:TAdResourceImage;
       FImgNormal:TAdResourceImage;
       FState:TAdButtonState;
       FDown:boolean;
       FCheckButton:boolean;
+      FAutoSize:boolean;
       procedure SetDown(AValue:boolean);
     protected
+      procedure DoMove(TimeGap:double); override;
       procedure DoDraw; override;
       procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
       procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
@@ -172,8 +175,10 @@ type
       property ImgHover:TAdResourceImage read FImgHover;
       property ImgDown:TAdResourceImage read FImgDown;
       property ImgDisabled:TAdResourceImage read FImgDisabled;
+      property ImgCheckedHover:TAdResourceImage read FImgCheckedHover;
       property Down:boolean read FDown write SetDown;
       property CheckButton:boolean read FCheckButton write FCheckButton;
+      property AutoSize:boolean read FAutoSize write FAutoSize;
   end;
 
   const               
@@ -653,6 +658,7 @@ begin
   FImgDown := TAdResourceImage.Create(AdDraw);
   FImgNormal := TAdResourceImage.Create(AdDraw);
   FImgDisabled := TAdResourceImage.Create(AdDraw);
+  FImgCheckedHover := TAdResourceImage.Create(AdDraw);
   AcceptChildComponents := false;
 end;
 
@@ -662,6 +668,7 @@ begin
   FImgDown.Free;
   FImgNormal.Free;
   FImgDisabled.Free;
+  FImgCheckedHover.Free;
   inherited;
 end;
 
@@ -681,20 +688,24 @@ begin
   begin
     if (State = bsNormal) and (FImgNormal.Loaded) then
     begin
-      FImgNormal.Picture.StretchDraw(AdDraw,Boundsrect,0);
+      FImgNormal.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
     end;
     if (State = bsDown) and (FImgDown.Loaded) then
     begin
-      FImgDown.Picture.StretchDraw(AdDraw,Boundsrect,0);
+      FImgDown.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
     end;
-    if (State = bsHover) and (FImgHover.Loaded) then
+    if (State = bsHover) and (FImgHover.Loaded) and (not down) then
     begin
-      FImgHover.Picture.StretchDraw(AdDraw,Boundsrect,0);
+      FImgHover.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
+    end;
+    if (State = bsHover) and (FImgCheckedHover.Loaded) and (down) then
+    begin
+      FImgCheckedHover.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
     end;
   end
   else
   begin
-    FImgDisabled.Picture.StretchDraw(AdDraw,Boundsrect,0);
+    FImgDisabled.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
   end;
 
   inherited;
@@ -717,7 +728,7 @@ end;
 procedure TAdBitmapButton.DoMouseEnter;
 begin
   inherited;
-  if FImgHover.Loaded and ((not FCheckButton) or (not FDown)) then
+  if FImgHover.Loaded and (((not FCheckButton) or (not FDown)) or FImgCheckedHover.Loaded) then
   begin
     FState := bsHover;
   end;
@@ -730,6 +741,10 @@ begin
   begin
     FState := bsNormal;
   end;
+  if FImgCheckedHover.Loaded and FCheckButton and FDown then
+  begin
+    FState := bsDown;
+  end;
 end;
 
 procedure TAdBitmapButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
@@ -738,10 +753,21 @@ begin
   inherited;
   if FImgNormal.Loaded then
   begin
-    if (not FCheckButton) or (not FDown) then
+    if ((not FCheckButton) or (not FDown)) or
+       (FCheckButton and FDown and FImgCheckedHover.Loaded) then
     begin
       FState := bsHover;
     end;
+  end;
+end;
+
+procedure TAdBitmapButton.DoMove(timegap:double);
+begin
+  inherited;
+  if (Designmode) and (FAutoSize) and (FImgNormal.Loaded) then
+  begin
+    Width := FImgNormal.Picture.Width;
+    Height := FImgNormal.Picture.Height;
   end;
 end;
 
@@ -754,7 +780,9 @@ begin
     FImgDown.LoadFromString(Value('imgdown',''));
     FImgHover.LoadFromString(Value('imghover',''));
     FImgDisabled.LoadFromString(Value('imgdisabled',''));
+    FImgCheckedHover.LoadFromString(Value('imgcheckedhover',''));
     FCheckButton := BoolValue('checkbutton',false);
+    FAutoSize := BoolValue('autosize',false);
     FDown := BoolValue('down',false);
   end;
 end;
@@ -768,7 +796,9 @@ begin
     Add('imgdown',FImgDown.SaveToString);
     Add('imghover',FImgHover.SaveToString);
     Add('imgdisabled',FImgDisabled.SaveToString);
+    Add('imgcheckedhover',FImgCheckedHover.SaveToString);
     Add('checkbutton',FCheckButton);
+    Add('autosize',FAutoSize);
     Add('down',FDown);
   end;
 end;
