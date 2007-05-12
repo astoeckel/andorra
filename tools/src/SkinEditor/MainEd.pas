@@ -1139,7 +1139,7 @@ begin
     with el do
     begin
       X1 := bl; X2 := w-br; Y1 := 0; Y2 := bt;
-      ImgSrcX1 := 0; ImgSrcX2 := w-br; ImgSrcY1 := 0; ImgSrcY2 := bt;
+      ImgSrcX1 := bl; ImgSrcX2 := w-br; ImgSrcY1 := 0; ImgSrcY2 := bt;
       Anchors := [aaLeft,aaTop,aaRight];
     end;
     SelItem.Elements.Add(el);
