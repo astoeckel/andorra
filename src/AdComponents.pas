@@ -3,7 +3,7 @@ unit AdComponents;
 interface
 
 uses JvSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, {$I AdTypes.inc}, Controls,
-     Classes, Graphics;
+     Classes, Graphics, SysUtils;
 
 type
   TAdAlignment = (alLeft,alCenter,alRight);
@@ -96,8 +96,11 @@ type
       FCaption: String;
       FSkinItem: TAdSkinItem;
       FCheckedItem: TAdSkinItem;
-      FChecked: Boolean;
+      FChecked: boolean;
       FAlignment: TAdAlignmentEx;
+      FGroupIndex: integer;
+      procedure SetGroupIndex(AValue:integer);
+      procedure SetChecked(AValue:boolean);
     protected
       procedure LoadSkinItem; override;
       procedure DoDraw; override;
@@ -110,9 +113,10 @@ type
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
-      property Checked:Boolean read FChecked write FChecked;
+      property Checked:Boolean read FChecked write SetChecked;
       property Caption:String read FCaption write FCaption;
       property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
+      property GroupIndex:integer read FGroupIndex write SetGroupIndex;
   end;
 
   TAdResourceImage = class
@@ -179,6 +183,36 @@ type
       property Down:boolean read FDown write SetDown;
       property CheckButton:boolean read FCheckButton write FCheckButton;
       property AutoSize:boolean read FAutoSize write FAutoSize;
+  end;
+
+  TAdProgressBar = class(TAdComponent)
+    private
+      FSmooth:boolean;
+      FMin:integer;
+      FMax:integer;
+      FPosition:integer;
+      FShowPercentage:boolean;
+      FSkinItem:TAdSkinItem;
+      FSkinProgress:TAdSkinItem;
+      procedure SetSmooth(AValue:boolean);
+      procedure SetMin(AValue:integer);
+      procedure SetMax(AValue:integer);
+      procedure SetPosition(AValue:integer);
+    protected
+      procedure LoadSkinItem; override;
+      procedure DoDraw; override;
+    public
+      constructor Create(AParent:TAdComponent);override;
+      destructor Destroy;override;
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      function Percent:single;
+    published
+      property Min:integer read FMin write SetMin;
+      property Max:integer read FMax write SetMax;
+      property Position:integer read FPosition write SetPosition;
+      property ShowPercentage:boolean read FShowPercentage write FShowPercentage;
+      property Smooth:boolean read FSmooth write SetSmooth;
   end;
 
   const               
@@ -482,7 +516,14 @@ procedure TAdCheckBox.DoMouseUp(Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer);
 begin
   inherited;
-  FChecked := not FChecked;
+  if GroupIndex = 0 then
+  begin
+    Checked := not Checked;
+  end
+  else
+  begin
+    Checked := true;
+  end;
   FState := bsHover;
 end;
 
@@ -490,8 +531,16 @@ procedure TAdCheckBox.LoadSkinItem;
 begin
   FSkinItem := Skin.ItemNamed['checkbox'];
   SetSpacer(FSkinItem);
-  FCheckedItem := Skin.ItemNamed['checkboxhook'];
-  SetSpacer(FCheckedItem);
+  if FGroupIndex = 0 then
+  begin
+    FCheckedItem := Skin.ItemNamed['checkboxhook'];
+  end
+  else
+  begin
+    FCheckedItem := Skin.ItemNamed['checkboxradio'];
+  end;
+  MinWidth := FSkinitem.BaseWidth;
+  MinHeight := FSkinitem.BaseHeight;
 end;
 
 procedure TAdCheckBox.LoadFromXML(ARoot: TJvSimpleXMLElem);
@@ -502,6 +551,7 @@ begin
     FCaption := Value('caption','');
     FChecked := BoolValue('checked',false);
     FAlignment := TAdAlignmentEx(IntValue('align',Ord(axLeft)));
+    GroupIndex := IntValue('groupindex',0);
   end;
 end;
 
@@ -513,6 +563,40 @@ begin
     Add('caption',FCaption);
     Add('checked',FChecked);
     Add('align',Ord(FAlignment));
+    Add('groupindex',FGroupIndex);
+  end;
+end;
+
+procedure TAdCheckBox.SetChecked(AValue: boolean);
+var
+  i:integer;
+begin
+  FChecked := AValue;
+  if (Parent <> nil) and (GroupIndex <> 0) and (FChecked) then
+  begin
+    for i := 0 to Parent.Components.Count - 1 do
+    begin
+      if (Parent.Components[i].ClassType = ClassType) and (Parent.Components[i] <> self) then
+      begin
+        if TAdCheckBox(Parent.Components[i]).GroupIndex = GroupIndex then
+        begin
+          TAdCheckBox(Parent.Components[i]).Checked := false;
+        end;        
+      end;
+    end;
+  end;    
+end;
+
+procedure TAdCheckBox.SetGroupIndex(AValue: integer);
+begin
+  if FGroupIndex <> AValue then
+  begin
+    FGroupIndex := AValue;
+    LoadSkinItem;
+    if FChecked then
+    begin
+      SetChecked(true);
+    end;
   end;
 end;
 
@@ -660,6 +744,8 @@ begin
   FImgDisabled := TAdResourceImage.Create(AdDraw);
   FImgCheckedHover := TAdResourceImage.Create(AdDraw);
   AcceptChildComponents := false;
+  MinWidth := 50;
+  MinHeight := 50;
 end;
 
 destructor TAdBitmapButton.Destroy;
@@ -823,6 +909,8 @@ constructor TAdLabel.Create(AParent: TAdComponent);
 begin
   inherited;
   AcceptChildComponents := false;
+  MinWidth := 50;
+  MinHeight := 50;
 end;
 
 procedure TAdLabel.DoDraw;
@@ -882,8 +970,158 @@ begin
   end;
 end;
 
+{ TAdProgressBar }
+
+constructor TAdProgressBar.Create(AParent: TAdComponent);
+begin
+  inherited;
+  FMax := 100;
+  FMin := 0;
+  FPosition := 50;
+  FSmooth := false;
+end;
+
+destructor TAdProgressBar.Destroy;
+begin
+  inherited;
+end;
+
+procedure TAdProgressBar.DoDraw;
+var
+  r:TRect;
+  w,c:integer;
+  i: Integer;
+begin
+  if (FSkinItem <> nil) and (FSkinProgress <> nil) then
+  begin
+    r := BoundsRect;
+    FSkinItem.Draw(0,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+    w := round((r.Right - r.Left - SpacerLeft) * Percent);
+    if Smooth then
+    begin
+      if w > SpacerLeft then
+      begin
+        FSkinProgress.Draw(0,r.Left+SpacerLeft div 2,r.Top+SpacerTop div 2,
+                             w,r.Bottom-r.Top-SpacerTop);
+      end;
+    end
+    else
+    begin
+      if FPosition > FMin then
+      begin
+        c := (w - FSkinProgress.BaseWidth) div (FSkinProgress.BaseWidth + 2);
+        for i := 0 to c do
+        begin
+          FSkinProgress.Draw(0,SpacerLeft div 2 + r.Left + i * (FSkinProgress.BaseWidth+2),
+            r.Top + (r.Bottom - r.Top - FSkinProgress.BaseHeight) div 2,
+            FSkinProgress.BaseWidth,FSkinProgress.BaseHeight);
+        end;
+      end;
+    end;
+    if FShowPercentage then
+    begin
+      Font.TextOutEx(ClientRect,FormatFloat('0',Percent * 100)+'%',[dtCenter,dtMiddle]);
+    end;
+  end;    
+  inherited DoDraw;
+end;
+
+procedure TAdProgressBar.LoadFromXML(aroot: TJvSimpleXMLElem);
+begin
+  inherited;
+  with aroot.Properties do
+  begin
+    FMin := IntValue('min',0);
+    FMax := IntValue('max',100);
+    FPosition := IntValue('position',50);
+    FShowPercentage := BoolValue('showpercentage',false);
+    Smooth := BoolValue('smooth',false); 
+  end;
+end;
+
+function TAdProgressBar.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  result := inherited SaveToXML(aroot);
+  with result.Properties do
+  begin
+    Add('min',FMin);
+    Add('max',FMax);
+    Add('position',FPosition);
+    Add('showpercentage',FShowPercentage);
+    Add('smooth',FSmooth);
+  end;
+end;
+
+procedure TAdProgressBar.LoadSkinItem;
+begin
+  FSkinItem := Skin.ItemNamed['progressbar'];
+  SetSpacer(FSkinItem);
+  if FSmooth then
+  begin
+    FSkinProgress := Skin.ItemNamed['progressbarbar'];
+  end
+  else
+  begin
+    FSkinProgress := Skin.ItemNamed['progressbarelem'];
+  end;
+end;
+
+function TAdProgressBar.Percent: single;
+begin
+  result := (Position - FMin) / (FMax - FMin);
+end;
+
+procedure TAdProgressBar.SetMax(AValue: integer);
+begin
+  FMax := AValue;
+  if FPosition > FMax then
+  begin
+    FPosition := FMax;
+  end;
+  if FMax < FMin then
+  begin
+    FMin := FMax - 1;
+  end;
+end;
+
+procedure TAdProgressBar.SetMin(AValue: integer);
+begin
+  FMin := AValue;
+  if FPosition < FMin then
+  begin
+    FPosition := FMin;
+  end;
+  if FMax < FMin then
+  begin
+    FMax := FMin + 1;
+  end;
+end;
+
+procedure TAdProgressBar.SetPosition(AValue: integer);
+begin
+  FPosition := AValue;
+  if FPosition < FMin then
+  begin
+    FPosition := FMin;
+  end;
+  if FPosition > FMax then
+  begin
+    FPosition := FMax;
+  end;
+end;
+
+procedure TAdProgressBar.SetSmooth(AValue: boolean);
+begin
+  if AValue <> FSmooth then
+  begin
+    FSmooth := AValue;
+    LoadSkinItem;
+  end;
+end;
+
 initialization
   RegisterComponent(TAdBitmapButton, 'Standard');
+  RegisterComponent(TAdProgressBar,'Standard');
   RegisterComponent(TAdButton,'Standard');
   RegisterComponent(TAdCheckbox,'Standard');
   RegisterComponent(TAdLabel,'Standard');
