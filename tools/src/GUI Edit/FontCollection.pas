@@ -44,12 +44,22 @@ begin
   end;
 end;
 
+procedure RemoveFont(AFont:TAdFont;AComp:TAdComponent);
+var i:integer;
+begin
+  if AComp.Font = AFont then
+  begin
+    AComp.Font := nil;
+  end;
+  for i := 0 to AComp.Components.Count - 1 do
+  begin
+    RemoveFont(AFont,AComp.Components[i]);
+  end;
+end;
+
 procedure TFontColl.Button2Click(Sender: TObject);
 begin
-  if GUI.FocusedComponent.Font = Fonts.Items[ListBox1.ItemIndex] then
-  begin
-    GUI.FocusedComponent.Font := nil;
-  end;
+  RemoveFont(Fonts.Items[ListBox1.ItemIndex],GUI);
   Fonts.Delete(ListBox1.ItemIndex);
   UpdateList;
 end;

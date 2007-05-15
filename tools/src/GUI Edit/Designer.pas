@@ -350,6 +350,7 @@ var
 begin
   if (not FirstPoint) and (AddComp <> nil) then
   begin
+    AdGUI.Click(X,Y);
     FirstPoint := true;
     AddRect.Left := (X div AdGUI.GridX) * AdGUI.GridX;
     AddRect.Top := (Y div AdGUI.GridY) * AdGUI.GridY;
@@ -358,7 +359,6 @@ begin
   end;
   if (Button = mbRight) and (AdGUI.DesignMode) then
   begin
-    AdGUI.Click(X,Y);
     AdConnector.RestoreEventHandlers;
     if AdGUI.FocusedComponent <> nil then
     begin

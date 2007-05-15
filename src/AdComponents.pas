@@ -24,6 +24,8 @@ type
     published
       property Caption:string read FCaption write FCaption;
       property FixedPosition:boolean read FFixedPosition write FFixedPosition;
+      property Font;
+      property FontColor;
   end;
 
   TAdPanel = class(TAdComponent)
@@ -42,6 +44,8 @@ type
       property Caption:string read FCaption write FCaption;
       property TextPos:TAdTextPos read FTextPos write FTextPos;
       property Alignment:TAdAlignment read FAlignment write FAlignment;
+      property Font;
+      property FontColor;
   end;
 
   TAdLabel = class(TAdComponent)
@@ -61,6 +65,8 @@ type
       property TextPos:TAdTextPos read FTextPos write FTextPos;
       property Alignment:TAdAlignment read FAlignment write FAlignment;
       property WordWrap:boolean read FWordWrap write FWordWrap;
+      property Font;
+      property FontColor;
   end;
 
   TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus, bsDisabled);
@@ -87,7 +93,9 @@ type
       property State:TAdButtonState read FState;
     published
       property Caption:string read FCaption write FCaption;
-  end;
+      property Font;
+      property FontColor;
+    end;
 
   //Written by Michael Morstein alias Neutral General
   TAdCheckBox = class(TAdComponent)
@@ -117,6 +125,8 @@ type
       property Caption:String read FCaption write FCaption;
       property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
       property GroupIndex:integer read FGroupIndex write SetGroupIndex;
+      property Font;
+      property FontColor;
   end;
 
   TAdResourceImage = class
@@ -213,6 +223,8 @@ type
       property Position:integer read FPosition write SetPosition;
       property ShowPercentage:boolean read FShowPercentage write FShowPercentage;
       property Smooth:boolean read FSmooth write SetSmooth;
+      property Font;
+      property FontColor;
   end;
 
   const               
@@ -228,6 +240,8 @@ var rect:TRect;
 begin
   if FSkinItem <> nil then
   begin
+    SetFontColor;
+    
     rect := BoundsRect;
     FSkinItem.Draw(0,rect.Left,rect.Top,round(Width),round(Height),Alpha);
 
@@ -306,6 +320,8 @@ var rect:TRect;
 begin
   if FSkinItem <> nil then
   begin
+    SetFontColor;
+
     rect := BoundsRect;
     FSkinItem.Draw(FStateNr,rect.Left,rect.Top,round(Width),round(Height),Alpha);
 
@@ -401,6 +417,8 @@ procedure TAdForm.DoDraw;
 var
   rect:TRect;
 begin
+  SetFontColor;
+
   rect := BoundsRect;
   FSkinItem.Draw(0,rect.Left,rect.Top,round(Width),round(Height),Alpha);
   Font.TextOut(rect.Left+SpacerLeft,rect.Top+(SpacerTop - Font.TextHeight(FCaption)) div 2,FCaption);
@@ -445,7 +463,7 @@ begin
   if (FSkinItem <> nil) and (FCheckedItem <> nil) then
  begin
     Rect := BoundsRect;
-    Font.Alpha := Alpha;
+    SetFontColor;
     case FAlignment of
       axLeft  : begin
                   FSkinItem.Draw(Integer(FState),Rect.Left,Rect.Top,FSkinItem.BaseWidth,FSkinItem.BaseHeight,Alpha);
@@ -917,6 +935,7 @@ procedure TAdLabel.DoDraw;
 var
   opt:TAdFontDrawTypes;
 begin
+  SetFontColor;
   if DesignMode then
   begin
     with AdDraw.Canvas do
@@ -979,6 +998,7 @@ begin
   FMin := 0;
   FPosition := 50;
   FSmooth := false;
+  AcceptChildComponents := false;
 end;
 
 destructor TAdProgressBar.Destroy;
@@ -1020,6 +1040,7 @@ begin
     end;
     if FShowPercentage then
     begin
+      SetFontColor;
       Font.TextOutEx(ClientRect,FormatFloat('0',Percent * 100)+'%',[dtCenter,dtMiddle]);
     end;
   end;    

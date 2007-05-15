@@ -20,6 +20,7 @@ type
     OnClickListEntry:TNotifyEvent;
     OnDblClickFont:TNotifyEvent;
     OnDblClickImage:TNotifyEvent;
+    OnDblClickFontColor:TNotifyEvent;
     Inspector:TJvInspector;
     Painter:TJvInspectorBorlandPainter;
     Change:boolean;
@@ -65,6 +66,10 @@ begin
   if (Item.Name = 'Font') and Assigned(OnDblClickFont) then
   begin
     OnDblClickFont(Self);
+  end;
+  if (Item.Name = 'FontColor') and Assigned(OnDblClickFontColor) then
+  begin
+    OnDblClickFontColor(Self);
   end;
   if (Item.DisplayValue = '(TAdResourceImage)') and Assigned(OnDblClickFont) then
   begin

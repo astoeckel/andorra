@@ -392,6 +392,8 @@ function AdColorToString(AColor:TAndorraColor):string;
 function StringToAdColor(AString:string):TAndorraColor;    
 {Converts a TAndorraColor into a TColor value.}
 function AdColorToColor(AAdColor:TAndorraColor):LongWord;
+{Converts a TColor into a TAndorraColor value}
+function ColorToAdColor(AColor:LongWord):TAndorraColor;
 
 {Returns the "R" segment of a TColor}
 function GetRValue(AColor:LongWord):byte;
@@ -541,6 +543,11 @@ end;
 function AdColorToColor(AAdColor:TAndorraColor):LongWord;
 begin
   result := RGB(AAdColor.r,AAdColor.g,AAdColor.b);
+end;
+
+function ColorToAdColor(AColor:LongWord):TAndorraColor;
+begin
+  result := Ad_RGB(AColor,AColor shr 8,AColor shr 16);
 end;
 
 //Matrix functions

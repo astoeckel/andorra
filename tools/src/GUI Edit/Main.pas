@@ -52,6 +52,7 @@ type
     N7: TMenuItem;
     Loadskin1: TMenuItem;
     OpenDialog2: TOpenDialog;
+    ColorDialog1: TColorDialog;
     procedure Exit1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -91,6 +92,7 @@ type
     procedure AddRecent(AFile:string);
     procedure DblClickFont(Sender:TObject);
     procedure DblClickImage(Sender:TObject);
+    procedure DblClickFontColor(Sender:TObject);
   end;
 
 var
@@ -241,6 +243,7 @@ begin
   Objects.OnClickListEntry := ClickListEntry;
   Objects.OnDblClickFont := DblClickFont;
   Objects.OnDblClickImage := DblClickImage;
+  Objects.OnDblClickFontColor := DblClickFontColor;
 
   Structure := TStructureDlg.Create(self);
   Structure.Show;
@@ -452,6 +455,14 @@ begin
   dlg.Free;
 end;
 
+procedure TMainDlg.DblClickFontColor(Sender: TObject);
+begin
+  if ColorDialog1.Execute then
+  begin
+    Designer.AdGUI.FocusedComponent.FontColor := ColorDialog1.Color;
+  end;
+end;
+
 procedure TMainDlg.DblClickImage(Sender: TObject);
 
   procedure AddAlpha(APNG:TPNGObject;ABMP:TAdBitmap);
@@ -599,7 +610,7 @@ begin
   end
   else
   begin
-    id := Application.MessageBox('You probably did''t save your project. Do you want to save it now?',
+    id := Application.MessageBox('You probably didn''t save your project. Do you want to save it now?',
           'Question',MB_YESNOCANCEL or MB_ICONQUESTION);
     if id = ID_YES then
     begin

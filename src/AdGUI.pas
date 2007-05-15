@@ -31,6 +31,8 @@ type
 
   TAdComponent = class;
 
+  TGUIColor = longint;
+
   TAdHint = class
     private
       FShowTime:single;
@@ -124,6 +126,7 @@ type
       FMouseX,FMouseY:integer;
 
       FFont:TAdFont;
+      FFontColor:TGUIColor;
       FFonts:TAdFontCollection;
       FFontFromCollection:boolean;
       FSaveFont:boolean;
@@ -183,6 +186,8 @@ type
 
       procedure SetSpacer(ASkinItem:TAdSkinItem);
 
+      procedure SetFontColor;
+
       property KeyPreview:boolean read FKeyPreview write FKeyPreview;
       property MousePreview:boolean read FMousePreview write FMousePreview;
       property SpacerTop:integer read FSpacerTop write FSpacerTop;
@@ -215,6 +220,7 @@ type
       property SaveFont:boolean read FSaveFont write SetSaveFont;
 
       property AcceptChildComponents:boolean read FAcceptChildComponents write FAcceptChildComponents;
+
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -266,6 +272,9 @@ type
       property GridY:integer read FGridX write SetGridX;
       property Grid:boolean read FGrid write SetGrid;
 
+      property FontColor:TGUIColor read FFontColor write FFontColor;
+      property Font:TAdFont read GetFont write SetFont;
+
       property FocusedComponent:TAdComponent read GetFocusedComponent;
       procedure SetFocused;
     published
@@ -281,8 +290,6 @@ type
 
       property Hint:string read FHint write FHint;
       property ShowHint:boolean read FShowHint write FShowHint;
-
-      property Font:TAdFont read GetFont write SetFont;
 
       property OnClick:TNotifyEvent read FOnClick write FOnClick;
       property OnDblClick:TNotifyEvent read FOnDblClick write FOnDblClick;
@@ -383,7 +390,7 @@ type
       procedure SetCurrentCursor(Value:string);override;
       procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
     public
-      constructor Create(AParent:TAdDraw);
+      constructor Create(AParent:TAdDraw);reintroduce;
       destructor Destroy;override;
 
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
@@ -443,6 +450,8 @@ var
 begin
   inherited Create;
 
+  FFontColor := $00FFFFFF;
+
   FParent := AParent;
 
   FEnabled := true;
@@ -481,6 +490,7 @@ begin
     FGridY := FParent.GridY;
     FFonts := FParent.Fonts;
     FSaveFont := FParent.SaveFont;
+    FFontColor := FParent.FontColor;
   end;
 
   FAlpha := 255;
@@ -568,6 +578,7 @@ begin
   FHeight := aroot.Properties.IntValue('height',100);
   FX := aroot.Properties.IntValue('x',0);
   FY := aroot.Properties.IntValue('y',0);
+  FFontColor := aroot.Properties.IntValue('fontcolor',$00FFFFFF);
 
   for i := 0 to aroot.Items.Count - 1 do
   begin
@@ -615,6 +626,7 @@ begin
     Add('visible',FVisible);
     Add('x',round(FX));
     Add('y',round(FY));
+    Add('fontcolor',FFontColor);
     if FSaveFont and FFontFromCollection and (FFont <> nil) then
     begin
       Add('font',FFont.Name);
@@ -829,6 +841,14 @@ begin
   for i := 0 to Components.Count - 1 do
   begin
     Components[i].Font := FFont;
+  end;
+end;
+
+procedure TAdComponent.SetFontColor;
+begin
+  if Font.Color <> FFontColor then
+  begin
+    FFont.Color := FFontColor;
   end;
 end;
 

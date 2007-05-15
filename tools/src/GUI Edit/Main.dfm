@@ -873,4 +873,8 @@ object MainDlg: TMainDlg
     Left = 240
     Top = 8
   end
+  object ColorDialog1: TColorDialog
+    Left = 272
+    Top = 8
+  end
 end

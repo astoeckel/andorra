@@ -1221,11 +1221,8 @@ begin
 end;
 
 procedure TParticleSprite.DoDraw;
-var r:TRect;
 begin
-  r := GetBoundsRect;
-  FPartSys.Draw(r.Left-round(FWidth) div 2,r.Top-round(FHeight) div 2);
-  FPartSys.Dead;
+  FPartSys.Draw(WorldX,WorldY);
 end;
 
 procedure TParticleSprite.DoMove(TimeGap: double);
@@ -1242,7 +1239,8 @@ begin
   if (FAutoDeath) and (FPartSys.Items.Count = 0) then
   begin
     Dead;
-  end;  
+  end;
+  FPartSys.Dead;
 end;
 
 procedure TParticleSprite.Emit(ACount: integer);
@@ -1257,7 +1255,7 @@ begin
   r := FPartSys.BoundsRect;
   w := r.Right - r.Left;
   h := r.Bottom - r.Top;
-  result := Bounds(round(WorldX) + w div 2, round(WorldY) + h div 2, w, h);
+  result := Bounds(r.Left + round(WorldX), r.Top + round(WorldY), w, h);
   FWidth := w;
   FHeight := h;
 end;
