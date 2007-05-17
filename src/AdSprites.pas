@@ -8,9 +8,9 @@
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
-* Author:  Framik
-* File: AdApps.pas
-* Comment: Unit with appication classes for the "Andorra 2D" engine
+* Author:  Andreas Stöckel
+* File: AdSprites.pas
+* Comment: Contains the Andorra SpriteEngine System.
 }
 
 {Contains the Andorra SpriteEngine System.}

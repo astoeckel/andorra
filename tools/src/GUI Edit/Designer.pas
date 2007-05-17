@@ -128,7 +128,6 @@ procedure TDesignerDlg.AddComponent(AClass: TAdComponentClass);
 begin
   AddComp := AClass;
   FirstPoint := false;
-  AdGUI.Cursors.Visible := false;
   AdConnector.RestoreEventHandlers;
   Cursor := crCross;
 end;
@@ -276,7 +275,7 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraOGL.dll';
+  AdDraw1.DllName := 'AndorraDX93D.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -286,13 +285,12 @@ begin
     AdGUI := TAdGUI.Create(AdDraw1);
     AdGUI.Skin.LoadFromFile('sunna.axs');
     AdGUI.Cursors.LoadFromFile('cursors.xml');
+    AdGUI.Cursors.Visible := false;
 
     AdGUI.DesignMode := true; 
 
     AdConnector := TAdGUIConnector.Create(AdGUI);
     AdConnector.ConnectEventHandlers(self);
-
-    Cursor := crNone;
 
     if Assigned(OnChangeList) then
       OnChangeList(self);
@@ -321,8 +319,7 @@ begin
   begin
     AddComp := nil;
     FirstPoint := false;
-    AdGUI.Cursors.Visible := true;
-    Cursor := crNone;
+    Cursor := crDefault;
   end;
   if Key = VK_DELETE then
   begin
@@ -435,8 +432,7 @@ begin
     AddComp := nil;
     FirstPoint := false;
     AdConnector.ConnectEventHandlers(self);
-    AdGUI.Cursors.Visible := true;
-    Cursor := crNone;
+    Cursor := crDefault;
 
     if Assigned(OnChangeList) then
       OnChangeList(self);
@@ -447,8 +443,8 @@ procedure TDesignerDlg.FormResize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-//    AdDraw1.Finalize;
-//    AdDraw1.Initialize;
+    AdDraw1.Finalize;
+    AdDraw1.Initialize;
   end;
 end;
 

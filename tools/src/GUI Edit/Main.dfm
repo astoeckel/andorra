@@ -20,6 +20,12 @@ object MainDlg: TMainDlg
   OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
+  object Image1: TImage
+    Left = 328
+    Top = 32
+    Width = 105
+    Height = 105
+  end
   object PageControl1: TPageControl
     Left = 0
     Top = 0

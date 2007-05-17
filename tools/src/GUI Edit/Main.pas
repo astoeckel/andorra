@@ -8,7 +8,7 @@ uses
   FontCollection, ImageEditor, AdClasses, AdPNG, PngImage,
 
   //Add all units with components here
-  AdGUI, AdComponents;
+  AdGUI, AdComponents, ExtCtrls;
 
 type
   TMainDlg = class(TForm)
@@ -53,6 +53,7 @@ type
     Loadskin1: TMenuItem;
     OpenDialog2: TOpenDialog;
     ColorDialog1: TColorDialog;
+    Image1: TImage;
     procedure Exit1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);

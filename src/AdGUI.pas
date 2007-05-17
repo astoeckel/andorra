@@ -848,7 +848,7 @@ procedure TAdComponent.SetFontColor;
 begin
   if Font.Color <> FFontColor then
   begin
-    FFont.Color := FFontColor;
+    Font.Color := FFontColor;
   end;
 end;
 

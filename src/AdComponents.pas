@@ -48,6 +48,11 @@ type
       property FontColor;
   end;
 
+  TAdContainer = class(TAdComponent)
+    protected
+      procedure DoDraw;override;
+  end;
+
   TAdLabel = class(TAdComponent)
     private
       FCaption:string;
@@ -204,6 +209,7 @@ type
       FShowPercentage:boolean;
       FSkinItem:TAdSkinItem;
       FSkinProgress:TAdSkinItem;
+      FAlign:TAdAlignment;
       procedure SetSmooth(AValue:boolean);
       procedure SetMin(AValue:integer);
       procedure SetMax(AValue:integer);
@@ -223,8 +229,33 @@ type
       property Position:integer read FPosition write SetPosition;
       property ShowPercentage:boolean read FShowPercentage write FShowPercentage;
       property Smooth:boolean read FSmooth write SetSmooth;
+      property Align:TAdAlignment read FAlign write FAlign;
       property Font;
       property FontColor;
+  end;
+
+  TAdGUIImage = class(TAdComponent)
+    private
+      FCenter:boolean;
+      FStretch:boolean;
+      FAutoSize:boolean;
+      FProportional:boolean;
+      FPicture:TAdResourceImage;
+    protected
+      procedure DoDraw; override;
+      procedure DoMove(timegap:double);override;
+      function DestinationRect:TRect;
+    public
+      constructor Create(AParent:TAdComponent);override;
+      destructor Destroy;override;
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+    published
+      property Center:boolean read FCenter write FCenter;
+      property Stretch:boolean read FStretch write FStretch;
+      property Proportional:boolean read FProportional write FProportional;
+      property AutoSize:boolean read FAutoSize write FAutoSize;
+      property Picture:TAdResourceImage read FPicture;
   end;
 
   const               
@@ -1011,17 +1042,24 @@ var
   r:TRect;
   w,c:integer;
   i: Integer;
+  start: Integer;
 begin
   if (FSkinItem <> nil) and (FSkinProgress <> nil) then
   begin
     r := BoundsRect;
     FSkinItem.Draw(0,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
     w := round((r.Right - r.Left - SpacerLeft) * Percent);
+    start := r.Left + SpacerLeft div 2;
     if Smooth then
     begin
+      case FAlign of
+        alLeft: start := r.Left+SpacerLeft div 2;
+        alCenter: start := r.Left + (r.Right - r.Left - w) div 2;
+        alRight: start := r.Right-SpacerLeft div 2-w;
+      end;
       if w > SpacerLeft then
       begin
-        FSkinProgress.Draw(0,r.Left+SpacerLeft div 2,r.Top+SpacerTop div 2,
+        FSkinProgress.Draw(0,start,r.Top+SpacerTop div 2,
                              w,r.Bottom-r.Top-SpacerTop);
       end;
     end
@@ -1030,9 +1068,14 @@ begin
       if FPosition > FMin then
       begin
         c := (w - FSkinProgress.BaseWidth) div (FSkinProgress.BaseWidth + 2);
+        case FAlign of
+          alLeft: start := r.Left+SpacerLeft div 2;
+          alCenter: start := r.Left + (r.Right - r.Left - c*(FSkinProgress.BaseWidth + 2)) div 2;
+          alRight: start := r.Right-SpacerLeft div 2- c*(FSkinProgress.BaseWidth + 2);
+        end;
         for i := 0 to c do
         begin
-          FSkinProgress.Draw(0,SpacerLeft div 2 + r.Left + i * (FSkinProgress.BaseWidth+2),
+          FSkinProgress.Draw(0,start + i * (FSkinProgress.BaseWidth+2),
             r.Top + (r.Bottom - r.Top - FSkinProgress.BaseHeight) div 2,
             FSkinProgress.BaseWidth,FSkinProgress.BaseHeight);
         end;
@@ -1056,7 +1099,8 @@ begin
     FMax := IntValue('max',100);
     FPosition := IntValue('position',50);
     FShowPercentage := BoolValue('showpercentage',false);
-    Smooth := BoolValue('smooth',false); 
+    FAlign := TAdAlignment(IntValue('align',Ord(alLeft)));
+    Smooth := BoolValue('smooth',false);
   end;
 end;
 
@@ -1069,6 +1113,7 @@ begin
     Add('max',FMax);
     Add('position',FPosition);
     Add('showpercentage',FShowPercentage);
+    Add('align',ord(FAlign));
     Add('smooth',FSmooth);
   end;
 end;
@@ -1140,15 +1185,165 @@ begin
   end;
 end;
 
+{ TAdContainer }
+
+procedure TAdContainer.DoDraw;
+begin
+  if DesignMode then
+  begin
+    with AdDraw.Canvas do
+    begin
+      Brush.Style := abClear;
+      Pen.Color := Ad_ARGB(200,128,128,128);
+      Rectangle(BoundsRect);
+    end;
+  end;
+  inherited;
+end;
+
+{ TAdGUIImage }
+
+constructor TAdGUIImage.Create(AParent: TAdComponent);
+begin
+  inherited Create(AParent);
+  FPicture := TAdResourceImage.Create(AdDraw);
+  AcceptChildComponents := false;
+  MinWidth := 10;
+  MinHeight := 10;
+end;
+
+destructor TAdGUIImage.Destroy;
+begin
+  FPicture.Free;
+  inherited Destroy;
+end;
+
+//Adapted from the VCLs TImage.DestRect;
+function TAdGUIImage.DestinationRect: TRect;
+var
+  w,h:integer;
+  v: double;
+begin
+  w := FPicture.Picture.Width;
+  h := FPicture.Picture.Height;
+
+  if Stretch or (FProportional and ((w > Width) or (h > Height))) then
+  begin
+    if FProportional and (w > 0) and (h > 0) then
+    begin
+      v := w / h;
+      if w > h then
+      begin
+        w := Width;
+        h := round(Width / v);
+        if h > Height then
+        begin
+          h := Height;
+          w := round(Height * v);
+        end;
+      end
+      else
+      begin
+        h := Height;
+        w := round(Height * v);
+        if w > Width then
+        begin
+          w := Width;
+          h := round(Width / v);
+        end;
+      end;
+    end
+    else
+    begin
+      w := Width;
+      h := Height;
+    end;
+  end;
+
+  with result do
+  begin
+    Left := 0;
+    Top := 0;
+    Right := w;
+    Bottom := h;
+  end;
+
+  if FCenter then
+  begin
+    OffsetRect(result, BoundsRect.Left + (Width - w) div 2,
+                       BoundsRect.Top + (Height - h) div 2);
+  end
+  else
+  begin
+    OffsetRect(result, BoundsRect.Left, BoundsRect.Top);
+  end;
+end;
+
+procedure TAdGUIImage.DoDraw;
+begin
+  if DesignMode then
+  begin
+    with AdDraw.Canvas do
+    begin
+      Brush.Style := abClear;
+      Pen.Color := Ad_ARGB(200,128,128,128);
+      Rectangle(BoundsRect);
+    end;
+  end;
+  if FPicture.Loaded then
+  begin
+    FPicture.Picture.DrawAlpha(AdDraw,DestinationRect,0,Alpha);
+  end;
+  inherited;
+end;
+
+procedure TAdGUIImage.DoMove(timegap:double);
+begin
+  inherited;
+  if (Designmode) and (FAutoSize) and (FPicture.Loaded) then
+  begin
+    Width := FPicture.Picture.Width;
+    Height := FPicture.Picture.Height;
+  end;
+end;
+
+procedure TAdGUIImage.LoadFromXML(aroot: TJvSimpleXMLElem);
+begin
+  inherited LoadFromXML(aroot);
+  with aroot.Properties do
+  begin
+    FCenter := BoolValue('center',false);
+    FProportional := BoolValue('proportional',false);
+    FAutoSize := BoolValue('autosize',false);
+    FStretch := BoolValue('stretch',false);
+    FPicture.LoadFromString(Value('picture',''));
+  end;
+end;
+
+function TAdGUIImage.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  result := inherited SaveToXML(aroot);
+  with result.Properties do
+  begin
+    Add('center',FCenter);
+    Add('stretch',FStretch);
+    Add('proportional',FProportional);
+    Add('autosize',FAutoSize);
+    Add('picture',FPicture.SaveToString);
+  end;
+end;
+
 initialization
-  RegisterComponent(TAdBitmapButton, 'Standard');
   RegisterComponent(TAdProgressBar,'Standard');
   RegisterComponent(TAdButton,'Standard');
   RegisterComponent(TAdCheckbox,'Standard');
   RegisterComponent(TAdLabel,'Standard');
   RegisterComponent(TAdPanel,'Standard');
+  RegisterComponent(TAdContainer,'Standard');
   RegisterComponent(TAdForm,'Standard');
-
+  RegisterComponent(TAdBitmapButton, 'Additional');
+  RegisterComponent(TAdGUIImage, 'Additional');
+  
 finalization
 
 end.
