@@ -428,10 +428,10 @@ function AdMatrix_RotationX(angle:single):TAdMatrix;
 function AdMatrix_RotationY(angle:single):TAdMatrix;
 {Creates a rotation matrix.}
 function AdMatrix_RotationZ(angle:single):TAdMatrix;
-{Creates a identity matrix.}
-function AdMatrix_Identity:TAdMatrix;
-{Creates a clear matrix. (With zeros everywhere)}
-function AdMatrix_Clear:TAdMatrix;
+
+const
+  AdMatrix_Clear    : TAdMatrix = ((0,0,0,0),(0,0,0,0),(0,0,0,0),(0,0,0,0));
+  AdMatrix_Identity : TAdMatrix = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1));
 
 {Compares two rectangles.}
 function CompRects(Rect1,Rect2:TRect):boolean;
@@ -561,27 +561,6 @@ begin
       result[x,y] := amat2[0,y]*amat1[x,0] + amat2[1,y]*amat1[x,1] + amat2[2,y]*amat1[x,2] +amat2[3,y]*amat1[x,3];
     end;
   end;
-end;
-
-function AdMatrix_Clear:TAdMatrix;
-var x,y:integer;
-begin
-  for x := 0 to 3 do
-  begin
-    for y := 0 to 3 do
-    begin
-      result[x,y] := 0;
-    end;
-  end;
-end;
-
-function AdMatrix_Identity:TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := 1;
-  result[1,1] := 1;
-  result[2,2] := 1;
-  result[3,3] := 1;
 end;
 
 function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
