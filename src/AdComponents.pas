@@ -175,7 +175,10 @@ type
       FDown:boolean;
       FCheckButton:boolean;
       FAutoSize:boolean;
+      FGroupIndex:integer;
       procedure SetDown(AValue:boolean);
+      procedure CheckChecked;
+      procedure SetGroupIndex(AValue:integer);
     protected
       procedure DoMove(TimeGap:double); override;
       procedure DoDraw; override;
@@ -198,6 +201,7 @@ type
       property Down:boolean read FDown write SetDown;
       property CheckButton:boolean read FCheckButton write FCheckButton;
       property AutoSize:boolean read FAutoSize write FAutoSize;
+      property GroupIndex:integer read FGroupIndex write SetGroupIndex;
   end;
 
   TAdProgressBar = class(TAdComponent)
@@ -853,9 +857,10 @@ begin
   if FImgDown.Loaded then
   begin
     FState := bsDown;
-    if FCheckButton then
+    if FCheckButton and ((FGroupIndex = 0) or (not FDown)) then
     begin
       FDown := not FDown;
+      CheckChecked;
     end;
   end;
 end;
@@ -919,6 +924,7 @@ begin
     FCheckButton := BoolValue('checkbutton',false);
     FAutoSize := BoolValue('autosize',false);
     FDown := BoolValue('down',false);
+    FGroupIndex := IntValue('groupindex',FGroupIndex);
   end;
 end;
 
@@ -935,6 +941,26 @@ begin
     Add('checkbutton',FCheckButton);
     Add('autosize',FAutoSize);
     Add('down',FDown);
+    Add('groupindex',FGroupIndex);
+  end;
+end;
+
+procedure TAdBitmapButton.CheckChecked;
+var
+  i:integer;
+begin
+  if (Parent <> nil) and (GroupIndex <> 0) and (FDown) then
+  begin
+    for i := 0 to Parent.Components.Count - 1 do
+    begin
+      if (Parent.Components[i].ClassType = ClassType) and (Parent.Components[i] <> self) then
+      begin
+        if TAdBitmapButton(Parent.Components[i]).GroupIndex = GroupIndex then
+        begin
+          TAdBitmapButton(Parent.Components[i]).Down := false;
+        end;
+      end;
+    end;
   end;
 end;
 
@@ -950,6 +976,19 @@ begin
   begin
     FState := bsNormal;
   end;
+  CheckChecked;
+end;
+
+procedure TAdBitmapButton.SetGroupIndex(AValue: integer);
+begin
+  if FGroupIndex <> AValue then
+  begin
+    FGroupIndex := AValue;
+    if FDown then
+    begin
+      SetDown(true);
+    end;
+  end;  
 end;
 
 { TAdLabel }

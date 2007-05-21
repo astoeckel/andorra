@@ -780,6 +780,7 @@ type
       FPen:TAdPen;
       FBrush:TAdBrush;
       FFont:TAdFont;
+      FOldFont:TAdFont;
       FOwnFont:boolean;
       FCircleTesselation:single;
       FLocked:boolean;
@@ -2770,7 +2771,7 @@ var
   s:string;
 begin
   lines := TStringList.Create;
-  
+
   w := ARect.Right - ARect.Left;
 
   //Calculate text lines if neccessary
@@ -2779,6 +2780,7 @@ begin
     s := '';
     i := 0;
     lastspace := -1;
+    lastpos := 0;
     while i < length(AText) do
     begin
       i := i + 1;
@@ -2815,6 +2817,8 @@ begin
   end;
 
   h := 0;
+  y := 0;
+
   if (dtMiddle in ADrawType) or (dtBottom in ADrawType) then
   begin
     for i := 0 to lines.Count - 1 do
@@ -3202,6 +3206,8 @@ begin
 
   FCircleTesselation := 0.1;
   FBlendMode := bmAlpha;
+
+  FOldFont := nil;
 end;
 
 destructor TAdCanvas.Destroy;
@@ -3214,6 +3220,11 @@ begin
   begin
     FFont.Free;
   end;
+  if FOldFont <> nil then
+  begin
+    FOldFont.Free;
+  end;
+  
   inherited;
 end;
 
@@ -3445,7 +3456,7 @@ procedure TAdCanvas.SetFont(AValue: TAdFont);
 begin
   if FOwnFont then
   begin
-    FFont.Free;
+    FOldFont := FFont;
   end;
   FOwnFont := false;
   FFont := AValue;
