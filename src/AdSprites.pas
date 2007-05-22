@@ -518,8 +518,8 @@ begin
   y1 := Y / FParent.GridSize;
   with Result do
   begin
-    Left  := trunc(x1);
-    Top := trunc(y1);
+    Left  := floor(x1);
+    Top := floor(y1);
     Right := ceil(x1 + (Width / Parent.GridSize));
     Bottom := ceil(y1 + (Height / Parent.GridSize));
   end;
@@ -724,7 +724,7 @@ begin
     Engine.CollisionDone := false;
     Engine.CollisionRect := BoundsRect;
 
-    if FCollisionTyp = ctOptimized then
+    if FEngine.CollisionOptimizationTyp = ctOptimized then
     begin
       r := GetCollisionField;
       
@@ -1036,6 +1036,8 @@ begin
 end;
 
 procedure TImageSpriteEx.DoDraw;
+var
+  r:TRect;
 begin
   if FImage <> nil then
   begin
