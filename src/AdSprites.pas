@@ -1036,8 +1036,6 @@ begin
 end;
 
 procedure TImageSpriteEx.DoDraw;
-var
-  r:TRect;
 begin
   if FImage <> nil then
   begin
