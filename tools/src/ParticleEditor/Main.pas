@@ -469,58 +469,64 @@ begin
   AdDraw1 := TAdDraw.Create(Panel1);
   AdDraw1.DllName := 'AndorraDX93D.dll';
   AdDraw1.Options := AdDraw1.Options;
-  AdDraw1.Initialize;
-
-  //Load the texture
-  bmp := TBitmap.Create;
-  bmp.Width := 32;
-  bmp.Height := 32;
-  with bmp.Canvas do
+  if AdDraw1.Initialize then
   begin
-    Brush.Color := clBlack;
-    Pen.Color := clBlack;
-    Rectangle(0,0,32,32);
-    Pen.Color := clWhite;
-    Brush.Style := bsClear;
-    for i := 0 to 16 do
+    //Load the texture
+    bmp := TBitmap.Create;
+    bmp.Width := 32;
+    bmp.Height := 32;
+    with bmp.Canvas do
     begin
-      Pen.Color := RGB(round(255 / 16 * i),round(255 / 16 * i),round(255 / 16 * i));
-      Ellipse(i,i,32-i,32-i);
-      Ellipse(i,i,32-i-1,32-i-1);
-      Ellipse(i,i,32-i-2,32-i-2);
-      Ellipse(i,i,32-i+1,32-i+1);
-      Ellipse(i,i,32-i+2,32-i+2);
+      Brush.Color := clBlack;
+      Pen.Color := clBlack;
+      Rectangle(0,0,32,32);
+      Pen.Color := clWhite;
+      Brush.Style := bsClear;
+      for i := 0 to 16 do
+      begin
+        Pen.Color := RGB(round(255 / 16 * i),round(255 / 16 * i),round(255 / 16 * i));
+        Ellipse(i,i,32-i,32-i);
+        Ellipse(i,i,32-i-1,32-i-1);
+        Ellipse(i,i,32-i-2,32-i-2);
+        Ellipse(i,i,32-i+1,32-i+1);
+        Ellipse(i,i,32-i+2,32-i+2);
+      end;
     end;
+    Image2.Picture.Bitmap.Assign(bmp);
+    adbmp := TAdBitmap.Create;
+    AdImg1 := TAdImage.Create(AdDraw1);
+    adbmp.AssignBitmap(bmp);
+    adbmp.AssignAlphaChannel(bmp);
+    AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
+    AdImg1.Color := clWhite;
+    AdImg1.Restore;
+    adbmp.Free;
+    bmp.Free;
+
+    Application.OnIdle := ApplicationIdle;
+
+    PerCount := TPerformanceCounter.Create;
+
+    PartSys := TAdParticleSystem.Create(AdDraw1);
+    PartSys.Texture := AdImg1.Texture;
+
+    Image1.Picture.Bitmap.Width := 216;
+    Image1.Picture.Bitmap.Height := 23;
+    UpdateControls;
+
+    mx := Panel1.Width div 2;
+    my := Panel1.Height div 2;
+    BackgroundColor := ColorToRGB(clBtnFace);
+
+    pc := 1;
+    pc2 := 0;
+    interval := true;
+  end
+  else
+  begin
+    ShowMessageBox('Error while initializing Andorra 2D.');
+    halt;
   end;
-  Image2.Picture.Bitmap.Assign(bmp);
-  adbmp := TAdBitmap.Create;
-  AdImg1 := TAdImage.Create(AdDraw1);
-  adbmp.AssignBitmap(bmp);
-  adbmp.AssignAlphaChannel(bmp);
-  AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
-  AdImg1.Color := clWhite;
-  AdImg1.Restore;
-  adbmp.Free;
-  bmp.Free;
-
-  Application.OnIdle := ApplicationIdle;
-
-  PerCount := TPerformanceCounter.Create;
-
-  PartSys := TAdParticleSystem.Create(AdDraw1);
-  PartSys.Texture := AdImg1.Texture;
-
-  Image1.Picture.Bitmap.Width := 216;
-  Image1.Picture.Bitmap.Height := 23;
-  UpdateControls;
-
-  mx := Panel1.Width div 2;
-  my := Panel1.Height div 2;
-  BackgroundColor := ColorToRGB(clBtnFace);
-
-  pc := 1;
-  pc2 := 0;
-  interval := true;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
