@@ -23,7 +23,7 @@ unit AdParticles;
 
 interface
 
-uses SysUtils, {$INCLUDE AdTypes.inc}, Classes,AdDraws, AdClasses;
+uses SysUtils, {$INCLUDE AdTypes.inc}, Classes,AdDraws, AdClasses, AdList;
 
 type
 
@@ -31,7 +31,7 @@ type
   TAdParticle = class;
 
   //A list managing the particles. Deleted Particles are automaticly freed.
-  TAdParticleList = class(TList)
+  TAdParticleList = class(TAdList)
     private
     	function GetItem(AIndex:integer):TAdParticle;
      	procedure SetItem(AIndex:integer;AItem:TAdParticle);
@@ -53,7 +53,7 @@ type
   end;
 
   //A list containing TAndorraColors and returning
-  TAdColorList = class(TList)
+  TAdColorList = class(TAdList)
     private
     	function GetItem(AIndex:integer):TAndorraColor;
     	procedure SetItem(AIndex:integer;AItem:TAndorraColor);

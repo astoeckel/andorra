@@ -26,7 +26,7 @@ unit AdDraws;
 interface
 
 uses {$IFDEF WIN32}Windows,{$ELSE}Libc,{$ENDIF}Controls, Math, {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdClasses, AdDLLLoader,
-     Graphics, Huffman, AdBlur;
+     Graphics, Huffman, AdBlur, AdList;
 
 type
 
@@ -46,7 +46,7 @@ type
   {A pointer on TSurfaceEvent}
   PSurfaceEvent = ^TSurfaceEvent;
   {A list which contains the surface events}
-  TSurfaceEventList = class(TList)
+  TSurfaceEventList = class(TAdList)
     private
       function GetItem(AIndex:integer):TSurfaceEvent;
       procedure SetItem(AIndex:integer;AItem:TSurfaceEvent);
@@ -369,7 +369,7 @@ type
   end;
 
   {A list which is able to contain TRects}
-  TRectList = class(TList)
+  TRectList = class(TAdList)
     private
      	function GetItem(AIndex:integer):TRect;
      	procedure SetItem(AIndex:integer;AItem:TRect);
@@ -502,7 +502,7 @@ type
   end;
 
   //Administrates the images
-  TAdImageList = class(TList)
+  TAdImageList = class(TAdList)
     private
       FParent:TAdDraw;
       FCompressor:TCompressorClass;
@@ -646,7 +646,7 @@ type
   end;
 
   //Contains the fonts
-  TAdFontCollection = class(TList)
+  TAdFontCollection = class(TAdList)
     private
       FParent:TAdDraw;
       FOnlyMetadata:boolean;
@@ -749,7 +749,7 @@ type
       property Parent:TAdDraw read FParent;
   end;
 
-  TAdCanvasObjectList = class(TList)
+  TAdCanvasObjectList = class(TAdList)
     private
     	function GetItem(AIndex:integer):TAdCanvasObj;
     	procedure SetItem(AIndex:integer;AItem:TAdCanvasObj);
@@ -3399,6 +3399,7 @@ begin
     AX1 := AX1 + 1;
     AY1 := AY1 + 1;
   end;
+
   if Brush.Style <> abClear then
   begin
     PushObject;

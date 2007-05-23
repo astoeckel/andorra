@@ -21,7 +21,7 @@ unit AdGUI;
 interface
 
 uses SysUtils, Classes, JvSimpleXML, AdDraws, AdSkin, AdClasses, {$I AdTypes.inc},
-     AdXML, Controls;
+     AdXML, Controls, AdList;
 
 const
   Opac = 255;
@@ -70,7 +70,7 @@ type
       property TextColor:longint read FTextColor write FTextColor;
   end;
 
-  TAdComponents = class(TList)
+  TAdComponents = class(TAdList)
     private
       procedure SetItem(Index:integer;AValue:TAdComponent);
       function GetItem(Index:integer):TAdComponent;
@@ -344,7 +344,7 @@ type
       property HotSpotY:integer read FHotSpotY write FHotSpotY; 
   end;
 
-  TAdMouseLibrary = class(TList)
+  TAdMouseLibrary = class(TAdList)
     private
       FImages:TAdImageList;
       FX,FY:integer;

@@ -22,7 +22,7 @@ unit AdSprites;
 
 interface
 
-uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math;
+uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math, AdList;
 
 type
   {The sprite engines base class.}
@@ -33,7 +33,7 @@ type
   TSpriteEngine = class;
   
   {A list, which contains sprites.}
-  TSpriteList = class(TList)
+  TSpriteList = class(TAdList)
     private
     	function GetItem(AIndex:integer):TSprite;
     	procedure SetItem(AIndex:integer;AItem:TSprite);
@@ -209,7 +209,7 @@ type
   TSpriteEngine = class(TSprite)
     private
       FSurface:TAdDraw;
-      FDeadList:TList;
+      FDeadList:TAdList;
       FCollisionCount:integer;
       FCollisionSprite:TSprite;
       FCollisionDone:boolean;
@@ -901,7 +901,7 @@ begin
   inherited Create(nil);
   FParent := nil;
   FEngine := Self;
-  FDeadList := TList.Create;
+  FDeadList := TAdList.Create;
 
   Surface := AParent;
 end; 

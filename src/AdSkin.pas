@@ -17,7 +17,7 @@ unit AdSkin;
 
 interface
 
-uses SysUtils, Classes, AdDraws, AdClasses, JvSimpleXML, AdXML;
+uses SysUtils, Classes, AdDraws, AdClasses, JvSimpleXML, AdXML, AdList;
 
 type
   TAdSkinDrawType = (dtWrap,dtStretch);
@@ -39,7 +39,7 @@ type
       destructor Destroy;override;            
   end;
 
-  TAdSkinElemList = class(TList)
+  TAdSkinElemList = class(TAdList)
     private
       FOnAdd:TNotifyEvent;
       procedure SetItem(Index:integer;Value:TAdSkinElem);
