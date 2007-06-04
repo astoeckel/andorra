@@ -15,15 +15,20 @@ type
       FCaption:string;
       FSkinItem:TAdSkinItem;
       FFixedPosition:boolean;
+      FCenter:boolean;
+      FOldSize:TPoint;
+      procedure SetCenter(AValue:boolean);
     protected
       procedure LoadSkinItem;override;
       procedure DoDraw;override;
+      procedure DoMove(timegap:double);override;
     public
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
     published
       property Caption:string read FCaption write FCaption;
       property FixedPosition:boolean read FFixedPosition write FFixedPosition;
+      property Center:boolean read FCenter write SetCenter;
       property Font;
       property FontColor;
   end;
@@ -460,12 +465,26 @@ begin
   inherited DoDraw;
 end;
 
+procedure TAdForm.DoMove(timegap: double);
+begin
+  inherited;
+  if FCenter then
+  begin
+    if (FOldSize.X <> Parent.Width) or
+       (FOldSize.Y <> Parent.Height) then
+    begin
+      SetCenter(FCenter);
+    end;
+  end;
+end;
+
 procedure TAdForm.LoadFromXML(aroot: TJvSimpleXMLElem);
 begin
   inherited;
   with aroot.Properties do
   begin
     FCaption := Value('caption','');
+    Center := BoolValue('center',false);
   end;
 end;
 
@@ -475,6 +494,18 @@ begin
   with result.Properties do
   begin
     Add('caption',FCaption);
+    Add('center',FCenter);
+  end;
+end;
+
+procedure TAdForm.SetCenter(AValue: boolean);
+begin
+  FCenter := AValue;
+  if (FCenter) and (Parent <> nil) then
+  begin
+    X := (Parent.Width - Width) div 2;
+    Y := (Parent.Height - Height) div 2;
+    FOldSize := Point(Parent.Width,Parent.Height);
   end;
 end;
 

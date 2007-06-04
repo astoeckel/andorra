@@ -127,6 +127,7 @@ type
       procedure DoMove(TimeGap:double);virtual;
       procedure DoDraw;virtual;
       procedure DoCollision(Sprite: TSprite; var Done: Boolean); virtual;
+      procedure DoRestore;virtual;
       procedure SetX(AValue:double);virtual;
       procedure SetY(AValue:double);virtual;
       procedure SetWidth(AValue:double);virtual;
@@ -151,6 +152,8 @@ type
       procedure Draw;
       {Tells the engine that this instance of TSprite wants to bee freed.}
       procedure Dead;virtual;
+      {Gives all sprites the posibility to restore their setings - eg. for Lights in Splitscreenmode}
+      procedure Restore;
 
       {Checks whether this sprite collides with another sprite in the spriteengine.  Returns the count of sprites.}
       function Collision:integer;
@@ -214,10 +217,10 @@ type
       FCollisionSprite:TSprite;
       FCollisionDone:boolean;
       FCollisionRect:TRect;
-      procedure SetSurface(AValue:TAdDraw);
     protected
       FSurfaceRect:TRect;
-      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);
+      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);virtual;
+      procedure SetSurface(AValue:TAdDraw);virtual;
     public
       //The count of sprites which collide to the collision sprite.
       property CollisionCount:integer read FCollisionCount write FCollisionCount;
@@ -238,7 +241,7 @@ type
       //The size of the surface.
       property SurfaceRect:TRect read FSurfaceRect;
     published
-      //The parent application.
+      //The parent addraw surface.
       property Surface:TAdDraw read FSurface write SetSurface;
   end;
 
@@ -351,6 +354,7 @@ type
       procedure SetFalloff(AValue:double);
       procedure SetColor(AValue:LongWord);
     protected
+      procedure DoRestore;override;
       procedure DoDraw;override;
       function GetBoundsRect:TRect;override;
     public
@@ -648,6 +652,17 @@ begin
   end;
 end;
 
+procedure TSprite.Restore;
+var
+  i:integer;
+begin
+  DoRestore;
+  for i := 0 to Items.Count-1 do
+  begin
+    Items[i].Restore;
+  end;
+end;
+
 procedure TSprite.Add(ASprite: TSprite);
 var r:TRect;
 begin
@@ -808,6 +823,11 @@ begin
   begin
     Optimize;
   end;
+end;
+
+procedure TSprite.DoRestore;
+begin
+  //Nothing to do yet.
 end;
 
 procedure TSprite.DoCollision(Sprite: TSprite; var Done: Boolean);
@@ -1174,6 +1194,11 @@ begin
   FLight.Y := round(Y+Engine.Y);
   FLight.Restore;
   FLight.Enable;
+end;
+
+procedure TLightSprite.DoRestore;
+begin
+  FLight.Disable;
 end;
 
 function TLightSprite.GetBoundsRect: TRect;

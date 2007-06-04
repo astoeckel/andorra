@@ -1028,6 +1028,8 @@ begin
 
       //AdDllLoader.SetTextureQuality(AdAppl,tqNone);
 
+      AdAppl.Viewport := FParent.ClientRect;
+
       AdAppl.AmbientLightColor := AD_RGB(GetRValue(FAmbientColor),GetGValue(FAmbientColor),
         GetBValue(FAmbientColor));
 

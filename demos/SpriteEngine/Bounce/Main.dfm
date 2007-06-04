@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Bounce Demo'
-  ClientHeight = 420
-  ClientWidth = 510
+  ClientHeight = 640
+  ClientWidth = 693
   Color = clBlack
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,6 +18,7 @@ object Form1: TForm1
   OnKeyPress = FormKeyPress
   OnMouseDown = FormMouseDown
   OnMouseMove = FormMouseMove
+  OnMouseWheel = FormMouseWheel
   OnResize = FormResize
   PixelsPerInch = 96
   TextHeight = 13

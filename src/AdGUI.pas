@@ -1936,9 +1936,9 @@ begin
   begin
     X := 0;
     Y := 0;
-    Width := AdDraw.DisplayRect.Right;
-    Height := AdDraw.DisplayRect.Bottom;
   end;
+  Width := AdDraw.DisplayRect.Right;
+  Height := AdDraw.DisplayRect.Bottom;
 
   Move(TimeGap);
   Draw;

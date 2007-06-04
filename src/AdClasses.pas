@@ -205,9 +205,11 @@ type
       FHeight:integer;
       FMaxLightCount:integer;
       FAmbientColor:TAndorraColor;
+      FViewPort:TRect;
       procedure SetOptions(AValue:TAdOptions);virtual;
       procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
       procedure SetAmbientLight(AValue:TAndorraColor);virtual;
+      procedure SetViewPort(AValue:TRect);virtual;
     public
       {Creates and returns a TAd2DLight}
       function CreateLight:TAd2DLight;virtual;abstract;
@@ -258,6 +260,8 @@ type
       property MaxLights:integer read FMaxLightCount;
       {Read and write the AmbientLightColor. This will only work, if doLights is included in "options".}
       property AmbientLightColor:TAndorraColor read FAmbientLight write SetAmbientLight;
+      {The rectangle where the output is made}
+      property Viewport:TRect read FViewPort write SetViewPort;
   end;
 
   {An abstract class which represents a light in Andorra's engine. }
@@ -978,6 +982,11 @@ end;
 procedure TAd2DApplication.SetOptions(AValue: TAdOptions);
 begin
   FOptions := AValue;
+end;
+
+procedure TAd2DApplication.SetViewPort(AValue: TRect);
+begin
+  FViewPort := AValue;
 end;
 
 procedure TAd2DApplication.WriteLog(Typ: TAdLogTyp; Text: PChar);

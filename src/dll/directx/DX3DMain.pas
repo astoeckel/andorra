@@ -27,6 +27,7 @@ type
       procedure ReleaseLight(alight:integer);
       procedure SetOptions(AValue:TAdOptions);override;
       procedure SetAmbientLight(AValue:TAndorraColor);override;
+      procedure SetViewPort(AValue:TRect);override;
     public
       Direct3D9:IDirect3D9;
       Direct3DDevice9:IDirect3DDevice9;
@@ -411,6 +412,21 @@ begin
   end;
 end;
 
+procedure TDXApplication.SetViewPort(AValue: TRect);
+var
+  vp:TD3DViewport9;
+begin
+  inherited;
+  vp.X := AValue.Left;
+  vp.Y := AValue.Top;
+  vp.Width := AValue.Right - AValue.Left;
+  vp.Height := AValue.Bottom - AValue.Top;
+  vp.MinZ := 0;
+  vp.MaxZ := 1;
+
+  direct3ddevice9.SetViewport(vp);
+end;
+
 {procedure TDXApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
 begin
   inherited;
@@ -452,10 +468,7 @@ procedure TDXApplication.Flip;
 begin
   if Direct3DDevice9 <> nil then
   begin
-    if Failed(Direct3DDevice9.Present(nil, nil, 0, nil)) then
-    begin
-      WriteLog(ltFatalError,'Error while flipping.');
-    end;
+    Direct3DDevice9.Present(nil, nil, 0, nil);
   end;
 end;
 

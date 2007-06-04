@@ -1,7 +1,7 @@
 {$IFDEF FPC}
   Types
 {$ELSE}
-  {$IFDEF VER140}
+  {$IFDEF VER130}
     Windows
   {$ELSE}
     Types

@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  AdDraws, AdSprites, AdClasses, IniFiles, AdPng, StdCtrls;
+  AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, IniFiles, AdPng, StdCtrls;
 
 type
   TForm1 = class(TForm)
@@ -16,11 +16,13 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure FormResize(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
+    procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     { Private-Deklarationen }
   public
     AdDraw:TAdDraw;
-    AdSpriteEngine:TSpriteEngine;
+    AdSpriteEngine:TSpriteEngineEx;
     AdPictureCollection:TAdImageList;
     AdPerCounter:TPerformanceCounter;
     settings:TIniFile;
@@ -67,12 +69,17 @@ begin
     AdDraw.BeginScene;
     AdDraw.ClearSurface(clSkyBlue);
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
+    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
+    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
+    AdSpriteEngine.ViewPort := Rect(0,0,0,0);
     AdSpriteEngine.Draw;
+    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atPoint);
+    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atPoint);
     AdSpriteEngine.Dead;
     with AdDraw.Canvas do
     begin
-      Release;
       Textout(0,0,inttostr(AdPerCounter.FPS));
+      Release;
     end;
     AdDraw.EndScene;
     AdDraw.Flip;
@@ -154,21 +161,21 @@ begin
 
   AdPictureCollection.Restore;
 
-  AdSpriteEngine := TSpriteEngine.Create(nil);
-  AdSpriteEngine.Surface := AdDraw;
+  AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
+  AdSpriteEngine.Zoom := 3;
 
   AdSpriteEngine.CollisionOptimizationTyp := ctOptimized;
 
   level := TStringList.Create;
-  level.LoadFromFile(path+'level.txt');
+  level.LoadFromFile(path+'level2.txt');
 
-  {with TBackgroundSprite.Create(AdSpriteEngine) do
+  with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
     Z := -10;
     Image := AdPictureCollection.Find('sky');
     Tiled := true;
     Depth := 10;
-  end;         }
+  end;
 
   for ay := 0 to level.Count - 1 do
   begin
@@ -267,21 +274,33 @@ end;
 
 procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+var
+  p:TPoint;
 begin
-  lx := x;
-  ly := y;
+  p := AdSpriteEngine.ScreenPointToSpriteCoords(Point(X,Y));
+  lx := p.x;
+  ly := p.y;
 end;
 
 procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
+var
+  p:TPoint;
 begin
   if ssLeft in Shift then
   begin
-    AdSpriteEngine.X := AdSpriteEngine.X + X - Lx;
-    AdSpriteEngine.Y := AdSpriteEngine.Y + Y - Ly;
-    Lx := X;
-    Ly := Y;
+    p := AdSpriteEngine.ScreenPointToSpriteCoords(Point(X,Y));
+    AdSpriteEngine.X := AdSpriteEngine.X + p.x - lx;
+    AdSpriteEngine.Y := AdSpriteEngine.Y + p.y - ly;
+    Lx := p.x;
+    Ly := p.y;
   end;
+end;
+
+procedure TForm1.FormMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+begin
+  AdSpriteEngine.Zoom := AdSpriteEngine.Zoom + WheelDelta / (1000 / AdSpriteEngine.Zoom);
 end;
 
 procedure TForm1.FormResize(Sender: TObject);
