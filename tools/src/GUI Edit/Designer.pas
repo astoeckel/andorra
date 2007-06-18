@@ -275,7 +275,7 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw1.DllName := 'AndorraOGL.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -315,6 +315,8 @@ end;
 procedure TDesignerDlg.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
+  if not AdGUI.DesignMode then exit;
+  
   if Key = VK_ESCAPE then
   begin
     AddComp := nil;
