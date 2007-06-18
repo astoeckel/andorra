@@ -267,6 +267,40 @@ type
       property Picture:TAdResourceImage read FPicture;
   end;
 
+  TAdEdit = class(TAdComponent)
+    private
+      FText:string;
+      FSkinItem:TAdSkinItem;
+      FSelStart:integer;
+      FSelStop:integer;
+      FCursorVisible:boolean;
+      FCursorTime:double;
+      function GetSelCount:integer;
+      procedure DelSelText;
+      function MouseToSelPos(AX: integer): integer;
+    protected
+      procedure LoadSkinItem; override;
+      procedure DoDraw;override;
+      procedure DoMove(timegap:double);override;
+      procedure DoKeyDown(Key:Word;shift:TShiftState);override;
+      procedure DoKeyPress(Key:Char);override;
+      procedure DoClick;override;
+      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+        Y: integer);override;
+      procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
+      property CursorVisible:boolean read FCursorVisible write FCursorVisible;
+      property CursorTime:double read FCursorTime write FCursorTime;
+    public
+      constructor Create(AParent:TAdComponent);override;
+      property SelStart:integer read FSelStart write FSelStart;
+      property SelStop:integer read FSelStop write FSelStop;
+      property SelCount:integer read GetSelCount;
+    published
+      property Text:string read FText write FText;
+      property Font;
+      property FontColor;
+  end;
+
   const               
     SPACING = 5;
 
@@ -1403,9 +1437,309 @@ begin
   end;
 end;
 
+{ TAdEdit }
+
+procedure TAdEdit.DoClick;
+begin
+  inherited;
+  SetFocused;
+end;
+
+procedure TAdEdit.DoDraw;
+var
+  r,cr:TRect;
+  oldvp:TRect;
+  matview,matproj:TAdMatrix;
+  w,h,th:integer;
+  draw2d:boolean;
+  SelStartX:integer;
+  SelStopX:integer;
+  XDif:integer;
+begin
+  r := BoundsRect;
+  cr := ClientRect;
+  FSkinItem.Draw(0,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+
+  oldvp := AdDraw.AdAppl.Viewport;
+  AdDraw.AdAppl.Viewport := cr;
+  AdDraw.AdAppl.GetScene(matview,matproj);
+  w := cr.Right-cr.Left;
+  h := cr.Bottom-cr.Top;
+  th := Font.TextHeight(FText+'W');
+  AdDraw.AdAppl.Setup2DScene(w,h);
+  SetFontColor;
+
+  SelStartX := Font.TextWidth(copy(Text,1,SelStart));
+  SelStopX  := Font.TextWidth(copy(Text,1,SelStop));
+
+  XDif := 0;
+  if SelStopX > w - 5 then
+  begin
+    XDif := SelStopX-w+Font.TextWidth('W')*2;
+  end;
+
+  with AdDraw.Canvas do
+  begin
+    draw2d := DrawIn2D;
+    DrawIn2D := false;    
+
+    if SelCount > 0 then
+    begin
+      Brush.Color := Ad_ARGB(128,128,128,128);
+      Pen.Style := apNone;
+      Rectangle(rect(SelStartX-XDif,(h-th) div 2,SelStopX-XDif,(h+th) div 2));
+      Release;
+    end;
+
+    self.Font.TextOut(-XDif,(h-th) div 2,FText);
+
+    if (CursorVisible) and (Enabled) and (Focused) and (not DesignMode) then
+    begin
+      Pen.Color := ColorToAdColor(FontColor);
+      MoveTo(SelStopX-XDif,(h-th) div 2);
+      LineTo(SelStopX-XDif,(h+th) div 2);
+      Release;
+    end;
+    DrawIn2D := draw2d;
+  end;
+
+
+  AdDraw.AdAppl.SetupManualScene(matview,matproj);
+  AdDraw.AdAppl.Viewport := oldvp;
+  inherited;
+end;
+
+constructor TAdEdit.Create(AParent: TAdComponent);
+begin
+  inherited;
+  AcceptChildComponents := false;
+end;
+
+procedure TAdEdit.DelSelText;
+var s:integer;
+begin
+  s := selStart;
+  if SelStart > SelStop then s := SelStop;
+  Delete(FText,S+1,SelCount);
+  SelStart := s;
+  SelStop := s;
+end;
+
+const
+  VK_BACK = $08;
+  VK_DELETE = $2E;
+  VK_LEFT = 37;
+  VK_HOME = 36;
+  VK_END = 35;
+  VK_RIGHT = 39;
+
+procedure TAdEdit.DoKeyDown(Key:Word;shift:TShiftState);
+begin
+  CursorVisible := true;
+  CursorTime := 0;
+  if key = VK_BACK then
+  begin
+    if SelCount = 0 then
+    begin
+      Delete(FText,SelStart,1);
+      SelStart := SelStart-1;
+      SelStop := SelStart;
+    end
+    else
+    begin
+      DelSelText;
+    end;
+  end;
+  if key = VK_DELETE then
+  begin
+    if SelCount = 0 then
+    begin
+      Delete(FText,SelStart+1,1);
+    end
+    else
+    begin
+      DelSelText;
+    end;
+  end;
+  if key = VK_LEFT then
+  begin
+    if ssShift in Shift then
+    begin
+      SelStop := SelStop-1;
+    end
+    else
+    begin
+      if SelStop < SelStart then
+      begin
+        SelStart := SelStop;
+      end
+      else
+      begin
+        if SelStop > SelStart then
+        begin
+          SelStart := SelStop;
+        end
+        else
+        begin
+          SelStart := SelStart-1;
+          SelStop := SelStart;
+        end;
+      end;
+    end;
+  end;
+  if key = VK_HOME then
+  begin
+    if ssShift in Shift then
+    begin
+      SelStop := 0;
+    end
+    else
+    begin
+      SelStart := 0;
+      SelStop := 0;
+    end;
+  end;
+  if key = VK_END then
+  begin
+    if ssShift in Shift then
+    begin
+      SelStop := Length(Text);
+    end
+    else
+    begin
+      SelStart := Length(Text);
+      SelStop := Length(Text);
+    end;
+  end;
+  if key = VK_RIGHT then
+  begin
+    if ssShift in Shift then
+    begin
+      SelStop := SelStop+1;
+    end
+    else
+    begin
+      if SelStop < SelStart then
+      begin
+        SelStart := SelStop;
+      end
+      else
+      begin
+        if SelStop > SelStart then
+        begin
+          SelStart := SelStop;
+        end
+        else
+        begin
+          SelStart := SelStart+1;
+          SelStop := SelStart;
+        end;
+      end;
+    end;
+  end;
+  if SelStart < 0 then SelStart := 0;
+  if SelStart > Length(Text) then SelStart := Length(Text);
+  if SelStop < 0 then SelStop := 0;
+  if SelStop > Length(Text) then SelStop := Length(Text);
+end;
+
+procedure TAdEdit.DoKeyPress(Key: Char);
+begin
+  inherited;
+  if (ord(key) > 31) and ((ord(key) < 127) or (ord(key) > 159)) then
+  begin
+    if SelCount > 0 then
+    begin
+      DelSelText;
+    end;
+    if SelStart >= Length(FText)-1 then
+    begin
+      Text := Text + Key;
+    end
+    else
+    begin
+      Insert(Key,FText,SelStart+1);
+    end;
+    SelStart := SelStart+1;
+    SelStop := SelStart;
+  end;  
+end;
+
+procedure TAdEdit.DoMove(timegap: double);
+begin
+  inherited;
+  CursorTime := CursorTime + timegap * 10;
+  If CursorTime > 1 then
+  begin
+    CursorVisible := not CursorVisible;
+    CursorTime := 0;
+  end;
+end;
+
+function TAdEdit.MouseToSelPos(AX:integer):integer;
+var
+  i:integer;
+  XDif:integer;
+  SelStopX:integer;
+  w:integer;
+begin
+  Result := length(FText);
+
+  w := (ClientRect.Right - ClientRect.Left);
+  SelStopX  := Font.TextWidth(copy(Text,1,SelStop));
+
+  XDif := 0;
+  if SelStopX > w - 5 then
+  begin
+    XDif := SelStopX - w;
+  end;
+
+  AX := XDif + (AX - Clientrect.Left);
+
+  for i := 0 to length(FText) do
+  begin
+    if Font.TextWidth(copy(FText,1,i)) >= AX then
+    begin
+      result := i;
+      break;
+    end;
+  end;
+end;
+
+procedure TAdEdit.DoMouseMove(Shift: TShiftState; X, Y: Integer);
+begin
+  if ssLeft in Shift then
+  begin
+    SelStop := MouseToSelPos(X);
+  end;
+end;
+
+procedure TAdEdit.DoMouseDown(Button:TMouseButton; Shift:TShiftState;X,Y:integer);
+begin
+  if Button = mbLeft then
+  begin
+    SelStart := MouseToSelPos(X);
+    SelStop := SelStart;
+  end;
+end;
+
+
+
+function TAdEdit.GetSelCount: integer;
+begin
+  result := abs(SelStop-SelStart);
+end;
+
+procedure TAdEdit.LoadSkinItem;
+begin
+  FSkinItem := Skin.ItemNamed['edit'];
+  SetSpacer(FSkinItem);
+end;
+
 initialization
   RegisterComponent(TAdProgressBar,'Standard');
   RegisterComponent(TAdButton,'Standard');
+  RegisterComponent(TAdEdit,'Standard');
   RegisterComponent(TAdCheckbox,'Standard');
   RegisterComponent(TAdLabel,'Standard');
   RegisterComponent(TAdPanel,'Standard');

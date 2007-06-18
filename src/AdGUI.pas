@@ -565,6 +565,8 @@ var
   i:integer;
   cref:TPersistentClass;
 begin
+  Clear;
+  
   FName := aroot.Properties.Value('name','');
   FAlpha := aroot.Properties.IntValue('alpha',255);
   FCursor := aroot.Properties.Value('cursor','default');

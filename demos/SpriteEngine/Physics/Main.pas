@@ -7,6 +7,9 @@ uses
   Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPng;
 
 type
+  TPlayer = class(TPhysicalCylinderSprite);
+
+type
   TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -15,6 +18,7 @@ type
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     { Private-Deklarationen }
   public
@@ -24,6 +28,7 @@ type
     AdImageList:TAdImageList;
     Selected:TSprite;
     dx,dy:integer;
+    player:TPlayer;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -71,9 +76,9 @@ begin
       Z := -10;
     end;
 
-    for i := 0 to 35 do
+    for i := 0 to 50 do
     begin
-      case random(2) of
+      case random(1) of
        0:with TPhysicalCylinderSprite.Create(AdSpriteEngine) do
          begin
            X := random(40)+(i mod 5 + 1) * 100;
@@ -89,7 +94,7 @@ begin
            Image := AdImageList.Find('box');
            Mass := 10;
            InitializeShape;
-        end;
+        end;      
       end;
 
     end;
@@ -116,6 +121,16 @@ begin
       InitializeShape;
     end;
 
+    player := TPlayer.Create(AdSpriteEngine);
+    with player do
+    begin
+      X := 200;
+      Y := 500;
+      Image := AdImageList.Find('cylinder');
+      Mass := 20;
+      InitializeShape;
+    end;
+
   end
   else
   begin
@@ -131,6 +146,31 @@ begin
   AdSpriteEngine.Free;
   AdPerCounter.Free;
   AdDraw1.Free;
+end;
+
+procedure TForm1.FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+var
+  vec:TAdVector3;
+begin
+  vec := player.Omega;
+  if Key = VK_LEFT then
+  begin
+    vec.z := vec.z - 0.1;
+  end;
+  if Key = VK_RIGHT then
+  begin
+    vec.z := vec.z + 0.1;
+  end;
+  Player.Omega := vec;
+
+  vec := Player.Velocity;
+
+  if Key = VK_UP then
+  begin
+    vec.y := vec.y - 10;
+  end;
+
+  Player.Velocity := vec;
 end;
 
 //Render

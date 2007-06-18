@@ -2,7 +2,8 @@ program Physic;
 
 uses
   Forms,
-  Main in 'Main.pas';
+  Main in 'Main.pas',
+  AdShapes in '..\..\..\src\AdShapes.pas';
 
 {$R *.res}
 

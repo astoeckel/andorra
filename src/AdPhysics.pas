@@ -31,15 +31,6 @@ interface
 uses AdClasses, AdDraws, AdSprites, NewtonImport, Classes, {$INCLUDE AdTypes.inc}, Math;
 
 type
-  //A vector for the use with newton
-  TNtVector3f = record
-     //The position
-     X,Y,Z : Single;
-  end;
-
-  //A matrix for the use with newton
-  TNtMatrix4f = array[0..3, 0..3] of Single;  
-
   //Contains data about a physical element.
   TPhysicalConstructData = class
      //The mass of an element
@@ -139,13 +130,13 @@ type
       FLastAx,FLastAy:double;
       FActive:boolean;
       FContinousActive:boolean;
-      FBaseMatrix:TNtMatrix4f;
+      FBaseMatrix:TAdMatrix;
       FMass:single;
     protected
       Physics:TPhysicalApplication;
       Updating:Boolean;
       procedure DoMove(TimeGap:double);override;
-      
+
       procedure SetX(Value:double);override;
       procedure SetY(Value:double);override;
       procedure SetAngle(Value:double);override;
@@ -153,6 +144,10 @@ type
 
       procedure SetActive(Value:boolean);virtual;
       function GetActive:boolean;virtual;
+      procedure SetVelocity(Value:TAdVector3);virtual;
+      function GetVelocity:TAdVector3;virtual;
+      procedure SetOmega(Value:TAdVector3);virtual;
+      function GetOmega:TAdVector3;virtual;
 
       procedure SetContinousActive(Value:boolean);
       function GetContinousActive:boolean;
@@ -179,6 +174,11 @@ type
       property ContinousActive:boolean read GetContinousActive write SetContinousActive;
       //The mass of the sprite
       property Mass:single read FMass write FMass;
+
+      //Linear Velocity
+      property Velocity:TAdVector3 read GetVelocity write SetVelocity;
+      //Angulaer Velocity
+      property Omega:TAdVector3 read GetOmega write SetOmega; 
   end;
 
   //A sprite with box form
@@ -195,37 +195,13 @@ type
       procedure InitializeShape;override;
   end;
 
-  //Creates an TNtVector3f
-  function NtVector3f(AX,AY,AZ:single):TNtVector3f;
-  
-  //Makes an TAdMatrix out of a TNtMatrix4f
-  procedure AndorraToNewtonMatrix(Andorra:TAdMatrix; out Newton:TNtMatrix4f);
-
 implementation
-
-function NtVector3f(AX,AY,AZ:single):TNtVector3f;
-begin
-  with result do
-  begin
-    X := AX;
-    Y := AY;
-    Z := AZ;
-  end;
-end;
-
-procedure AndorraToNewtonMatrix(Andorra:TAdMatrix; out Newton:TNtMatrix4f);
-var x,y:integer;
-begin
-  for x := 0 to 3 do
-    for y := 0 to 3 do
-      Newton[x,y] := Andorra[x,y];
-end; 
 
 procedure ForceAndTorqueCallback(const body : PNewtonBody); cdecl;
 var
  Mass : Single;
- Inertia : TNtVector3f;
- Force : TNtVector3f;
+ Inertia : TAdVector3;
+ Force : TAdVector3;
 // i,j: integer;
 begin
   NewtonBodyGetMassMatrix(Body, @Mass, @Inertia.x, @Inertia.y, @Inertia.z);
@@ -235,9 +211,9 @@ begin
     Y := 36 * Mass;
     Z := 0;
   end;
-  NewtonBodyAddForce(Body, @Force.x);
+  NewtonBodySetForce(Body, @Force.x);
 end;
-  
+
 { TPhysicalApplication }
 
 constructor TPhysicalApplication.Create(AParent: TSprite);
@@ -293,7 +269,7 @@ begin
 end;
 
 procedure TPhysicalApplication.CheckBounds;
-var vc1,vc2:TNtVector3f;
+var vc1,vc2:TAdVector3;
 begin
   if (FLastSizeX <> Engine.SpriteField.EndX - Engine.SpriteField.StartX) or
      (FLastSizeY <> Engine.SpriteField.EndY - Engine.SpriteField.StartY) then
@@ -302,10 +278,10 @@ begin
     FLastSizeX := Engine.SpriteField.EndX - Engine.SpriteField.StartX;
     FLastSizeY := Engine.SpriteField.EndY - Engine.SpriteField.StartX;
 
-    vc1 := NtVector3f((Engine.SpriteField.StartX-1)*Engine.GridSize,
-                      (Engine.SpriteField.StartY-1)*Engine.GridSize,-50);
-    vc2 := NtVector3f((Engine.SpriteField.EndX+1)*Engine.GridSize,
-                      (Engine.SpriteField.EndY+1)*Engine.GridSize, 50);
+    vc1 := AdVector3((Engine.SpriteField.StartX-1)*Engine.GridSize,
+                    (Engine.SpriteField.StartY-1)*Engine.GridSize,-50);
+    vc2 := AdVector3((Engine.SpriteField.EndX+1)*Engine.GridSize,
+                    (Engine.SpriteField.EndY+1)*Engine.GridSize, 50);
 
     NewtonSetWorldSize(NewtonWorld, @vc1.X, @vc2.X);
 
@@ -339,7 +315,7 @@ begin
 end;
 
 procedure TPhysicalSprite.DoMove(TimeGap: double);
-var Matrix:TNtMatrix4f;
+var Matrix:TAdMatrix;
     ax,ay:double;
 begin
   inherited;
@@ -420,6 +396,28 @@ begin
   end;
 end;
 
+function TPhysicalSprite.GetOmega: TAdVector3;
+begin
+  NewtonBodyGetOmega(Construct.NewtonBody,@Result.X);
+end;
+
+procedure TPhysicalSprite.SetOmega(Value: TAdVector3);
+begin
+  NewtonBodySetOmega(Construct.NewtonBody,@Value.X);
+  SetActive(true);
+end;
+
+function TPhysicalSprite.GetVelocity: TAdVector3;
+begin
+  NewtonBodyGetVelocity(Construct.NewtonBody,@Result.X);
+end;
+
+procedure TPhysicalSprite.SetVelocity(Value: TAdVector3);
+begin
+  NewtonBodySetVelocity(Construct.NewtonBody,@Value.X);
+  SetActive(true);
+end;
+
 procedure TPhysicalSprite.InitializeShape;
 begin
   if Construct <> nil then
@@ -498,13 +496,11 @@ end;
 
 procedure TPhysicalSprite.UpdateNewtonMatrix;
 var Mat1,Mat2:TAdMatrix;
-    Mat3:TNtMatrix4f;
 begin
   Mat1 := AdMatrix_Translate(X + Width / 2, Y + Height / 2, 50);
   Mat2 := AdMatrix_RotationZ(DegToRad(Angle));
   Mat2 := AdMatrix_Multiply(Mat2,Mat1);
-  AndorraToNewtonMatrix(Mat2,Mat3);
-  NewtonBodySetMatrix(Construct.NewtonBody, @Mat3[0,0]);
+  NewtonBodySetMatrix(Construct.NewtonBody, @Mat2[0,0]);
 end;
 
 { TPhysicalContstruct }
@@ -592,16 +588,14 @@ procedure TPhysicalCylinderConstruct.CreateConstruct(
 var Collision:PNewtonCollision;
     Inertia:TAdVector3;
     Mat1:TAdMatrix;
-    Mat2:TNtMatrix4f;
 begin
   if AData is TPhysicalSimpleData then
   begin
     with AData as TPhysicalSimpleData do
     begin
       Mat1 := AdMatrix_RotationY(1/2*Pi);
-      AndorraToNewtonMatrix(Mat1,Mat2);
 
-      Collision := NewtonImport.NewtonCreateCylinder(Parent.NewtonWorld, Width / 2, 100, @Mat2[0,0]);
+      Collision := NewtonImport.NewtonCreateCylinder(Parent.NewtonWorld, Width / 2, 100, @Mat1[0,0]);
       NewtonBody := NewtonCreateBody(Parent.NewtonWorld, Collision);
       NewtonReleaseCollision(Parent.NewtonWorld, Collision);
 
