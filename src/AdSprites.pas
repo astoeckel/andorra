@@ -22,7 +22,8 @@ unit AdSprites;
 
 interface
 
-uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses, AdParticles, Math, AdList;
+uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses,
+     AdParticles, Math, AdList, AdShapes, Graphics;
 
 type
   {The sprite engines base class.}
@@ -110,6 +111,8 @@ type
       FGridSize:integer;
       FAutoOptimize:boolean;
       FCollisionTyp:TCollisionTyp;
+      FShape:TAdShape;
+      FOwnShape:boolean;
       procedure SetParent(AParent:TSprite);
       procedure Add(ASprite:TSprite);
       procedure Remove(ASprite:TSprite);
@@ -132,10 +135,12 @@ type
       procedure SetY(AValue:double);virtual;
       procedure SetWidth(AValue:double);virtual;
       procedure SetHeight(AValue:double);virtual;
+      procedure SetShape(AValue:TAdShape);virtual;
       procedure RemapField;
       procedure MoveInField(ASprite:TSprite);
       function GetCollisionField:TRect;virtual;
       procedure CheckCollisionWith(ASprite:TSprite);virtual;
+      property OwnShape:boolean read FOwnShape write FOwnShape;
     public
       {Creates an instance of TSprite.}
       constructor Create(AParent:TSprite);virtual;
@@ -180,6 +185,8 @@ type
       property CollisionOptimizationTyp:TCollisionTyp read FCollisionTyp write SetCollisionOptimization;
 
       property SpriteField:TAd2DSpriteList read FSpriteField;
+
+      property Shape:TAdShape read FShape write SetShape;
     published
       {The absolute X Position of the sprite.}
       property X:double read FX write SetX;
@@ -255,16 +262,22 @@ type
       FAnimStart: Integer;
       FAnimStop: Integer;
       FAnimActive: Boolean;
-      procedure SetImage(AValue:TAdImage);
+      FPixelCheck: Boolean;
       function GetAnimCount:integer;
       procedure SetAnimStart(AValue:integer);
       procedure SetAnimStop(AValue:integer);
+      procedure SetPixelCheck(AValue:boolean);
     protected
+      procedure CreateMask;virtual;
+      procedure SetImage(AValue:TAdImage);virtual;
+      procedure SetHeight(AValue:double);override;
+      procedure SetWidth(AValue:double);override;
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
     public
       //Creates an instance of TImageSprite
       constructor Create(AParent:TSprite);override;
+      destructor Destroy;override;
       //The image which is drawn by the sprite.
       property Image:TAdImage read FImage write SetImage;
     published
@@ -282,6 +295,8 @@ type
       property AnimActive:boolean read FAnimActive write FAnimActive;
       //The animation speed in frames (patterns) per second.
       property AnimSpeed:double read FAnimSpeed write FAnimSpeed;
+      //Pixel checking
+      property PixelCheck:boolean read FPixelCheck write SetPixelCheck;
     end;
 
   {An extended sprite which draws sprites blended and rotatet.}
@@ -875,6 +890,12 @@ begin
   end;
 end;
 
+procedure TSprite.SetShape(AValue: TAdShape);
+begin
+  FShape := AValue;
+  FOwnShape := false;
+end;
+
 procedure TSprite.SetHeight(AValue: double);
 begin
   FHeight := AValue;
@@ -910,8 +931,31 @@ begin
 end;     
 
 function TSprite.TestCollision(Sprite: TSprite): boolean;
+var
+  rect:TAdRectShape;
 begin
-  result := true;
+  if FShape <> nil then
+  begin
+    if Sprite.Shape <> nil then
+    begin
+      result := Shape.CollideWithShape(Sprite.Shape,Point(round(x),round(y)),Point(round(Sprite.X),round(Sprite.Y)));
+    end
+    else
+    begin
+      rect := TAdRectShape.Create(round(Sprite.Width),round(Sprite.Height));
+      result := Shape.CollideWithShape(rect,Point(round(x),round(y)),Point(round(Sprite.X),round(Sprite.Y)));
+      rect.Free;
+    end;
+  end else
+  if Sprite.Shape <> nil then
+  begin
+    rect := TAdRectShape.Create(round(Width),round(Height));
+    result := rect.CollideWithShape(Sprite.Shape,Point(round(x),round(y)),Point(round(Sprite.X),round(Sprite.Y)));
+    rect.Free;
+  end else
+  begin
+    result := true;
+  end;
 end;
 
 { TSpriteEngine }
@@ -973,6 +1017,12 @@ begin
   FAnimActive := true;
   FAnimSpeed := 25;
   FAnimLoop := true;
+end;
+
+destructor TImageSprite.Destroy;
+begin
+  SetPixelCheck(false);
+  inherited;
 end;
 
 procedure TImageSprite.DoDraw;
@@ -1042,6 +1092,69 @@ begin
     end;
   end;
   FImage := AValue;
+end;
+
+procedure TImageSprite.SetPixelCheck(AValue: boolean);
+begin
+  if (FShape <> nil)  then FreeAndNil(FShape);
+  FPixelCheck := AValue;
+  CreateMask;
+end;
+
+procedure TImageSprite.SetWidth(AValue: double);
+begin
+  inherited;
+  CreateMask;
+end;
+
+procedure TImageSprite.SetHeight(AValue: double);
+begin
+  inherited;
+  CreateMask;
+end;
+
+procedure TImageSprite.CreateMask;
+var
+  adbmp:TAdBitmap;
+  bmp1:TBitmap;
+  bmp2:TBitmap;
+  w,h:integer;
+begin
+  if (FPixelCheck) and (FImage <> nil) then
+  begin
+    if (FShape <> nil) then FreeAndNil(FShape);
+    begin
+      FShape := TAdBitmapShape.Create(round(Width),round(Height));
+      adbmp := TAdBitmap.Create;
+
+      w := round(Width);
+      h := round(Height);
+
+      adbmp.ReserveMemory(Image.Texture.Texture.BaseWidth,Image.Texture.Texture.BaseHeight);
+      Image.Texture.Texture.SaveToBitmap(adbmp);
+      if (w = Image.Texture.Texture.BaseWidth) and
+         (h = Image.Texture.Texture.BaseHeight) then
+      begin
+        TAdBitmapShape(FShape).Mask.AssignAdBitmap(adbmp);
+      end
+      else
+      begin
+        bmp1 := TBitmap.Create;
+        bmp2 := TBitmap.Create;
+        adbmp.AssignToBitmap(bmp1,false);
+
+        bmp2.Width := w;
+        bmp2.Height := h;
+
+        bmp2.Canvas.StretchDraw(rect(0,0,w,h),bmp1);
+        TAdBitmapShape(FShape).Mask.AssignBitmap(bmp2,clWhite);
+
+        bmp2.Free;
+        bmp1.Free;
+      end;
+      adbmp.Free;
+    end;
+  end;
 end;
 
 { TImageSpriteEx }
