@@ -7,7 +7,7 @@ uses
   Dialogs, AdDraws, AdClasses, AdSprites, AdPng;
 
 type
-  TAdTestSprite = class(TImageSprite)
+  TAdTestSprite = class(TImageSpriteEx)
     protected
       procedure DoMove(timegap:double);override;
       procedure DoDraw;override;
@@ -66,7 +66,7 @@ begin
 
     Randomize;
 
-    for i := 0 to 20 do
+    for i := 0 to 0 do
     begin
       with TAdTestSprite.Create(AdSpriteEngine) do
       begin
@@ -74,6 +74,7 @@ begin
         X := random(round(ClientWidth - Width));
         Y := random(round(ClientHeight - Height));
         PixelCheck := true;
+        Angle := random(360);
       end;
     end;
 
@@ -137,15 +138,14 @@ end;
 procedure TAdTestSprite.DoDraw;
 begin
   if not col then
-    Image.Color := rgb(200,200,200);
+    Color := rgb(200,200,200);
   inherited;
-  Image.Color := rgb(255,255,255);
+  Color := rgb(255,255,255);
 end;
 
 procedure TAdTestSprite.DoMove(timegap: double);
 begin
-  inherited;
-
+  inherited;  
   col := false;
 end;
 

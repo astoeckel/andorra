@@ -136,10 +136,13 @@ var i:integer;
 begin
   Objects.ComboBox1.Items.AddObject(Component.Name + ' ['+Component.ClassName+']',Component);
   anode := Structure.TreeView1.Items.AddChild(Node,Component.Name);
-  with anode do
+  if Component.SubComponent then
   begin
-    ImageIndex := 0;
-  end;
+    anode.ImageIndex := 1;
+    anode.SelectedIndex := 1;
+  end
+  else
+    anode.ImageIndex := 0;
   for i:= 0 to Component.Components.Count - 1 do
   begin
     GetComponents(Component.Components[i],anode);

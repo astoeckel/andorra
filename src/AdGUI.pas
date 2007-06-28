@@ -168,6 +168,7 @@ type
       procedure LoadSkinItem;virtual;
       procedure SetCurrentCursor(Value:string);virtual;
 
+      procedure DoResize;virtual;
       procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);virtual;
       procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);virtual;
       procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);virtual;
@@ -196,7 +197,6 @@ type
       property SpacerRight:integer read FSpacerRight write FSpacerRight;
       property Focused:boolean read FFocused write SetFocus;
       property CanGetFocus:boolean read FCanGetFocus write FCanGetFocus;
-      property SubComponent:boolean read FSubComponent write FSubComponent;
 
       property MouseOver:boolean read FMouseOver write FMouseOver;
       property MouseOverTime:single read FMouseOverTime;
@@ -277,6 +277,8 @@ type
 
       property FocusedComponent:TAdComponent read GetFocusedComponent;
       procedure SetFocused;
+
+      property SubComponent:boolean read FSubComponent write FSubComponent;
     published
       property Name:string read FName write SetName;
       property Cursor:string read FCursor write FCursor;
@@ -610,7 +612,7 @@ begin
 
   for i := 0 to Components.Count-1 do
   begin
-    Components[i].SaveToXML(result.Items);
+    if not Components[i].SubComponent then Components[i].SaveToXML(result.Items);
   end;
 
   with result.Properties do
@@ -1064,6 +1066,7 @@ begin
     FWidth := FMaxWidth;
   if FWidth < FMinWidth then
     FWidth := FMinWidth;
+  DoResize;
 end;
 
 procedure TAdComponent.SetHeight(Value: integer);
@@ -1073,6 +1076,7 @@ begin
     FHeight := FMaxHeight;
   if FHeight < FMinHeight then
     FHeight := FMinHeight;
+  DoResize;
 end;
 
 {Event-Handling}
@@ -1093,7 +1097,7 @@ var
   clicked:boolean;
   i:integer;
 begin
-  if (visible or designmode) and (InRect(x,y,boundsrect)) then
+  if (visible or (designmode and (not SubComponent))) and (InRect(x,y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -1105,7 +1109,7 @@ begin
         break;
       end;
     end;
-    if (clicked) and ((enabled) or (designmode)) then
+    if (clicked) and ((enabled) or (designmode and (not SubComponent))) then
     begin
       if not DesignMode then
       begin
@@ -1142,7 +1146,7 @@ var
   clicked:boolean;
   i:integer;
 begin
-  if (visible or designmode) and (InRect(x,y,boundsrect)) then
+  if (visible or (designmode and (not SubComponent))) and (InRect(x,y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -1154,7 +1158,7 @@ begin
         break;
       end;
     end;
-    if (clicked) and ((enabled) or (designmode)) then
+    if (clicked) and ((enabled) or (designmode and (not SubComponent))) then
     begin
       if not DesignMode then
       begin
@@ -1173,7 +1177,7 @@ procedure TAdComponent.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
 var clicked:boolean;
     i:integer;
 begin
-  if (visible or designmode) and InRect(x,y,boundsrect) then
+  if (visible or (designmode and (not SubComponent))) and InRect(x,y,boundsrect) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -1193,8 +1197,11 @@ begin
       end
       else
       begin
-        MouseDownIn := GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top);
-        FDraging := true;
+        if not Subcomponent then
+        begin
+          MouseDownIn := GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top);
+          FDraging := true;
+        end;
       end;
     end;
   end;
@@ -1211,7 +1218,7 @@ begin
   FMouseOver := false;
   DesignSize(X,Y);
 
-  if (visible or designmode) and ((InRect(x,y,boundsrect)) or FMousePreview) then
+  if (visible or (designmode and (not SubComponent))) and ((InRect(x,y,boundsrect)) or FMousePreview) then
   begin
     clicked := true;
     FMouseX := X;
@@ -1231,7 +1238,10 @@ begin
       end
       else
       begin
-        Components[i].DesignSize(X,Y);
+        if not Components[i].Subcomponent then
+        begin
+          Components[i].DesignSize(X,Y);
+        end;
       end;
     end;
 
@@ -1281,7 +1291,7 @@ var clicked:boolean;
     overcomp:TAdComponent;
 begin
   overcomp := nil;
-  if (visible or designmode) and InRect(x,y,boundsrect) then
+  if (visible or (designmode and (not SubComponent))) and InRect(x,y,boundsrect) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -1297,7 +1307,7 @@ begin
       end
       else
       begin
-        if DesignMode then
+        if (designmode and (not SubComponent)) then
         begin
           Components[i].MouseDownIn := drNone;
         end;
@@ -1319,7 +1329,7 @@ begin
       end;
     end;
   end;
-  if DesignMode then
+  if (designmode and (not SubComponent)) then
   begin
     MouseDownIn := drNone;
     FDraging := false;
@@ -1331,7 +1341,7 @@ procedure TAdComponent.MouseWheel(Shift: TShiftState; WheelDelta: Integer;
 var clicked:boolean;
     i:integer;
 begin
-  if (visible or designmode) and (InRect(mousepos.x,mousepos.y,boundsrect)) then
+  if (visible or (designmode and (not SubComponent))) and (InRect(mousepos.x,mousepos.y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
@@ -1353,7 +1363,7 @@ end;
 procedure TAdComponent.KeyDown(Key: Word; Shift: TShiftState);
 var i:integer;
 begin
-  if (visible or designmode) and (Focused or FKeyPreview) and enabled then
+  if (visible or (designmode and (not SubComponent))) and (Focused or FKeyPreview) and enabled then
   begin
     if not DesignMode then DoKeyDown(Key,Shift);
   end
@@ -1369,7 +1379,7 @@ end;
 procedure TAdComponent.KeyPress(Key: Char);
 var i:integer;
 begin
-  if (visible or designmode) and (Focused or FKeyPreview) and enabled then
+  if (visible or (designmode and (not SubComponent))) and (Focused or FKeyPreview) and enabled then
   begin
     if not DesignMode then DoKeyPress(Key);
   end
@@ -1385,7 +1395,7 @@ end;
 procedure TAdComponent.KeyUp(Key: Word; Shift: TShiftState);
 var i:integer;
 begin
-  if (visible or designmode) and (Focused or FKeyPreview) and enabled then
+  if (visible or (designmode and (not SubComponent))) and (Focused or FKeyPreview) and enabled then
   begin
     if not DesignMode then DoKeyUp(Key,Shift);
   end
@@ -1462,6 +1472,11 @@ begin
   if assigned(OnMouseWheel) then OnMouseWheel(self,shift,wheeldelta,mousepos,handled);
 end;
 
+procedure TAdComponent.DoResize;
+begin
+
+end;
+
 function TAdComponent.GetDownRgn(AX, AY: integer): TAdDownRgn;
 var w,h:integer;
 begin
@@ -1507,8 +1522,8 @@ var gx,gy:integer;
   begin
     if (round(FWidth) mod gx <> 0) or (round(FHeight) mod gy <> 0) then
     begin
-      FWidth := round(FWidth) div gx * gx;
-      FHeight := round(FHeight) div gy * gy;
+      Width := round(FWidth) div gx * gx;
+      Height := round(FHeight) div gy * gy;
     end;
   end;
 begin
@@ -1537,28 +1552,28 @@ begin
       SnapLeftTop;
       FX := FX + (X-FOX);
       FY := FY + (Y-FOY);
-      FWidth := FWidth - (X-FOX);
-      FHeight := FHeight - (Y-FOY);
+      Width := FWidth - (X-FOX);
+      Height := FHeight - (Y-FOY);
     end;
     if FMouseDownIn = drLeftBottom then
     begin
       SnapRightBottom;
       FX := FX + (X-FOX);
-      FWidth := FWidth - (X-FOX);
-      FHeight := FHeight + (Y-FOY);
+      Width := FWidth - (X-FOX);
+      Height := FHeight + (Y-FOY);
     end;
     if FMouseDownIn = drRightBottom then
     begin
       SnapRightBottom;
-      FWidth := FWidth + (X-FOX);
-      FHeight := FHeight + (Y-FOY);
+      Width := FWidth + (X-FOX);
+      Height := FHeight + (Y-FOY);
     end;
     if FMouseDownIn = drRightTop then
     begin
       SnapRightBottom;
       FY := FY + (Y-FOY);
-      FWidth := FWidth + (X-FOX);
-      FHeight := FHeight - (Y-FOY);
+      Width := FWidth + (X-FOX);
+      Height := FHeight - (Y-FOY);
     end;
   end;
   FOX := X;

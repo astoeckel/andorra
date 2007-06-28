@@ -26,7 +26,7 @@ unit AdDraws;
 interface
 
 uses {$IFDEF WIN32}Windows,{$ELSE}Libc,{$ENDIF}Controls, Math, {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdClasses, AdDLLLoader,
-     Graphics, Huffman, AdBlur, AdList;
+     Graphics, Huffman, AdBitmapEffects, AdList;
 
 type
 

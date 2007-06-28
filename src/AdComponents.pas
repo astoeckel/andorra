@@ -9,6 +9,27 @@ type
   TAdAlignment = (alLeft,alCenter,alRight);
   TAdTextPos = (tpTop,tpCenter,tpBottom);
   TAdAlignmentEx = (axLeft, axRight, axTop, axBottom);
+  TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus, bsDisabled);
+
+  TAdSkinBtn = class(TAdComponent)
+    private
+      FSkinName:string;
+      FState:TAdButtonState;
+      FStateNr:integer;
+      FSkinItem:TAdSkinItem;
+      procedure SetSkinName(AValue:string);
+    protected
+      procedure GetStateNr;
+      procedure DoDraw;override;
+      procedure DoMouseEnter;override;
+      procedure DoMouseLeave;override;
+      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
+      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
+      procedure LoadSkinItem;override;
+    public
+      constructor Create(AParent:TAdComponent);override;
+      property SkinName:string read FSkinName write SetSkinName;
+  end;
   
   TAdForm = class(TAdComponent)
     private
@@ -17,18 +38,26 @@ type
       FFixedPosition:boolean;
       FCenter:boolean;
       FOldSize:TPoint;
+      FCloseButton:TAdSkinBtn;
       procedure SetCenter(AValue:boolean);
     protected
       procedure LoadSkinItem;override;
       procedure DoDraw;override;
       procedure DoMove(timegap:double);override;
+      procedure DoResize;override;
+      function GetShowCloseButton:boolean;
+      procedure SetShowCloseButton(AValue:boolean);
     public
+      constructor Create(AParent:TAdComponent);override;
+      destructor Destroy;override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      property CloseButton:TAdSkinBtn read FCloseButton;
     published
       property Caption:string read FCaption write FCaption;
       property FixedPosition:boolean read FFixedPosition write FFixedPosition;
       property Center:boolean read FCenter write SetCenter;
+      property ShowCloseButton:boolean read GetShowCloseButton write SetShowCloseButton;
       property Font;
       property FontColor;
   end;
@@ -78,8 +107,6 @@ type
       property Font;
       property FontColor;
   end;
-
-  TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus, bsDisabled);
 
   TAdButton = class(TAdComponent)
     private
@@ -295,6 +322,8 @@ type
       property SelStart:integer read FSelStart write FSelStart;
       property SelStop:integer read FSelStop write FSelStop;
       property SelCount:integer read GetSelCount;
+      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
       property Text:string read FText write FText;
       property Font;
@@ -487,6 +516,20 @@ end;
 
 { TAdForm }
 
+constructor TAdForm.Create(AParent: TAdComponent);
+begin
+  inherited;
+  FCloseButton := TAdSkinBtn.Create(self);
+  FCloseButton.SkinName := 'formclosebtn';
+  FCloseButton.SubComponent := true;
+end;
+
+destructor TAdForm.Destroy;
+begin
+  FCloseButton.Free;
+  inherited;
+end;
+
 procedure TAdForm.DoDraw;
 var
   rect:TRect;
@@ -512,6 +555,13 @@ begin
   end;
 end;
 
+procedure TAdForm.DoResize;
+begin
+  inherited;
+  FCloseButton.Y := (SpacerTop - FCloseButton.Height) div 2 - SpacerTop;
+  FCloseButton.X := Width - SpacerRight - FCloseButton.Width - SpacerLeft;
+end;
+
 procedure TAdForm.LoadFromXML(aroot: TJvSimpleXMLElem);
 begin
   inherited;
@@ -519,6 +569,7 @@ begin
   begin
     FCaption := Value('caption','');
     Center := BoolValue('center',false);
+    ShowCloseButton := BoolValue('showclosebutton',true);
   end;
 end;
 
@@ -529,6 +580,7 @@ begin
   begin
     Add('caption',FCaption);
     Add('center',FCenter);
+    Add('showclosebutton',ShowCloseButton);
   end;
 end;
 
@@ -541,6 +593,16 @@ begin
     Y := (Parent.Height - Height) div 2;
     FOldSize := Point(Parent.Width,Parent.Height);
   end;
+end;
+
+procedure TAdForm.SetShowCloseButton(AValue: boolean);
+begin
+  FCloseButton.Visible := AValue;
+end;
+
+function TAdForm.GetShowCloseButton: boolean;
+begin
+  result := FCloseButton.Visible;
 end;
 
 procedure TAdForm.LoadSkinItem;
@@ -1734,6 +1796,103 @@ procedure TAdEdit.LoadSkinItem;
 begin
   FSkinItem := Skin.ItemNamed['edit'];
   SetSpacer(FSkinItem);
+end;
+
+function TAdEdit.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+begin
+  result := inherited SaveToXML(aroot);
+  result.Properties.Add('text',FText)
+end;
+
+procedure TAdEdit.LoadFromXML(aroot: TJvSimpleXMLElem);
+begin
+  inherited;
+  FText := aroot.Properties.Value('text','');
+end;
+
+{ TAdSkinBtn }
+
+constructor TAdSkinBtn.Create(AParent: TAdComponent);
+begin
+  inherited;
+  FStateNr := -1;
+  FState := bsNormal;
+end;
+
+procedure TAdSkinBtn.GetStateNr;
+begin
+  FStateNr := -1;
+  if (FSkinItem <> nil) then
+  begin
+    case FState of
+      bsNormal: FStateNr := FSkinItem.States.IndexOf('standard');
+      bsDown: FStateNr := FSkinItem.States.IndexOf('down');
+      bsHover: FStateNr := FSkinItem.States.IndexOf('hover');
+    end;
+  end;
+end;
+
+procedure TAdSkinBtn.LoadSkinItem;
+begin
+  if Skin <> nil then
+  begin
+    FSkinItem := Skin.ItemNamed[FSkinName];
+    if FSkinItem <> nil then
+    begin
+      SetSpacer(FSkinItem);
+      Width := FSkinItem.BaseWidth;
+      Height := FSkinItem.BaseHeight;
+      GetStateNr;
+    end;
+  end;
+end;
+
+procedure TAdSkinBtn.SetSkinName(AValue: string);
+begin
+  FSkinName := AValue;
+  LoadSkinItem;
+end;
+
+procedure TAdSkinBtn.DoDraw;
+var
+  r:TRect;
+begin
+  inherited;
+  if FStateNr <> -1 then
+  begin
+    r := BoundsRect;
+    FSkinItem.Draw(FStateNr,r.Left,r.Top,Width,Height,Alpha);
+  end;
+end;
+
+procedure TAdSkinBtn.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited;
+  FState := bsDown;
+  GetStateNr;
+end;
+
+procedure TAdSkinBtn.DoMouseEnter;
+begin
+  inherited;
+  FState := bsHover;
+  GetStateNr;
+end;
+
+procedure TAdSkinBtn.DoMouseLeave;
+begin
+  inherited;
+  FState := bsNormal;
+  GetStateNr;
+end;
+
+procedure TAdSkinBtn.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited;
+  FState := bsHover;
+  GetStateNr;
 end;
 
 initialization

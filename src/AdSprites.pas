@@ -23,7 +23,7 @@ unit AdSprites;
 interface
 
 uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses,
-     AdParticles, Math, AdList, AdShapes, Graphics;
+     AdParticles, Math, AdList, AdShapes, Graphics, AdBitmapEffects;
 
 type
   {The sprite engines base class.}
@@ -1164,7 +1164,7 @@ begin
   inherited Create(AParent);
   FAlpha := 255;
   FColor := $FFFFFF;
-  FRotationCenterX := 0.5;
+  FRotationCenterX := 1;
   FRotationCenterY := 0.5;
 end;
 
@@ -1210,6 +1210,7 @@ end;
 procedure TImageSpriteEx.SetAngle(AValue: double);
 begin
   FAngle := AValue;
+  CreateMask;
 end;
 
 procedure TImageSpriteEx.SetColor(AValue: Integer);

@@ -1,13 +1,12 @@
-//Source: http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html
-
-unit AdBlur;
+unit AdBitmapEffects;
 
 interface
 
 uses
-  Graphics;
+  Graphics, {$I AdTypes.inc};
   
 {$IFDEF FPC}{$ELSE}
+//Source: http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html
 procedure BmpGBlur(Bmp: TBitmap; radius: Single);
 {$ENDIF}
 
@@ -99,6 +98,8 @@ Begin
     End;
   End;
 End;
+
+
 {$ENDIF}
 
 end.

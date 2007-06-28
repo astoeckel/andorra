@@ -8,6 +8,7 @@ uses
 
 begin
   Application.Initialize;
+  Application.Title := 'Andorra 2D - Pixelcheck Demo';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.

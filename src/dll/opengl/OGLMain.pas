@@ -31,6 +31,14 @@ uses AdClasses, Classes, Math, dglOpenGL,
      {$ELSE}Windows;{$ENDIF}
 
 type
+  TOGLColor = record
+    r,g,b,a:byte;
+  end;
+
+  TOGLColorArray = array of TOGLColor;
+  TOGLVector3Array = array of TAdVector3;
+  TOGLVector2Array = array of TAdVector2;
+
   TOGLApplication = class(TAd2DApplication)
     private
       {$IFDEF AdLinux}
@@ -47,6 +55,7 @@ type
     protected
       procedure SetAmbientLight(AValue:TAndorraColor);override;
       procedure SetOptions(AValue:TAdOptions);override;
+      procedure SetViewPort(AValue:TRect);override;
     public
       function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
@@ -55,6 +64,7 @@ type
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
+
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
@@ -72,7 +82,12 @@ type
   TOGLMesh = class(TAd2DMesh)
     private
       FMatrix:TAdMatrix;
-      FParent:TOglApplication;      
+      FParent:TOglApplication;
+      FColors:TOGLColorArray;
+      FNormals:TOGLVector3Array;
+      FTexCoords:TOGLVector2Array;
+      FPositions:TOGLVector3Array;
+      procedure DevideVertices;
     protected
       procedure SetVertices(AVertices:TAdVertexArray);override;
       procedure SetIndex(AIndex:TAdIndexArray);override;
@@ -183,12 +198,23 @@ begin
 
     FDC := GetDC(AWnd);
     FRC := CreateRenderingContext(FDC,[opDoubleBuffered],32,24,0,0,0,0);
+
+    FHeight := ADisplay.Height;
+    FWidth := ADisplay.Width;
+
     ActivateRenderingContext(FDC,FRC);
 
     result := true;
 
     glEnable(GL_BLEND);
+    glEnable(GL_COLOR_MATERIAL);
     glDisable(GL_CULL_FACE);
+
+    SetOptions(FOptions);
+
+    //Repeat the texture if it wraps over the edges
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
   end
   else
   begin
@@ -212,27 +238,40 @@ end;
 
 procedure TOGLApplication.SetOptions(AValue: TAdOptions);
 begin
-  //Sets the options (wether Antialiasing or Lights etc. are turned on or off.)
+  if doLights in AValue then
+  begin
+    glEnable(GL_LIGHTING);
+  end
+  else
+  begin
+    glDisable(GL_LIGHTING);
+  end;  
 end;
 
 procedure TOGLApplication.SetAmbientLight(AValue: TAndorraColor);
+var
+  col:array[0..3] of Single;
 begin
   inherited;
-  //Sets the ambient light color
+
+  col[0] := AValue.r / 255;
+  col[1] := AValue.g / 255;
+  col[2] := AValue.b / 255;
+  col[3] := 1;
+
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, @col[0]);
 end;
 
 procedure TOGLApplication.Setup2DScene(AWidth, AHeight: integer);
 begin
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity;
-  glViewport(0,0,AWidth,AHeight);
   glOrtho(0,AWidth,AHeight,0,0,128);
   glMatrixMode(GL_MODELVIEW);
 end;
 
 procedure TOGLApplication.Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);
 begin
-  glViewport(0,0,AWidth,AHeight);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity;
   gluPerspective( 45, AWidth / AHeight, 1, abs(apos.z) * 2);
@@ -249,6 +288,12 @@ begin
   glLoadMatrixf(@AMatView);
 end;
 
+procedure TOGLApplication.SetViewPort(AValue: TRect);
+begin
+  inherited;
+  glViewPort(AValue.Left,FHeight - AValue.Top - (AValue.Bottom-AValue.Top),AValue.Right-AValue.Left,AValue.Bottom-AValue.Top);
+end;
+
 procedure TOGLApplication.GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);
 begin
   glGetFloatv(GL_PROJECTION_MATRIX, @AMatProj);
@@ -256,8 +301,19 @@ begin
 end;
 
 procedure TOGLApplication.SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);
+var aval:DWORD;
 begin
-
+  case AFilter of
+    atLinear:aval := GL_LINEAR;
+    atAnisotropic:aval := GL_LINEAR;
+  else
+    aval := GL_NEAREST;
+  end;
+  case AFilterMode of
+    fmMagFilter:glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, aval);
+    fmMinFilter:glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, aval);
+    //fmMipFilter:glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIP_FILTER, aval);
+  end;
 end;
 
 {procedure TOGLApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
@@ -350,17 +406,39 @@ begin
       glPushMatrix;
       glMultMatrixf(@FMatrix);
 
-      glBegin(mode);
-      for i := 0 to high(FVertices) do
+      if FIndices = nil then
       begin
-        with FVertices[i] do
+        glBegin(mode);
+        for i := 0 to high(FVertices) do
         begin
-          glTexCoord2f(Texture.x,Texture.y);
-          glColor4f(Color.r / 255, Color.g / 255, Color.b / 255, Color.a / 255);
-          glVertex3f(Position.x,Position.y,Position.z);
+          with FVertices[i] do
+          begin
+            glTexCoord2f(Texture.x,Texture.y);
+            glColor4f(Color.r / 255, Color.g / 255, Color.b / 255, Color.a / 255);
+            glVertex3f(Position.x,Position.y,Position.z);
+          end;
         end;
+        glEnd;
+      end
+      else
+      begin
+	      glEnableClientState(GL_COLOR_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glEnableClientState(GL_VERTEX_ARRAY);
+
+        glColorPointer(4,GL_UNSIGNED_BYTE,0,@FColors[0]);
+        glTexCoordPointer(2,GL_FLOAT,0,@FTexCoords[0]);
+        glNormalPointer(GL_FLOAT,0,@FNormals[0]);
+        glVertexPointer(3,GL_FLOAT,0,@FPositions[0]);
+
+        glDrawElements(mode,high(FIndices)+1,GL_UNSIGNED_SHORT,@FIndices[0]);
+
+	      glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
       end;
-      glEnd;
       glPopMatrix;
     end;
   end;
@@ -373,7 +451,12 @@ end;
 
 procedure TOGLMesh.SetIndex(AIndex: TAdIndexArray);
 begin
-  //Copys the data from AIndex into FIndices
+  if FIndices <> nil then
+  begin
+    Finalize(FIndices);
+  end;
+  FIndices := Copy(AIndex);
+  DevideVertices;
 end;
 
 procedure TOGLMesh.SetMatrix(AMatrix: TAdMatrix);
@@ -393,11 +476,55 @@ begin
     Finalize(FVertices);
   end;
   FVertices := Copy(AVertices);
+  DevideVertices;
 end;
+
+procedure TOGLMesh.DevideVertices;
+var
+  i:integer;
+begin
+  if FColors <> nil then
+  begin
+    Finalize(FColors);
+  end;
+  if FNormals <> nil then
+  begin
+    Finalize(FNormals);
+  end;
+  if FTexCoords <> nil then
+  begin
+    Finalize(FTexCoords);
+  end;
+  if FPositions <> nil then
+  begin
+    Finalize(FPositions);
+  end;
+
+  if (FVertices <> nil) and (FIndices <> nil) then
+  begin
+    SetLength(FColors,length(FVertices));
+    SetLength(FNormals,length(FVertices));
+    SetLength(FTexCoords,length(FVertices));
+    SetLength(FPositions,length(FVertices));
+
+    for i := 0 to high(FVertices) do
+    begin
+      FColors[i].r := FVertices[i].Color.r;
+      FColors[i].g := FVertices[i].Color.g;
+      FColors[i].b := FVertices[i].Color.b;
+      FColors[i].a := FVertices[i].Color.a;
+
+      FNormals[i] := FVertices[i].Normal;
+      FPositions[i] := FVertices[i].Position;
+      FTexCoords[i] := FVertices[i].Texture;
+    end;
+  end;
+end;
+
 
 procedure TOGLMesh.Update;
 begin
-  //Nothing to do now.
+  //Nothing to do
 end;
 
 { TOGLBitmapTexture }

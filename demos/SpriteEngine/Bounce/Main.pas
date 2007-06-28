@@ -69,16 +69,15 @@ begin
     AdDraw.BeginScene;
     AdDraw.ClearSurface(clSkyBlue);
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
-    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
-    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
-    AdSpriteEngine.ViewPort := Rect(0,0,0,0);
+    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atLinear);
+    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atLinear);
     AdSpriteEngine.Draw;
     AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atPoint);
     AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atPoint);
     AdSpriteEngine.Dead;
     with AdDraw.Canvas do
     begin
-      Textout(0,0,inttostr(AdPerCounter.FPS));
+      Font.Textout(0,0,inttostr(AdPerCounter.FPS));
       Release;
     end;
     AdDraw.EndScene;
@@ -102,7 +101,7 @@ begin
 
   AdDraw := TAdDraw.Create(self);
   AdDraw.Options := AdDraw.Options + [doAntialias];
-  AdDraw.DllName := Settings.ReadString('set','dllname','AndorraDX93D.dll');
+  AdDraw.DllName := 'AndorraDX93D.dll';//Settings.ReadString('set','dllname','AndorraDX93D.dll');
 
   amessage.Text := 'Starting Application';
   amessage.Sender := 'Bounce.exe';
@@ -212,6 +211,7 @@ begin
             z := 2;
             sourcex := round(x);
             sourcey := round(y);
+            z := 1;
            end;
         end;
       end;
@@ -307,8 +307,8 @@ procedure TForm1.FormResize(Sender: TObject);
 begin
   if firsttime then
   begin
-    AdDraw.Finalize;
-    AdDraw.Initialize;
+    //AdDraw.Finalize;
+    //AdDraw.Initialize;
   end;
 end;
 
@@ -342,20 +342,22 @@ begin
 
   Color := RGB(random(255),random(255),random(255));
 
-  Light := TLightSprite.Create(Engine);
+  {Light := TLightSprite.Create(Engine);
   with Light do
   begin
     Z := -9;
     Range := 200;
     Falloff := 5;
     Color := clWhite;
-  end;
+  end;}
+
+  z := 1;
 end;
 
 
 procedure TBall.Dead;
 begin
-  Light.Dead;
+  //Light.Dead;
   inherited Dead;
 end;
 
@@ -402,9 +404,29 @@ begin
 end;
 
 procedure TBall.DoDraw;
+var
+  old:TColor;
 begin
+  with Engine.Surface.Canvas do
+  begin
+    Clear;
+    BlendMode := bmAdd;
+    DrawIn2D := false;
+
+    Brush.Color := Ad_ARGB(round(Alpha/2),255,255,255);
+    Brush.GradientColor := Ad_ARGB(0,255,255,255);
+    Pen.Style := apNone;
+    Circle(BoundsRect.Left+round(Width/2),BoundsRect.Top+round(Height/2),300);
+    Release;
+
+    DrawIn2D := true;
+    BlendMode := bmAlpha;
+  end;
   Image.Color := Color;
+  old := Engine.Surface.AmbientColor;
+  Engine.Surface.AmbientColor := RGB(255,255,255);
   inherited DoDraw;
+  Engine.Surface.AmbientColor := old;
 end;
 
 procedure TBall.DoMove(TimeGap: double);
@@ -440,12 +462,12 @@ begin
   begin
     Alpha := Alpha - 1000*TimeGap;
     if Alpha < 0 then Alpha := 0;    
-    Light.Color := RGB(round(Alpha),round(Alpha),round(Alpha));
+    //Light.Color := RGB(round(Alpha),round(Alpha),round(Alpha));
     if Alpha <= 20 then Dead;
   end;
 
-  Light.X := X+Width / 2;
-  Light.Y := Y+Height / 2;
+  //Light.X := X+Width / 2;
+  //Light.Y := Y+Height / 2;
 end;
 
 procedure TBall.Reset;
