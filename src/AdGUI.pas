@@ -258,6 +258,8 @@ type
       function NameExists(AName:string):boolean;
       function FindComponent(AName:string):TAdComponent;
 
+      function OwnsComponent(AComponent:TAdComponent):boolean;
+
       property Skin:TAdSkin read FSkin write SetSkin;
       property Parent:TAdComponent read FParent write FParent;
       property Components:TAdComponents read FComponents;
@@ -1059,6 +1061,18 @@ begin
   end;
 end;
 
+function TAdComponent.OwnsComponent(AComponent: TAdComponent): boolean;
+var
+  i:integer;
+begin
+  result := AComponent = self;
+  for i := 0 to Components.Count - 1 do
+  begin
+    result := Components[i].OwnsComponent(AComponent);
+    if result then break;
+  end;
+end;
+
 procedure TAdComponent.SetWidth(Value: integer);
 begin
   FWidth := Value;
@@ -1182,7 +1196,7 @@ begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
     begin
-      if (Components[i].Visible or DesignMode) and InRect(x,y,Components[i].BoundsRect) then
+      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect) or Components[i].MousePreview) then
       begin
         clicked := false;
         Components[i].MouseDown(Button,Shift,X,Y);
@@ -1225,7 +1239,7 @@ begin
     FMouseY := Y;
     for i := Components.Count-1 downto 0 do
     begin
-      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect)) then
+      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect) or Components[i].MousePreview) then
       begin
         Components[i].MouseMove(Shift,X,Y);
         clicked := false;
@@ -1296,7 +1310,7 @@ begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
     begin
-      if (Components[i].Visible or DesignMode) and InRect(x,y,Components[i].BoundsRect) then
+      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect) or Components[i].MousePreview) then
       begin
         clicked := false;
         overcomp := Components[i];

@@ -560,12 +560,17 @@ procedure TAdForm.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer);
 begin
   inherited;
-  FMX := X;
-  FMY := Y;
-  FDown := true;
-  
-  SetFocused;
-  BringToFront;
+  if not DesignMode then
+  begin
+    FMX := X;
+    FMY := Y;
+    FDown := true;
+
+    SetFocused;
+    BringToFront;
+
+    MousePreview := true;
+  end;
 end;
 
 procedure TAdForm.DoMouseMove(Shift: TShiftState; X, Y: Integer);
@@ -585,6 +590,7 @@ procedure TAdForm.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
 begin
   inherited;
   FDown := false;
+  KeyPreview := false;
 end;
 
 procedure TAdForm.DoResize;
@@ -648,7 +654,11 @@ end;
 procedure TAdForm.LooseFocus(Sender: TAdComponent);
 begin
   inherited;
-  FDown := false;
+  if not DesignMode then
+  begin
+    FDown := false;
+    if OwnsComponent(Sender) then BringToFront;
+  end;
 end;
 
 { TAdCheckBox }
