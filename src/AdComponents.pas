@@ -30,21 +30,30 @@ type
       constructor Create(AParent:TAdComponent);override;
       property SkinName:string read FSkinName write SetSkinName;
   end;
-  
+
   TAdForm = class(TAdComponent)
     private
       FCaption:string;
       FSkinItem:TAdSkinItem;
       FFixedPosition:boolean;
       FCenter:boolean;
-      FOldSize:TPoint;
       FCloseButton:TAdSkinBtn;
+      FMovable:boolean;
+      FMX,FMY:integer;
+      FDown:boolean;
       procedure SetCenter(AValue:boolean);
     protected
       procedure LoadSkinItem;override;
+
+      procedure LooseFocus(Sender:TAdComponent);override;
+
       procedure DoDraw;override;
-      procedure DoMove(timegap:double);override;
       procedure DoResize;override;
+
+      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
+      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
+      procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
+
       function GetShowCloseButton:boolean;
       procedure SetShowCloseButton(AValue:boolean);
     public
@@ -52,12 +61,14 @@ type
       destructor Destroy;override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+
       property CloseButton:TAdSkinBtn read FCloseButton;
     published
       property Caption:string read FCaption write FCaption;
       property FixedPosition:boolean read FFixedPosition write FFixedPosition;
       property Center:boolean read FCenter write SetCenter;
       property ShowCloseButton:boolean read GetShowCloseButton write SetShowCloseButton;
+      property Movable:boolean read FMovable write FMovable;
       property Font;
       property FontColor;
   end;
@@ -522,6 +533,9 @@ begin
   FCloseButton := TAdSkinBtn.Create(self);
   FCloseButton.SkinName := 'formclosebtn';
   FCloseButton.SubComponent := true;
+
+  FMovable := true;
+  CanGetFocus := true;
 end;
 
 destructor TAdForm.Destroy;
@@ -542,17 +556,35 @@ begin
   inherited DoDraw;
 end;
 
-procedure TAdForm.DoMove(timegap: double);
+procedure TAdForm.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
 begin
   inherited;
-  if FCenter then
+  FMX := X;
+  FMY := Y;
+  FDown := true;
+  
+  SetFocused;
+  BringToFront;
+end;
+
+procedure TAdForm.DoMouseMove(Shift: TShiftState; X, Y: Integer);
+begin
+  inherited;
+  if (FMovable) and (ssLeft in Shift) and FDown then
   begin
-    if (FOldSize.X <> Parent.Width) or
-       (FOldSize.Y <> Parent.Height) then
-    begin
-      SetCenter(FCenter);
-    end;
+    self.X := self.X + (X-FMX);
+    self.Y := self.Y + (Y-FMY);
+    FMX := X;
+    FMY := Y;
   end;
+end;
+
+procedure TAdForm.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited;
+  FDown := false;
 end;
 
 procedure TAdForm.DoResize;
@@ -560,6 +592,7 @@ begin
   inherited;
   FCloseButton.Y := (SpacerTop - FCloseButton.Height) div 2 - SpacerTop;
   FCloseButton.X := Width - SpacerRight - FCloseButton.Width - SpacerLeft;
+  SetCenter(FCenter);
 end;
 
 procedure TAdForm.LoadFromXML(aroot: TJvSimpleXMLElem);
@@ -570,6 +603,7 @@ begin
     FCaption := Value('caption','');
     Center := BoolValue('center',false);
     ShowCloseButton := BoolValue('showclosebutton',true);
+    FMovable := BoolValue('moveable',true);
   end;
 end;
 
@@ -581,6 +615,7 @@ begin
     Add('caption',FCaption);
     Add('center',FCenter);
     Add('showclosebutton',ShowCloseButton);
+    Add('movable',FMovable);
   end;
 end;
 
@@ -591,7 +626,6 @@ begin
   begin
     X := (Parent.Width - Width) div 2;
     Y := (Parent.Height - Height) div 2;
-    FOldSize := Point(Parent.Width,Parent.Height);
   end;
 end;
 
@@ -609,6 +643,12 @@ procedure TAdForm.LoadSkinItem;
 begin
   FSkinItem := Skin.ItemNamed['form'];
   SetSpacer(FSkinItem);
+end;
+
+procedure TAdForm.LooseFocus(Sender: TAdComponent);
+begin
+  inherited;
+  FDown := false;
 end;
 
 { TAdCheckBox }

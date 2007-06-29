@@ -162,7 +162,7 @@ type
       procedure DoDraw;virtual;
       procedure DoMove(TimeGap:double);virtual;
 
-      procedure LooseFocus(Sender:TAdComponent);
+      procedure LooseFocus(Sender:TAdComponent);virtual;
       function GetFocusedComponent:TAdComponent;
       
       procedure LoadSkinItem;virtual;
@@ -1231,7 +1231,7 @@ begin
         clicked := false;
         FMouseOver := false;
         overcomp := Components[i];
-        if overcomp.FDraging then
+        if overcomp.FDraging or (not DesignMode) then
         begin
           break;
         end;
@@ -1245,7 +1245,7 @@ begin
       end;
     end;
 
-    if FMousePreview and enabled then
+    if (FMousePreview) and enabled then
     begin
       DoMouseMove(Shift,X,Y);
     end;
@@ -1300,7 +1300,7 @@ begin
       begin
         clicked := false;
         overcomp := Components[i];
-        if Components[i].FDraging then
+        if Components[i].FDraging or (not DesignMode) then
         begin
           break;
         end;
