@@ -590,7 +590,7 @@ procedure TAdForm.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
 begin
   inherited;
   FDown := false;
-  KeyPreview := false;
+  MousePreview := false;
 end;
 
 procedure TAdForm.DoResize;

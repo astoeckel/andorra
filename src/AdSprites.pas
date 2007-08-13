@@ -184,8 +184,10 @@ type
       {Sets the type of the collision optimization.}
       property CollisionOptimizationTyp:TCollisionTyp read FCollisionTyp write SetCollisionOptimization;
 
+      {Returns the 2D-Matrix in which all sprites are sorted by their position. This Matrix may be used for fast accses on the sprites.}
       property SpriteField:TAd2DSpriteList read FSpriteField;
 
+      {Returns the Shape of the Sprite. Normaly this is nil. Shapes are used to make per-pixel collisions.}
       property Shape:TAdShape read FShape write SetShape;
     published
       {The absolute X Position of the sprite.}
@@ -268,7 +270,9 @@ type
       procedure SetAnimStop(AValue:integer);
       procedure SetPixelCheck(AValue:boolean);
     protected
+      //Creates the shape of the Sprite
       procedure CreateMask;virtual;
+      //Setter method of the Image-Property
       procedure SetImage(AValue:TAdImage);virtual;
       procedure SetHeight(AValue:double);override;
       procedure SetWidth(AValue:double);override;
@@ -277,6 +281,7 @@ type
     public
       //Creates an instance of TImageSprite
       constructor Create(AParent:TSprite);override;
+      //Destroys the instance of TImageSprite
       destructor Destroy;override;
       //The image which is drawn by the sprite.
       property Image:TAdImage read FImage write SetImage;
@@ -404,14 +409,23 @@ type
       procedure DoMove(TimeGap:double);override;
       function GetBoundsRect:TRect;override;
     public
+      //Creates an instance of TParticleSprite
       constructor Create(AParent:TSprite);override;
+      //Destroys the instance of TParticleSprite
       destructor Destroy;override;
+      //Emits an amout of particles
       procedure Emit(ACount:integer);
+      //Returns the particle system the sprite uses. Read only.
       property PartSys:TAdParticleSystem read FPartSys;
+      //If the property is not zero, n particles may be created
       property EmissionCount:integer read FEmissionCount write SetEmissionCount;
+      //The Image the particle system uses
       property Image:TAdImage read FImage write SetImage;
+      //May be used to move the point where the particles are created. Normaly it is zero, and the particles are created in the center of the sprite
       property EmissionX:double read FEmissionX write FEmissionX;
+      //May be used to move the point where the particles are created. Normaly it is zero, and the particles are created in the center of the sprite
       property EmissionY:double read FEmissionY write FEmissionY;
+      //If true (preset), the sprite may automaticly free itsself, when there are no particles.
       property AutoDeath:boolean read FAutoDeath write FAutoDeath;
   end;
 

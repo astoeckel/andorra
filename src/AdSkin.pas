@@ -13,6 +13,7 @@
 * Comment: Contains classes for skin management of gui components
 }
 
+{Contains classes for the skin management of the gui components}
 unit AdSkin;
 
 interface
@@ -20,22 +21,41 @@ interface
 uses SysUtils, Classes, AdDraws, AdClasses, JvSimpleXML, AdXML, AdList;
 
 type
-  TAdSkinDrawType = (dtWrap,dtStretch);
+  //Defines the type of drawing elements. Currently only Stretch is supported.
+  TAdSkinDrawType = (
+    dtWrap,//<The image is repeated like a wallpaper
+    dtStretch//<The images is streched to fit
+  );
+  
+  //Anchors are used to resize the skin elements properly. The values have the same meaning as in the VCL
   TAdAnchor = (aaLeft,aaTop,aaBottom,aaRight);
+  //A set of TAdAnchor
   TAdAnchors = set of TAdAnchor;
 
+  //A skin element represents one single region which may contain an image.
   TAdSkinElem = class
     public
+      //The drawtype of the element
       Typ:TAdSkinDrawType;
+      //The anchors of the element
       Anchors:TAdAnchors;
+      //The coordinates of the element
       X1,X2,Y1,Y2:integer;
+      //The image coordinates of the element
       ImgSrcX1,ImgSrcX2,ImgSrcY1,ImgSrcY2:integer;
+      //Used in the Editor
       Selected:boolean;
+      //Defines wether this element, is the element which will be the client region of the component
       ClientRect:boolean;
+      //Array which contains the imageindex of this element for each state. 
       Images:array of integer;
+      //Loads the element from a JvSimpleXMlComponent
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
+      //Saves the element to a JvSimpleXMlComponent
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+      //Creates an instance of the element
       constructor Create;
+      //Destroys the instance of the element
       destructor Destroy;override;            
   end;
 
