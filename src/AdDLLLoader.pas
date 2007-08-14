@@ -22,7 +22,7 @@ unit AdDLLLoader;
 
 interface
 
-uses SysUtils, Windows, AdClasses;
+uses SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses;
 
 //This is the class which loads the plugin DLL
 type TAndorraDllLoader = class
@@ -69,7 +69,11 @@ begin
     begin
       UnLoadLibrary;
     end;
-    DllHandle := Windows.LoadLibrary(PChar(ExtractFilePath(ParamStr(0))+afile));
+    {$IFDEF Win32}
+      DllHandle := Windows.LoadLibrary(PChar(ExtractFilePath(ParamStr(0))+afile));
+    {$ELSE}
+      DllHandle := dynlibs.LoadLibrary(PChar(ExtractFilePath(ParamStr(0))+afile));
+    {$ENDIF}
     if LibraryLoaded then
     begin
       @CreateApplication := GetProcAddress(DllHandle, 'CreateApplication');
