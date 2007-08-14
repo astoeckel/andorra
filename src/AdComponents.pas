@@ -35,13 +35,13 @@ type
     private
       FCaption:string;
       FSkinItem:TAdSkinItem;
-      FFixedPosition:boolean;
       FCenter:boolean;
       FCloseButton:TAdSkinBtn;
       FMovable:boolean;
       FMX,FMY:integer;
       FDown:boolean;
       procedure SetCenter(AValue:boolean);
+      procedure CreateButtons;
     protected
       procedure LoadSkinItem;override;
 
@@ -65,7 +65,6 @@ type
       property CloseButton:TAdSkinBtn read FCloseButton;
     published
       property Caption:string read FCaption write FCaption;
-      property FixedPosition:boolean read FFixedPosition write FFixedPosition;
       property Center:boolean read FCenter write SetCenter;
       property ShowCloseButton:boolean read GetShowCloseButton write SetShowCloseButton;
       property Movable:boolean read FMovable write FMovable;
@@ -421,6 +420,8 @@ begin
   FStateNr := 0;
   FState := bsNormal;
   AcceptChildComponents := false;
+  MinWidth := 20;
+  MinHeight := 20;
 end;
 
 destructor TAdButton.Destroy;
@@ -530,12 +531,17 @@ end;
 constructor TAdForm.Create(AParent: TAdComponent);
 begin
   inherited;
+  CreateButtons;
+
+  FMovable := false;
+  CanGetFocus := true;
+end;
+
+procedure TAdForm.CreateButtons;
+begin
   FCloseButton := TAdSkinBtn.Create(self);
   FCloseButton.SkinName := 'formclosebtn';
   FCloseButton.SubComponent := true;
-
-  FMovable := true;
-  CanGetFocus := true;
 end;
 
 destructor TAdForm.Destroy;
@@ -604,12 +610,14 @@ end;
 procedure TAdForm.LoadFromXML(aroot: TJvSimpleXMLElem);
 begin
   inherited;
+  CreateButtons;
+  DoResize;
   with aroot.Properties do
   begin
     FCaption := Value('caption','');
     Center := BoolValue('center',false);
     ShowCloseButton := BoolValue('showclosebutton',true);
-    FMovable := BoolValue('moveable',true);
+    FMovable := BoolValue('moveable',false);
   end;
 end;
 
@@ -667,6 +675,8 @@ constructor TAdCheckBox.Create(AParent: TAdComponent);
 begin
   inherited;
   AcceptChildComponents := false;
+  MinWidth := 20;
+  MinHeight := 20;
 end;
 
 procedure TAdCheckBox.DoDraw;
@@ -974,8 +984,8 @@ begin
   FImgDisabled := TAdResourceImage.Create(AdDraw);
   FImgCheckedHover := TAdResourceImage.Create(AdDraw);
   AcceptChildComponents := false;
-  MinWidth := 50;
-  MinHeight := 50;
+  MinWidth := 20;
+  MinHeight := 20;
 end;
 
 destructor TAdBitmapButton.Destroy;
@@ -1174,8 +1184,8 @@ constructor TAdLabel.Create(AParent: TAdComponent);
 begin
   inherited;
   AcceptChildComponents := false;
-  MinWidth := 50;
-  MinHeight := 50;
+  MinWidth := 20;
+  MinHeight := 20;
 end;
 
 procedure TAdLabel.DoDraw;
