@@ -59,8 +59,6 @@ end;
 
 procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
 var
-  i:integer;
-  b:byte;
   ms:TMemoryStream;
 begin
   if XMLElem.Properties.Value('source','') <> '' then

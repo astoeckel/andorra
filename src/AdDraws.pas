@@ -802,7 +802,6 @@ type
       procedure PushObject;
       procedure SetupDisplay;
       procedure ResetDisplay;
-      property CanvasObjects:TAdCanvasObjectList read FCanvasObjects;
     public
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
@@ -840,6 +839,7 @@ type
       property Persistent:Boolean read FPersistent write FPersistent;
       property DrawPersistent:Boolean read FDrawPersistent write FDrawPersistent;
       property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
+      property CanvasObjects:TAdCanvasObjectList read FCanvasObjects;
   end;
 
   //Class for calculating the FPS
@@ -2309,7 +2309,7 @@ var
   bmp:TAdBitmap;
 begin
   fmt := nil;
-  ext := ExtractFileExt(AFile);
+  ext := lowercase(ExtractFileExt(AFile));
   for i := 0 to RegisteredFormats.Count-1 do
   begin
     cref := TPictFormatClass(GetClass(RegisteredFormats[i]));
