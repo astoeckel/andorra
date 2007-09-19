@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ImgList, ComCtrls, Menus, ToolWin, ExtCtrls, XPMan, StdCtrls,
-  ActnList, AdDraws, SetDlg, AdPNG, AdClasses, ExtDlgs, CompDlg;
+  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdPNG, AdJPEG;
 
 type
   TMainDlg = class(TForm)
@@ -695,8 +695,11 @@ begin
             length(ExtractFileExt(OpenPictureDialog1.Files[i]))))) do
       begin
         Screen.Cursor := crHourglass;
-        Texture.LoadGraphicFromFile(OpenPictureDialog1.Files[i],true,clNone);
-        Screen.Cursor := crDefault;
+        try
+          Texture.LoadGraphicFromFile(OpenPictureDialog1.Files[i],true,clNone);
+        finally
+          Screen.Cursor := crDefault;
+        end;
       end;
     end;
     AdImageList.Restore;

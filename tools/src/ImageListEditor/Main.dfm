@@ -3,7 +3,7 @@ object MainDlg: TMainDlg
   Top = 0
   BorderStyle = bsSingle
   Caption = 'Image List Editor'
-  ClientHeight = 626
+  ClientHeight = 646
   ClientWidth = 714
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -23,26 +23,28 @@ object MainDlg: TMainDlg
     Left = 225
     Top = 24
     Width = 489
-    Height = 585
+    Height = 605
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
     OnMouseDown = Panel1MouseDown
     OnMouseMove = Panel1MouseMove
     OnResize = Panel1Resize
+    ExplicitHeight = 585
   end
   object Panel2: TPanel
     Left = 0
     Top = 24
     Width = 225
-    Height = 585
+    Height = 605
     Align = alLeft
     BevelOuter = bvNone
     BorderWidth = 5
     TabOrder = 1
+    ExplicitHeight = 585
     object Splitter1: TSplitter
       Left = 5
-      Top = 401
+      Top = 421
       Width = 215
       Height = 3
       Cursor = crVSplit
@@ -57,7 +59,7 @@ object MainDlg: TMainDlg
       Left = 5
       Top = 5
       Width = 215
-      Height = 396
+      Height = 416
       Align = alClient
       Caption = 'Library:'
       DragMode = dmAutomatic
@@ -66,6 +68,7 @@ object MainDlg: TMainDlg
       Padding.Right = 2
       Padding.Bottom = 2
       TabOrder = 0
+      ExplicitHeight = 396
       object Image2: TImage
         Left = 120
         Top = 240
@@ -106,7 +109,7 @@ object MainDlg: TMainDlg
         Left = 4
         Top = 17
         Width = 207
-        Height = 375
+        Height = 395
         Align = alClient
         Columns = <
           item
@@ -137,11 +140,12 @@ object MainDlg: TMainDlg
         OnDragDrop = ListView1DragDrop
         OnDragOver = ListView1DragOver
         OnKeyDown = ListView1KeyDown
+        ExplicitHeight = 375
       end
     end
     object GroupBox1: TGroupBox
       Left = 5
-      Top = 404
+      Top = 424
       Width = 215
       Height = 176
       Align = alBottom
@@ -152,6 +156,7 @@ object MainDlg: TMainDlg
       Padding.Bottom = 3
       TabOrder = 1
       Visible = False
+      ExplicitTop = 404
       object ListView2: TListView
         Left = 5
         Top = 42
@@ -306,12 +311,13 @@ object MainDlg: TMainDlg
   end
   object ProgressBar1: TProgressBar
     Left = 0
-    Top = 609
+    Top = 629
     Width = 714
     Height = 17
     Align = alBottom
     TabOrder = 3
     Visible = False
+    ExplicitTop = 609
   end
   object MainMenu1: TMainMenu
     Images = ImageList1

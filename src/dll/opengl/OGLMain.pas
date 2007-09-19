@@ -65,7 +65,6 @@ type
       function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
 
-
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
