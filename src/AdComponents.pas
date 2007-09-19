@@ -21,15 +21,17 @@ type
     protected
       procedure GetStateNr;
       procedure DoDraw;override;
-      procedure DoMouseEnter;override;
-      procedure DoMouseLeave;override;
-      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
-      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
+      function DoMouseEnter:boolean;override;
+      function DoMouseLeave:boolean;override;
+      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
       procedure LoadSkinItem;override;
     public
       constructor Create(AParent:TAdComponent);override;
       property SkinName:string read FSkinName write SetSkinName;
   end;
+
+  TCloseEvent = procedure(Sender:TObject; var CanClose:boolean) of object;
 
   TAdForm = class(TAdComponent)
     private
@@ -40,6 +42,7 @@ type
       FMovable:boolean;
       FMX,FMY:integer;
       FDown:boolean;
+      FOnClose:TCloseEvent;
       procedure SetCenter(AValue:boolean);
       procedure CreateButtons;
     protected
@@ -48,22 +51,24 @@ type
       procedure LooseFocus(Sender:TAdComponent);override;
 
       procedure DoDraw;override;
-      procedure DoResize;override;
+      function DoResize:boolean;override;
 
-      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
-      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
-      procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
+      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
 
       function GetShowCloseButton:boolean;
       procedure SetShowCloseButton(AValue:boolean);
+      procedure CloseBtnClick(Sender:TObject);
     public
       constructor Create(AParent:TAdComponent);override;
       destructor Destroy;override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
-
+      procedure Close;
       property CloseButton:TAdSkinBtn read FCloseButton;
     published
+      property OnClose:TCloseEvent read FOnClose write FOnClose;
       property Caption:string read FCaption write FCaption;
       property Center:boolean read FCenter write SetCenter;
       property ShowCloseButton:boolean read GetShowCloseButton write SetShowCloseButton;
@@ -128,10 +133,10 @@ type
       procedure GetStateNr;
       procedure LoadSkinItem;override;
       procedure DoDraw;override;
-      procedure DoMouseEnter;override;
-      procedure DoMouseLeave;override;
-      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
-      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);override;
+      function DoMouseEnter:boolean;override;
+      function DoMouseLeave:boolean;override;
+      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
     public
       constructor Create(AParent:TAdComponent);override;
       destructor Destroy;override;
@@ -159,10 +164,10 @@ type
     protected
       procedure LoadSkinItem; override;
       procedure DoDraw; override;
-      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
-      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
-      procedure DoMouseEnter; override;
-      procedure DoMouseLeave; override;
+      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean;override;
+      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean;override;
+      function DoMouseEnter:boolean;override;
+      function DoMouseLeave:boolean;override;
     public
       constructor Create(AParent:TAdComponent);override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
@@ -224,10 +229,10 @@ type
     protected
       procedure DoMove(TimeGap:double); override;
       procedure DoDraw; override;
-      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
-      procedure DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer); override;
-      procedure DoMouseEnter; override;
-      procedure DoMouseLeave; override;
+      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean; override;
+      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean; override;
+      function DoMouseEnter:boolean; override;
+      function DoMouseLeave:boolean; override;
     public
       constructor Create(AParent:TAdComponent);override;
       destructor Destroy;override;
@@ -319,12 +324,12 @@ type
       procedure LoadSkinItem; override;
       procedure DoDraw;override;
       procedure DoMove(timegap:double);override;
-      procedure DoKeyDown(Key:Word;shift:TShiftState);override;
-      procedure DoKeyPress(Key:Char);override;
-      procedure DoClick;override;
-      procedure DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
-        Y: integer);override;
-      procedure DoMouseMove(Shift: TShiftState; X, Y: Integer);override;
+      function DoKeyDown(Key:Word;shift:TShiftState):boolean;override;
+      function DoKeyPress(Key:Char):boolean;override;
+      function DoClick:boolean;override;
+      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+        Y: integer):boolean;override;
+      function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
       property CursorVisible:boolean read FCursorVisible write FCursorVisible;
       property CursorTime:double read FCursorTime write FCursorTime;
     public
@@ -449,24 +454,26 @@ begin
   inherited DoDraw;
 end;
 
-procedure TAdButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseDown(Button,Shift,X,Y);
+  result := true;
   FState := bsDown;
   GetStateNr;
 end;
 
-procedure TAdButton.DoMouseEnter;
+function TAdButton.DoMouseEnter:boolean;
 begin
-  inherited;
+  inherited DoMouseEnter;
   FState := bsHover;
   GetStateNr;
+  result := true;
 end;
 
-procedure TAdButton.DoMouseLeave;
+function TAdButton.DoMouseLeave:boolean;
 begin
-  inherited;
+  inherited DoMouseLeave;
   if Focused then
   begin
     FState := bsFocus;
@@ -476,12 +483,14 @@ begin
     FState := bsNormal;
   end;
   GetStateNr;
+  result := true;
 end;
 
-procedure TAdButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseUp(Button,Shift,X,Y);
+  result := true;
   FState := bsHover;
   SetFocused;
   GetStateNr;
@@ -537,11 +546,32 @@ begin
   CanGetFocus := true;
 end;
 
+procedure TAdForm.Close;
+var
+  CanClose:boolean;
+begin
+  CanClose := true;
+  if Assigned(OnClose) then
+  begin
+    OnClose(self,CanClose);
+  end;
+  if CanClose then
+  begin
+    Visible := false;
+  end;
+end;
+
+procedure TAdForm.CloseBtnClick(Sender: TObject);
+begin
+  Close;
+end;
+
 procedure TAdForm.CreateButtons;
 begin
   FCloseButton := TAdSkinBtn.Create(self);
   FCloseButton.SkinName := 'formclosebtn';
   FCloseButton.SubComponent := true;
+  FCloseButton.OnClick := CloseBtnClick;
 end;
 
 destructor TAdForm.Destroy;
@@ -562,10 +592,11 @@ begin
   inherited DoDraw;
 end;
 
-procedure TAdForm.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdForm.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseDown(Button,Shift,X,Y);
+  result := true;
   if not DesignMode then
   begin
     FMX := X;
@@ -576,12 +607,14 @@ begin
     BringToFront;
 
     MousePreview := true;
+    LockEvents := true;
   end;
 end;
 
-procedure TAdForm.DoMouseMove(Shift: TShiftState; X, Y: Integer);
+function TAdForm.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseMove(Shift,X,Y);
+  result := true;
   if (FMovable) and (ssLeft in Shift) and FDown then
   begin
     self.X := self.X + (X-FMX);
@@ -591,17 +624,20 @@ begin
   end;
 end;
 
-procedure TAdForm.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdForm.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseUp(Button,Shift,X,Y);
+  result := true;
   FDown := false;
   MousePreview := false;
+  LockEvents := false;
 end;
 
-procedure TAdForm.DoResize;
+function TAdForm.DoResize:boolean;
 begin
-  inherited;
+  inherited DoResize;
+  result := true;
   FCloseButton.Y := (SpacerTop - FCloseButton.Height) div 2 - SpacerTop;
   FCloseButton.X := Width - SpacerRight - FCloseButton.Width - SpacerLeft;
   SetCenter(FCenter);
@@ -629,7 +665,7 @@ begin
     Add('caption',FCaption);
     Add('center',FCenter);
     Add('showclosebutton',ShowCloseButton);
-    Add('movable',FMovable);
+    Add('moveable',FMovable);
   end;
 end;
 
@@ -733,29 +769,33 @@ begin
   inherited DoDraw;
 end;
 
-procedure TAdCheckBox.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
-  X, Y: Integer);
+function TAdCheckBox.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseDown(Button,Shift,X,Y);
+  result := true;
   FState := bsDown;
 end;
 
-procedure TAdCheckBox.DoMouseEnter;
+function TAdCheckBox.DoMouseEnter:boolean;
 begin
-  inherited;
+  inherited DoMouseEnter;
+  result := true;
   FState := bsHover;
 end;
 
-procedure TAdCheckBox.DoMouseLeave;
+function TAdCheckBox.DoMouseLeave:boolean;
 begin
-  inherited;
+  inherited DoMouseLeave;
+  result := true;
   FState := bsNormal;
 end;
 
-procedure TAdCheckBox.DoMouseUp(Button: TMouseButton; Shift: TShiftState;
-  X, Y: Integer);
+function TAdCheckBox.DoMouseUp(Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseUp(Button,Shift,X,Y);
+  result := true;
   if GroupIndex = 0 then
   begin
     Checked := not Checked;
@@ -869,6 +909,7 @@ procedure TAdResourceImage.LoadFromFile(AFile: string; ATransparent: boolean;
   ATransparentColor: Integer);
 begin
   FImage.Texture.LoadGraphicFromFile(AFile,ATransparent,ATransparentColor);
+  FImage.Restore;
   FTransparent := false;
   FTransparentColor := clNone;
 end;
@@ -1037,10 +1078,11 @@ begin
   inherited;
 end;
 
-procedure TAdBitmapButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
-  X, Y: Integer);
+function TAdBitmapButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseDown(Button,Shift,X,Y);
+  result := true;
   if FImgDown.Loaded then
   begin
     FState := bsDown;
@@ -1052,18 +1094,20 @@ begin
   end;
 end;
 
-procedure TAdBitmapButton.DoMouseEnter;
+function TAdBitmapButton.DoMouseEnter:boolean;
 begin
-  inherited;
+  inherited DoMouseEnter;
+  result := true;
   if FImgHover.Loaded and (((not FCheckButton) or (not FDown)) or FImgCheckedHover.Loaded) then
   begin
     FState := bsHover;
   end;
 end;
 
-procedure TAdBitmapButton.DoMouseLeave;
+function TAdBitmapButton.DoMouseLeave:boolean;
 begin
-  inherited;
+  inherited DoMouseLeave;
+  result := true;
   if FImgNormal.Loaded and ((not FCheckButton) or (not FDown)) then
   begin
     FState := bsNormal;
@@ -1074,10 +1118,11 @@ begin
   end;
 end;
 
-procedure TAdBitmapButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdBitmapButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseUp(Button,Shift,X,Y);
+  result := true;
   if FImgNormal.Loaded then
   begin
     if ((not FCheckButton) or (not FDown)) or
@@ -1561,9 +1606,10 @@ end;
 
 { TAdEdit }
 
-procedure TAdEdit.DoClick;
+function TAdEdit.DoClick:boolean;
 begin
-  inherited;
+  inherited DoClick;
+  result := true;
   SetFocused;
 end;
 
@@ -1655,8 +1701,9 @@ const
   VK_END = 35;
   VK_RIGHT = 39;
 
-procedure TAdEdit.DoKeyDown(Key:Word;shift:TShiftState);
+function TAdEdit.DoKeyDown(Key:Word;shift:TShiftState):boolean;
 begin
+  result := true;
   CursorVisible := true;
   CursorTime := 0;
   if key = VK_BACK then
@@ -1765,9 +1812,10 @@ begin
   if SelStop > Length(Text) then SelStop := Length(Text);
 end;
 
-procedure TAdEdit.DoKeyPress(Key: Char);
+function TAdEdit.DoKeyPress(Key: Char):boolean;
 begin
-  inherited;
+  inherited DoKeyPress(Key);
+  result := true;
   if (ord(key) > 31) and ((ord(key) < 127) or (ord(key) > 159)) then
   begin
     if SelCount > 0 then
@@ -1828,16 +1876,20 @@ begin
   end;
 end;
 
-procedure TAdEdit.DoMouseMove(Shift: TShiftState; X, Y: Integer);
+function TAdEdit.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
 begin
+  inherited DoMouseMove(Shift,X,Y);
+  result := true;
   if ssLeft in Shift then
   begin
     SelStop := MouseToSelPos(X);
   end;
 end;
 
-procedure TAdEdit.DoMouseDown(Button:TMouseButton; Shift:TShiftState;X,Y:integer);
+function TAdEdit.DoMouseDown(Button:TMouseButton; Shift:TShiftState;X,Y:integer):boolean;
 begin
+  inherited DoMouseDown(Button,Shift,X,Y);
+  result := true;
   if Button = mbLeft then
   begin
     SelStart := MouseToSelPos(X);
@@ -1925,32 +1977,36 @@ begin
   end;
 end;
 
-procedure TAdSkinBtn.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdSkinBtn.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseDown(Button,Shift,X,Y);
+  result := true;
   FState := bsDown;
   GetStateNr;
 end;
 
-procedure TAdSkinBtn.DoMouseEnter;
+function TAdSkinBtn.DoMouseEnter:boolean;
 begin
-  inherited;
+  inherited DoMouseEnter;
+  result := true;
   FState := bsHover;
   GetStateNr;
 end;
 
-procedure TAdSkinBtn.DoMouseLeave;
+function TAdSkinBtn.DoMouseLeave:boolean;
 begin
-  inherited;
+  inherited DoMouseLeave;
+  result := true;
   FState := bsNormal;
   GetStateNr;
 end;
 
-procedure TAdSkinBtn.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer);
+function TAdSkinBtn.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer):boolean;
 begin
-  inherited;
+  inherited DoMouseUp(Button,Shift,X,Y);
+  result := true;
   FState := bsHover;
   GetStateNr;
 end;
