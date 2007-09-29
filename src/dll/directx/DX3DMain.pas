@@ -313,7 +313,7 @@ begin
     begin
       WriteLog(ltWarning,'Alphablending is disabled');
     end;
-    
+
     WriteLog(ltInfo,'Initialization complete.');
     result := true;
   end
@@ -350,8 +350,8 @@ begin
   FOptions := AValue;
   if Direct3DDevice9 <> nil then
   begin
-    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
-    Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
+    //Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
+    //Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
   end;
 end;
 
@@ -368,7 +368,7 @@ begin
   case AFilterMode of
     fmMagFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, aval);
     fmMinFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MINFILTER, aval);
-    fmMipFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, aval);
+//    fmMipFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, aval);
   end;
 end;
 

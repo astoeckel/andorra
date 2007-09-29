@@ -31,8 +31,37 @@ begin
   result := TOGLApplication.Create;
 end;
 
+procedure Andorra2DLibraryInformation(var libinfo:TAd2DLibInfo);stdcall;
+begin
+  with libinfo do
+  begin
+    LibTitle := 'Andorra OpenGL Plugin';
+    LibAuthor := '(c) by Andreas Stöckel 2007';
+    LibDescription := 'This plugin wraps around the OpenGL graphicssystem.';
+    LibVersion := '0.2 ALPHA';
+    LibImage := 'ogl.png';
+  end;
+end;
+
+procedure Andorra2DLibraryAbilities(var libabilities:TAd2DLibAbilities);stdcall;
+begin
+  with libabilities do
+  begin
+    LibFullscreen := false;
+    LibWindowed := true;
+    LibHardware := true;
+    LibSoftware := false;
+    LibAntialias := false;
+    LibLights := true;
+    Lib3D := true;
+    LibVSync := false;
+  end;
+end;
+
 exports
-  CreateApplication;
+  CreateApplication,
+  Andorra2DLibraryInformation,
+  Andorra2DLibraryAbilities;
 
 begin
 end.

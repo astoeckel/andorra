@@ -150,7 +150,7 @@
 			<VersionInfo Name="MajorVer">0</VersionInfo>
 			<VersionInfo Name="MinorVer">2</VersionInfo>
 			<VersionInfo Name="Release">0</VersionInfo>
-			<VersionInfo Name="Build">10</VersionInfo>
+			<VersionInfo Name="Build">16</VersionInfo>
 			<VersionInfo Name="Debug">False</VersionInfo>
 			<VersionInfo Name="PreRelease">False</VersionInfo>
 			<VersionInfo Name="Special">False</VersionInfo>
@@ -162,7 +162,7 @@
 		<VersionInfoKeys>
 			<VersionInfoKeys Name="CompanyName">FAll Entertainment</VersionInfoKeys>
 			<VersionInfoKeys Name="FileDescription">The Andorra 2D OpenGL Plugin</VersionInfoKeys>
-			<VersionInfoKeys Name="FileVersion">0.2.0.10</VersionInfoKeys>
+			<VersionInfoKeys Name="FileVersion">0.2.0.16</VersionInfoKeys>
 			<VersionInfoKeys Name="InternalName">AndorraOGL.dll</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalCopyright">(c) by Andreas Stöckel</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys>

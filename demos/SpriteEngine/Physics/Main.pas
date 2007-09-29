@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPng;
+  Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPng, AdSetupDlg;
 
 type
   TPlayer = class(TPhysicalCylinderSprite);
@@ -22,7 +22,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TPerformanceCounter;
     AdSpriteEngine:TSpriteEngine;
     AdImageList:TAdImageList;
@@ -45,97 +45,111 @@ implementation
 
 //Initialization
 procedure TForm1.FormCreate(Sender: TObject);
-var i:integer;
+var
+  i:integer;
+  AdSetupDlg:TAdSetup;
 begin
   AdPerCounter := TPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
-  AdDraw1.Options := AdDraw1.Options + [doAntialias];
-  if AdDraw1.Initialize then
+  AdDraw := TAdDraw.Create(self);
+
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw;
+  AdSetupDlg.Form := self;
+  AdSetupDlg.Sections := AdSetupDlg.Sections - [dlgResolution];
+
+  if AdSetupDlg.Execute then
   begin
-    Application.OnIdle := Idle;
-
-    AdSpriteEngine := TSpriteEngine.Create(nil);
-    AdSpriteEngine.Surface := AdDraw1;
-
-    AdImageList := TAdImageList.Create(AdDraw1);
-    AdImageList.LoadFromFile(path+'main.ail');
-    AdImageList.Restore;
-
-    with TPhysicalApplication.Create(AdSpriteEngine) do
+    if AdDraw.Initialize then
     begin
-      SolverModel := smExact;
-    end;
+      Application.OnIdle := Idle;
 
-    randomize;
+      AdSpriteEngine := TSpriteEngine.Create(nil);
+      AdSpriteEngine.Surface := AdDraw;
 
-    with TBackgroundSprite.Create(AdSpriteEngine) do
-    begin
-      Image := AdImageList.Find('newton');
-      Z := -10;
-    end;
+      AdImageList := TAdImageList.Create(AdDraw);
+      AdImageList.LoadFromFile(path+'main.ail');
+      AdImageList.Restore;
 
-    for i := 0 to 50 do
-    begin
-      case random(1) of
-       0:with TPhysicalCylinderSprite.Create(AdSpriteEngine) do
-         begin
-           X := random(40)+(i mod 5 + 1) * 100;
-           Y := i div 4 * 40;
-           Image := AdImageList.Find('cylinder');
-           Mass := 1;
-           InitializeShape;
-        end;
-       1:with TPhysicalBoxSprite.Create(AdSpriteEngine) do
-         begin
-           X := random(40)+(i mod 5 + 1) * 100;
-           Y := i div 4 * 40;
-           Image := AdImageList.Find('box');
-           Mass := 10;
-           InitializeShape;
-        end;      
+      with TPhysicalApplication.Create(AdSpriteEngine) do
+      begin
+        SolverModel := smExact;
       end;
 
-    end;
+      randomize;
 
-    for i := 0 to 10 do
-    begin
-      with TPhysicalCylinderSprite.Create(AdSpriteEngine) do
+      with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
-        X := i * 60 + 32;
-        Y := 400 - (i mod 3)*100;
-        Image := AdImageList.Find('point');
+        Image := AdImageList.Find('newton');
+        Z := -10;
+      end;
+
+      for i := 0 to 25 do
+      begin
+        case random(2) of
+         0:with TPhysicalCylinderSprite.Create(AdSpriteEngine) do
+           begin
+             X := random(40)+(i mod 5 + 1) * 100;
+             Y := i div 4 * 40;
+             Image := AdImageList.Find('cylinder');
+             Mass := 1;
+             InitializeShape;
+          end;
+         1:with TPhysicalBoxSprite.Create(AdSpriteEngine) do
+           begin
+             X := random(40)+(i mod 5 + 1) * 100;
+             Y := i div 4 * 40;
+             Image := AdImageList.Find('box');
+             Mass := 10;
+             InitializeShape;
+          end;      
+        end;
+
+      end;
+
+      for i := 0 to 10 do
+      begin
+        with TPhysicalCylinderSprite.Create(AdSpriteEngine) do
+        begin
+          X := i * 60 + 32;
+          Y := 400 - (i mod 3)*100;
+          Image := AdImageList.Find('point');
+          Typ := ptStatic;
+          InitializeShape;
+        end;
+      end;
+
+      with TPhysicalBoxSprite.Create(AdSpriteEngine) do
+      begin
+        X := 0;
+        Y := 690;
+        Image := AdImageList.Find('plate');
+        Width := ClientWidth;
         Typ := ptStatic;
         InitializeShape;
       end;
-    end;
 
-    with TPhysicalBoxSprite.Create(AdSpriteEngine) do
+      player := TPlayer.Create(AdSpriteEngine);
+      with player do
+      begin
+        X := 200;
+        Y := 500;
+        Image := AdImageList.Find('cylinder');
+        Mass := 20;
+        InitializeShape;
+      end;
+
+    end
+    else
     begin
-      X := 0;
-      Y := 690;
-      Image := AdImageList.Find('plate');
-      Width := ClientWidth;
-      Typ := ptStatic;
-      InitializeShape;
+      ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
+                  'mode or another video adapter.');
+      halt;
     end;
-
-    player := TPlayer.Create(AdSpriteEngine);
-    with player do
-    begin
-      X := 200;
-      Y := 500;
-      Image := AdImageList.Find('cylinder');
-      Mass := 20;
-      InitializeShape;
-    end;
-
   end
   else
   begin
-    ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
-                'mode or another video adapter.');
     halt;
   end;
 end;
@@ -145,7 +159,7 @@ begin
   AdImageList.Free;
   AdSpriteEngine.Free;
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TForm1.FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -176,18 +190,18 @@ end;
 //Render
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
     Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
 
-    AdDraw1.ClearSurface(clBlack);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(clBlack);
+    AdDraw.BeginScene;
     AdSpriteEngine.Move(AdPerCounter.TimeGap / 1000);
     AdSpriteEngine.Draw;
     AdSpriteEngine.Dead;
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdDraw.EndScene;
+    AdDraw.Flip;
 
   end;
   Done := false;

@@ -160,35 +160,7 @@ begin
   result := false;
   WriteLog(ltNone,'Try to init Andorra OpenGL Plugin.');
   {$IFDEF AdLinux}
-  {//This part is taken from the TOpenGLBox component by Kostas "Bad Sector" Michalopoulos
-  GWindow:=PGtkWidget(AWnd)^.window;
-  FWindow:=PGdkWindowPrivate(GWindow)^.xwindow;
-  FDisplay:=PGdkWindowPrivate(GWindow)^.xdisplay;
-  AttrList[0]:=GLX_RGBA;
-  AttrList[1]:=GLX_DOUBLEBUFFER;
-  AttrList[2]:=GLX_RED_SIZE;
-  AttrList[3]:=8;
-  AttrList[4]:=GLX_GREEN_SIZE;
-  AttrList[5]:=8;
-  AttrList[6]:=GLX_BLUE_SIZE;
-  AttrList[7]:=8;
-  AttrList[8]:=GLX_DEPTH_SIZE;
-  AttrList[9]:=8;
-  AttrList[10]:=GLX_STENCIL_SIZE;
-  AttrList[11]:=8;
-  AttrList[12]:=0;
-  XVInfo:=glXChooseVisual(FDisplay, DefaultScreen(FDisplay), @AttrList[0]);
 
-  CMap:=XCreateColormap(FDisplay, FWindow, XVInfo^.visual, AllocNone);
-
-  FillChar(WinAttr, SizeOf(WinAttr), 0);
-  WinAttr.event_mask:=ExposureMask;
-  WinAttr.colormap:=CMap;
-
-  FGLWin:=XCreateWindow(FDisplay, FWindow, 0, 0, Width, Height, 0, XVInfo^.depth, InputOutput, XVInfo^.visual, CWColormap, @WinAttr);
-
-  FRC:=glXCreateContext(FDisplay, XVInfo, nil, True);
-  glXMakeCurrent(FDisplay, FGLWin, FRC); }
   {$ELSE}
   if InitOpenGL then
   begin
@@ -264,8 +236,11 @@ end;
 procedure TOGLApplication.Setup2DScene(AWidth, AHeight: integer);
 begin
   glMatrixMode(GL_PROJECTION);
+
   glLoadIdentity;
-  glOrtho(0,AWidth,AHeight,0,0,128);
+  glViewPort(0,0,AWidth, AHeight);
+  gluOrtho2D(0,AWidth,AHeight,0);
+  
   glMatrixMode(GL_MODELVIEW);
 end;
 

@@ -540,7 +540,7 @@ end;
 procedure TMainDlg.FormCreate(Sender: TObject);
 begin
   AdDraw1 := TAdDraw.Create(Panel10);
-  AdDraw1.DllName := 'AndorraDX93D.dll'; 
+  AdDraw1.DllName := 'AndorraOGL.dll'; 
 
   HandleList := THandleList.Create;
 
@@ -892,8 +892,7 @@ procedure TMainDlg.Panel10Resize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    AdDraw1.Finalize;
-    AdDraw1.Initialize;
+    AdDraw1.Setup2DScene;
   end;
 end;
 

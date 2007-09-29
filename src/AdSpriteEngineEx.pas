@@ -46,7 +46,7 @@ begin
 
   FRotation := 0;
   FViewPort := Rect(0,0,0,0);
-  FZoom := 1;
+  Zoom := 1;
 end;
 
 procedure TSpriteEngineEx.Draw;

@@ -445,8 +445,7 @@ procedure TDesignerDlg.FormResize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    //AdDraw1.Finalize;
-    //AdDraw1.Initialize;
+    AdDraw1.Setup2DScene;
   end;
 end;
 

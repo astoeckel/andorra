@@ -25,8 +25,8 @@ unit AdDraws;
 
 interface
 
-uses {$IFDEF WIN32}Windows,{$ELSE}Libc,{$ENDIF}Controls, Math, {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdClasses, AdDLLLoader,
-     Graphics, Huffman, AdBitmapEffects, AdList;
+uses {$IFDEF WIN32}Windows,{$ELSE}Libc,{$ENDIF}Controls, Math, {$INCLUDE AdTypes.inc},
+     SysUtils, Classes, AdClasses, AdDLLLoader, Graphics, Huffman, AdBitmapEffects, AdList;
 
 type
 
@@ -126,7 +126,7 @@ type
   public
     {The Andorra Dll Loader. You can use this class to get direct control over
     the engine.}
-    AdDllLoader : TAndorraDllLoader;
+    AdDllLoader : TAdDllLoader;
     {The Andorra Reference for the DllLoader}
     AdAppl:TAd2DApplication;
     //This property contains the diplay settings for fullscreen mode (width, height and bitcount)
@@ -846,6 +846,7 @@ type
   TPerformanceCounter = class
     private
       lt,th,ffps:integer;
+      FCalculated:boolean;
     public
       //Time between the frames in ms
       TimeGap:integer;
@@ -892,7 +893,7 @@ begin
 	inherited Create;
   FParent := AParent;
   FAmbientColor := clWhite;
-  AdDllLoader := TAndorraDllLoader.Create;
+  AdDllLoader := TAdDllLoader.Create;
   SetupThings;
 
   FLog := TAdLog.Create;
@@ -1120,6 +1121,7 @@ begin
   if AdAppl <> nil then
   begin
     FDisplayRect := GetDisplayRect;
+    AdAppl.Viewport := FDisplayRect;
     AdAppl.Setup2DScene(FDisplayRect.Right,FDisplayRect.Bottom);
   end;
 end;
@@ -2061,16 +2063,20 @@ procedure TPerformanceCounter.Calculate;
 var t:integer;
 begin
   t := GetTickCount;
-  timegap := t-lt;
-  th := th + timegap;
-  lt := t;
-  fFPS := fFPS + 1;
-  if th >= 1000 then
+  if FCalculated then
   begin
-    th := 0;
-    FPS := fFPS;
-    fFPS := 0;
+    timegap := t-lt;
+    th := th + timegap;
+    fFPS := fFPS + 1;
+    if th >= 1000 then
+    begin
+      th := 0;
+      FPS := fFPS;
+      fFPS := 0;
+    end;
   end;
+  lt := t;
+  FCalculated := true;
 end;
 
 constructor TPerformanceCounter.Create;
@@ -2080,6 +2086,7 @@ begin
   th := 0;
   timegap := 0;
   fps := 0;
+  FCalculated := false;
 end;
 
 { TSurfaceEventList }

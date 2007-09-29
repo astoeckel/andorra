@@ -25,15 +25,19 @@ Version 0.1.5 (Releases: BETA)
   Application side:
     - Improve SpriteEngine [DONE]
         
-Version 0.2 (Releases: ALPHA|BETA|STABLE)
+Version 0.2 (Releases: ALPHA1|ALPHA2|BETA|STABLE)
   Plugin side:
     - Transform the view matrix to a 3D view [DONE]
     - Draw lines [DONE]
-    - Viewports
+    - Viewports [DONE]
   Application side:
     - Canvas [DONE]
-    - GUI [In progress]   
-    - Extended Spriteengine [75%; Zoom works, but rotation doesn't]
+    - GUI [DONE]   
+    - Extended Spriteengine [75%; Zoom works, but rotation doesn't]   
+    
+  With Beta
+    - Improve Demos
+    - Add Terrain Class
   
   With Stable:
     - Linux support

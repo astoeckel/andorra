@@ -33,8 +33,37 @@ begin
   result := TDXApplication.Create;
 end;
 
+procedure Andorra2DLibraryInformation(var libinfo:TAd2DLibInfo);stdcall;
+begin
+  with libinfo do
+  begin
+    LibTitle := 'Andorra DirectX9 Plugin';
+    LibAuthor := '(c) by Andreas Stöckel 2007';
+    LibDescription := 'This plugin wraps around Direct3D 9.';
+    LibVersion := '0.2 ALPHA';
+    LibImage := 'dx93d.png';
+  end;
+end;
+
+procedure Andorra2DLibraryAbilities(var libabilities:TAd2DLibAbilities);stdcall;
+begin
+  with libabilities do
+  begin
+    LibFullscreen := true;
+    LibWindowed := true;
+    LibHardware := true;
+    LibSoftware := false;
+    LibAntialias := true;
+    LibLights := true;
+    Lib3D := true;
+    LibVSync := true;
+  end;
+end;
+
 exports
-  CreateApplication;
+  CreateApplication,
+  Andorra2DLibraryInformation,
+  Andorra2DLibraryAbilities;
 
 begin
 end.

@@ -194,6 +194,43 @@ type
   {An abstract class which represents a mesh (a set of vertices)  in Andorra's engine. }
   TAd2DMesh = class;
 
+  {A record that returns information about the current library. The information is returned by the Andorra2DLibraryInformation function}
+  TAd2DLibInfo = record
+    {The library title}
+    LibTitle:string[255];
+    {The author of the library}
+    LibAuthor:string[255];
+    {The description of the library}
+    LibDescription:string[255];
+    {The version of the library}
+    LibVersion:string[255];
+    {A path to an image}
+    LibImage:string[255];
+  end;
+
+  {A record that stores abilities of a plugin}
+  TAd2DLibAbilities = record
+    {Plugin may do fullscreen}
+    LibFullscreen:boolean;
+    {Plugin may do windowed applications}
+    LibWindowed:boolean;
+    {Plugin may do hardware acceleration}
+    LibHardware:boolean;
+    {Plugin may do software rendering}
+    LibSoftware:boolean;
+    {Plugin may do antialiasing}
+    LibAntialias:boolean;
+    {Library can do V-Sync}
+    LibVSync:boolean;
+    {Library may handle lights}
+    LibLights:boolean;
+    {Library may do 3D-rendering}
+    Lib3D:boolean;
+  end;
+
+  TAndorra2DLibraryInformation = procedure(var libinfo:TAd2DLibInfo);stdcall;
+  TAndorra2DLibraryAbilities = procedure(var libabilities:TAd2DLibAbilities);stdcall;
+
   {Abstract class which represents an Andorra 2D application.}
   TAd2DApplication = class
     private

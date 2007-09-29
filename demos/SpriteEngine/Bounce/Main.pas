@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, IniFiles, AdPng, StdCtrls;
+  Windows, Dialogs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, AdSetupDlg, AdPng, StdCtrls;
 
 type
   TForm1 = class(TForm)
@@ -14,7 +14,6 @@ type
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure FormResize(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
@@ -25,11 +24,11 @@ type
     AdSpriteEngine:TSpriteEngineEx;
     AdPictureCollection:TAdImageList;
     AdPerCounter:TPerformanceCounter;
-    settings:TIniFile;
     firsttime:boolean;
     lx,ly:integer;
     procedure ApplicationIdle(Sender:TObject;var Done:boolean);
-    { Public-Deklarationen }
+    procedure LoadLevel;
+    procedure LoadImages;
   end;
 
   TWall = class(TImageSprite);
@@ -41,7 +40,6 @@ type
     public
       SX,SY:double;
       SourceX,SourceY:integer;
-      Light:TLightSprite;
       procedure DoDraw;override;
       constructor Create(AParent:TSprite);override;
       procedure Dead;override;
@@ -63,23 +61,22 @@ implementation
 
 procedure TForm1.ApplicationIdle(Sender: TObject; var Done: boolean);
 begin
-  AdPerCounter.Calculate;
   if AdDraw.CanDraw then
   begin
+    AdPerCounter.Calculate;
+    
     AdDraw.BeginScene;
-    AdDraw.ClearSurface(clSkyBlue);
+
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
-    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atLinear);
-    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atLinear);
     AdSpriteEngine.Draw;
-    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atPoint);
-    AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atPoint);
     AdSpriteEngine.Dead;
+
     with AdDraw.Canvas do
     begin
-      Font.Textout(0,0,inttostr(AdPerCounter.FPS));
+      Textout(0,0,inttostr(AdPerCounter.FPS));
       Release;
     end;
+
     AdDraw.EndScene;
     AdDraw.Flip;
   end;
@@ -89,143 +86,43 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  ax,ay: Integer;
-  level:TStringList;
-  amessage:TAdLogMessage;
+  AdSetupDlg:TAdSetup;
 begin
-  ReportMemoryLeaksOnShutdown := true;
-
-  Randomize;
-
-  Settings := TIniFile.Create(ExtractFilePath(Application.ExeName)+'settings.ini');
+  AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
-  AdDraw.Options := AdDraw.Options + [doAntialias];
-  AdDraw.DllName := 'AndorraDX93D.dll';//Settings.ReadString('set','dllname','AndorraDX93D.dll');
 
-  amessage.Text := 'Starting Application';
-  amessage.Sender := 'Bounce.exe';
-  amessage.Typ := 'Starting';
-  AdDraw.Log.AddMessage(amessage);
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw;
+  AdSetupDlg.Form := self;
 
-  if Settings.ReadBool('set','light',false) then
+  if AdSetupDlg.Execute then
   begin
-    AdDraw.Options := AdDraw.Options+[doLights];
-  end;
-  if Settings.ReadBool('set','fullscreen',false) then
-  begin
-    AdDraw.Options := AdDraw.Options+[doFullscreen];
-  end;
-
-  AdDraw.Display.Width := Settings.ReadInteger('set','width',800);
-  AdDraw.Display.Height := Settings.ReadInteger('set','height',600);
-  AdDraw.Display.BitCount := Settings.ReadInteger('set','bits',32);
-  AdDraw.Display.Freq := Settings.ReadInteger('set','refrate',0);
-
-  if doFullscreen in AdDraw.Options then
-  begin
-    Top := 0;
-    Left := 0;
-    ClientWidth := AdDraw.Display.Width;
-    ClientHeight := AdDraw.Display.Height;
-    BorderStyle := bsNone;
-  end;
-
-  AdDraw.Initialize;
-
-  AdDraw.AmbientColor := RGB(96,96,96);
-
-  AdPictureCollection := TAdImageList.Create(AdDraw);
-  with AdPictureCollection.Add('wall')do
-  begin
-    Texture.LoadGraphicFromFile(path+'texture.bmp',false,clWhite);
-    Details := Settings.ReadInteger('set','meshdetail',16);
-  end;
-  with AdPictureCollection.Add('wallgras')do
-  begin
-    Texture.LoadGraphicFromFile(path+'texture2.bmp',false,clWhite);
-    Details := Settings.ReadInteger('set','meshdetail',16);
-  end;
-  with AdPictureCollection.Add('sky') do
-  begin
-    Texture.LoadGraphicFromFile(path+'sky.png',false,clBlack);
-    Color := rgb(200,200,255);
-  end;    
-  with AdPictureCollection.Add('ball') do
-  begin
-    Texture.LoadGraphicFromFile(path+'ball.bmp',true,clYellow);
-    PatternWidth := 32;
-    PatternHeight := 32;
-  end;
-
-  AdPictureCollection.Restore;
-
-  AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
-  AdSpriteEngine.Zoom := 3;
-
-  AdSpriteEngine.CollisionOptimizationTyp := ctOptimized;
-
-  level := TStringList.Create;
-  level.LoadFromFile(path+'level2.txt');
-
-  with TBackgroundSprite.Create(AdSpriteEngine) do
-  begin
-    Z := -10;
-    Image := AdPictureCollection.Find('sky');
-    Tiled := true;
-    Depth := 10;
-  end;
-
-  for ay := 0 to level.Count - 1 do
-  begin
-    for ax := 1 to length(level[ay]) do
+    AdDraw.Options := AdDraw.Options + [doLights];
+    if AdDraw.Initialize then
     begin
-      case level[ay][ax] of
-        'x':
-        begin
-          with TWall.Create(AdSpriteEngine) do
-          begin
-            Image := AdPictureCollection.Find('wall');
-            x := ax*128;
-            y := ay*128;
-            z := 0;
-          end;
-        end;
-        'X':
-        begin
-          with TWall.Create(AdSpriteEngine) do
-          begin
-            Image := AdPictureCollection.Find('wallgras');
-            x := ax*128;
-            y := ay*128;
-            z := 0;
-          end;
-        end;
-        'b':
-        begin
-          with TBall.Create(AdSpriteEngine) do
-          begin
-            Image := AdPictureCollection.Find('ball');
-            x := ax*128;
-            y := ay*128+128-height;
-            z := 2;
-            sourcex := round(x);
-            sourcey := round(y);
-            z := 1;
-           end;
-        end;
-      end;
+      AdDraw.AmbientColor := RGB(96,96,96);
+      AdPictureCollection := TAdImageList.Create(AdDraw);
+      AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
+
+      LoadImages;
+      LoadLevel;
+
+      Application.OnIdle := ApplicationIdle;
+      Randomize;
+    end
+    else
+    begin
+      ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
+                  'mode or another video adapter.');
+      halt;
     end;
+  end
+  else
+  begin
+    Halt;
   end;
-  level.Free;
-
-  Application.OnIdle := ApplicationIdle;
-
-  Settings.Free;
-
-  firsttime := true;
-
-  AdPerCounter := TPerformanceCounter.Create;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -303,13 +200,91 @@ begin
   AdSpriteEngine.Zoom := AdSpriteEngine.Zoom + WheelDelta / (1000 / AdSpriteEngine.Zoom);
 end;
 
-procedure TForm1.FormResize(Sender: TObject);
+procedure TForm1.LoadImages;
 begin
-  if firsttime then
+  with AdPictureCollection.Add('wall')do
   begin
-    //AdDraw.Finalize;
-    //AdDraw.Initialize;
+    Texture.LoadGraphicFromFile(path+'texture.bmp',false,clWhite);
+    Details := 16;
   end;
+  with AdPictureCollection.Add('wallgras')do
+  begin
+    Texture.LoadGraphicFromFile(path+'texture2.bmp',false,clWhite);
+    Details := 16;
+  end;
+  with AdPictureCollection.Add('sky') do
+  begin
+    Texture.LoadGraphicFromFile(path+'sky.png',false,clBlack);
+    Color := rgb(200,200,255);
+  end;
+  with AdPictureCollection.Add('ball') do
+  begin
+    Texture.LoadGraphicFromFile(path+'ball.bmp',true,clYellow);
+    PatternWidth := 32;
+    PatternHeight := 32;
+  end;
+
+  AdPictureCollection.Restore;
+end;
+
+procedure TForm1.LoadLevel;
+var
+  level:TStringList;
+  ax,ay:integer;
+begin
+  level := TStringList.Create;
+  level.LoadFromFile(path+'level2.txt');
+
+  with TBackgroundSprite.Create(AdSpriteEngine) do
+  begin
+    Z := -10;
+    Image := AdPictureCollection.Find('sky');
+    Tiled := true;
+    Depth := 10;
+  end;
+
+  for ay := 0 to level.Count - 1 do
+  begin
+    for ax := 1 to length(level[ay]) do
+    begin
+      case level[ay][ax] of
+        'x':
+        begin
+          with TWall.Create(AdSpriteEngine) do
+          begin
+            Image := AdPictureCollection.Find('wall');
+            x := ax*128;
+            y := ay*128;
+            z := 0;
+          end;
+        end;
+        'X':
+        begin
+          with TWall.Create(AdSpriteEngine) do
+          begin
+            Image := AdPictureCollection.Find('wallgras');
+            x := ax*128;
+            y := ay*128;
+            z := 0;
+          end;
+        end;
+        'b':
+        begin
+          with TBall.Create(AdSpriteEngine) do
+          begin
+            Image := AdPictureCollection.Find('ball');
+            x := ax*128;
+            y := ay*128+128-height;
+            z := 2;
+            sourcex := round(x);
+            sourcey := round(y);
+            z := 1;
+           end;
+        end;
+      end;
+    end;
+  end;
+  level.Free;
 end;
 
 { TBall }
@@ -462,12 +437,8 @@ begin
   begin
     Alpha := Alpha - 1000*TimeGap;
     if Alpha < 0 then Alpha := 0;    
-    //Light.Color := RGB(round(Alpha),round(Alpha),round(Alpha));
     if Alpha <= 20 then Dead;
   end;
-
-  //Light.X := X+Width / 2;
-  //Light.Y := Y+Height / 2;
 end;
 
 procedure TBall.Reset;

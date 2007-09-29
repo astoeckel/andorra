@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses,
-  Controls, ExtCtrls, AdSprites;
+  Controls, ExtCtrls, AdSprites, AdSetupDlg, AdPng;
 
 type
   TFigur = class(TImageSprite)
@@ -20,7 +20,6 @@ type
   TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure FormResize(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -43,51 +42,63 @@ implementation
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
-var i:integer;
+var
+  i:integer;
+  AdSetupDlg:TAdSetup;
 begin
-  ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraOGL.dll';
 
-  if AdDraw1.Initialize then
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw1;
+  AdSetupDlg.Form := self;
+
+  if AdSetupDlg.Execute then
   begin
-    Application.OnIdle := Idle;
-
-    AdImageList1 := TAdImageList.Create(AdDraw1);
-    with AdImageList1.Add('figur') do
+    if AdDraw1.Initialize then
     begin
-      Texture.LoadGraphicFromFile(path+'boy.bmp',true,clFuchsia);
-      PatternWidth := 96;
-      PatternHeight := 96;
-    end;
-    AdImageList1.Restore;
+      Application.OnIdle := Idle;
 
-    AdSpriteEngine := TSpriteEngine.Create(nil);
-    AdSpriteEngine.Surface := AdDraw1;
-
-    Randomize;
-
-    for i := 0 to 5 do
-    begin
-      with TFigur.Create(AdSpriteEngine) do
+      AdImageList1 := TAdImageList.Create(AdDraw1);
+      with AdImageList1.Add('figur') do
       begin
-        Image := AdImageList1.Find('figur');
-        AnimActive := true;
-        AnimLoop := true;
-        AnimSpeed := 15;
-        XSpeed := -(random(100)+50);
-        SetLine;
+        Texture.LoadGraphicFromFile(path+'boy.bmp',true,clFuchsia);
+        PatternWidth := 96;
+        PatternHeight := 96;
       end;
-    end;
+      AdImageList1.Restore;
 
+      AdSpriteEngine := TSpriteEngine.Create(nil);
+      AdSpriteEngine.Surface := AdDraw1;
+
+      Randomize;
+
+      for i := 0 to 5 do
+      begin
+        with TFigur.Create(AdSpriteEngine) do
+        begin
+          Image := AdImageList1.Find('figur');
+          AnimActive := true;
+          AnimLoop := true;
+          AnimSpeed := 15;
+          XSpeed := -(random(100)+50);
+          SetLine;
+        end;
+      end;
+
+    end
+    else
+    begin
+      ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
+                  'mode or another video adapter.');
+      halt;
+    end;
   end
   else
   begin
-    ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
-                'mode or another video adapter.');
-    Close;
+    halt;
   end;
 end;
 
@@ -97,15 +108,6 @@ begin
   AdImageList1.Free;
   AdPerCounter.Free;
   AdDraw1.Free;
-end;
-
-procedure TForm1.FormResize(Sender: TObject);
-begin
-  if AdDraw1.Initialized then
-  begin
-    //AdDraw1.Finalize;
-    //AdDraw1.Initialize;
-  end;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);

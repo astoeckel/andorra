@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, AdSprites, AdPng;
+  Dialogs, AdDraws, AdClasses, AdSprites, AdPng, AdSetupDlg;
 
 type
   TAdTestSprite = class(TImageSpriteEx)
@@ -22,7 +22,7 @@ type
       procedure DoMove(timegap:double);override;
   end;
 
-  TForm1 = class(TForm)
+  TMainFrm = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -38,7 +38,7 @@ type
   end;
 
 var
-  Form1: TForm1;
+  MainFrm: TMainFrm;
 
 const
   path = '../demos/SpriteEngine/PixelCheck/';
@@ -47,55 +47,66 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TMainFrm.FormCreate(Sender: TObject);
 var
   i:integer;
+  AdSetupDlg:TAdSetup;  
 begin
-  AdDraw := TAdDraw.Create(self);
-  AdDraw.DllName := 'AndorraDX93D.dll';
-
   Cursor := crNone;
+  AdPerCounter := TPerformanceCounter.Create;
 
-  if AdDraw.Initialize then
+  AdDraw := TAdDraw.Create(self);
+
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw;
+  AdSetupDlg.Form := self;
+
+  if AdSetupDlg.Execute then
   begin
-    AdImageList := TAdImageList.Create(AdDraw);
-    AdImageList.LoadFromFile(path+'misc.ail');
-
-    AdPerCounter := TPerformanceCounter.Create;
-    AdSpriteEngine := TSpriteEngine.Create(AdDraw);
-
-    Randomize;
-
-    for i := 0 to 0 do
+    if AdDraw.Initialize then
     begin
-      with TAdTestSprite.Create(AdSpriteEngine) do
+      AdImageList := TAdImageList.Create(AdDraw);
+      AdImageList.LoadFromFile(path+'misc.ail');
+
+      AdSpriteEngine := TSpriteEngine.Create(AdDraw);
+
+      Randomize;
+
+      for i := 0 to 20 do
       begin
-        Image := AdImageList.Items[random(AdImageList.Count)];
-        X := random(round(ClientWidth - Width));
-        Y := random(round(ClientHeight - Height));
-        PixelCheck := true;
-        Angle := random(360);
+        with TAdTestSprite.Create(AdSpriteEngine) do
+        begin
+          Image := AdImageList.Items[random(AdImageList.Count)];
+          X := random(round(ClientWidth - Width));
+          Y := random(round(ClientHeight - Height));
+          PixelCheck := true;
+        end;
       end;
-    end;
 
-    Sprite := TAdCursorSprite.Create(AdSpriteEngine);
-    with Sprite do
+      Sprite := TAdCursorSprite.Create(AdSpriteEngine);
+      with Sprite do
+      begin
+        Image := AdImageList.Items[2];
+        z := 1;
+        PixelCheck := true;
+      end;
+
+      Application.OnIdle := Idle;
+    end
+    else
     begin
-      Image := AdImageList.Items[2];
-      z := 1;
-      PixelCheck := true;
+      ShowMessage('Andorra 2D couldn''t be initialized. Please try another display mode or adapter');
+      halt;
     end;
-
-    Application.OnIdle := Idle;
   end
   else
   begin
-    ShowMessage('Andorra 2D couldn''t be initialized. Please try another display mode or adapter');
     halt;
   end;
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
+procedure TMainFrm.FormDestroy(Sender: TObject);
 begin
   AdSpriteEngine.Free;
   AdPerCounter.Free;
@@ -103,14 +114,14 @@ begin
   AdDraw.Free;
 end;
 
-procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+procedure TMainFrm.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
   Sprite.X := X + Sprite.Width / 2;
   Sprite.Y := Y + Sprite.Height / 2;
 end;
 
-procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+procedure TMainFrm.Idle(Sender: TObject; var Done: boolean);
 begin
   AdPercounter.Calculate;
 

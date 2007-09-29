@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, StdCtrls, AdClasses;
+  Dialogs, AdDraws, StdCtrls, AdPNG, AdClasses, AdSetupDlg;
 
 type
   TForm1 = class(TForm)
@@ -17,7 +17,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdImageList1:TAdImageList;
     AdPerCounter:TPerformanceCounter;
     Bmp:TBitmap;
@@ -33,37 +33,46 @@ implementation
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
+var
+  AdSetupDlg:TAdSetup;
 begin
+  AdPerCounter := TPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraOGL.dll';
+  AdDraw := TAdDraw.Create(self);
 
-  ReportMemoryLeaksOnShutDown := True;
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw;
+  AdSetupDlg.Sections := [dlgPlugin];
 
-  if AdDraw1.Initialize then
+  if AdSetupDlg.Execute then
   begin
-    Application.OnIdle := Idle;
-    Bmp := TBitmap.Create;
-    Bmp.Width := ClientWidth;
-    Bmp.Height := ClientHeight;
-    Bmp.Transparent := true;
-    Bmp.TransparentMode := tmFixed;
-    Bmp.TransparentColor := clWhite;
-    AdImageList1 := TAdImageList.Create(AdDraw1);
-    with AdImageList1.Add('surface') do
+    if AdDraw.Initialize then
     begin
-      Texture.LoadFromGraphic(Bmp);
-      Restore;
+      Application.OnIdle := Idle;
+      Bmp := TBitmap.Create;
+      Bmp.Width := ClientWidth;
+      Bmp.Height := ClientHeight;
+      AdImageList1 := TAdImageList.Create(AdDraw);
+      with AdImageList1.Add('surface') do
+      begin
+        Texture.LoadFromGraphic(Bmp);
+        Restore;
+      end;
+      Ico := TIcon.Create;
+      Ico.LoadFromFile('icon32.ico');
+      AdPerCounter := TPerformanceCounter.Create;
+    end
+    else
+    begin
+      ShowMessage('Unable to initialize Andorra 2D');
+      halt;
     end;
-    Ico := TIcon.Create;
-    Ico.LoadFromFile('icon32.ico');
-    AdPerCounter := TPerformanceCounter.Create;
   end
   else
   begin
-    ShowMessage('Unable to initialize Andorra 2D');
-    Close;
-  end;
+    halt;
+  end;                             
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -72,7 +81,7 @@ begin
   Ico.Free;
   AdImageList1.Free;
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
@@ -110,16 +119,16 @@ end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
     Caption := 'FPS: '+inttostr(AdPerCounter.FPS);
 
-    AdDraw1.ClearSurface(clBlack);
-    AdDraw1.BeginScene;
-    AdImageList1.Items[0].Draw(AdDraw1,0,0,0);
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdDraw.ClearSurface(clBlack);
+    AdDraw.BeginScene;
+    AdImageList1.Items[0].Draw(AdDraw,0,0,0);
+    AdDraw.EndScene;
+    AdDraw.Flip;
 
     Done := false;
   end;

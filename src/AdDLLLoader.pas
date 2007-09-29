@@ -25,12 +25,16 @@ interface
 uses SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses;
 
 //This is the class which loads the plugin DLL
-type TAndorraDllLoader = class
+type TAdDllLoader = class
   private
     DllHandle:THandle;
   public
     //The function which creates the application from the DLL
     CreateApplication:TAdCreateApplicationProc;
+    //Contains information about the loaded library
+    LibInfo:TAd2DLibInfo;
+    //Contains information about the abilities of the plugin
+    LibAbilities:TAd2DLibAbilities;
     //Loads the library
     procedure LoadLibrary(afile:string);
     //Unloads the library
@@ -45,48 +49,59 @@ end;
 
 implementation
 
-constructor TAndorraDllLoader.Create;
+constructor TAdDllLoader.Create;
 begin
   inherited Create;
 end;
 
-destructor TAndorraDllLoader.Destroy;
+destructor TAdDllLoader.Destroy;
 begin
   UnLoadLibrary;
   inherited Destroy;
 end;
 
-function TAndorraDllLoader.LibraryLoaded:boolean;
+function TAdDllLoader.LibraryLoaded:boolean;
 begin
   result := DllHandle <> 0;
 end;
 
-procedure TAndorraDllLoader.LoadLibrary(afile: string);
+procedure TAdDllLoader.LoadLibrary(afile: string);
+var
+  InfoProc:TAndorra2DLibraryInformation;
+  AbilitiesProc:TAndorra2DLibraryAbilities;
 begin
-  if fileExists(ExtractFilePath(ParamStr(0))+afile) then
+  if fileExists(afile) then
   begin
     if LibraryLoaded then
     begin
       UnLoadLibrary;
     end;
     {$IFDEF Win32}
-      DllHandle := Windows.LoadLibrary(PChar(ExtractFilePath(ParamStr(0))+afile));
+      DllHandle := Windows.LoadLibrary(PChar(afile));
     {$ELSE}
-      DllHandle := dynlibs.LoadLibrary(PChar(ExtractFilePath(ParamStr(0))+afile));
+      DllHandle := dynlibs.LoadLibrary(PChar(afile));
     {$ENDIF}
     if LibraryLoaded then
     begin
       @CreateApplication := GetProcAddress(DllHandle, 'CreateApplication');
+
+      //Get information
+      @InfoProc := GetProcAddress(DllHandle, 'Andorra2DLibraryInformation');
+      InfoProc(LibInfo);
+
+      //Get abilities
+      @AbilitiesProc := GetProcAddress(DllHandle, 'Andorra2DLibraryAbilities');
+      AbilitiesProc(LibAbilities);
     end;
   end;
 end;
 
-procedure TAndorraDllLoader.UnLoadLibrary;
+procedure TAdDllLoader.UnLoadLibrary;
 begin
   if LibraryLoaded then
   begin
     FreeLibrary(DllHandle);
-  end;  
+  end;
 end;
 
 end.

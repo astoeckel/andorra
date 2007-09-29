@@ -2,7 +2,7 @@ object MainDlg: TMainDlg
   Left = 0
   Top = 0
   BorderStyle = bsToolWindow
-  Caption = 'Andorra 2D - Brakout'
+  Caption = 'Andorra 2D - Breakout'
   ClientHeight = 600
   ClientWidth = 600
   Color = clBlack

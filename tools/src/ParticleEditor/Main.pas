@@ -139,7 +139,6 @@ type
     procedure Button1Click(Sender: TObject);
     procedure Panel1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure Panel1Resize(Sender: TObject);
     procedure Edit6Change(Sender: TObject);
     procedure Button5Click(Sender: TObject);
     procedure Edit7Change(Sender: TObject);
@@ -159,6 +158,7 @@ type
     procedure Save1Click(Sender: TObject);
     procedure LoadFile1Click(Sender: TObject);
     procedure Button6Click(Sender: TObject);
+    procedure Panel1Resize(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -460,39 +460,19 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 var bmp:TBitmap;
-    i:integer;
     adbmp:TAdBitmap;
 begin
   Randomize;
 
   //Initialize Andorra 2D
   AdDraw1 := TAdDraw.Create(Panel1);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
-  AdDraw1.Options := AdDraw1.Options;
+  AdDraw1.DllName := 'AndorraOGL.dll';
+
   if AdDraw1.Initialize then
   begin
     //Load the texture
     bmp := TBitmap.Create;
-    bmp.Width := 32;
-    bmp.Height := 32;
-    with bmp.Canvas do
-    begin
-      Brush.Color := clBlack;
-      Pen.Color := clBlack;
-      Rectangle(0,0,32,32);
-      Pen.Color := clWhite;
-      Brush.Style := bsClear;
-      for i := 0 to 16 do
-      begin
-        Pen.Color := RGB(round(255 / 16 * i),round(255 / 16 * i),round(255 / 16 * i));
-        Ellipse(i,i,32-i,32-i);
-        Ellipse(i,i,32-i-1,32-i-1);
-        Ellipse(i,i,32-i-2,32-i-2);
-        Ellipse(i,i,32-i+1,32-i+1);
-        Ellipse(i,i,32-i+2,32-i+2);
-      end;
-    end;
-    Image2.Picture.Bitmap.Assign(bmp);
+    bmp.Assign(Image2.Picture.Bitmap);
     adbmp := TAdBitmap.Create;
     AdImg1 := TAdImage.Create(AdDraw1);
     adbmp.AssignBitmap(bmp);
@@ -524,7 +504,7 @@ begin
   end
   else
   begin
-    ShowMessageBox('Error while initializing Andorra 2D.');
+    ShowMessage('Error while initializing Andorra 2D.');
     halt;
   end;
 end;

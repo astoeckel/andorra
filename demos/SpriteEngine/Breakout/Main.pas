@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites, AdParticles, AdClasses;
+  Dialogs, AdDraws, AdSprites, AdParticles, AdClasses, AdPng, AdSetupDlg;
 
 type
   TBrickSprite = class(TImageSpriteEx)
@@ -49,11 +49,10 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdImgLst:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
     AdPerCounter:TPerformanceCounter;
-    AdFont:TAdFont;
     Bat:TBat;
     CamPos:TAdVector3;
     VX,VY,VZ:integer;
@@ -94,111 +93,117 @@ end;
 end;
 
 procedure TMainDlg.FormCreate(Sender: TObject);
-var part1,part2:TAdParticle;
-    bmp:TBitmap;
-    adbmp:TAdBitmap;
+var
+  part1,part2:TAdParticle;
+  bmp:TBitmap;
+  adbmp:TAdBitmap;
+  AdSetupDlg:TAdSetup;
 begin
-  AdDraw1 := TAdDraw.Create(self);
+  AdPerCounter := TPerformanceCounter.Create;
 
-  AdDraw1.DllName := 'AndorraOGL.dll';
+  AdDraw := TAdDraw.Create(self);
 
-  Cursor := crNone;
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw;
+  AdSetupDlg.Form := self;
+  AdSetupDlg.Sections := AdSetupDlg.Sections - [dlgResolution];
 
-  AdDraw1.Options := AdDraw1.Options+[doAntialias];
-
-  if AdDraw1.Initialize then
+  if AdSetupDlg.Execute then
   begin
-    AdImgLst := TAdImageList.Create(AdDraw1);
-
-    with AdImgLst.Add('bricks') do
+    if AdDraw.Initialize then
     begin
-      Texture.LoadGraphicFromFile(path+'brick1.bmp',false,clNone);
-    end;
+      AdImgLst := TAdImageList.Create(AdDraw);
 
-    with AdImgLst.Add('ball') do
-    begin
-      Texture.LoadGraphicFromFile(path+'ball.bmp',true,clFuchsia);
-    end;
+      with AdImgLst.Add('bricks') do
+      begin
+        Texture.LoadGraphicFromFile(path+'brick1.bmp',false,clNone);
+      end;
 
-    with AdImgLst.Add('bat') do
-    begin
-      Texture.LoadGraphicFromFile(path+'bat.bmp',false,clNone);
-    end;
+      with AdImgLst.Add('ball') do
+      begin
+        Texture.LoadGraphicFromFile(path+'ball.bmp',true,clFuchsia);
+      end;
 
-    bmp := TBitmap.Create;
-    bmp.LoadFromFile(path+'star.bmp');
-    adbmp := TAdBitmap.Create;
-    adbmp.AssignBitmap(bmp);
-    adbmp.AssignAlphaChannel(bmp);
-    with AdImgLst.Add('star') do
-    begin
-      Texture.Texture.LoadFromBitmap(adbmp);
-    end;
-    adbmp.Free;
-    bmp.Free;
+      with AdImgLst.Add('bat') do
+      begin
+        Texture.LoadGraphicFromFile(path+'bat.bmp',false,clNone);
+      end;
+
+      bmp := TBitmap.Create;
+      bmp.LoadFromFile(path+'star.bmp');
+      adbmp := TAdBitmap.Create;
+      adbmp.AssignBitmap(bmp);
+      adbmp.AssignAlphaChannel(bmp);
+      with AdImgLst.Add('star') do
+      begin
+        Texture.Texture.LoadFromBitmap(adbmp);
+      end;
+      adbmp.Free;
+      bmp.Free;
     
-    AdImgLst.Restore;
+      AdImgLst.Restore;
 
-    AdSpriteEngine := TSpriteEngine.Create(nil);
-    AdSpriteEngine.Surface := AdDraw1;
+      AdSpriteEngine := TSpriteEngine.Create(nil);
+      AdSpriteEngine.Surface := AdDraw;
 
-    Randomize;
-    CreateLevel;
+      Randomize;
+      CreateLevel;
 
-    part1 := TAdParticle.Create(nil);
-    part1.LoadFromFile(path+'bg.apf');
+      part1 := TAdParticle.Create(nil);
+      part1.LoadFromFile(path+'bg.apf');
 
-    part2 := TAdParticle.Create(nil);
-    part2.LoadFromFile(path+'explode.apf');
+      part2 := TAdParticle.Create(nil);
+      part2.LoadFromFile(path+'explode.apf');
 
-    with TBall.Create(AdSpriteEngine) do
+      with TBall.Create(AdSpriteEngine) do
+      begin
+        Image := AdImglst.Find('ball');
+        X := 294;
+        Y := 295;
+        SetParticles(part1,part2,AdImgLst.Find('star'));
+      end;
+      part1.Free;
+      part2.Free;
+
+      Bat := TBat.Create(AdSpriteEngine);
+      with Bat do
+      begin
+        Image := AdImglst.Find('bat');
+        Y := ClientHeight-Height;
+        X := (ClientWidth-Width) / 2;
+      end;
+
+      AdPerCounter := TPerformanceCounter.Create;
+
+      Application.OnIdle := Idle;
+
+      CamPos := AdVector3(ClientWidth / 2,ClientHeight /2, -(ClientHeight * 1.2));
+      VX := 100;
+      VY := 100;
+      VZ := 20;
+
+      AdDraw.AdAppl.SetTextureFilter(fmMinFilter,atAnisotropic);
+      AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
+    end
+    else
     begin
-      Image := AdImglst.Find('ball');
-      X := 294;
-      Y := 295;
-      SetParticles(part1,part2,AdImgLst.Find('star'));
+      ShowMessage('Andorra 2D could not be initialized.');
+      halt;
     end;
-    part1.Free;
-    part2.Free;
-
-    Bat := TBat.Create(AdSpriteEngine);
-    with Bat do
-    begin
-      Image := AdImglst.Find('bat');
-      Y := 600-Height;
-      X := (600-Width) / 2;
-    end;
-
-    AdPerCounter := TPerformanceCounter.Create;
-
-    AdFont := TAdFont.Create(AdDraw1);
-    AdFont.CreateFont('Tahoma',[],10,true,2,2,200);
-    AdDraw1.Canvas.Font := AdFont;
-    Application.OnIdle := Idle;
-
-    CamPos := AdVector3(ClientWidth / 2,ClientHeight /2, -(ClientHeight * 1.2));
-    VX := 100;
-    VY := 100;
-    VZ := 20;
-
-    AdDraw1.AdAppl.SetTextureFilter(fmMinFilter,atAnisotropic);
-    AdDraw1.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
-    AdDraw1.AdAppl.SetTextureFilter(fmMipFilter,atAnisotropic);
   end
   else
   begin
-    ShowMessage('Andorra 2D could not be initialized.');
     halt;
   end;
 end;
 
 procedure TMainDlg.FormDestroy(Sender: TObject);
 begin
-  AdFont.Free;
   AdPerCounter.Free;
   AdSpriteEngine.Free;
   AdImgLst.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TMainDlg.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -210,9 +215,9 @@ end;
 procedure TMainDlg.Idle(Sender: TObject; var done: boolean);
 begin
   AdPerCounter.Calculate;
-  AdDraw1.BeginScene;
-  AdDraw1.ClearSurface(clBlack);
 
+  AdDraw.BeginScene;
+  AdDraw.ClearSurface(clBlack);
 
   CamPos.x := CamPos.x + VX * AdPerCounter.TimeGap / 1000;
   CamPos.y := CamPos.y + VY * AdPerCounter.TimeGap / 1000;
@@ -251,18 +256,19 @@ begin
     VZ := -VZ;
   end;
 
-  AdDraw1.AdAppl.Setup3DScene(ClientWidth,ClientHeight,
+  AdDraw.AdAppl.Setup3DScene(ClientWidth,ClientHeight,
       CamPos,AdVector3(ClientWidth / 2,ClientHeight / 2,0),AdVector3(0,-1,0));
 
   AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
   AdSpriteEngine.Draw;
   AdSpriteEngine.Dead;
+
   if AdSpriteEngine.GetCountOfClass(TBrickSprite) = 0 then
   begin
     CreateLevel;
   end;
 
-  with AdDraw1.Canvas do
+  with AdDraw.Canvas do
   begin
     DrawIn2D := true;
     TextOut(2,2,'FPS: '+inttostr(AdPerCounter.FPS));
@@ -271,11 +277,10 @@ begin
     Pen.Color := Ad_ARGB(255,255,255,255);
     Rectangle(ClientRect);
     Release;
-  end;
+  end;                
 
-
-  AdDraw1.EndScene;
-  AdDraw1.Flip;
+  AdDraw.EndScene;
+  AdDraw.Flip;
 
   Done := false;
 end;

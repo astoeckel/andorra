@@ -1,9 +1,11 @@
-object Form1: TForm1
+object MainFrm: TMainFrm
   Left = 0
   Top = 0
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsSingle
   Caption = 'Sprites and Pixel Check'
-  ClientHeight = 566
-  ClientWidth = 636
+  ClientHeight = 568
+  ClientWidth = 638
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

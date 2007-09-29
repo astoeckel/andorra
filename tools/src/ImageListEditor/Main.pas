@@ -73,7 +73,6 @@ type
       State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure CreateFilter;
     procedure ToolButton5Click(Sender: TObject);
-    procedure Panel1Resize(Sender: TObject);
     procedure Panel1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -102,6 +101,7 @@ type
     procedure ListView1DragOver(Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean);
     procedure ListView1DragDrop(Sender, Source: TObject; X, Y: Integer);
+    procedure Panel1Resize(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -338,7 +338,7 @@ begin
   AdPerCounter := TPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(Panel1);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw1.DllName := 'AndorraOGL.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -605,8 +605,7 @@ procedure TMainDlg.Panel1Resize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    AdDraw1.Finalize;
-    AdDraw1.Initialize;
+    AdDraw1.Setup2DScene;
   end;
 end;
 

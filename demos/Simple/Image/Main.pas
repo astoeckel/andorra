@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses, AdPNG,
-  Controls, ExtCtrls;
+  Controls, ExtCtrls, AdSetupDlg;
 
 type
   TForm1 = class(TForm)
@@ -14,7 +14,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TPerformanceCounter;
     AdImageList1:TAdImageList;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -29,61 +29,75 @@ implementation
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
+var
+  AdSetupDlg : TAdSetup;
 begin
-  ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
+  AdDraw := TAdDraw.Create(self);
 
-  if AdDraw1.Initialize then
+  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg.Image := 'logo1.png';
+  AdSetupDlg.AdDraw := AdDraw;
+  AdSetupDlg.Form := self;
+
+  if AdSetupDlg.Execute then
   begin
-    Application.OnIdle := Idle;
-
-    AdImageList1 := TAdImageList.Create(AdDraw1);
-    with AdImageList1.Add('logo') do
+    if AdDraw.Initialize then
     begin
-      Texture.LoadGraphicFromFile('icon64.png',true,clWhite);
+      Application.OnIdle := Idle;
+
+      AdImageList1 := TAdImageList.Create(AdDraw);
+      with AdImageList1.Add('logo') do
+      begin
+        Texture.LoadGraphicFromFile('icon64.png',true,clWhite);
+      end;
+      AdImageList1.Restore;
+    end
+    else
+    begin
+      ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
+                  'mode or another video adapter.');
+      halt;
     end;
-    AdImageList1.Restore;
   end
   else
   begin
-    ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
-                'mode or another video adapter.');
-    Close;
+    halt;
   end;
+  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdImageList1.Free;
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TForm1.FormResize(Sender: TObject);
 begin
-  if AdDraw1.Initialized then
+  if AdDraw.Initialized then
   begin
-    AdDraw1.Finalize;
-    AdDraw1.Initialize;
+    AdDraw.Finalize;
+    AdDraw.Initialize;
   end;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
     Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
 
-    AdDraw1.ClearSurface(clSilver);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(clSilver);
+    AdDraw.BeginScene;
 
-    AdImageList1.Find('logo').DrawMask(AdDraw1,rect(100,100,300,300),0,128);
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdImageList1.Find('logo').Draw(AdDraw,0,0,0);
+    
+    AdDraw.EndScene;
+    AdDraw.Flip;
 
     Done := false;
   end;

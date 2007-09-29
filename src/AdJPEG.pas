@@ -66,7 +66,6 @@ var
   jpeg:TJpegImage;
   bmp:TBitmap;
 begin
-  result := false;
   jpeg := TJpegImage.Create;
   bmp := TBitmap.Create;
   try
