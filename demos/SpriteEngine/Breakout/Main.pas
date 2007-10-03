@@ -52,7 +52,7 @@ type
     AdDraw:TAdDraw;
     AdImgLst:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     Bat:TBat;
     CamPos:TAdVector3;
     VX,VY,VZ:integer;
@@ -99,7 +99,7 @@ var
   adbmp:TAdBitmap;
   AdSetupDlg:TAdSetup;
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 
@@ -174,7 +174,7 @@ begin
         X := (ClientWidth-Width) / 2;
       end;
 
-      AdPerCounter := TPerformanceCounter.Create;
+      AdPerCounter := TAdPerformanceCounter.Create;
 
       Application.OnIdle := Idle;
 

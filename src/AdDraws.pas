@@ -382,12 +382,15 @@ type
       procedure Add(ARect:TRect);
   end;
 
+  TAdImageList = class;
+
   //This represents one image in an ImageList.
   TAdImage = class
     private
       FParent:TAdDraw;
       FWidth,FHeight:integer;
       FPatternWidth,FPatternHeight:integer;
+      FPatternStop:integer;
       FSkipWidth,FSkipHeight:integer;
       FTexture:TAdTexture;
       FColor:TColor;
@@ -418,7 +421,7 @@ type
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
       //True if this item can be freed by the image list
-      FreeByList:boolean;
+      FreeByList:TAdImageList;
       //Contains the link to Andorras Image
       AdMesh:TAd2DMesh;
       //A Constructor
@@ -493,6 +496,8 @@ type
       property Texture:TAdTexture read FTexture write SetTexture;
       //Returns the count of the patterns.
       property PatternCount:integer read GetPatternCount;
+      //If you have empty patterns, you may set PatternStop. PatternCount will be decrased by PatternStop.
+      property PatternStop:integer read FPatternStop write FPatternStop;
       //Here you can set the fonts color
       property Color:TColor read FColor write FColor;
       //Name of the image in the imagelist.
@@ -518,8 +523,10 @@ type
       function Add(AName:string):TAdImage;overload;
       //Returns the index of a item
       function IndexOf(AName:string):integer;
-      //Find an image in the list.
+      //Finds an image in the list.
       function Find(AName:string):TAdImage;
+      //Returns a new imagelist which contains all images which name contains the given substring
+      function FindEx(ASubStr:string):TAdImageList;
       //Call the restore function of every item in the list.
       procedure Restore;
       //A constructor
@@ -536,7 +543,7 @@ type
       procedure LoadFromFile(AFile:string);
       //The parent you've specified in the constructor.
       property Parent:TAdDraw read FParent;
-      //Set this to the same compressor to every item
+      //Apply the same compressor on every item
       property Compressor:TCompressorClass read FCompressor write SetCompressor; 
     published
   end;
@@ -842,20 +849,31 @@ type
       property CanvasObjects:TAdCanvasObjectList read FCanvasObjects;
   end;
 
-  //Class for calculating the FPS
-  TPerformanceCounter = class
+  TAdPerformanceCounterState = (psPaused, psResumed, psRunning);
+
+  //Class for calculating the FPS and the TimeGap
+  TAdPerformanceCounter = class
     private
-      lt,th,ffps:integer;
-      FCalculated:boolean;
+      FTimeGap:Double;
+      FFPS:integer;
+      FInterpolate:boolean;
+      FState:TAdPerformanceCounterState;
+      FLastTickCount:LongInt;
+      FTempTime:LongInt;
+      FTempFPS:integer;
+      FInterpolationFactor:integer;
     public
-      //Time between the frames in ms
-      TimeGap:integer;
-      //The current FPS
-      FPS:integer;
-      //Calculates the new values
-      procedure Calculate;
-      //Creates a new instance of the performance counter
-      constructor Create;
+      property State:TAdPerformanceCounterState read FState;
+      property FPS:integer read FFPS;
+      property TimeGap:double read FTimeGap;
+      property Interpolate:Boolean read FInterpolate write FInterpolate;
+      property InterpolationFactor:integer read FInterpolationFactor write FInterpolationFactor;
+
+      constructor Create(ACreatePaused:boolean=false);
+
+      procedure Resume;
+      procedure Pause;
+      procedure Calculate;    
   end;
 
 var
@@ -1204,6 +1222,7 @@ begin
   FColor := clWhite;
   FAlpha := 255;
   FOwnTexture := true;
+  FPatternStop := 0;
   FDetails := 1;
   Initialize;
 end;
@@ -1653,8 +1672,9 @@ begin
   s := '';
   AStream.Read(c,1); s := s + c;
   AStream.Read(c,1); s := s + c;
-  if s = 'PI' then
+  if (s = 'PI') or (s = 'P2') then
   begin
+    //Ver. 1 Data
     Texture.LoadFromStream(AStream);
     AStream.Read(l,SizeOf(l));
     SetLength(FName,l);
@@ -1664,6 +1684,17 @@ begin
     AStream.Read(FPatternHeight,SizeOf(FPatternHeight));
     AStream.Read(FSkipWidth,SizeOf(FSkipWidth));
     AStream.Read(FSkipHeight,SizeOf(FSkipHeight));
+
+    //Ver. 2 Data
+    if (s = 'P2') then
+    begin
+      AStream.Read(FPatternStop,SizeOf(FPatternStop));
+    end
+    else
+    begin
+      FPatternStop := 0;
+    end;
+    
     Restore;
   end
   else
@@ -1677,7 +1708,7 @@ var c:char;
     l:integer;
 begin
   c := 'P'; AStream.Write(c,1);
-  c := 'I'; AStream.Write(c,1);
+  c := '2'; AStream.Write(c,1);
   Texture.SaveToStream(AStream);
   l := length(FName);
   AStream.Write(l,SizeOf(l));
@@ -1687,6 +1718,7 @@ begin
   AStream.Write(FPatternHeight,SizeOf(FPatternHeight));
   AStream.Write(FSkipWidth,SizeOf(FSkipWidth));
   AStream.Write(FSkipHeight,SizeOf(FSkipHeight));
+  AStream.Write(FPatternStop,SizeOf(FPatternStop));
 end;
 
 procedure TAdImage.Finalize;
@@ -1715,7 +1747,7 @@ end;
 
 function TAdImage.GetPatternCount: integer;
 begin
-  result := Rects.Count;
+  result := Rects.Count - PatternStop;
 end;
 
 function TAdImage.GetPatternRect(ANr: Integer):TRect;
@@ -1730,7 +1762,7 @@ function TAdImageList.Add(AName: string): TAdImage;
 begin
   result := TAdImage.Create(FParent);
   result.Name := AName;
-  result.FreeByList := true;
+  result.FreeByList := self;
   inherited Add(result);
 end;
 
@@ -1753,6 +1785,20 @@ begin
   if i > -1 then
   begin
     result := Items[i];
+  end;
+end;
+
+function TAdImageList.FindEx(ASubStr: string): TAdImageList;
+var
+  i:integer;
+begin
+  result := TAdImageList.Create(FParent);
+  for i := 0 to Count - 1 do
+  begin
+    if Pos(ASubStr,Items[i].Name) > 0 then
+    begin
+      result.Add(Items[i]);
+    end;
   end;
 end;
 
@@ -1838,7 +1884,7 @@ begin
       temp := TAdImage.Create(FParent);
       with temp do
       begin
-        FreeByList := true;
+        FreeByList := self;
         LoadFromStream(ms);
       end;
       Add(temp);
@@ -1857,7 +1903,7 @@ begin
   begin
     with TAdImage(Ptr) do
     begin
-      if FreeByList then
+      if FreeByList = self then
       begin
         Free;
       end;
@@ -2044,49 +2090,6 @@ end;
 procedure TAdLog.SaveToFile(AFile: string);
 begin
   Items.SaveToFile(AFile);
-end;
-
-{ TPerformanceCounter }
-
-{$IFNDEF WIN32}
-function GetTickCount:Cardinal;
-var
-  tv:timeval;
-begin
-  GetTimeOfDay(tv, nil);
-  result := int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
-end;
-{$ENDIF}
-
-
-procedure TPerformanceCounter.Calculate;
-var t:integer;
-begin
-  t := GetTickCount;
-  if FCalculated then
-  begin
-    timegap := t-lt;
-    th := th + timegap;
-    fFPS := fFPS + 1;
-    if th >= 1000 then
-    begin
-      th := 0;
-      FPS := fFPS;
-      fFPS := 0;
-    end;
-  end;
-  lt := t;
-  FCalculated := true;
-end;
-
-constructor TPerformanceCounter.Create;
-begin
-  inherited Create;
-  lt := GetTickCount;
-  th := 0;
-  timegap := 0;
-  fps := 0;
-  FCalculated := false;
 end;
 
 { TSurfaceEventList }
@@ -3695,6 +3698,94 @@ end;
 procedure TBMPCompressor.Write(AStream: TStream; ABmp: TAdBitmap);
 begin
   ABmp.SaveToStream(AStream);
+end;
+
+{ TAdPerformanceCounter }
+
+{$IFNDEF WIN32}
+function GetTickCount:Cardinal;
+var
+  tv:timeval;
+begin
+  GetTimeOfDay(tv, nil);
+  result := int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
+end;
+{$ENDIF}
+
+{ TAdPerformanceCounter }
+
+constructor TAdPerformanceCounter.Create(ACreatePaused: boolean);
+begin
+  inherited Create;
+
+  if ACreatePaused then
+  begin
+    FState := psPaused;
+  end
+  else
+  begin
+    FState := psResumed;
+  end;
+
+  FTempTime := 0;
+  FLastTickCount := GetTickCount;
+  FInterpolate := true;
+  FInterpolationFactor := 99;
+end;
+
+procedure TAdPerformanceCounter.Calculate;
+var
+  tc,td:LongInt;
+begin
+  tc := GetTickCount;
+  td := tc - FLastTickCount;
+
+  if FState = psRunning then
+  begin
+    if FInterpolate then
+    begin
+      FTimeGap := (FTimeGap * FInterpolationFactor + (td)) / (FInterpolationFactor + 1);
+    end
+    else
+    begin
+      FTimeGap := td;
+    end;
+  end else
+  begin
+    if FState = psResumed then
+    begin
+      FTimeGap := 1;
+      FState := psRunning;
+    end
+    else
+    begin
+      FTimeGap := 0;
+    end;
+  end;
+
+  FLastTickCount := tc;
+
+  FTempTime := FTempTime + td;
+  FTempFPS := FTempFPS + 1;
+  if FTempTime > 1000 then
+  begin
+    FTempTime := 0;
+    FFPS := FTempFPS;
+    FTempFPS := 0;
+  end;
+end;
+
+procedure TAdPerformanceCounter.Pause;
+begin
+  FState := psPaused;
+end;
+
+procedure TAdPerformanceCounter.Resume;
+begin
+  if FState = psPaused then
+  begin
+    FState := psResumed;
+  end;
 end;
 
 initialization

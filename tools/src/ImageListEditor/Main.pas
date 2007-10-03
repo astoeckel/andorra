@@ -107,7 +107,7 @@ type
   public
     AdDraw1:TAdDraw;
     AdImageList:TAdImageList;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     TextLabel:TAdImage;
     Tiles:TAdImage;
     AColor:TColor;
@@ -132,7 +132,7 @@ implementation
 {$R *.dfm}
 
 procedure TMainDlg.Compoundselectedpictures1Click(Sender: TObject);
-var i,x,y,j:integer;
+var i,x,y,j,c:integer;
     xcount,ycount:double;
     prop:single;
     w,h:integer;
@@ -141,6 +141,7 @@ var i,x,y,j:integer;
 begin
   w := 0;
   h := 0;
+  c := 0;
   for i := 0 to ListView1.Items.Count-1 do
   begin
     with AdImageList do
@@ -158,6 +159,7 @@ begin
         begin
           w := Items[i].Width;
           h := Items[i].Height;
+          c := c + 1;
         end;
       end;
     end;
@@ -239,6 +241,7 @@ begin
     PatternWidth := w;
     PatternHeight := h;
     Restore;
+    PatternStop := PatternCount - c;
   end;
 
 
@@ -335,7 +338,7 @@ procedure TMainDlg.FormCreate(Sender: TObject);
 begin
   ReportMemoryLeaksOnShutdown := True;
 
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(Panel1);
   AdDraw1.DllName := 'AndorraOGL.dll';
@@ -518,10 +521,10 @@ begin
     index2 := ListView1.Items.Count-1;
   end;
   item := AdImageList.Items[index1];
-  item.FreeByList := false;
+  item.FreeByList := nil;
   AdImageList.Delete(index1);
   AdImageList.Insert(index2,item);
-  item.FreeByList := true;
+  item.FreeByList := AdImageList;
   ViewContent;
   ListView1.ItemIndex := index2;
   ListView1.Items[index2].MakeVisible(false);
@@ -739,6 +742,8 @@ begin
       ImageList3.Clear;
       ListView2.Clear;
 
+      ListView2.Items.BeginUpdate;
+
       for i := 0 to PatternCount - 1 do
       begin
 
@@ -758,7 +763,7 @@ begin
         bmp2.Height := 32;
 
         r := GetPatternRect(i);
-        SetStretchBltMode(bmp2.Canvas.Handle, Halftone); 
+        SetStretchBltMode(bmp2.Canvas.Handle, Halftone);
         StretchBlt(bmp2.Canvas.Handle,(32-w) div 2,(32-h) div 2,w,h,bmp.Canvas.Handle,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top,SRCCOPY);
 
         ImageList3.Add(bmp2,nil);
@@ -771,6 +776,8 @@ begin
       end;
       bmp.Free;
       adbmp.Free;
+
+      ListView2.Items.EndUpdate;
     end;
 
     Screen.Cursor := crDefault;

@@ -23,7 +23,7 @@ type
     { Private-Deklarationen }
   public
     AdDraw:TAdDraw;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     AdSpriteEngine:TSpriteEngine;
     AdImageList:TAdImageList;
     Selected:TSprite;
@@ -49,7 +49,7 @@ var
   i:integer;
   AdSetupDlg:TAdSetup;
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 

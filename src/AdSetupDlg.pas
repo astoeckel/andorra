@@ -282,6 +282,8 @@ begin
         aform.Width := scrwidth;
         aform.Height := scrheight;
 
+        aform.BorderIcons := [biSystemMenu, biMinimize];
+
         //Set form position. Place in Top-Left edge if fullscreen.
         if CheckBox4.Checked then
         begin

@@ -19,7 +19,7 @@ type
   public
     AdDraw:TAdDraw;
     AdImageList1:TAdImageList;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     Bmp:TBitmap;
     Ico:TIcon;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -36,7 +36,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg:TAdSetup;
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 
@@ -61,7 +61,6 @@ begin
       end;
       Ico := TIcon.Create;
       Ico.LoadFromFile('icon32.ico');
-      AdPerCounter := TPerformanceCounter.Create;
     end
     else
     begin

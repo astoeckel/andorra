@@ -44,6 +44,9 @@ type
     SpeedButton1: TSpeedButton;
     SpeedButton2: TSpeedButton;
     ColorDialog1: TColorDialog;
+    GroupBox8: TGroupBox;
+    Label6: TLabel;
+    Edit6: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure Button5Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
@@ -175,6 +178,7 @@ begin
   Edit3.Text := inttostr(AImage.PatternHeight);
   Edit4.Text := inttostr(AImage.SkipWidth);
   Edit5.Text := inttostr(AImage.SkipHeight);
+  Edit6.Text := inttostr(AImage.PatternStop);
   if AImage.Texture.Initialized then
   begin
     bmp := TBitmap.Create;
@@ -224,6 +228,7 @@ begin
     AImage.PatternHeight := strtointdef(Edit3.Text,0);
     AImage.SkipWidth := strtointdef(Edit4.Text,0);
     AImage.SkipWidth := strtointdef(Edit5.Text,0);
+    AImage.PatternStop := strtointdef(Edit6.Text,0);
 
 
 

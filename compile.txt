@@ -12,14 +12,12 @@ OpenGL Plugin:
 To compile the file "AndorraOGL.dll", you have to add the OpenGL headers in the prerequiste package. Alternativly you may download them from:
 http://www.delphigl.com/
 
-
-
 Compressors and additional file formats:
 ----------------------------------------
 If you want to use the AdPng.pas for highly compressed graphics, you'll need to download the PNG Delphi library (http://pngdelphi.sourceforge.net). 
 
 
 If you have any questions, feel free to write an e-mail to:
-andreas.stoeckel@gmx.net
+andreas.stoeckel@googlemail.com
 
 Have a lot of fun!

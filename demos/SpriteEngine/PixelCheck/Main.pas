@@ -31,7 +31,7 @@ type
   public
     AdDraw:TAdDraw;
     AdSpriteEngine:TSpriteEngine;
-    AdPercounter:TPerformanceCounter;
+    AdPercounter:TAdPerformanceCounter;
     AdImageList:TAdImageList;
     Sprite:TImageSprite;
     procedure Idle(Sender:TObject; var Done:boolean);
@@ -53,7 +53,7 @@ var
   AdSetupDlg:TAdSetup;  
 begin
   Cursor := crNone;
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 

@@ -23,7 +23,7 @@ type
     AdDraw:TAdDraw;
     AdSpriteEngine:TSpriteEngineEx;
     AdPictureCollection:TAdImageList;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     firsttime:boolean;
     lx,ly:integer;
     procedure ApplicationIdle(Sender:TObject;var Done:boolean);
@@ -88,7 +88,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg:TAdSetup;
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 

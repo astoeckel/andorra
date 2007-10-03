@@ -166,7 +166,7 @@ type
       procedure Collision2;
 
       {Returns the count of a sprite class}
-      function GetCountOfClass(AClass:TSpriteClass):integer;
+      function CountOfClass(AClass:TSpriteClass):integer;
 
       {Optimzes the optimization field}
       procedure Optimize;
@@ -530,13 +530,13 @@ begin
   result := Bounds(Round(WorldX),Round(WorldY),Round(Width),Round(Height));
 end;
 
-function TSprite.GetCountOfClass(AClass: TSpriteClass): integer;
+function TSprite.CountOfClass(AClass: TSpriteClass): integer;
 var i:integer;
 begin
   result := 0;
   for i := 0 to Items.Count - 1 do
   begin
-    result := result + Items[i].GetCountOfClass(AClass);
+    result := result + Items[i].CountOfClass(AClass);
     if (Items[i] <> self) and (Items[i].ClassType = AClass) then
     begin
       result := result + 1;
@@ -936,11 +936,14 @@ end;
 
 procedure TSprite.SetZ(AValue: integer);
 begin
-  FZ := AValue;
-  if FParent <> nil then
+  if AValue <> FZ then
   begin
-    FParent.Remove(self);
-    FParent.Add(self);
+    FZ := AValue;
+    if FParent <> nil then
+    begin
+      FParent.Remove(self);
+      FParent.Add(self);
+    end;
   end;
 end;     
 
@@ -1440,7 +1443,7 @@ begin
   r := Bounds(X,Y,Width,Height);
 
   //Resize the field if necessary
-  if (r.Right-1 > FEndX) then Expand(r.Right-FEndX-1,0);
+  if (r.Right-1 > FEndX) then Expand(r.Right-FEndX,0);
   if (r.Bottom-1 > FEndY) then Expand(0,r.Bottom-FEndY-1);
   if (r.Left < FStartX) then Expand(r.Left-FStartX,0);
   if (r.Top < FStartY) then Expand(0,r.Top-FStartY);

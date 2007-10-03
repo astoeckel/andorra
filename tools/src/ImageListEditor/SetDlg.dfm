@@ -327,6 +327,29 @@ object Settings: TSettings
         Text = '0'
       end
     end
+    object GroupBox8: TGroupBox
+      Left = 385
+      Top = 247
+      Width = 185
+      Height = 72
+      Caption = 'Empty Patterns:'
+      TabOrder = 7
+      object Label6: TLabel
+        Left = 11
+        Top = 32
+        Width = 33
+        Height = 13
+        Caption = 'Count:'
+      end
+      object Edit6: TEdit
+        Left = 50
+        Top = 29
+        Width = 36
+        Height = 21
+        TabOrder = 0
+        Text = '0'
+      end
+    end
   end
   object OpenPictureDialog1: TOpenPictureDialog
     Filter = 'Bitmaps (*.bmp)|*.bmp|All Files (*.*)|*.*'

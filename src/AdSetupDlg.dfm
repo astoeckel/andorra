@@ -106,7 +106,7 @@ object AdSetupFrm: TAdSetupFrm
         Width = 241
         Height = 21
         Style = csDropDownList
-        ItemHeight = 13
+        ItemHeight = 0
         TabOrder = 0
       end
       object CheckBox3: TCheckBox
@@ -166,7 +166,7 @@ object AdSetupFrm: TAdSetupFrm
         Width = 241
         Height = 21
         Style = csDropDownList
-        ItemHeight = 13
+        ItemHeight = 0
         TabOrder = 0
         OnChange = ComboBox1Change
       end

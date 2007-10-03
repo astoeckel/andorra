@@ -166,7 +166,7 @@ type
     AdDraw1:TAdDraw;
     AdImg1:TAdImage;
 
-    PerCount:TPerformanceCounter;
+    PerCount:TAdPerformanceCounter;
     PartSys:TAdParticleSystem;
 
     pc,pc2:double;
@@ -485,7 +485,7 @@ begin
 
     Application.OnIdle := ApplicationIdle;
 
-    PerCount := TPerformanceCounter.Create;
+    PerCount := TAdPerformanceCounter.Create;
 
     PartSys := TAdParticleSystem.Create(AdDraw1);
     PartSys.Texture := AdImg1.Texture;

@@ -31,7 +31,7 @@ type
   TAdSpriteApp = class
   strict private
     FDraw: TAdDraw;
-    FPerformanceCounter: TPerformanceCounter;
+    FPerformanceCounter: TAdPerformanceCounter;
     FImageList: TAdImageList;
     FSpriteEngine: TSpriteEngine;
     FSurfaceClearColor: Integer;
@@ -46,8 +46,8 @@ type
     function Initialize: Boolean;
     {Interface to TAdDraw suboject}
     property Draw: TAdDraw read FDraw write FDraw;
-    {Interface to TPerformanceCounter suboject}
-    property PerformanceCounter: TPerformanceCounter read FPerformanceCounter
+    {Interface to TAdPerformanceCounter suboject}
+    property PerformanceCounter: TAdPerformanceCounter read FPerformanceCounter
       write FPerformanceCounter;
     {Interface to TPictureCollection suboject}
     property PictureCollection: TAdImageList read FImageList
@@ -72,7 +72,7 @@ begin
   FSpriteEngine := TSpriteEngine.Create(nil);
   FSpriteEngine.Surface := FDraw;
   FSpriteEngine.CollisionOptimizationTyp := ctOptimized;
-  FPerformanceCounter := TPerformanceCounter.Create;
+  FPerformanceCounter := TAdPerformanceCounter.Create;
 end;
 
 destructor TAdSpriteApp.Destroy;

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2007.02.19 15:55:53.359.bdsproj,C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\Simple\Simple\Simple.bdsproj=C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\SpriteEngine\Physics\Physic.bdsproj</Transaction>
+    <Transaction>2007.02.19 15:56:25.562.pas,C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\Simple\Simple\Main.pas=C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\SpriteEngine\Physics\Main.pas</Transaction>
+    <Transaction>2007.02.19 15:56:25.562.dfm,C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\Simple\Simple\Main.dfm=C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\SpriteEngine\Physics\Main.dfm</Transaction>
+    <Transaction>2007.06.09 16:10:48.546.pas,C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\demos\SpriteEngine\Physics\Unit1.pas=C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\src\AdShapes.pas</Transaction>
+    <Transaction>2007.09.29 14:40:57.109.pas,C:\Dokumente und Einstellungen\Andreas\Eigene Dateien\Programme\Delphi\Anwendungen\Andorra\src\AdShapes.pas=</Transaction>
+  </Transactions>
+</BorlandProject>

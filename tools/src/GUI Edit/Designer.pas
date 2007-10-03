@@ -49,7 +49,7 @@ type
     FirstPoint:boolean;
   public
     AdDraw1:TAdDraw;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     AdGUI:TAdGUI;
     AdImage:TAdImage;
     AdConnector:TAdGUIConnector;
@@ -272,7 +272,7 @@ end;
 
 procedure TDesignerDlg.FormCreate(Sender: TObject);
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(self);
   AdDraw1.DllName := 'AndorraOGL.dll';
