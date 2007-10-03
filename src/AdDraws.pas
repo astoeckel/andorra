@@ -3730,7 +3730,7 @@ begin
   FTempTime := 0;
   FLastTickCount := GetTickCount;
   FInterpolate := true;
-  FInterpolationFactor := 99;
+  FInterpolationFactor := 10;
 end;
 
 procedure TAdPerformanceCounter.Calculate;

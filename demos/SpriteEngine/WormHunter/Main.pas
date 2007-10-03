@@ -130,6 +130,8 @@ begin
   AdPerCounter := TAdPerformanceCounter.Create;
 //  AdPerCounter.Interpolate := false;
 
+  Cursor := crNone;
+
   AdDraw := TAdDraw.Create(self);
 
   AdSetupDlg := TAdSetup.Create(self);
@@ -408,14 +410,14 @@ procedure TMainCharacter.DoCollision(Sprite: TSprite; var Done: boolean);
 begin
   if (Sprite is TWorm) and (TWorm(Sprite).State <> stDie) then
   begin
-    if (Y + Height - 10 > Sprite.Y + Sprite.Height) and
+    if (Y + Height - 10 > Sprite.Y) and
        (abs((Sprite.X + Sprite.Width / 2) - (X+Width / 2)) < 20) then
     begin
       with TParticleSprite.Create(Engine) do
       begin
         PartSys.DefaultParticle.Assign(FPart);
         Image := Form1.AdImageList.Find('particle');
-        Emit(50);
+        Emit(20);
         X := Sprite.X + Sprite.Width / 2;
         Y := Sprite.Y + Sprite.Height / 2;
         Z := Sprite.Z;
