@@ -263,7 +263,7 @@ begin
   AdSpriteEngine.Draw;
   AdSpriteEngine.Dead;
 
-  if AdSpriteEngine.GetCountOfClass(TBrickSprite) = 0 then
+  if AdSpriteEngine.CountOfClass(TBrickSprite) = 0 then
   begin
     CreateLevel;
   end;
