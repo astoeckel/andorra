@@ -452,7 +452,7 @@ type
       procedure DrawRotateAlpha(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
-      //The same as DrawRotate, just drawing a the mask.        
+      //The same as DrawRotate, just drawing a the mask.
       procedure DrawRotateMask(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
@@ -1247,13 +1247,13 @@ var
   curx,cury:single;
   Mode:TAd2DDrawMode;
 begin
-  if not CompRects(SourceRect,FSrcRect) then
+  if (not CompRects(SourceRect,FSrcRect)) then
   begin
     FSrcRect := SourceRect;
     BuildVertices;
   end;
 
-  //Initialize "The Matrix"
+  //Initialize the matrix
   mat1 := AdMatrix_Identity;
   mat2 := AdMatrix_Identity;
 
@@ -1276,7 +1276,7 @@ begin
     mat2 := AdMatrix_Multiply(mat2,mat1);
   end;
 
-  //Translate the Box
+  //Translate the image
   mat1 := AdMatrix_Translate(DestRect.Left,DestRect.Top,0);
   mat2 := AdMatrix_Multiply(mat2,mat1);
 
@@ -1337,7 +1337,10 @@ begin
         ax := x*fwidth/FDetails;
         Vertices[i].Position := AdVector3(ax,ay,0);
         Vertices[i].Color := c;
-        Vertices[i].Texture := AdVector2((FSrcRect.Left + w/FDetails*x)/Texture.Texture.Width,(FSrcRect.Top + h/FDetails*y)/Texture.Texture.Height);
+        Vertices[i].Texture :=
+          AdVector2(
+            (FSrcRect.Left + w/FDetails*x) / Texture.Texture.Width,
+            (FSrcRect.Top  + h/FDetails*y) / Texture.Texture.Height);
         Vertices[i].Normal := AdVector3(0,0,-1);
         i := i + 1;
       end;
@@ -1401,8 +1404,8 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],
-      0,0,0,bmAlpha);
+    DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex],
+      0, 0, 0, bmAlpha);
   end;
 end;
 
@@ -1450,7 +1453,8 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmAlpha);
+    DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+     CenterX, CenterY, bmAlpha);
   end;
 end;
 
@@ -1463,7 +1467,8 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmAdd);
+      DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+        CenterX, CenterY, bmAdd);
   end;
 end;
 
@@ -1476,7 +1481,8 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmAlpha);
+    DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+      CenterX,CenterY,bmAlpha);
   end;
 end;
 

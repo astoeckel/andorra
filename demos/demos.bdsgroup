@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+  <PersonalityInfo>
+    <Option>
+      <Option Name="Personality">Default.Personality</Option>
+      <Option Name="ProjectType"></Option>
+      <Option Name="Version">1.0</Option>
+      <Option Name="GUID">{9376E7B6-C184-4D8C-95C3-62017320F41D}</Option>
+    </Option>
+  </PersonalityInfo>
+  <Default.Personality>
+    
+    <Projects>
+      <Projects Name="WormHunter.exe">SpriteEngine\WormHunter\WormHunter.bdsproj</Projects>
+      <Projects Name="Simple.exe">Simple\Simple\Simple.bdsproj</Projects>
+      <Projects Name="Image.exe">Simple\Image\Image.bdsproj</Projects>
+      <Projects Name="DynTexture.exe">Simple\Dynamic Texture\DynTexture.bdsproj</Projects>
+      <Projects Name="Animation.exe">Simple\Animation\Animation.bdsproj</Projects>
+      <Projects Name="SimplePart.exe">Particles\Simple\SimplePart.bdsproj</Projects>
+      <Projects Name="Bounce.exe">SpriteEngine\Bounce\Bounce.bdsproj</Projects>
+      <Projects Name="Breakout.exe">SpriteEngine\Breakout\Breakout.bdsproj</Projects>
+      <Projects Name="Physic.exe">SpriteEngine\Physics\Physic.bdsproj</Projects>
+      <Projects Name="SpriteAnim.exe">SpriteEngine\Animation\SpriteAnim.bdsproj</Projects>
+      <Projects Name="PixelCheck.exe">SpriteEngine\PixelCheck\PixelCheck.bdsproj</Projects>
+      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe</Projects>
+    </Projects>
+    <Dependencies/>
+  </Default.Personality>
+</BorlandProject>
