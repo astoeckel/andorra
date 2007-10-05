@@ -15,7 +15,7 @@ type
     { Private-Deklarationen }
   public
     AdDraw:TAdDraw;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     PartSys:TAdParticleSystem;
     AdImageList:TAdImageList;
     MouseX,MouseY:integer;
@@ -37,7 +37,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg:TAdSetup;
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 
