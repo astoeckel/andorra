@@ -14,7 +14,7 @@ type
     { Private-Deklarationen }
   public
     AdDraw:TAdDraw;
-    AdPerCounter:TPerformanceCounter;
+    AdPerCounter:TAdPerformanceCounter;
     AdImageList1:TAdImageList;
     procedure Idle(Sender:TObject;var Done:boolean);
     procedure SetLine;
@@ -57,7 +57,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg:TAdSetup;
 begin
-  AdPerCounter := TPerformanceCounter.Create;
+  AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 
