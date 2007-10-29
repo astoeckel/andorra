@@ -86,7 +86,7 @@ type
       FNormals:TOGLVector3Array;
       FTexCoords:TOGLVector2Array;
       FPositions:TOGLVector3Array;
-      procedure DevideVertices;
+      procedure DivideVertices;
     protected
       procedure SetVertices(AVertices:TAdVertexArray);override;
       procedure SetIndex(AIndex:TAdIndexArray);override;
@@ -430,7 +430,7 @@ begin
     Finalize(FIndices);
   end;
   FIndices := Copy(AIndex);
-  DevideVertices;
+  DivideVertices;
 end;
 
 procedure TOGLMesh.SetMatrix(AMatrix: TAdMatrix);
@@ -450,10 +450,10 @@ begin
     Finalize(FVertices);
   end;
   FVertices := Copy(AVertices);
-  DevideVertices;
+  DivideVertices;
 end;
 
-procedure TOGLMesh.DevideVertices;
+procedure TOGLMesh.DivideVertices;
 var
   i:integer;
 begin
