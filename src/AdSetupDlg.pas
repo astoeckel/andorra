@@ -3,9 +3,9 @@ unit AdSetupDlg;
 interface
 
 uses
-  SysUtils, Forms, StdCtrls, ExtCtrls, XPMan, Controls, Classes,
+  SysUtils, Forms, StdCtrls, ExtCtrls, Controls, Classes,
   AdDraws, AdClasses, AdDllExplorer{$IFDEF Win32}, Windows{$ENDIF},
-  IniFiles;
+  IniFiles, XPMan;
 
 
 type
@@ -31,7 +31,6 @@ type
     Label1: TLabel;
     GroupBox3: TGroupBox;
     ComboBox1: TComboBox;
-    XPManifest1: TXPManifest;
     GroupBox2: TGroupBox;
     CheckBox1: TCheckBox;
     ComboBox2: TComboBox;
@@ -44,6 +43,7 @@ type
     Panel2: TPanel;
     Panel3: TPanel;
     Panel1: TPanel;
+    XPManifest1: TXPManifest;
     procedure ComboBox1Change(Sender: TObject);
     procedure CheckBox3Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);

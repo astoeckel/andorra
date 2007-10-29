@@ -744,13 +744,28 @@ begin
   r := GetFieldCoords;
 
   result.Left := r.Left - 1;
-  if result.Left < Engine.SpriteField.StartX then result.Left := FEngine.SpriteField.StartX;
+  if result.Left < Engine.SpriteField.StartX then
+  begin
+    result.Left := FEngine.SpriteField.StartX;
+  end;
+
   result.Top := r.Top - 1;
-  if result.Top < Engine.SpriteField.StartY then result.Top := FEngine.SpriteField.StartY;
+  if result.Top < Engine.SpriteField.StartY then
+  begin
+    result.Top := FEngine.SpriteField.StartY;
+  end;
+
   result.Right := r.Right + 1;
-  if result.Right > Engine.SpriteField.EndX then result.Right := FEngine.SpriteField.EndX;
+  if result.Right > Engine.SpriteField.EndX then
+  begin
+    result.Right := FEngine.SpriteField.EndX;
+  end;
+
   result.Bottom := r.Bottom + 1;
-  if result.Bottom > Engine.SpriteField.EndY then result.Bottom := FEngine.SpriteField.EndY;
+  if result.Bottom > Engine.SpriteField.EndY then
+  begin
+    result.Bottom := FEngine.SpriteField.EndY;
+  end;
 end;
 
 function TSprite.Collision: integer;
@@ -1098,7 +1113,7 @@ end;
 
 procedure TImageSprite.SetImage(AValue: TAdImage);
 begin
-  if AValue <> nil then
+  if (AValue <> nil) and (AValue <> FImage) then
   begin
     Width := AValue.Width;
     Height := AValue.Height;

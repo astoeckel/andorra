@@ -19,7 +19,7 @@ unit AdPNG;
 
 interface
 
-uses PngImage,AdDraws,AdClasses,Classes,Graphics;
+uses PngImage, AdDraws, AdClasses, Classes, Graphics;
 
 
 type

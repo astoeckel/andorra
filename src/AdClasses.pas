@@ -173,9 +173,9 @@ type
   );
 
   TAd2DFilterMode = (
-    fmMagFilter,//< Filter for textures, which are displayed bigger than in original size
-    fmMinFilter,//< Filter for textures, which are displayed smaller than in original size
-    fmMipFilter//< Filter for the translation between mipmaps
+    fmMagFilter,//< Filter for textures, which are displayed bigger than they are in reality
+    fmMinFilter,//< Filter for textures, which are displayed smaller than they are in reality
+    fmMipFilter//< Filter for the translation between mipmaps (not used now)
   );
 
   TAd2DTextureFilter = (
@@ -452,9 +452,9 @@ function CompareColors(col1,col2:TAndorraColor):boolean;
 {Converts an integer into a byte. If the value was smaller than zero the funktion returns 0, if it was bigger than 255 it returns 255.}
 function Cut(AValue:integer):byte;
 
-{Creates an Andora Vector.}
+{Creates an Andorra Vector.}
 function AdVector3(AX,AY,AZ:double):TAdVector3;
-{Creates an Andora Vector.}
+{Creates an Andorra Vector.}
 function AdVector2(AX,AY:double):TAdVector2;
 
 {Multiplies two matrices.}

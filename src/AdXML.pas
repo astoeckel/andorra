@@ -17,7 +17,7 @@ unit AdXML;
 
 interface
 
-uses JvSimpleXML, Classes, AdDraws, AdClasses, SysUtils;
+uses JvSimpleXML, Classes, SysUtils;
 
 function WriteStreamToString(AStream:TStream):string;
 procedure ReadStreamFromString(AStream:TStream;AString:string);
