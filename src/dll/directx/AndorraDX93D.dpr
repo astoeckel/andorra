@@ -19,9 +19,7 @@
 library AndorraDX93D;
 
 uses
-  SysUtils,
-  Classes,
-  AdClasses,
+  SysUtils, AdClasses,
   DX3DMain in 'DX3DMain.pas';
 
 {$E .dll}

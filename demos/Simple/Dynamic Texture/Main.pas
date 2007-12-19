@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, StdCtrls, AdPNG, AdClasses, AdSetupDlg;
+  Dialogs, AdDraws, StdCtrls, AdPNG, AdClasses, AdSetupDlg, AdPerformanceCounter,
+  AdBitmap;
 
 type
   TForm1 = class(TForm)

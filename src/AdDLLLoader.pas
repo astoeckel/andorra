@@ -12,7 +12,6 @@
 *Comment: Loads the Plugin-DLL
 }
 
-
 //Loads the plugin DLL
 unit AdDLLLoader;
 
@@ -22,7 +21,8 @@ unit AdDLLLoader;
 
 interface
 
-uses SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses;
+uses 
+  SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses;
 
 //This is the class which loads the plugin DLL
 type TAdDllLoader = class

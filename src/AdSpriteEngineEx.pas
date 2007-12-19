@@ -1,3 +1,18 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+* 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AdSpriteEngineEx.pas
+* Comment: Contains an extended spriteengine
+}
+
 unit AdSpriteEngineEx;
 
 {$IFDEF FPC}
@@ -6,7 +21,8 @@ unit AdSpriteEngineEx;
 
 interface
 
-uses {$I AdTypes.inc}, SysUtils, AdDraws, AdClasses, AdSprites;
+uses
+  Math, AdTypes, SysUtils, AdDraws, AdClasses, AdSprites;
 
 type
   TSpriteEngineEx = class(TSpriteEngine)
@@ -14,13 +30,15 @@ type
       FZoom:single;
       FZDistanze:double;
       FRotation:single;
-      FViewPort:TRect;
+      FViewPort:TAdRect;
+      FChanged:boolean;
       procedure SetZoom(AValue:single);
       procedure SetRotation(AValue:single);
-      procedure SetViewPort(AValue:TRect);
+      procedure SetViewPort(AValue:TAdRect);
       procedure CalcSurfaceRect;
       procedure CalcZDistance;
-      function Base:TRect;
+      function Base:TAdRect;
+      procedure RotatePoint(cx, cy:integer; var p:TAdPoint);
     protected
       procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);override;
       procedure SetSurface(AValue:TAdDraw);override;
@@ -29,10 +47,10 @@ type
 
       constructor Create(AParent:TAdDraw);
 
-      function ScreenPointToSpriteCoords(p:TPoint):TPoint;
+      function ScreenPointToSpriteCoords(p:TAdPoint):TAdPoint;
 
-      property ViewPort:TRect read FViewPort write SetViewPort;
-//      property Rotation:single read FRotation write SetRotation;
+      property ViewPort:TAdRect read FViewPort write SetViewPort;
+      property Rotation:single read FRotation write SetRotation;
       property Zoom:single read FZoom write SetZoom;
   end;
 
@@ -45,13 +63,13 @@ begin
   inherited;
 
   FRotation := 0;
-  FViewPort := Rect(0,0,0,0);
+  FViewPort := AdRect(0,0,0,0);
   Zoom := 1;
 end;
 
 procedure TSpriteEngineEx.Draw;
 var
-  oldvp:TRect;
+  oldvp:TAdRect;
   projmat:TAdMatrix;
   viewmat:TAdMatrix;
   w,h:integer;
@@ -72,7 +90,7 @@ begin
   Surface.AdAppl.Viewport := oldvp;
 end;
 
-function TSpriteEngineEx.Base: TRect;
+function TSpriteEngineEx.Base: TAdRect;
 begin
   if (Viewport.Left = 0) and (ViewPort.Top = 0) and
      (Viewport.Right = 0) and (ViewPort.Bottom = 0) then
@@ -85,41 +103,120 @@ begin
   end;
 end;
 
+procedure TSpriteEngineEx.RotatePoint(cx, cy:integer; var p: TAdPoint);
+var
+  alpha:double;
+  distance:double;
+begin
+  if FRotation <> 0 then
+  begin
+    p.X := p.X - cx;
+    p.Y := p.Y - cy;
+    
+    //Calculate point polar coordinates
+    distance := sqrt(sqr(p.X) + sqr(p.Y));
+    alpha := arctan(p.Y/p.X);
+    if p.X < 0 then
+      alpha := alpha + PI;
+
+    //Rotate point
+    alpha := alpha + rotation;
+    p.x := round(cos(alpha)*distance);
+    p.y := round(sin(alpha)*distance);
+
+    p.X := p.X + cx;
+    p.Y := p.Y + cy;
+  end;
+end;
+
 procedure TSpriteEngineEx.CalcSurfaceRect;
 var
   w,h:double;
-
+  ps:array[0..3] of TAdPoint;
+  i:integer;
+  maxw, minw, maxh, minh, cx, cy:integer;
 begin
-
-  w := (Base.Right - Base.Left)*Zoom;
-  h := (Base.Bottom - Base.Top)*Zoom;
-
-
-  with FSurfaceRect do
+  if FChanged then
   begin
-    Left   := round(- w / 2 + (Base.Right - Base.Left) / 2);
-    Right  := round(  w / 2 + (Base.Right - Base.Left) / 2);
-    Top    := round(- h / 2 + (Base.Bottom - Base.Top) / 2);
-    Bottom := round(  h / 2 + (Base.Bottom - Base.Top) / 2);
-  end;
+    w := (Base.Right - Base.Left)*Zoom;
+    h := (Base.Bottom - Base.Top)*Zoom;
 
+    if FRotation <> 0 then
+    begin
+      ps[0].X := 0; ps[0].Y := 0;
+      ps[1].X := 0; ps[1].Y := round(h);
+      ps[2].X := round(w); ps[2].Y := 0;
+      ps[3].X := round(w); ps[3].Y := round(h);
+
+      cx := round(w / 2);
+      cy := round(h / 2);
+
+      for i := 0 to 3 do RotatePoint(cx, cy, ps[i]);
+
+      maxw := ps[0].x; minw := ps[0].x; maxh := ps[0].y; minh := ps[0].y;
+      for i := 1 to 3 do
+      begin
+        if ps[i].x > maxw then maxw := ps[i].x;
+        if ps[i].x < minw then minw := ps[i].x;
+        if ps[i].y > maxh then maxh := ps[i].y;
+        if ps[i].y < minh then minh := ps[i].y;
+      end;
+
+      w := maxw - minw;
+      h := maxh - minh;
+    end;
+
+    with FSurfaceRect do
+    begin
+      Left   := round(- w / 2 + (Base.Right - Base.Left) / 2);
+      Right  := round(  w / 2 + (Base.Right - Base.Left) / 2);
+      Top    := round(- h / 2 + (Base.Bottom - Base.Top) / 2);
+      Bottom := round(  h / 2 + (Base.Bottom - Base.Top) / 2);
+    end;
+
+    FChanged := false;
+  end;
 end;
 
-function TSpriteEngineEx.ScreenPointToSpriteCoords(p: TPoint): TPoint;
+function TSpriteEngineEx.ScreenPointToSpriteCoords(p: TAdPoint): TAdPoint;
+var
+  w, h, left, top:double;
 begin
-  result.X := round((p.X - Base.Left) * FZoom + Base.Left) + SurfaceRect.Left;
-  result.Y := round((p.Y - Base.Top) * FZoom + Base.Top) + SurfaceRect.Top;
+  if Rotation <> 0 then
+  begin
+    w := (Base.Right - Base.Left);
+    h := (Base.Bottom - Base.Top);
+
+    RotatePoint(round(w/2), round(h/2), p);
+
+    left := round(- (w*Zoom) / 2 + (Base.Right - Base.Left) / 2);
+    top := round(- (h*Zoom) / 2 + (Base.Bottom - Base.Top) / 2);
+    with result do
+    begin
+      X := round((p.X - Base.Left) * FZoom + Base.Left + left);
+      Y := round((p.Y - Base.Top) * FZoom + Base.Top + top);
+    end;
+  end
+  else
+  begin
+    with result do
+    begin
+      X := round((p.X - Base.Left) * FZoom + Base.Left) + SurfaceRect.Left;
+      Y := round((p.Y - Base.Top) * FZoom + Base.Top) + SurfaceRect.Top;
+    end;
+  end;
 end;
 
 procedure TSpriteEngineEx.CalcZDistance;
 begin
   FZDistanze := round(1.20*(Base.Bottom - Base.Top)*FZoom);
+  FChanged := true;
 end;
 
 procedure TSpriteEngineEx.SetRotation(AValue: single);
 begin
   FRotation := AValue;
-  if Surface <> nil then CalcSurfaceRect;
+  FChanged := true;
 end;
 
 procedure TSpriteEngineEx.SetSurface(AValue: TAdDraw);
@@ -137,7 +234,7 @@ begin
   CalcZDistance;
 end;
 
-procedure TSpriteEngineEx.SetViewPort(AValue: TRect);
+procedure TSpriteEngineEx.SetViewPort(AValue: TAdRect);
 begin
   FViewPort := AValue;
   if Surface <> nil then

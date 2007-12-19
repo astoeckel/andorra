@@ -1,9 +1,28 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AdComponents.pas
+* Comment: This unit contains the Andorra 2D gui classes
+}
+
 unit AdComponents;
 
 interface
 
-uses JvSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, {$I AdTypes.inc}, Controls,
-     Classes, Graphics, SysUtils;
+uses
+  JvSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap,
+  Controls, Classes, Graphics, SysUtils, AdCanvas, AdFont;
 
 type
   TAdAlignment = (alLeft,alCenter,alRight);
@@ -73,27 +92,7 @@ type
       property Center:boolean read FCenter write SetCenter;
       property ShowCloseButton:boolean read GetShowCloseButton write SetShowCloseButton;
       property Movable:boolean read FMovable write FMovable;
-      property Font;
-      property FontColor;
-  end;
-
-  TAdPanel = class(TAdComponent)
-    private
-      FCaption:string;
-      FSkinItem:TAdSkinItem;
-      FAlignment:TAdAlignment;
-      FTextPos:TAdTextPos;
-    protected
-      procedure LoadSkinItem;override;
-      procedure DoDraw;override;
-    public
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
-    published
-      property Caption:string read FCaption write FCaption;
-      property TextPos:TAdTextPos read FTextPos write FTextPos;
-      property Alignment:TAdAlignment read FAlignment write FAlignment;
-      property Font;
+      property FontName;
       property FontColor;
   end;
 
@@ -108,6 +107,7 @@ type
       FAlignment:TAdAlignment;
       FTextPos:TAdTextPos;
       FWordWrap:boolean;
+      FClipText:boolean;
     protected
       procedure DoDraw;override;
     public
@@ -119,8 +119,19 @@ type
       property TextPos:TAdTextPos read FTextPos write FTextPos;
       property Alignment:TAdAlignment read FAlignment write FAlignment;
       property WordWrap:boolean read FWordWrap write FWordWrap;
-      property Font;
+      property ClipText:boolean read FClipText write FClipText;
+      property FontName;
       property FontColor;
+  end;
+
+  TAdPanel = class(TAdLabel)
+    private
+      FSkinItem:TAdSkinItem;
+    protected
+      procedure LoadSkinItem;override;
+      procedure DoDraw;override;
+    public
+      constructor Create(AParent:TAdComponent);override;
   end;
 
   TAdButton = class(TAdComponent)
@@ -145,7 +156,7 @@ type
       property State:TAdButtonState read FState;
     published
       property Caption:string read FCaption write FCaption;
-      property Font;
+      property FontName;
       property FontColor;
     end;
 
@@ -177,7 +188,7 @@ type
       property Caption:String read FCaption write FCaption;
       property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
       property GroupIndex:integer read FGroupIndex write SetGroupIndex;
-      property Font;
+      property FontName;
       property FontColor;
   end;
 
@@ -187,10 +198,10 @@ type
       FParent:TAdDraw;
       FTransparent:boolean;
       FTransparentColor:TColor;
-      FCompressor:TCompressorClass;
+      FCompressor:TAdGraphicCompressorClass;
       procedure SetTransparent(AValue:boolean);
       procedure SetTransparentColor(AValue:TColor);
-      procedure SetCompressor(ACompressor:TCompressorClass);
+      procedure SetCompressor(ACompressor:TAdGraphicCompressorClass);
       procedure UpdateTransparency;
       function GetLoaded:boolean;
     public
@@ -207,7 +218,7 @@ type
       property Transparent:boolean read FTransparent write SetTransparent;
       property TransparentColor:TColor read FTransparentColor write SetTransparentColor;
       property Parent:TAdDraw read FParent;
-      property Compressor:TCompressorClass read FCompressor write SetCompressor;
+      property Compressor:TAdGraphicCompressorClass read FCompressor write SetCompressor;
       property Loaded:boolean read GetLoaded;
   end;
 
@@ -281,7 +292,7 @@ type
       property ShowPercentage:boolean read FShowPercentage write FShowPercentage;
       property Smooth:boolean read FSmooth write SetSmooth;
       property Align:TAdAlignment read FAlign write FAlign;
-      property Font;
+      property FontName;
       property FontColor;
   end;
 
@@ -295,7 +306,7 @@ type
     protected
       procedure DoDraw; override;
       procedure DoMove(timegap:double);override;
-      function DestinationRect:TRect;
+      function DestinationRect:TAdRect;
     public
       constructor Create(AParent:TAdComponent);override;
       destructor Destroy;override;
@@ -341,7 +352,7 @@ type
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
       property Text:string read FText write FText;
-      property Font;
+      property FontName;
       property FontColor;
   end;
 
@@ -352,38 +363,20 @@ implementation
 
 { TAdPanel }
 
+constructor TAdPanel.Create(AParent: TAdComponent);
+begin
+  inherited;
+  AcceptChildComponents := true;
+end;
+
 procedure TAdPanel.DoDraw;
-var rect:TRect;
-    ax,ay:integer;
+var
+  rect:TAdRect;
 begin
   if FSkinItem <> nil then
   begin
-    SetFontColor;
-    
     rect := BoundsRect;
     FSkinItem.Draw(0,rect.Left,rect.Top,round(Width),round(Height),Alpha);
-
-    rect := ClientRect;
-
-    ax := 0;
-    ay := 0;
-
-    if FCaption <> '' then
-    begin
-      case FAlignment of
-        alLeft: ax := rect.Left;
-        alCenter: ax := rect.Left + ((rect.Right - rect.Left) - Font.TextWidth(FCaption)) div 2;
-        alRight: ax := rect.Right - Font.TextWidth(FCaption);
-      end;
-      case FTextPos of
-        tpTop: ay := rect.Top;
-        tpCenter: ay := rect.Top + ((rect.Bottom - rect.Top) - Font.TextHeight(FCaption)) div 2;
-        tpBottom: ay := rect.Bottom - Font.TextHeight(FCaption);
-      end;
-
-      Font.Alpha := Alpha;
-      Font.TextOut(ax,ay,FCaption);
-    end;
   end;
 
   inherited DoDraw;
@@ -393,28 +386,6 @@ procedure TAdPanel.LoadSkinItem;
 begin
   FSkinItem := Skin.ItemNamed['panel'];
   SetSpacer(FSkinItem);
-end;
-
-procedure TAdPanel.LoadFromXML(aroot: TJvSimpleXMLElem);
-begin
-  inherited;
-  with aroot.Properties do
-  begin
-    FTextPos := TAdTextPos(IntValue('textpos',ord(tpCenter)));
-    FAlignment := TAdAlignment(IntValue('alignment',ord(alCenter)));
-    FCaption := Value('caption','');
-  end;
-end;
-
-function TAdPanel.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
-begin
-  result := inherited SaveToXML(aroot);
-  with result.Properties do
-  begin
-    Add('textpos',ord(FTextPos));
-    Add('alignment',ord(FAlignment));
-    Add('caption',FCaption);
-  end;
 end;
 
 { TAdButton }
@@ -435,8 +406,8 @@ begin
 end;
 
 procedure TAdButton.DoDraw;
-var rect:TRect;
-    x,y:integer;
+var
+  rect:TAdRect;
 begin
   if FSkinItem <> nil then
   begin
@@ -445,11 +416,11 @@ begin
     rect := BoundsRect;
     FSkinItem.Draw(FStateNr,rect.Left,rect.Top,round(Width),round(Height),Alpha);
 
-    rect := ClientRect;
-    x := rect.Left + ((rect.Right - rect.Left) - Font.TextWidth(FCaption)) div 2;
-    y := rect.Top + ((rect.Bottom - rect.Top) - Font.TextHeight(FCaption)) div 2;
-    Font.Alpha := Alpha;
-    Font.TextOut(x,y,FCaption);
+    with TAdSimpleTypeSetter(Font.TypeSetter) do
+    begin
+      DrawMode := [dtMiddle, dtCenter, dtDoLineFeeds, dtCut];
+    end;
+    Font.TextOut(rect,FCaption);
   end;
   inherited DoDraw;
 end;
@@ -582,7 +553,7 @@ end;
 
 procedure TAdForm.DoDraw;
 var
-  rect:TRect;
+  rect:TAdRect;
 begin
   SetFontColor;
 
@@ -716,9 +687,10 @@ begin
 end;
 
 procedure TAdCheckBox.DoDraw;
-var Rect: TRect;
+var
+  Rect: TAdRect;
 begin
-  if (FSkinItem <> nil) and (FCheckedItem <> nil) then
+ if (FSkinItem <> nil) and (FCheckedItem <> nil) then
  begin
     Rect := BoundsRect;
     SetFontColor;
@@ -963,7 +935,7 @@ begin
   end;
 end;
 
-procedure TAdResourceImage.SetCompressor(ACompressor: TCompressorClass);
+procedure TAdResourceImage.SetCompressor(ACompressor: TAdGraphicCompressorClass);
 begin
   if ACompressor <> FCompressor then
   begin
@@ -1001,14 +973,14 @@ begin
     adbmp.ReserveMemory(FImage.Texture.Texture.BaseWidth,FImage.Texture.Texture.BaseHeight);
     FImage.Texture.Texture.SaveToBitmap(adbmp);
     bmp := TBitmap.Create;
-    adbmp.AssignToBitmap(bmp);
+    adbmp.AssignTo(bmp);
     adbmp.Free;
     bmp.Transparent := FTransparent;
     bmp.TransparentMode := tmFixed;
     bmp.TransparentColor := FTransparentColor;
     adbmp := TAdBitmap.Create;
-    adbmp.AssignBitmap(bmp);
-    FImage.Texture.Texture.LoadFromBitmap(adbmp,32);
+    adbmp.Assign(bmp);
+    FImage.Texture.Texture.LoadFromBitmap(adbmp,FParent.GetTextureParams(32));
     adbmp.Free;
     bmp.Free;
   end;
@@ -1231,12 +1203,14 @@ begin
   AcceptChildComponents := false;
   MinWidth := 20;
   MinHeight := 20;
+  FClipText := true;
 end;
 
 procedure TAdLabel.DoDraw;
 var
-  opt:TAdFontDrawTypes;
+  opt:TAdFontDrawModes;
 begin
+
   SetFontColor;
   if DesignMode then
   begin
@@ -1263,7 +1237,18 @@ begin
   begin
     opt := opt + [dtWordWrap];
   end;
-  Font.TextOutEx(ClientRect,FCaption,opt);
+  if FClipText then
+  begin
+    opt := opt + [dtCut];
+  end;
+
+  with TAdSimpleTypeSetter(Font.TypeSetter) do
+  begin
+    DrawMode := opt;
+  end;
+
+  Font.TextOut(ClientRect,FCaption);
+
   inherited;
 end;
 
@@ -1310,7 +1295,7 @@ end;
 
 procedure TAdProgressBar.DoDraw;
 var
-  r:TRect;
+  r:TAdRect;
   w,c:integer;
   i: Integer;
   start: Integer;
@@ -1355,7 +1340,14 @@ begin
     if FShowPercentage then
     begin
       SetFontColor;
-      Font.TextOutEx(ClientRect,FormatFloat('0',Percent * 100)+'%',[dtCenter,dtMiddle]);
+      with Font do
+      begin
+        with TAdSimpleTypeSetter(TypeSetter) do
+        begin
+          DrawMode := [dtCenter,dtMiddle];        
+        end;
+        TextOut(ClientRect,FormatFloat('0',Percent * 100)+'%');
+      end;
     end;
   end;    
   inherited DoDraw;
@@ -1490,7 +1482,7 @@ begin
 end;
 
 //Adapted from the VCLs TImage.DestRect;
-function TAdGUIImage.DestinationRect: TRect;
+function TAdGUIImage.DestinationRect: TAdRect;
 var
   w,h:integer;
   v: double;
@@ -1541,12 +1533,12 @@ begin
 
   if FCenter then
   begin
-    OffsetRect(result, BoundsRect.Left + (Width - w) div 2,
+    AdOffsetRect(result, BoundsRect.Left + (Width - w) div 2,
                        BoundsRect.Top + (Height - h) div 2);
   end
   else
   begin
-    OffsetRect(result, BoundsRect.Left, BoundsRect.Top);
+    AdOffsetRect(result, BoundsRect.Left, BoundsRect.Top);
   end;
 end;
 
@@ -1615,11 +1607,8 @@ end;
 
 procedure TAdEdit.DoDraw;
 var
-  r,cr:TRect;
-  oldvp:TRect;
-  matview,matproj:TAdMatrix;
+  r,cr:TAdRect;
   w,h,th:integer;
-  draw2d:boolean;
   SelStartX:integer;
   SelStopX:integer;
   XDif:integer;
@@ -1628,13 +1617,9 @@ begin
   cr := ClientRect;
   FSkinItem.Draw(0,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
 
-  oldvp := AdDraw.AdAppl.Viewport;
-  AdDraw.AdAppl.Viewport := cr;
-  AdDraw.AdAppl.GetScene(matview,matproj);
   w := cr.Right-cr.Left;
   h := cr.Bottom-cr.Top;
   th := Font.TextHeight(FText+'W');
-  AdDraw.AdAppl.Setup2DScene(w,h);
   SetFontColor;
 
   SelStartX := Font.TextWidth(copy(Text,1,SelStart));
@@ -1648,32 +1633,30 @@ begin
 
   with AdDraw.Canvas do
   begin
-    draw2d := DrawIn2D;
-    DrawIn2D := false;    
-
     if SelCount > 0 then
     begin
       Brush.Color := Ad_ARGB(128,128,128,128);
       Pen.Style := apNone;
-      Rectangle(rect(SelStartX-XDif,(h-th) div 2,SelStopX-XDif,(h+th) div 2));
+      Rectangle(
+        AdRect(
+          cr.Left + SelStartX-XDif,
+          cr.Top + (h-th) div 2,
+          cr.Left + SelStopX-XDif,
+          cr.Top + (h+th) div 2));
       Release;
     end;
 
-    self.Font.TextOut(-XDif,(h-th) div 2,FText);
+    self.Font.TextOut(cr.Left-XDif,cr.Top+(h-th) div 2,FText);
 
     if (CursorVisible) and (Enabled) and (Focused) and (not DesignMode) then
     begin
       Pen.Color := ColorToAdColor(FontColor);
-      MoveTo(SelStopX-XDif,(h-th) div 2);
-      LineTo(SelStopX-XDif,(h+th) div 2);
+      MoveTo(cr.Left+SelStopX-XDif,cr.Top+(h-th) div 2);
+      LineTo(cr.Left+SelStopX-XDif,cr.Top+(h+th) div 2);
       Release;
     end;
-    DrawIn2D := draw2d;
   end;
 
-
-  AdDraw.AdAppl.SetupManualScene(matview,matproj);
-  AdDraw.AdAppl.Viewport := oldvp;
   inherited;
 end;
 
@@ -1853,7 +1836,7 @@ var
   SelStopX:integer;
   w:integer;
 begin
-  Result := length(FText);
+ { Result := length(FText);
 
   w := (ClientRect.Right - ClientRect.Left);
   SelStopX  := Font.TextWidth(copy(Text,1,SelStop));
@@ -1873,7 +1856,7 @@ begin
       result := i;
       break;
     end;
-  end;
+  end;   }
 end;
 
 function TAdEdit.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
@@ -1967,7 +1950,7 @@ end;
 
 procedure TAdSkinBtn.DoDraw;
 var
-  r:TRect;
+  r:TAdRect;
 begin
   inherited;
   if FStateNr <> -1 then
@@ -2022,7 +2005,7 @@ initialization
   RegisterComponent(TAdForm,'Standard');
   RegisterComponent(TAdBitmapButton, 'Additional');
   RegisterComponent(TAdGUIImage, 'Additional');
-  
+
 finalization
 
 end.

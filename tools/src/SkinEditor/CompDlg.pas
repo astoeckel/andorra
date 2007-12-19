@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, AdDraws;
+  Dialogs, StdCtrls, AdBitmap;
 
 type
   TCompressors = class(TForm)
@@ -31,9 +31,9 @@ procedure TCompressors.FormCreate(Sender: TObject);
 var i:integer;
 begin
   ListBox1.Clear;
-  for i := 0 to RegisteredCompressors.Count - 1 do
+  for i := 0 to RegisteredGraphicCompressors.Count - 1 do
   begin
-    ListBox1.Items.Add(RegisteredCompressors[i]);
+    ListBox1.Items.Add(RegisteredGraphicCompressors.ValueFromIndex[i]);
   end;
   ListBox1.ItemIndex := 0;
 end;

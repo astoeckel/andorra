@@ -22,8 +22,9 @@ unit AdSprites;
 
 interface
 
-uses {$INCLUDE AdTypes.inc}, SysUtils, Classes, AdDraws, AdClasses,
-     AdParticles, Math, AdList, AdShapes, Graphics, AdBitmapEffects;
+uses 
+  SysUtils, Classes, AdBitmap, AdTypes, AdDraws, AdClasses,
+  AdParticles, Math, AdList, AdShapes, Graphics, AdBitmapEffects;
 
 type
   {The sprite engines base class.}
@@ -62,7 +63,7 @@ type
       FDynField:T2DSpriteListArray;
       function GetItem(X,Y:integer):TSpriteList;
     protected
-      function GetCell(X,Y:integer):TPoint;
+      function GetCell(X,Y:integer):TAdPoint;
       function GetCol(X:integer):Integer;
       function GetRow(Y:integer):Integer;
     public
@@ -113,6 +114,7 @@ type
       FCollisionTyp:TCollisionTyp;
       FShape:TAdShape;
       FOwnShape:boolean;
+      FVisibilityTest:boolean;
       procedure SetParent(AParent:TSprite);
       procedure Add(ASprite:TSprite);
       procedure Remove(ASprite:TSprite);
@@ -122,10 +124,10 @@ type
       procedure SetGridSize(Value:integer);
       procedure SetCollisionOptimization(Value:TCollisionTyp);
     protected
-      OldFieldCoords:TRect;
+      OldFieldCoords:TAdRect;
       DidCollision:boolean;
-      function GetBoundsRect:TRect;virtual;
-      function GetFieldCoords:TRect;virtual;
+      function GetBoundsRect:TAdRect;virtual;
+      function GetFieldCoords:TAdRect;virtual;
       function TestCollision(Sprite:TSprite):boolean;virtual;
       procedure DoMove(TimeGap:double);virtual;
       procedure DoDraw;virtual;
@@ -138,7 +140,7 @@ type
       procedure SetShape(AValue:TAdShape);virtual;
       procedure RemapField;
       procedure MoveInField(ASprite:TSprite);
-      function GetCollisionField:TRect;virtual;
+      function GetCollisionField:TAdRect;virtual;
       procedure CheckCollisionWith(ASprite:TSprite);virtual;
       property OwnShape:boolean read FOwnShape write FOwnShape;
     public
@@ -175,7 +177,7 @@ type
       function GetSpriteAt(X,Y:integer):TSprite;virtual;
       
       {Returns a rect which contains the relative coordinates of the sprite.}
-      property BoundsRect:TRect read GetBoundsRect;
+      property BoundsRect:TAdRect read GetBoundsRect;
       {Contains all child sprites.}
       property Items:TSpriteList read FList;
 
@@ -206,6 +208,8 @@ type
       property WorldY:double read GetWorldY;
       {Returns wether this sprite wants to be freed.}
       property Deaded:boolean read FDead;
+      {Disable to call the "draw" method of sprites although they aren't visible}
+      property VisibilityTest:boolean read FVisibilityTest write FVisibilityTest;
 
       {Defines whether this sprite is included in the collision system. Equal to DelpiX's "Collisioned". Must have been a translation fault.}
       property CanDoCollisions:boolean read FDoCollisions write FDoCollisions;
@@ -225,9 +229,9 @@ type
       FCollisionCount:integer;
       FCollisionSprite:TSprite;
       FCollisionDone:boolean;
-      FCollisionRect:TRect;
+      FCollisionRect:TAdRect;
     protected
-      FSurfaceRect:TRect;
+      FSurfaceRect:TAdRect;
       procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);virtual;
       procedure SetSurface(AValue:TAdDraw);virtual;
     public
@@ -238,7 +242,7 @@ type
       //If this value is set to true, the collision aborts.
       property CollisionDone:boolean read FCollisionDone write FCollisionDone;
       //The rect the collision takes place in.
-      property CollisionRect:TRect read FCollisionRect write FCollisionRect;
+      property CollisionRect:TAdRect read FCollisionRect write FCollisionRect;
 
       //Creates an instance of TSprite
       constructor Create(AParent:TAdDraw);reintroduce;
@@ -248,7 +252,7 @@ type
       procedure Dead;override;
 
       //The size of the surface.
-      property SurfaceRect:TRect read FSurfaceRect;
+      property SurfaceRect:TAdRect read FSurfaceRect;
     published
       //The parent addraw surface.
       property Surface:TAdDraw read FSurface write SetSurface;
@@ -343,7 +347,7 @@ type
       FCenter:boolean;
       procedure SetDepth(AValue:single);
     protected
-      function GetBoundsRect:TRect;override;
+      function GetBoundsRect:TAdRect;override;
       procedure DoDraw;override;
     public
       {Creates an instance of TBackgroundSprite}
@@ -376,7 +380,7 @@ type
     protected
       procedure DoRestore;override;
       procedure DoDraw;override;
-      function GetBoundsRect:TRect;override;
+      function GetBoundsRect:TAdRect;override;
     public
       {Creates an instance of TLightSprite}
       constructor Create(AParent:TSprite);override;
@@ -407,7 +411,7 @@ type
     protected
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
-      function GetBoundsRect:TRect;override;
+      function GetBoundsRect:TAdRect;override;
     public
       //Creates an instance of TParticleSprite
       constructor Create(AParent:TSprite);override;
@@ -431,14 +435,6 @@ type
 
 implementation
 
-
-function OverlapRect(const Rect1, Rect2: TRect): Boolean;
-begin
-  Result:=(Rect1.Left<Rect2.Right)and
-    (Rect1.Right>Rect2.Left)and
-    (Rect1.Top<Rect2.Bottom)and
-    (Rect1.Bottom>Rect2.Top);
-end;
 
 { TSpriteList }
 procedure TSpriteList.Add(ASprite: TSprite);
@@ -502,6 +498,8 @@ begin
 
   FGridSize := 128;
   FAutoOptimize := true;
+
+  FVisibilityTest := true;
 end;
 
 procedure TSprite.Dead;
@@ -525,9 +523,9 @@ begin
   inherited Create;
 end;
 
-function TSprite.GetBoundsRect: TRect;
+function TSprite.GetBoundsRect: TAdRect;
 begin
-  result := Bounds(Round(WorldX),Round(WorldY),Round(Width),Round(Height));
+  result := AdBounds(Round(WorldX),Round(WorldY),Round(Width),Round(Height));
 end;
 
 function TSprite.CountOfClass(AClass: TSpriteClass): integer;
@@ -544,7 +542,7 @@ begin
   end;
 end;
 
-function TSprite.GetFieldCoords: TRect;
+function TSprite.GetFieldCoords: TAdRect;
 var x1,y1:double;
 begin
   x1 := X / FParent.GridSize;
@@ -560,7 +558,7 @@ end;
 
 function TSprite.GetSpriteAt(X, Y: integer): TSprite;
 var i:integer;
-    rect:TRect;
+    rect:TAdRect;
 begin
   result := nil;
   for i := Items.Count-1 downto 0 do
@@ -606,7 +604,7 @@ begin
   begin
     for i := 0 to FList.Count - 1 do
     begin
-      if OverlapRect(FEngine.SurfaceRect,FList[i].BoundsRect) then
+      if (not FVisibilityTest) or (OverlapRect(FEngine.SurfaceRect,FList[i].BoundsRect)) then
       begin
         FList[i].Draw;
       end;
@@ -630,12 +628,12 @@ begin
 end;
 
 procedure TSprite.MoveInField(ASprite: TSprite);
-var r:TRect;
+var r:TAdRect;
 begin
   if ASprite <> nil then
   begin
     r := ASprite.GetFieldCoords;
-    if not CompRects(r,ASprite.OldFieldCoords) then
+    if not CompareRects(r,ASprite.OldFieldCoords) then
     begin
       with ASprite.OldFieldCoords do 
       begin
@@ -656,7 +654,7 @@ end;
 
 procedure TSprite.RemapField;
 var i:integer;
-    r:TRect;
+    r:TAdRect;
 begin
   FSpriteField.Free;
   FSpriteField := TAd2DSpriteList.Create;
@@ -693,7 +691,8 @@ begin
 end;
 
 procedure TSprite.Add(ASprite: TSprite);
-var r:TRect;
+var
+  r:TAdRect;
 begin
   if ASprite <> nil then
   begin
@@ -738,8 +737,9 @@ begin
   end;
 end;
 
-function TSprite.GetCollisionField: TRect;
-var r:TRect;
+function TSprite.GetCollisionField: TAdRect;
+var
+  r:TAdRect;
 begin
   r := GetFieldCoords;
 
@@ -772,7 +772,7 @@ function TSprite.Collision: integer;
 var
   ax,ay,i: Integer;
   list:TSpriteList;
-  r:TRect;
+  r:TAdRect;
 begin
   result := 0;
   
@@ -1173,7 +1173,7 @@ begin
       begin
         bmp1 := TBitmap.Create;
         bmp2 := TBitmap.Create;
-        adbmp.AssignToBitmap(bmp1,false);
+        adbmp.AssignTo(bmp1);
 
         bmp2.Width := w;
         bmp2.Height := h;
@@ -1263,10 +1263,12 @@ begin
 end;
 
 procedure TBackgroundSprite.DoDraw;
-var SourceRect:TRect;
-    amx,amy:integer;
-    ax,ay:double;
-  procedure MoveRect(mx,my:integer;var ARect:TRect);
+var
+  SourceRect:TAdRect;
+  amx,amy:integer;
+  ax,ay:double;
+  
+  procedure MoveRect(mx,my:integer;var ARect:TAdRect);
   begin
     ARect.Left := mx+ARect.Left;
     ARect.Top := my+ARect.Top;
@@ -1282,7 +1284,7 @@ begin
     end
     else
     begin
-      SourceRect := bounds(0,0,Image.Width*XTiles,Image.Height*YTiles);
+      SourceRect := AdBounds(0,0,Image.Width*XTiles,Image.Height*YTiles);
     end;
 
     ax := Engine.X;
@@ -1301,12 +1303,12 @@ begin
     MoveRect(amx,amy,SourceRect);
 
     Image.StretchBltAlpha(Engine.Surface,SourceRect,
-      rect(Engine.SurfaceRect.Left-1,Engine.SurfaceRect.Top-1,
-           Engine.SurfaceRect.Right,Engine.SurfaceRect.Bottom),0,0,0,255);
+      AdRect(Engine.SurfaceRect.Left-1,Engine.SurfaceRect.Top-1,
+             Engine.SurfaceRect.Right,Engine.SurfaceRect.Bottom),0,0,0,255);
   end;
 end;
 
-function TBackgroundSprite.GetBoundsRect: TRect;
+function TBackgroundSprite.GetBoundsRect: TAdRect;
 begin
   result := Engine.SurfaceRect;
 end;      
@@ -1347,12 +1349,12 @@ begin
   FLight.Disable;
 end;
 
-function TLightSprite.GetBoundsRect: TRect;
+function TLightSprite.GetBoundsRect: TAdRect;
 var r:integer;
 begin
   r := round(FRange);
-  result := rect(round(x+Engine.X)-r,round(y+Engine.Y)-r,
-                 round(x+Engine.X)+r,round(y+Engine.Y)+r);
+  result := AdRect(round(x+Engine.X)-r,round(y+Engine.Y)-r,
+                   round(x+Engine.X)+r,round(y+Engine.Y)+r);
 end;
 
 procedure TLightSprite.SetColor(AValue: LongWord);
@@ -1419,14 +1421,15 @@ begin
   FPartSys.CreateParticles(ACount,TAdParticle,round(FEmissionX),round(FEmissionY));
 end;
 
-function TParticleSprite.GetBoundsRect: TRect;
-var r:TRect;
-    w,h:integer;
+function TParticleSprite.GetBoundsRect: TAdRect;
+var
+  r:TAdRect;
+  w,h:integer;
 begin
   r := FPartSys.BoundsRect;
   w := r.Right - r.Left;
   h := r.Bottom - r.Top;
-  result := Bounds(r.Left + round(WorldX), r.Top + round(WorldY), w, h);
+  result := AdBounds(r.Left + round(WorldX), r.Top + round(WorldY), w, h);
   FWidth := w;
   FHeight := h;
 end;
@@ -1452,10 +1455,11 @@ end;
 { TAd2DSpriteList }
 
 procedure TAd2DSpriteList.Add(AItem: TSprite; X, Y, Width, Height: integer);
-var r:TRect;
-    ax,ay:integer;
+var
+  r:TAdRect;
+  ax,ay:integer;
 begin
-  r := Bounds(X,Y,Width,Height);
+  r := AdBounds(X,Y,Width,Height);
 
   //Resize the field if necessary
   if (r.Right-1 > FEndX) then Expand(r.Right-FEndX,0);
@@ -1598,7 +1602,7 @@ begin
   end;  
 end;
 
-function TAd2DSpriteList.GetCell(X, Y: integer): TPoint;
+function TAd2DSpriteList.GetCell(X, Y: integer): TAdPoint;
 begin
   if FUnOptimized then
   begin
@@ -1627,7 +1631,8 @@ begin
 end;
 
 function TAd2DSpriteList.GetItem(X, Y: integer): TSpriteList;
-var cell:TPoint;
+var
+  cell:TAdPoint;
 begin
   cell := GetCell(X,Y);
   result := FDynField[cell.X,cell.Y];

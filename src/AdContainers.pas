@@ -16,19 +16,13 @@
 
 unit AdContainers;
 
-interface
-
-uses
-  SysUtils;
-
+interface       
 type
   PAdLinkedListItem = ^TAdLinkedListItem;
   TAdLinkedListItem = record
     next:PAdLinkedListItem;
     data:Pointer;
   end;
-
-  EAdListError = class(Exception);
 
   PAdLinkedList = ^TAdLinkedList;
   TAdLinkedList = class
@@ -79,11 +73,12 @@ type
     private
       FCapacity:Cardinal;
       FData:Pointer;
-      FCount:Cardinal;
       FMemSize:Cardinal;
       procedure Rehash(ACapacity:Cardinal);
-      procedure FreeMemory;
     protected
+      FCount:Cardinal;
+      procedure FreeMemory;
+      property Data:Pointer read FData write FData;
     public
       constructor Create(ACapacity:Cardinal=128);
       destructor Destroy;override;
@@ -274,19 +269,21 @@ var
   i:integer;
   PItem:PAdLinkedListItem;
 begin
-  if AIndex >= Count then
-    raise EAdListError.Create('List index exceeds maximum ('+IntToStr(AIndex)+')');
-  if AIndex < 0 then
-    raise EAdListError.Create('List index drops below minimum ('+IntToStr(AIndex)+')');
-
-  PItem := FStart;
-  
-  for i := 0 to AIndex-1 do
+  if (AIndex >= Count) or (AIndex < 0) then
   begin
-    PItem := PItem^.next;
-  end;
+    result := nil;
+  end
+  else
+  begin
+    PItem := FStart;
 
-  result := PItem^.data;
+    for i := 0 to AIndex-1 do
+    begin
+      PItem := PItem^.next;
+    end;
+
+    result := PItem^.data;
+  end;
 end;
 
 procedure TAdLinkedList.SetItem(AIndex: integer; AValue: Pointer);
@@ -294,19 +291,17 @@ var
   i:integer;
   PItem:PAdLinkedListItem;
 begin
-  if AIndex >= Count then
-    raise EAdListError.Create('List index exceeds maximum ('+IntToStr(AIndex)+')');
-  if AIndex < 0 then
-    raise EAdListError.Create('List index drops below minimum ('+IntToStr(AIndex)+')');
-
-  PItem := FStart;
-
-  for i := 0 to AIndex-1 do
+  if (AIndex < Count) and (AIndex > 0) then
   begin
-    PItem := PItem^.next;
-  end;
+    PItem := FStart;
 
-  PItem^.data := AValue;
+    for i := 0 to AIndex-1 do
+    begin
+      PItem := PItem^.next;
+    end;
+
+    PItem^.data := AValue;
+  end;
 end;
 
 procedure TAdLinkedList.StartIteration;

@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, StdCtrls, AdPNG, AdSetupDlg, AdSprites, AdParticles;
+  Dialogs, AdDraws, AdClasses, StdCtrls,
+  AdPNG, AdSetupDlg, AdSprites, AdParticles, AdPerformanceCounter;
 
 type
   TKey = (kyUp, kyDown, kyLeft, kyRight);

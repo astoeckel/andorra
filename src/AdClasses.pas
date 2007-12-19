@@ -19,27 +19,10 @@ unit AdClasses;
 
 interface
 
-uses {$IFDEF FPC}intfgraphics, FPImage, LclType,{$ENDIF} SysUtils, Classes, {$INCLUDE AdTypes.inc},Graphics;
+uses
+  AdTypes, AdBitmapClass;
 
-type
-  {Represents an RGBA Color format with more than 8-Bit per channel. (But usually it is used as a 8-Bit format and the values are from 0 to 255. )}
-  TAndorraColor = packed record
-    {Contains the color informations. They are stored in an integer (not in a byte as usual), because light sources can be more intensive (and each channel can have a value bigger than 255)}
-    r,g,b,a:integer;
-  end;
-
-  {A simple vector (used for texture formates)}
-  TAdVector2 = packed record
-    {Stores the vectors information.}
-    x,y:single;
-  end;
-
-  {Another simple vector with 3 parameters}
-  TAdVector3 = packed record
-    {Stores the vectors information.}
-    x,y,z:single;
-  end;
-
+type   
   {Andorras vertex format}
   TAdVertex = record
     {The position of the vertex}
@@ -58,19 +41,8 @@ type
   {Represtents an index buffer}
   TAdIndexArray = array of Word;
 
-  {A matrix}
-  TAdMatrix = array[0..3] of array[0..3] of single;
-
-  
   {Contains information about how the scene is displayed.}
-  TAdOption = (
-    doFullscreen, //< Specifies weather the application should run in the fullscreen mode or not
-    doVSync, //< If turned on, the frame rate is equal to the vertical frequenzy of the screen
-    doHardware,//< Run in hardware mode? (WARNING: Should be set!)
-    doZBuffer, //< The ZBuffer has to be used if you are using 3D Objects in your scene
-    doAntialias,//< should Antialiasing be used
-    doLights//<Turn lights off/on.
-  );
+  TAdOption = (doFullscreen, doVSync, doHardware, doZBuffer, doAntialias, doLights, doMipmaps);
 
   {Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
   TAdOptions = set of TAdOption;
@@ -85,54 +57,6 @@ type
     BitCount:byte;
     //The horizontal refresh rate. Can be zero to use the desktops refresh rate.
     Freq:integer;
-  end;
-
-  PByte = ^Byte;
-
-  {A 32-Bit Bitmap}
-  TAdBitmap = class
-    private
-      FMemory:PByte;
-      FWidth:integer;
-      FHeight:integer;
-      FSize:int64;
-      procedure ClearMemory;
-    protected
-    public
-      {Creates an instance of TAdBitmap}
-      constructor Create;
-      {Destroys the instance of this TAdBitmap and clears all memory.}
-      destructor Destroy;override;
-      {Reserves memory for the bitmap. Old memory will be cleared. Use ReserveMemory(0,0) to clear the bitmap's memory.}
-      procedure ReserveMemory(AWidth,AHeight:integer);
-      {Assignes a bitmap. If ABitmap.Transparent is turned on, an alpha channel will be generated automaticly.}
-      procedure AssignBitmap(ABitmap:TBitmap);
-      {Assignes a bitmap as AlphaChannel.}
-      procedure AssignAlphaChannel(ABitmap:TBitmap);
-      {Copies the loaded bitmap into a TBitmap. If AIgnoreAlphaChannel is false, the bitmap will be drawed transparent.}
-      procedure AssignToBitmap(ABitmap:TBitmap;AIgnoreAlphaChannel:boolean=true);
-      {Copies the loaded bitmap's alphachannel into a TBitmap.}
-      procedure AssignAlphaChannelToBitmap(ABitmap:TBitmap);
-      {Saves the loaded bitmap into a stream}
-      procedure SaveToStream(AStream:TStream);
-      {Loads a bitmap from a stream}
-      procedure LoadFromStream(AStream:TStream);
-      {Saves the bitmap to a file}
-      procedure SaveToFile(AFile:string);
-      {Loads a bitmap from a file}
-      procedure LoadFromFile(AFile:string);
-      {Returns a pointer on the first pixel of a line.}
-      function ScanLine(AY:integer):pointer;overload;
-      {Returns a pointer on the first pixel in the bitmap.}
-      function ScanLine:pointer;overload;
-      {Returnes weather memory is reserved.}
-      function Loaded:boolean;
-      {Returns the width of the bitmap.}
-      property Width:integer read FWidth;
-      {Returns the height of the bitmap.}
-      property Height:integer read FHeight;
-      {Returns the size of the bitmap in bytes. (Width*Height*4)}
-      property Size:int64 read FSize;
   end;
 
   {Declares the different types of log information.}
@@ -172,16 +96,10 @@ type
     adTriangleFan//<The vertices are drawn as a triangle fan
   );
 
-  TAd2DFilterMode = (
-    fmMagFilter,//< Filter for textures, which are displayed bigger than they are in reality
-    fmMinFilter,//< Filter for textures, which are displayed smaller than they are in reality
-    fmMipFilter//< Filter for the translation between mipmaps (not used now)
-  );
-
   TAd2DTextureFilter = (
-    atPoint,//<Worst picture quality, default filter
-    atLinear,//<Good filter quality
-    atAnisotropic//<Another good filter ^^
+    atPoint,
+    atLinear,
+    atAnisotropic
   );
   
   {An abstract class which represents a light in Andorra's engine. }
@@ -242,11 +160,11 @@ type
       FHeight:integer;
       FMaxLightCount:integer;
       FAmbientColor:TAndorraColor;
-      FViewPort:TRect;
+      FViewPort:TAdRect;
       procedure SetOptions(AValue:TAdOptions);virtual;
       procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
       procedure SetAmbientLight(AValue:TAndorraColor);virtual;
-      procedure SetViewPort(AValue:TRect);virtual;
+      procedure SetViewPort(AValue:TAdRect);virtual;
     public
       {Creates and returns a TAd2DLight}
       function CreateLight:TAd2DLight;virtual;abstract;
@@ -284,9 +202,6 @@ type
       {Returns the current view and projection matrix}
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);virtual;abstract;
 
-      {Set the texture filter for better picture quality}
-      procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);virtual;abstract;
-
       {Returns the width of the engines surface}
       property Width:integer read FWidth;
       {Returns the height of the engines surface}
@@ -298,7 +213,7 @@ type
       {Read and write the AmbientLightColor. This will only work, if doLights is included in "options".}
       property AmbientLightColor:TAndorraColor read FAmbientLight write SetAmbientLight;
       {The rectangle where the output is made}
-      property Viewport:TRect read FViewPort write SetViewPort;
+      property Viewport:TAdRect read FViewPort write SetViewPort;
   end;
 
   {An abstract class which represents a light in Andorra's engine. }
@@ -391,617 +306,32 @@ type
       property Texture:TAd2DTexture read FTexture write SetTexture;
   end;
 
+  TAd2dBitmapTextureParameters = record
+    BitDepth:byte;
+    UseMipMaps:boolean;
+    MagFilter:TAd2dTextureFilter;
+    MinFilter:TAd2dTextureFilter;
+    MipFilter:TAd2dTextureFilter;
+  end;
+
   {An abstract class which represents a bitmap texture in Andorra's engine. }
   TAd2DBitmapTexture = class(TAd2DTexture)
     private
     protected
     public
-      {Set the texture of the mesh here. Set to nil, if you want no texture.}
+      {Frees the textures memory}
       procedure FlushTexture;virtual;abstract;
-      {Loads the texture from a TAdBitmap.}
-      procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);virtual;abstract;
-      {Saves the texture to a TAdBitmap.}
-      procedure SaveToBitmap(ABmp:TAdBitmap);virtual;abstract;
+      {Loads the texture from a TAd2dBitmap.}
+      procedure LoadFromBitmap(ABmp:TAd2dBitmap; AParams:TAd2dBitmapTextureParameters);virtual;abstract;
+      {Saves the texture to a TAd2dBitmap.}
+      procedure SaveToBitmap(ABmp:TAd2dBitmap);virtual;abstract;
     end;
 
 
   //Used to import the CreateApplication function form the DLL.
   TAdCreateApplicationProc = function:TAd2DApplication;stdcall;
 
-  //A record which contains one pixel of the data stored in a normal 24Bit TBitmap.
-  TRGBRec = packed record
-    //The colour data
-    r,g,b:byte;
-  end;
-  //Pointer on TRGBRec.
-  PRGBRec = ^TRGBRec;
-
-  //A record which contains one pixel of the data stored in a TAdBitmap
-  TRGBARec = packed record
-    r,g,b,a:byte;
-  end;
-  //Pointer on TRGBARec
-  PRGBARec = ^TRGBARec;
-
-{Returns a TAndorraColor value with alphachannel.}
-function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
-{Returns a TAndorraColor value without alphachannel. (To be percise, the alphachannel is 255.)}
-function Ad_RGB(r,g,b:byte):TAndorraColor;
-{Converts an AndorraColor into a string.}
-function AdColorToString(AColor:TAndorraColor):string;
-{Converts a string into an andorra color.}
-function StringToAdColor(AString:string):TAndorraColor;    
-{Converts a TAndorraColor into a TColor value.}
-function AdColorToColor(AAdColor:TAndorraColor):LongWord;
-{Converts a TColor into a TAndorraColor value}
-function ColorToAdColor(AColor:LongWord):TAndorraColor;
-
-{Returns the "R" segment of a TColor}
-function GetRValue(AColor:LongWord):byte;
-{Returns the "G" segment of a TColor}
-function GetGValue(AColor:LongWord):byte;
-{Returns the "B" segment of a TColor}
-function GetBValue(AColor:LongWord):byte;
-
-{Converts a R, a G and a B value into a TColor value.}
-function RGB(r,g,b:byte):LongWord;
-
-{Compares two AndorraColors.}
-function CompareColors(col1,col2:TAndorraColor):boolean;
-
-{Converts an integer into a byte. If the value was smaller than zero the funktion returns 0, if it was bigger than 255 it returns 255.}
-function Cut(AValue:integer):byte;
-
-{Creates an Andorra Vector.}
-function AdVector3(AX,AY,AZ:double):TAdVector3;
-{Creates an Andorra Vector.}
-function AdVector2(AX,AY:double):TAdVector2;
-
-{Multiplies two matrices.}
-function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
-{Creates a translation matrix.}
-function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
-{Creates a scalation matrix.}
-function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
-{Creates a rotation matrix.}
-function AdMatrix_RotationX(angle:single):TAdMatrix;
-{Creates a rotation matrix.}
-function AdMatrix_RotationY(angle:single):TAdMatrix;
-{Creates a rotation matrix.}
-function AdMatrix_RotationZ(angle:single):TAdMatrix;
-
-const
-  AdMatrix_Clear    : TAdMatrix = ((0,0,0,0),(0,0,0,0),(0,0,0,0),(0,0,0,0));
-  AdMatrix_Identity : TAdMatrix = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1));
-
-{Compares two rectangles.}
-function CompRects(Rect1,Rect2:TRect):boolean;
-
 implementation
-
-function CompRects(Rect1,Rect2:TRect):boolean;
-begin
-  result := (Rect1.Left = Rect2.Left) and
-            (Rect1.Right = Rect2.Right) and
-            (Rect1.Top = Rect2.Top) and
-            (Rect1.Bottom = Rect2.Bottom);
-end;
-
-
-function AdVector3(AX,AY,AZ:double):TAdVector3;
-begin
-  with result do
-  begin
-    x := ax;
-    y := ay;
-    z := az;
-  end;
-end;
-
-function AdVector2(AX,AY:double):TAdVector2;
-begin
-  with result do
-  begin
-    x := ax;
-    y := ay;
-  end;
-end;
-
-function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
-begin
-  result.a := a;
-  result.r := r;
-  result.g := g;
-  result.b := b;
-end;
-
-function Ad_RGB(r,g,b:byte):TAndorraColor;
-begin
-  result := Ad_ARGB(255,r,g,b);
-end;
-
-function CompareColors(col1,col2:TAndorraColor):boolean;
-begin
-  result := (col1.a = col2.a) and
-            (col1.r = col2.r) and
-            (col1.g = col2.g) and
-            (col1.b = col2.b);
-end;
-
-function GetRValue(AColor:LongWord):byte;
-begin
-  result := AColor and 255;
-end;
-
-function GetGValue(AColor:LongWord):byte;
-begin
-  result := (AColor shr 8) and 255;
-end;
-
-function GetBValue(AColor:LongWord):byte;
-begin
-  result := (AColor shr 16) and 255;
-end;
-
-function AdColorToString(AColor:TAndorraColor):string;
-begin
-  result := FormatFloat('000',AColor.a)+FormatFloat('000',AColor.r)+
-            FormatFloat('000',AColor.g)+FormatFloat('000',AColor.b);
-end;
-
-function StringToAdColor(AString:string):TAndorraColor;
-begin
-  result.a  := StrToInt(Copy(AString,1,3));
-  result.r  := StrToInt(Copy(AString,4,3));
-  result.g  := StrToInt(Copy(AString,7,3));
-  result.b  := StrToInt(Copy(AString,10,3));
-end;
-
-function RGB(r,g,b:byte):LongWord;
-begin
-  result := R + G shl 8 + B shl 16; 
-end;
-
-function Cut(AValue:integer):byte;
-begin
-  if AValue < 255 then
-  begin
-    if AValue < 0 then
-    begin
-      result := 0;
-    end
-    else
-    begin
-      result := AValue;
-    end;
-  end
-  else
-  begin
-    result := 255;
-  end;
-end;
-
-function AdColorToColor(AAdColor:TAndorraColor):LongWord;
-begin
-  result := RGB(AAdColor.r,AAdColor.g,AAdColor.b);
-end;
-
-function ColorToAdColor(AColor:LongWord):TAndorraColor;
-begin
-  result := Ad_RGB(AColor,AColor shr 8,AColor shr 16);
-end;
-
-//Matrix functions
-function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
-var x,y:integer;
-begin
-  for x := 0 to 3 do
-  begin
-    for y := 0 to 3 do
-    begin
-      result[x,y] := amat2[0,y]*amat1[x,0] + amat2[1,y]*amat1[x,1] + amat2[2,y]*amat1[x,2] +amat2[3,y]*amat1[x,3];
-    end;
-  end;
-end;
-
-function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
-begin
-  result := AdMatrix_Identity;
-  result[3,0] := tx;
-  result[3,1] := ty;
-  result[3,2] := tz;
-end;
-
-function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := sx;
-  result[1,1] := sy;
-  result[2,2] := sz;
-  result[3,3] := 1;
-end;
-
-function AdMatrix_RotationX(angle:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := 1;
-  result[1,1] := cos(angle);
-  result[1,2] := sin(angle);
-  result[2,1] := -sin(angle);
-  result[2,2] := cos(angle);
-  result[3,3] := 1;
-end;
-
-function AdMatrix_RotationY(angle:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := cos(angle);
-  result[0,2] := -sin(angle);
-  result[1,1] := 1;
-  result[2,0] := sin(angle);
-  result[2,2] := cos(angle);
-  result[3,3] := 1;
-end;
-
-function AdMatrix_RotationZ(angle:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := cos(angle);
-  result[0,1] := sin(angle);
-  result[1,0] := -sin(angle);
-  result[1,1] := cos(angle);
-  result[2,2] := 1;
-  result[3,3] := 1;
-end;
-
-{ TAdBitmap }
-
-constructor TAdBitmap.Create;
-begin
-  inherited Create;
-  FWidth := 0;
-  FHeight := 0;
-  FSize := 0;
-  FMemory := nil;
-end;
-
-destructor TAdBitmap.Destroy;
-begin
-  ClearMemory;
-  inherited;
-end;
-
-procedure TAdBitmap.AssignAlphaChannel(ABitmap: TBitmap);
-var sl2:PRGBARec;
-    x,y:integer;
-    {$IFDEF FPC}
-      IntfBmp:TLazIntfImage;
-      acol:TFPColor;
-    {$ELSE}
-      sl1:PRGBRec;
-    {$ENDIF}
-begin
-  {$IFDEF FPC}
-    if Loaded then
-    begin
-      IntfBmp := TLazIntfImage.Create(0,0);
-      IntfBmp.LoadFromBitmap(ABitmap.Handle,ABitmap.MaskHandle);
-      sl2 := Scanline;
-      for x := 0 to FHeight - 1 do
-      begin
-        for y := 0 to FWidth - 1 do
-        begin
-          acol := IntfBmp.Colors[x,y];
-          sl2^.a := (acol.red +
-                     acol.green +
-                     acol.blue) div 3;
-          inc(sl2);
-        end;
-      end;
-      IntfBmp.Free;
-    end;
-  {$ELSE}
-    if Loaded then
-    begin
-      ABitmap.PixelFormat := pf24Bit;
-      sl2 := Scanline;
-      for y := 0 to FHeight - 1 do
-      begin
-        sl1 := ABitmap.ScanLine[y];
-        for x := 0 to FWidth - 1 do
-        begin
-          sl2^.a := (sl1^.r+sl1^.g+sl1^.b) div 3;
-          inc(sl1);
-          inc(sl2);
-        end;
-      end;
-    end;
-  {$ENDIF}
-end;
-
-procedure TAdBitmap.AssignAlphaChannelToBitmap(ABitmap: TBitmap);
-var
-  sl2:PRGBARec;
-  x,y:integer;
-  {$IFDEF FPC}
-    IntfBmp:TLazIntfImage;
-    acol:TFPColor;
-    h1,h2:HBitmap;
-  {$ELSE}
-    sl1:PRGBRec;
-  {$ENDIF}
-begin
-  {$IFDEF FPC}
-    if Loaded then
-    begin
-      IntfBmp := TLazIntfImage.Create(FWidth,FHeight);
-      sl2 := Scanline;
-      for y := 0 to FHeight - 1 do
-      begin
-        for x := 0 to FWidth - 1 do
-        begin
-          acol.blue := sl2^.a;
-          acol.red := sl2^.a;
-          acol.green := sl2^.a;
-          IntfBmp.Colors[x,y] := acol;
-          inc(sl2);
-        end;
-      end;
-      ABitmap.FreeImage;
-      IntfBmp.CreateBitmap(h1,h2,false);
-      ABitmap.Handle := h1;
-      ABitmap.MaskHandle := h2;
-      IntfBmp.Free;
-    end;
-  {$ELSE}
-    if Loaded then
-    begin
-      ABitmap.PixelFormat := pf24Bit;
-      ABitmap.Width := FWidth;
-      ABitmap.Height := FHeight;
-      sl2 := Scanline;
-      for y := 0 to FHeight - 1 do
-      begin
-        sl1 := ABitmap.Scanline[y];
-        for x := 0 to FWidth - 1 do
-        begin
-          sl1^.r := sl2^.a;
-          sl1^.g := sl2^.a;
-          sl1^.b := sl2^.a;
-          inc(sl2);
-          inc(sl1);
-        end;
-      end;
-    end;
-  {$ENDIF}
-end;
-
-procedure TAdBitmap.AssignBitmap(ABitmap: TBitmap);
-var
-  sl2:PRGBARec;
-  x,y:integer;
-  a:byte;
-  tr,tg,tb:byte;
-  {$IFDEF FPC}
-    IntfBmp:TLazIntfImage;
-    acol:TFPColor;
-  {$ELSE}
-    sl1:PRGBRec;
-  {$ENDIF}
-begin
-  ReserveMemory(ABitmap.Width,ABitmap.Height);
-  
-  {$IFDEF FPC}
-    IntfBmp := TLazIntfImage.Create(0,0);
-    IntfBmp.LoadFromBitmap(ABitmap.Handle,ABitmap.MaskHandle);
-  {$ELSE}
-    ABitmap.PixelFormat := pf24Bit;
-  {$ENDIF}
-
-  sl2 := Scanline;
-  tr := GetRValue(ABitmap.TransparentColor);
-  tg := GetGValue(ABitmap.TransparentColor);
-  tb := GetBValue(ABitmap.TransparentColor);
-  for y := 0 to FHeight - 1 do
-  begin
-    {$IFDEF FPC}{$ELSE}
-      sl1 := ABitmap.ScanLine[y];
-    {$ENDIF}
-    for x := 0 to FWidth - 1 do
-    begin
-      {$IFDEF FPC}
-        acol := IntfBmp.Colors[x,y];
-        //The lazarus bitmap seems to be BGR and not RGB
-        sl2^.r := acol.blue;
-        sl2^.g := acol.green;
-        sl2^.b := acol.red;
-      {$ELSE}
-        sl2^.r := sl1^.r;
-        sl2^.g := sl1^.g;
-        sl2^.b := sl1^.b;
-        inc(sl1);
-      {$ENDIF}
-      if (ABitmap.Transparent) and (sl2^.b = tr) and (sl2^.g = tg) and (sl2^.r = tb) then
-      begin
-        a := 0;
-      end
-      else
-      begin
-        a := 255;
-      end;
-      sl2^.a := a;
-      inc(sl2);
-    end;
-  end;
-  {$IFDEF FPC}
-    IntfBmp.Free;
-  {$ENDIF}
-end;
-
-procedure TAdBitmap.AssignToBitmap(ABitmap: TBitmap;AIgnoreAlphaChannel:boolean=true);
-var
-  sl2:PRGBARec;
-  x,y:integer;
-  a:single;
-  {$IFDEF FPC}
-    IntfBmp:TLazIntfImage;
-    acol:TFPColor;
-  {$ELSE}
-    sl1:PRGBRec;
-  {$ENDIF}
-begin
-  if Loaded then
-  begin
-     ABitmap.PixelFormat := pf24Bit;
-     ABitmap.Width := FWidth;
-     ABitmap.Height := FHeight;
-    {$IFDEF FPC}
-      IntfBmp := TLazIntfImage.Create(0,0);
-      IntfBmp.LoadFromBitmap(ABitmap.Handle,ABitmap.MaskHandle);
-    {$ENDIF}
-    sl2 := Scanline;
-    for y := 0 to FHeight - 1 do
-    begin
-      {$IFDEF FPC}{$ELSE}
-        sl1 := ABitmap.Scanline[y];
-      {$ENDIF}
-      for x := 0 to FWidth - 1 do
-      begin
-        if AIgnoreAlphaChannel then
-        begin
-          {$IFDEF FPC}
-            with acol do
-            begin
-              //The lazarus bitmap seems to be BGR and not RGB
-              blue := sl2^.r;
-              green := sl2^.g;
-              red := sl2^.b;
-            end;
-            IntfBmp.Colors[x,y] := acol;
-          {$ELSE}
-            sl1^.r := sl2^.r;
-            sl1^.g := sl2^.g;
-            sl1^.b := sl2^.b;
-          {$ENDIF}
-        end
-        else
-        begin
-          a := (sl2^.a / 255);
-          {$IFDEF FPC}
-            acol := IntfBmp.Colors[x,y];
-            with acol do
-            begin
-              red   := round((acol.red*(1-a)) + (sl2^.r*a));
-              green := round((acol.green*(1-a)) + (sl2^.g*a));
-              blue  := round((acol.blue*(1-a)) + (sl2^.b*a));
-            end;
-          {$ELSE}
-            sl1^.r := round((sl1^.r*(1-a)) + (sl2^.r*a));
-            sl1^.g := round((sl1^.g*(1-a)) + (sl2^.g*a));
-            sl1^.b := round((sl1^.b*(1-a)) + (sl2^.b*a));
-          {$ENDIF}
-        end;
-        inc(sl2);
-        {$IFDEF FPC}
-        {$ELSE}
-          inc(sl1);
-        {$ENDIF}
-      end;
-    end;
-  end;
-end;
-
-procedure TAdBitmap.SaveToStream(AStream: TStream);
-var ASize:int64;
-begin
-  ASize := FSize;
-  AStream.Write(ASize,SizeOf(ASize));
-  AStream.Write(FWidth,SizeOf(FWidth));
-  AStream.Write(FHeight,SizeOf(FHeight));
-  AStream.Write(FMemory^,ASize)
-end;
-
-procedure TAdBitmap.LoadFromStream(AStream: TStream);
-var ASize:int64;
-begin
-  ClearMemory;
-  AStream.Read(ASize,SizeOf(ASize));
-  AStream.Read(FWidth,SizeOf(FWidth));
-  AStream.Read(FHeight,SizeOf(FHeight));
-  ReserveMemory(FWidth,FHeight);
-  AStream.Read(FMemory^,ASize)
-end;
-
-procedure TAdBitmap.LoadFromFile(AFile: string);
-var
-  ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  ms.LoadFromFile(AFile);
-  ms.Position := 0;
-  LoadFromStream(ms);
-  ms.Free;
-end;
-
-procedure TAdBitmap.SaveToFile(AFile: string);
-var
-  ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  SaveToStream(ms);
-  ms.SaveToFile(AFile);
-  ms.Free;
-end;
-
-function TAdBitmap.Loaded: boolean;
-begin
-  result := (FMemory <> nil);
-end;
-
-procedure TAdBitmap.ReserveMemory(AWidth, AHeight: integer);
-begin
-  ClearMemory;
-  FSize := AWidth*AHeight*4;
-  FWidth := AWidth;
-  FHeight := AHeight;
-  GetMem(FMemory,FSize);
-end;
-
-procedure TAdBitmap.ClearMemory;
-begin
-  if Loaded then
-  begin
-    FreeMem(FMemory,FSize);
-    FMemory := nil;
-  end;
-end;
-
-function TAdBitmap.ScanLine: Pointer;
-begin
-  if Loaded then
-  begin
-    result := FMemory;
-  end
-  else
-  begin
-    result := nil;
-  end;
-end;
-
-function TAdBitmap.ScanLine(AY: integer): Pointer;
-var ptr:pByte;
-begin
-  if ay < Height then
-  begin
-    ptr := Scanline;
-    inc(ptr,AY*4*FWidth);
-    result := ptr;
-  end
-  else
-  begin
-    result := Scanline;
-  end;
-end;
 
 { TAdApplication }
 
@@ -1021,7 +351,7 @@ begin
   FOptions := AValue;
 end;
 
-procedure TAd2DApplication.SetViewPort(AValue: TRect);
+procedure TAd2DApplication.SetViewPort(AValue: TAdRect);
 begin
   FViewPort := AValue;
 end;

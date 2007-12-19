@@ -20,7 +20,7 @@ unit AdGUIConnector;
 
 interface
 
-uses Forms, Controls, Classes, AdGUI, {$I AdTypes.inc};
+uses Forms, Controls, Classes, AdGUI, AdTypes, Types;
 
 type
   TAdGUIConnector = class
@@ -210,7 +210,7 @@ end;
 procedure TAdGUIConnector.MouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 begin
-  FParent.MouseWheel(Shift, WheelDelta, MousePos, Handled);
+  FParent.MouseWheel(Shift, WheelDelta, AdPoint(MousePos.X, MousePos.Y), Handled);
   if Assigned(FOldMouseWheel) then
   begin
     FOldMouseWheel(Sender, Shift, WheelDelta, MousePos, Handled);

@@ -19,40 +19,39 @@ unit AdPNG;
 
 interface
 
-uses PngImage, AdDraws, AdClasses, Classes, Graphics;
+uses
+  Graphics, Classes, AdBitmap, AdTypes, PngImage, AdVCLFormats;
 
 
 type
   {A compressor to store textures in the png format}
-  TPNGCompressor = class(TCompressor)
+  TAdPNGCompressor = class(TAdGraphicCompressor)
     public
-      //Returns the initial letters of this compressor.
-      function GetInitial:TInitialLetters;override;
-      //Writes the two bitmaps into a stream
-      procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
-      //Reads the two bitmaps from the stream and copies them into ABitmap and AAlphaChannel.
-      procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
+      class function ID:TAdVeryShortString;override;
+      procedure Write(ABitmap:TAdBitmap; AStream:TStream);override;
+      procedure Read(ABitmap:TAdBitmap; AStream:TStream);override;
   end;
 
   {A loader for PNG files and TPNGObject.}
-  TPNGFormat = class(TPictFormat)
+  TAdPNGFormat = class(TAdGraphicFormat)
     public
-      //Fills a list with its supported graphic extension.
-      procedure FileExts(strs:TStringList);override;
-      //Loads the graphic from a file and stros it in a TAdBitmap.
-      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
-      //Assigns an TGraphic and  stores it in a TAdBitmap
-      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
-      //Returns true if this format supports the graphicclass defined in AGraphicClass
-      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
+      class procedure FileExts(strs:TStrings);override;
+      class function SupportsObject(AGraphic:TObject):boolean;override;
+      function LoadFromFile(ABitmap:TAdBitmap; AFile:string;
+        ATransparent:Boolean; ATransparentColor:LongInt):boolean;override;
+      function Assign(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+      function AssignTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+      function AssignAlphaChannel(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+      function AssignAlphaChannelTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
 end;
 
 implementation
 
-procedure GetAlpha(APNG:TPNGObject;ABMP:TAdBitmap);
-var x,y:integer;
-    sl1:PByteArray;
-    sl2:PRGBARec;
+procedure GetAlpha(APNG:TPNGObject; ABMP:TAdBitmap);
+var
+  x,y:integer;
+  sl1:PByteArray;
+  sl2:PRGBARec;
 begin
   sl2 := ABMP.ScanLine;
   for y := 0 to APNG.Height-1 do
@@ -67,9 +66,10 @@ begin
 end;
 
 procedure GetRGB(APNG:TPNGObject;ABMP:TAdBitmap;SetAlpha:boolean=false);
-var x,y:integer;
-    sl1:PRGBRec;
-    sl2:PRGBARec;
+var
+  x,y:integer;
+  sl1:PRGBRec;
+  sl2:PRGBARec;
 begin
   sl2 := ABMP.ScanLine;
   for y := 0 to APNG.Height-1 do
@@ -87,60 +87,63 @@ begin
   end;
 end;
 
+procedure AddAlpha(APNG:TPNGObject;ABMP:TAdBitmap);
+var
+  x,y:integer;
+  sl1:PByteArray;
+  sl2:PRGBARec;
+begin
+  sl2 := ABMP.ScanLine;
+  for y := 0 to APNG.Height-1 do
+  begin
+    sl1 := APNG.AlphaScanline[y];
+    for x := 0 to APNG.Width - 1 do
+    begin
+      sl1[x] := sl2^.a;
+      inc(sl2);
+    end;
+  end;
+end;
+
+procedure AddRGB(APNG:TPNGObject;ABMP:TAdBitmap);
+var
+  Bmp:TBitmap;
+begin
+  Bmp := TBitmap.Create;
+  ABMP.AssignTo(Bmp);
+  APNG.Assign(Bmp);
+  Bmp.Free;
+end;
+
+
 { TPNGCompressor }
 
-function TPNGCompressor.GetInitial: TInitialLetters;
+class function TAdPNGCompressor.ID: TAdVeryShortString;
 begin
   result := #2+'PNG'
 end;
 
-procedure TPNGCompressor.Read(AStream: TStream; ABmp:TAdBitmap);
+procedure TAdPNGCompressor.Read(ABitmap:TAdBitmap; AStream:TStream);
 var
   PNG:TPNGObject;
 begin
   PNG := TPNGObject.Create;
   PNG.LoadFromStream(AStream);
-  ABmp.ReserveMemory(PNG.Width,PNG.Height);
-  GetAlpha(PNG,ABmp);
+  ABitmap.ReserveMemory(PNG.Width,PNG.Height);
+  GetAlpha(PNG,ABitmap);
   PNG.RemoveTransparency;
-  GetRGB(PNG,ABmp);
+  GetRGB(PNG,ABitmap);
   PNG.Free;
 end;
 
-procedure TPNGCompressor.Write(AStream: TStream; ABmp:TAdBitmap);
+procedure TAdPNGCompressor.Write(ABitmap:TAdBitmap; AStream:TStream);
 var
   PNG:TPNGObject;
-  procedure AddAlpha(APNG:TPNGObject;ABMP:TAdBitmap);
-  var x,y:integer;
-      sl1:PByteArray;
-      sl2:PRGBARec;
-  begin
-    sl2 := ABMP.ScanLine;
-    for y := 0 to APNG.Height-1 do
-    begin
-      sl1 := APNG.AlphaScanline[y];
-      for x := 0 to APNG.Width - 1 do
-      begin
-        sl1[x] := sl2^.a;
-        inc(sl2);
-      end;
-    end;
-  end;
-
-  procedure AddRGB(APNG:TPNGObject;ABMP:TAdBitmap);
-  var Bmp:TBitmap;
-  begin
-    Bmp := TBitmap.Create;
-    ABMP.AssignToBitmap(Bmp);
-    APNG.Assign(Bmp);
-    Bmp.Free;
-  end;
-   
 begin
   PNG := TPNGObject.Create;
-  AddRGB(PNG,ABmp);
+  AddRGB(PNG,ABitmap);
   PNG.CreateAlpha;
-  AddAlpha(PNG,ABmp);
+  AddAlpha(PNG,ABitmap);
   PNG.CompressionLevel := 9;
   PNG.SaveToStream(AStream);
   PNG.Free;
@@ -148,42 +151,97 @@ end;
 
 { TPNGFormat }
 
-procedure TPNGFormat.AssignGraphic(AGraphic: TGraphic; ABmp: TAdBitmap);
-var png:TPNGObject;
-begin
-  if AGraphic is TPNGObject then
-  begin
-    png := TPNGObject(AGraphic);
-    ABmp.ReserveMemory(png.Width,png.Height);
-    GetRGB(png,ABMP,true);
-    if png.AlphaScanline[0] <> nil then
-    begin
-      GetAlpha(png,ABMP);
-    end;
-  end;
-end;
-
-procedure TPNGFormat.FileExts(strs: TStringList);
+class procedure TAdPNGFormat.FileExts(strs: TStrings);
 begin
   strs.Add('.png')
 end;
 
-function TPNGFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;
-  Transparent: boolean; TransparentColor: TColor): boolean;
-var png:TPNGObject;
-    bmp:TBitmap;
+class function TAdPNGFormat.SupportsObject(AGraphic: TObject): boolean;
+begin
+  result := AGraphic is TPNGObject;
+end; 
+
+function TAdPNGFormat.Assign(ABitmap: TAdBitmap; AGraphic:TObject): boolean;
+var
+  png:TPNGObject;
+begin
+  result := false;
+  if AGraphic is TPNGObject then
+  begin
+    png := TPNGObject(AGraphic);
+    ABitmap.ReserveMemory(png.Width,png.Height);
+    GetRGB(png,ABitmap,true);
+    if png.AlphaScanline[0] <> nil then
+    begin
+      GetAlpha(png,ABitmap);
+    end;
+    result := true;
+  end;
+end;
+
+function TAdPNGFormat.AssignAlphaChannel(ABitmap: TAdBitmap;
+  AGraphic: TObject): boolean;
+var
+  png:TPNGObject;
+begin
+  result := false;
+  if AGraphic is TPNGObject then
+  begin
+    png := TPNGObject(AGraphic);
+    if png.AlphaScanline[0] <> nil then
+    begin
+      GetAlpha(png, ABitmap);
+    end;
+    result := true;
+  end;
+end;
+
+function TAdPNGFormat.AssignAlphaChannelTo(ABitmap: TAdBitmap;
+  AGraphic: TObject): boolean;
+var
+  png:TPNGObject;
+begin
+  result := false;
+  if (AGraphic is TPNGObject) and (ABitmap.Loaded) then
+  begin
+    png := TPNGObject(AGraphic);
+    png.CreateAlpha;
+    AddAlpha(png, ABitmap);
+    result := true;
+  end;
+end;
+
+function TAdPNGFormat.AssignTo(ABitmap: TAdBitmap;
+  AGraphic: TObject): boolean;
+var
+  png:TPNGObject;
+begin
+  result := false;
+  if (AGraphic is TPNGObject) and (ABitmap.Loaded) then
+  begin
+    png := TPNGObject(AGraphic);
+    AddRGB(png, ABitmap);
+    result := true;
+  end;
+end;
+
+function TAdPNGFormat.LoadFromFile(ABitmap:TAdBitmap; AFile:string;
+        ATransparent:Boolean; ATransparentColor:LongInt): boolean;
+var
+  png:TPNGObject;
+  bmp:TBitmap;
 begin
   result := true;
   png := TPNGObject.Create;
   try
     png.LoadFromFile(AFile);
-    if Transparent then
+    if ATransparent then
     begin
       if png.AlphaScanline[0] <> nil then
       begin
-        ABmp.ReserveMemory(png.Width,png.Height);
-        GetRGB(png,ABmp);
-        GetAlpha(png,ABmp);
+        ABitmap.ReserveMemory(png.Width,png.Height);
+        GetRGB(png,ABitmap);
+        GetAlpha(png,ABitmap);
       end
       else
       begin
@@ -191,16 +249,16 @@ begin
         png.AssignTo(bmp);
         bmp.TransparentMode := tmFixed;
         bmp.Transparent := true;
-        bmp.TransparentColor := TransparentColor;
-        ABmp.AssignBitmap(bmp);
+        bmp.TransparentColor := ATransparentColor;
+        ABitmap.Assign(bmp);
         bmp.Free;
       end;
     end
     else
     begin
       png.RemoveTransparency;
-      ABmp.ReserveMemory(png.Width,png.Height);
-      GetRGB(png,Abmp,true);
+      ABitmap.ReserveMemory(png.Width,png.Height);
+      GetRGB(png,ABitmap,true);
     end;
   except
     result := false;
@@ -208,13 +266,8 @@ begin
   png.Free;
 end;
 
-function TPNGFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
-begin
-  result := AGraphicClass = TPNGObject;
-end;
-
 initialization
-  RegisterCompressor(TPNGCompressor);
-  RegisterFormat(TPNGFormat);
+  RegisterGraphicCompressor(TAdPNGCompressor);
+  RegisterGraphicFormat(TAdPNGFormat);
 
 end.

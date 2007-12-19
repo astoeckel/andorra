@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPng, AdSetupDlg;
+  Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPng, AdSetupDlg,
+  AdPerformanceCounter, AdTypes;
 
 type
   TPlayer = class(TPhysicalCylinderSprite);
@@ -122,9 +123,9 @@ begin
 
       with TPhysicalBoxSprite.Create(AdSpriteEngine) do
       begin
-        X := 0;
-        Y := 690;
         Image := AdImageList.Find('plate');
+        X := 0;
+        Y := ClientHeight - Height;
         Width := ClientWidth;
         Typ := ptStatic;
         InitializeShape;

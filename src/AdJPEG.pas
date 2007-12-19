@@ -18,81 +18,87 @@ unit AdJPEG;
 
 interface
 
-uses JPEG, AdDraws, AdClasses, Classes, Graphics;
+uses JPEG, AdDraws, AdClasses, AdVCLFormats, AdBitmap, Classes, Graphics;
 
 type
   {A loader for JPEG files and TJPEGImage.}
-  TJPEGFormat = class(TPictFormat)
+  TAdJPEGFormat = class(TAdGraphicFormat)
     public
-      //Fills a list with its supported graphic extension.
-      procedure FileExts(strs:TStringList);override;
-      //Loads the graphic from a file and stros it in a TAdBitmap.
-      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
-      //Assigns an TGraphic and  stores it in a TAdBitmap
-      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
-      //Returns true if this format supports the graphicclass defined in AGraphicClass
-      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
+      class procedure FileExts(strs:TStrings);override;
+      class function SupportsObject(AGraphic:TObject):boolean;override;
+      function LoadFromFile(ABitmap:TAdBitmap; AFile:string;
+        ATransparent:Boolean; ATransparentColor:LongInt):boolean;override;
+      function Assign(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+      function AssignTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+      function AssignAlphaChannel(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+      function AssignAlphaChannelTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
 end;
 
 implementation
 
-{ TJPEGFormat }
 
-procedure TJPEGFormat.AssignGraphic(AGraphic: TGraphic; ABmp: TAdBitmap);
-var
-  jpeg:TJPEGImage;
-  bmp:TBitmap;
-begin
-  if AGraphic is TJPEGImage then
-  begin
-    jpeg := TJPEGImage(AGraphic);
-    ABmp.ReserveMemory(jpeg.Width,jpeg.Height);
-    bmp := TBitmap.Create;
-    bmp.Assign(jpeg);
-    ABmp.AssignBitmap(bmp);
-    bmp.Free;
-  end;
-end;
 
-procedure TJPEGFormat.FileExts(strs: TStringList);
+{ TAdJPEGFormat }
+
+class procedure TAdJPEGFormat.FileExts(strs: TStrings);
 begin
   strs.Add('.jpg');
   strs.Add('.jpeg');
 end;
 
-function TJPEGFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;
-  Transparent: boolean; TransparentColor: TColor): boolean;
-var
-  jpeg:TJpegImage;
-  bmp:TBitmap;
+class function TAdJPEGFormat.SupportsObject(AGraphic: TObject): boolean;
 begin
-  jpeg := TJpegImage.Create;
-  bmp := TBitmap.Create;
-  try
-    jpeg.LoadFromFile(AFile);
-
-    ABmp.ReserveMemory(jpeg.Width,jpeg.Height);
-
-    bmp.Assign(jpeg);
-    bmp.Transparent := Transparent;
-    bmp.TransparentMode := tmFixed;
-    bmp.TransparentColor := TransparentColor;
-
-    ABmp.AssignBitmap(bmp);
-
-    result := true;
-  finally
-    bmp.Free;
-    jpeg.Free;
-  end;
+  //All this stuff may be done by TAdVCLFormats
+  result := false;
 end;
 
-function TJPEGFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
+function TAdJPEGFormat.Assign(ABitmap: TAdBitmap; AGraphic: TObject): boolean;
 begin
-  result := AGraphicClass = TJpegImage;
+  //
+end;
+
+function TAdJPEGFormat.AssignAlphaChannel(ABitmap: TAdBitmap;
+  AGraphic: TObject): boolean;
+begin
+  //
+end;
+
+function TAdJPEGFormat.AssignAlphaChannelTo(ABitmap: TAdBitmap;
+  AGraphic: TObject): boolean;
+begin
+  //
+end;
+
+function TAdJPEGFormat.AssignTo(ABitmap: TAdBitmap; AGraphic: TObject): boolean;
+begin
+  //
+end;
+
+function TAdJPEGFormat.LoadFromFile(ABitmap: TAdBitmap; AFile: string;
+  ATransparent: Boolean; ATransparentColor: Integer): boolean;
+var
+  jpg:TJPEGImage;
+  bmp:TBitmap;
+begin
+  result := true;
+  jpg := TJPEGImage.Create;
+  try
+    jpg.LoadFromFile(AFile);
+    bmp := TBitmap.Create;
+    bmp.Assign(jpg);
+    bmp.Transparent := ATransparent;
+    bmp.TransparentColor := ATransparentColor;
+    
+    ABitmap.Assign(bmp);
+    
+    bmp.Free;
+  except
+    result := false;
+  end;
+  jpg.Free;
 end;
 
 initialization
-  RegisterFormat(TJPEGFormat);
+  RegisterGraphicFormat(TAdJPEGFormat);
 
 end.

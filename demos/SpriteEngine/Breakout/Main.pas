@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites, AdParticles, AdClasses, AdPng, AdSetupDlg;
+  Dialogs, AdDraws, AdSprites, AdParticles, AdClasses, AdPng, AdSetupDlg,
+  AdPerformanceCounter, AdTypes, AdBitmap, AdCanvas;
 
 type
   TBrickSprite = class(TImageSpriteEx)
@@ -133,11 +134,11 @@ begin
       bmp := TBitmap.Create;
       bmp.LoadFromFile(path+'star.bmp');
       adbmp := TAdBitmap.Create;
-      adbmp.AssignBitmap(bmp);
+      adbmp.Assign(bmp);
       adbmp.AssignAlphaChannel(bmp);
       with AdImgLst.Add('star') do
       begin
-        Texture.Texture.LoadFromBitmap(adbmp);
+        Texture.Texture.LoadFromBitmap(adbmp, AdDraw.GetTextureParams(32));
       end;
       adbmp.Free;
       bmp.Free;
@@ -182,9 +183,6 @@ begin
       VX := 100;
       VY := 100;
       VZ := 20;
-
-      AdDraw.AdAppl.SetTextureFilter(fmMinFilter,atAnisotropic);
-      AdDraw.AdAppl.SetTextureFilter(fmMagFilter,atAnisotropic);
     end
     else
     begin
@@ -275,7 +273,7 @@ begin
     DrawIn2D := false;
     Brush.Style := abClear;
     Pen.Color := Ad_ARGB(255,255,255,255);
-    Rectangle(ClientRect);
+    Rectangle(AdRect(0,0,ClientWidth,ClientHeight));
     Release;
   end;                
 

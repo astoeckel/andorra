@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Windows, Dialogs, SysUtils, Graphics, Classes, Forms,
-  Controls, ExtCtrls, AdPng, AdDraws, AdClasses, AdSetupDlg;
+  Windows, Dialogs, SysUtils, Graphics, Classes, Forms, Controls,
+  AdPng, AdDraws, AdClasses, AdSetupDlg, AdPerformanceCounter;
 
 type
   TForm1 = class(TForm)

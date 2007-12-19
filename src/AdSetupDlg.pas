@@ -1,3 +1,18 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+* 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AdSetupDlg.pas
+* Comment: A class which shows a setup dlg
+}
+
 unit AdSetupDlg;
 
 interface
@@ -51,7 +66,7 @@ type
     FPluginFiles:TStringList;
     FPluginAbilities:TAbilitiesList;
     
-    procedure GetPlugins;
+    function GetPlugins:boolean;
     procedure GetResolutions;
     procedure SetAbilities(AAbilities:TAd2DLibAbilities);
     procedure PluginCallBack(DllFileName:string;DllInfo:TAd2dLibInfo;DllAbilities:TAd2DLibAbilities);
@@ -193,7 +208,12 @@ begin
     Image1.Picture.LoadFromFile(aimage);
 
   //Fill comboboxes
-  GetPlugins;
+  if not GetPlugins then
+  begin
+    Application.MessageBox('No Andorra 2D Plugin found.','Fatal error');
+    result := false;
+    exit;
+  end;
   GetResolutions;
 
   //Preset options
@@ -367,7 +387,7 @@ begin
     ModalResult := mrCancel;
 end;
 
-procedure TAdSetupFrm.GetPlugins;
+function TAdSetupFrm.GetPlugins:boolean;
 var
   explorer:TAdDLLExplorer;
 begin
@@ -379,8 +399,12 @@ begin
   explorer.GetPlugins(PluginCallBack, ExtractFilePath(ParamStr(0)),'dll');
   explorer.Free;
 
-  Combobox1.ItemIndex := 0;
-  Combobox1Change(nil);
+  result := Combobox1.Items.Count > 0;
+  if result then
+  begin
+    Combobox1.ItemIndex := 0;
+    Combobox1Change(nil);
+  end;
 end;
 
 procedure TAdSetupFrm.GetResolutions;

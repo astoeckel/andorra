@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls, AdSkin, AdGUI, AdPNG,
-  ExtCtrls, AdGUIConnector, Menus, ClipBrd, JvSimpleXML, ImgList, XMLEdit;
+  ExtCtrls, AdGUIConnector, Menus, ClipBrd, JvSimpleXML, ImgList, XMLEdit,
+  AdPerformanceCounter, AdTypes;
 
 type
   TDesignerDlg = class(TForm)
@@ -45,7 +46,7 @@ type
     procedure EditXML1Click(Sender: TObject);
   private
     AddComp:TAdComponentClass;
-    AddRect:TRect;
+    AddRect:TAdRect;
     FirstPoint:boolean;
   public
     AdDraw1:TAdDraw;
@@ -287,7 +288,7 @@ begin
     AdGUI.Cursors.LoadFromFile('cursors.xml');
     AdGUI.Cursors.Visible := false;
 
-    AdGUI.DesignMode := true; 
+    AdGUI.DesignMode := true;
 
     AdConnector := TAdGUIConnector.Create(AdGUI);
     AdConnector.ConnectEventHandlers(self);
@@ -392,7 +393,7 @@ end;
 procedure TDesignerDlg.FormMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
-  p1,p2:TPoint;
+  p1,p2:TAdPoint;
   comp,add:TAdComponent;
 begin
   if (FirstPoint) and (AddComp <> nil) then

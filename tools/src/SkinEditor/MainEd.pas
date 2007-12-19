@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, Menus, XPMan, ComCtrls, Tabs, AdSkin, AdDraws,
-  AdClasses, ExtDlgs, AdPng, Buttons, CompDlg, Wizzard;
+  AdClasses, ExtDlgs, AdPng, Buttons, CompDlg, Wizzard, AdBitmap, AdTypes,
+  AdCanvas, AdStandardFontGenerator;
 
 type
   TRHandleTyp = (rhLT,rhRT,rhLB,rhRB);
@@ -167,7 +168,7 @@ type
     SetOptions:boolean;
     Saved:boolean;
     Currentfile:string;
-    procedure DrawHandeledRect(ARect:TRect);
+    procedure DrawHandeledRect(ARect:TAdRect);
     procedure RefreshItemList;
     procedure RefreshStatusList;
     procedure RefreshImageList;
@@ -306,7 +307,7 @@ begin
     for i := 0 to AdSkin.Count-1 do
     begin
       AdSkin[i].Images.Compressor :=
-        TCompressorClass(GetClass(dlg.ListBox1.Items[dlg.ListBox1.ItemIndex]));
+        TAdGraphicCompressorClass(GetClass(dlg.ListBox1.Items[dlg.ListBox1.ItemIndex]));
     end;
   end;
   dlg.Free;
@@ -448,20 +449,20 @@ procedure TMainDlg.CreateFilter;
 var i,j:integer;
     str:TStringList;
     fmt:string;
-    temp:TPictFormat;
+    temp:TAdGraphicFormat;
     cref:TPersistentClass;
     c:integer;
 begin
   OpenPictureDialog1.Filter := '';
   fmt := '';
   c := 0;
-  for i := 0 to RegisteredFormats.Count-1 do
+  for i := 0 to RegisteredGraphicFormats.Count-1 do
   begin
     str := TStringList.Create;
-    cref := GetClass(RegisteredFormats[i]);
+    cref := GetClass(RegisteredGraphicFormats[i]);
     if cref <> nil then
     begin
-      temp := TPictFormat(TPictFormatClass(cref).Create);
+      temp := TAdGraphicFormat(TAdGraphicFormatClass(cref).Create);
       temp.FileExts(str);
       for j := 0 to str.Count - 1 do
       begin
@@ -479,16 +480,17 @@ begin
   OpenPictureDialog1.FilterIndex := c+1;
 end;
 
-procedure TMainDlg.DrawHandeledRect(ARect:TRect);
+procedure TMainDlg.DrawHandeledRect(ARect:TAdRect);
 begin
   with AdDraw1.Canvas do
   begin
     Rectangle(ARect);
     Brush.Style := abSolid;
-    Rectangle(Bounds(ARect.Left,ARect.Top,hs,hs));
-    Rectangle(Bounds(ARect.Right-hs,ARect.Top,hs,hs));
-    Rectangle(Bounds(ARect.Left,ARect.Bottom-hs,hs,hs));
-    Rectangle(Bounds(ARect.Right-hs,ARect.Bottom-hs,hs,hs));
+    Rectangle(AdBounds(ARect.Left,ARect.Top,hs,hs));
+    Rectangle(AdBounds(ARect.Right-hs,ARect.Top,hs,hs));
+    Rectangle(AdBounds(ARect.Left,ARect.Bottom-hs,hs,hs));
+    Rectangle(AdBounds(ARect.Right-hs,ARect.Bottom-hs,hs,hs));
+    Release;
   end;
 end;
 
@@ -645,23 +647,22 @@ begin
 
     with AdDraw1.Canvas do
     begin
-    
       if ChangedSize then
       begin
         Brush.Style := abSolid;
         Brush.Color := ad_argb(64,255,64,64);
         Pen.Color := ad_argb(128,255,64,64);
-        Rectangle(Bounds(cx,cy-16,100,16));
+        Rectangle(AdBounds(cx,cy-16,100,16));
         with SelItem do
           TextOut(cx+2,cy-16,inttostr(BaseWidth)+'x'+inttostr(BaseHeight));
       end;
 
-      Pen.Color := ad_argb(128,255,64,64);
-      Brush.Color := ad_argb(64,255,64,64);
-      Brush.Style := abClear;
       with SelItem do
       begin
-        DrawHandeledRect(Bounds(cx,cy,BaseWidth,BaseHeight));
+        Pen.Color := ad_argb(128,255,64,64);
+        Brush.Color := ad_argb(64,255,64,64);
+        Brush.Style := abClear;
+        DrawHandeledRect(AdBounds(cx,cy,BaseWidth,BaseHeight));
 
         for i := 0 to Elements.Count-1 do
         begin
@@ -677,11 +678,10 @@ begin
           end;
           with Elements[i] do
           begin
-            DrawHandeledRect(Rect(round(cx+x1),round(cy+y1),round(cx+x2),round(cy+y2)));
+            DrawHandeledRect(AdRect(round(cx+x1),round(cy+y1),round(cx+x2),round(cy+y2)));
           end;
         end;
       end;
-      Release;
     end;
   end;
 
@@ -1006,7 +1006,7 @@ begin
         abmp.ReserveMemory(SelItem.Images[ListBox2.ItemIndex].Width,
                            SelItem.Images[ListBox2.ItemIndex].Height);
         Texture.Texture.SaveToBitmap(abmp);
-        abmp.AssignToBitmap(bmp,false);
+        abmp.AssignTo(bmp);
         abmp.Free;
         Image2.Picture.Bitmap.Assign(bmp);
       end

@@ -16,7 +16,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdParticles, AdClasses, ExtCtrls, StdCtrls, Menus, XPMan,
-  ComCtrls, ExtDlgs, Math;
+  ComCtrls, ExtDlgs, Math, AdPerformanceCounter, AdTypes, AdVCLFormats, AdBitmap;
 
 type
   TForm1 = class(TForm)
@@ -230,7 +230,7 @@ begin
     bmp.LoadFromFile(OpenPictureDialog1.FileName);
     AdImg1 := TAdImage.Create(AdDraw1);
     adbmp := TAdBitmap.Create;
-    adbmp.AssignBitmap(bmp);
+    adbmp.Assign(bmp);
     adbmp.AssignAlphaChannel(bmp);
     AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
     adbmp.Free;
@@ -475,7 +475,7 @@ begin
     bmp.Assign(Image2.Picture.Bitmap);
     adbmp := TAdBitmap.Create;
     AdImg1 := TAdImage.Create(AdDraw1);
-    adbmp.AssignBitmap(bmp);
+    adbmp.Assign(bmp);
     adbmp.AssignAlphaChannel(bmp);
     AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
     AdImg1.Color := clWhite;

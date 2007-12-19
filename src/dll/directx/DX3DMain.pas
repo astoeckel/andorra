@@ -13,7 +13,7 @@ unit DX3DMain;
 
 interface
 
-uses SysUtils, d3dx9, Direct3D9, AdClasses, Classes, Windows, Graphics, Math;
+uses SysUtils, d3dx9, Direct3D9, AdClasses, Windows, Math, AdTypes, AdBitmapClass;
 
 type
   TDXApplication = class(TAd2DApplication)
@@ -27,10 +27,12 @@ type
       procedure ReleaseLight(alight:integer);
       procedure SetOptions(AValue:TAdOptions);override;
       procedure SetAmbientLight(AValue:TAndorraColor);override;
-      procedure SetViewPort(AValue:TRect);override;
+      procedure SetViewPort(AValue:TAdRect);override;
     public
       Direct3D9:IDirect3D9;
       Direct3DDevice9:IDirect3DDevice9;
+      CanAutoGenMipmaps:boolean;
+      
       constructor Create;
       destructor Destroy;reintroduce;
       function CreateLight:TAd2DLight;override;
@@ -45,8 +47,6 @@ type
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
-
-      procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;
@@ -89,14 +89,20 @@ type
   TDXBitmapTexture = class(TAd2DBitmapTexture)
     private
       FParent:TDXApplication;
+      FMagFilter:byte;
+      FMinFilter:byte;
+      FMipFilter:byte;
+      function GetFilter(AFilter:TAd2dTextureFilter):byte;
+      procedure SetFilters(AParams:TAd2dBitmapTextureParameters);
     protected
       function GetLoaded:boolean;override;
     public
+      procedure SetFilter;
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
       procedure FlushTexture;override;
-      procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);override;
-      procedure SaveToBitmap(ABmp:TAdBitmap);override;
+      procedure LoadFromBitmap(ABmp:TAd2dBitmap;AParams:TAd2dBitmapTextureParameters);override;
+      procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
   end;
 
 //Our Vertex and the definition of the flexible vertex format (FVF)
@@ -258,6 +264,15 @@ begin
         MultisampleQuality := level - 1;
       end;
     end;
+
+    CanAutoGenMipMaps :=
+      (D3DCaps9.Caps2 and D3DCAPS2_CANAUTOGENMIPMAP > 0) and
+      (Direct3D9.CheckDeviceFormat(D3DADAPTER_DEFAULT, dtype, afmt, D3DUSAGE_AUTOGENMIPMAP, D3DRTYPE_TEXTURE, afmt) = D3D_OK);
+    if not CanAutoGenMipMaps then
+    begin
+      WriteLog(ltInfo, 'Device can not create mipmaps. Mipmaps will be disabled.');
+    end;
+
     WriteLog(ltInfo,'Try to initialize the device.');
 
     FPresent := d3dpp;
@@ -350,25 +365,8 @@ begin
   FOptions := AValue;
   if Direct3DDevice9 <> nil then
   begin
-    //Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
-    //Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
-  end;
-end;
-
-procedure TDXApplication.SetTextureFilter(AFilterMode: TAd2DFilterMode;
-  AFilter: TAd2DTextureFilter);
-var aval:DWORD;
-begin
-  case AFilter of
-    atLinear:aval := D3DTEXF_LINEAR;
-    atAnisotropic:aval := D3DTEXF_ANISOTROPIC;
-  else
-    aval := D3DTEXF_POINT;
-  end;
-  case AFilterMode of
-    fmMagFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, aval);
-    fmMinFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MINFILTER, aval);
-//    fmMipFilter:Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, aval);
+    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
+    Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
   end;
 end;
 
@@ -412,7 +410,7 @@ begin
   end;
 end;
 
-procedure TDXApplication.SetViewPort(AValue: TRect);
+procedure TDXApplication.SetViewPort(AValue: TAdRect);
 var
   vp:TD3DViewport9;
 begin
@@ -567,6 +565,9 @@ begin
       begin
         if (FTexture <> FLastTexture) then
         begin
+          if FTexture is TDXBitmapTexture then
+            TDXBitmapTexture(FTexture).SetFilter;
+            
           Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
           FLastTexture := FTexture;
         end;
@@ -715,6 +716,13 @@ begin
   inherited Destroy;
 end;
 
+procedure TDXBitmapTexture.SetFilter;
+begin
+  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, FMagFilter);
+  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MINFILTER, FMinFilter);
+  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, FMipFilter);
+end;
+
 procedure TDXBitmapTexture.FlushTexture;
 begin
   if FTexture <> nil then
@@ -727,6 +735,26 @@ begin
   FBaseHeight := 0;
   FBitCount := 0;
   FTexture := nil;
+end;
+
+function TDXBitmapTexture.GetFilter(AFilter: TAd2dTextureFilter): byte;
+begin
+  result := 1;
+  case AFilter of
+    atPoint: result := D3DTEXF_POINT;
+    atLinear: result := D3DTEXF_LINEAR;
+    atAnisotropic: result := D3DTEXF_ANISOTROPIC;
+  end;
+end;
+
+procedure TDXBitmapTexture.SetFilters(AParams: TAd2dBitmapTextureParameters);
+begin
+  FMagFilter := GetFilter(AParams.MagFilter);
+  FMinFilter := GetFilter(AParams.MinFilter);
+  if not AParams.UseMipMaps then
+    FMipFilter := 0
+  else
+    FMipFilter := GetFilter(AParams.MipFilter);
 end;
 
 function TDXBitmapTexture.GetLoaded: boolean;
@@ -754,7 +782,7 @@ begin
                         or R8ToR4(r);
 end;
 
-procedure TDXBitmapTexture.LoadFromBitmap(ABmp: TAdBitmap; ABitDepth: byte);
+procedure TDXBitmapTexture.LoadFromBitmap(ABmp: TAd2dBitmap; AParams:TAd2dBitmapTextureParameters);
 var afmt:TD3DFORMAT;
     w,h,x,y:integer;
     d3dlr:TD3DLocked_Rect;
@@ -765,9 +793,11 @@ begin
   w := 1 shl ceil(log2(ABmp.Width));
   h := 1 shl ceil(log2(ABmp.Height));
 
-  if (ABitDepth <> FBitCount) or (w <> FWidth) or (h <> FHeight) or (FTexture = nil) then
+  AParams.UseMipMaps := AParams.UseMipMaps and FParent.CanAutoGenMipmaps;
+
+  if (AParams.BitDepth <> FBitCount) or (w <> FWidth) or (h <> FHeight) or (FTexture = nil) then
   begin
-    case ABitDepth of
+    case AParams.BitDepth of
       16: afmt := D3DFMT_A4R4G4B4;
     else
       afmt := D3DFMT_A8R8G8B8;
@@ -775,16 +805,20 @@ begin
     FlushTexture;
     with FParent do
     begin
-      D3DXCreateTexture(Direct3DDevice9,w,h,0,0,afmt,D3DPOOL_MANAGED, IDirect3DTexture9(FTexture));
+      if AParams.UseMipMaps then
+        D3DXCreateTexture(Direct3DDevice9,w,h,0, D3DUSAGE_AUTOGENMIPMAP, afmt, D3DPOOL_MANAGED, IDirect3DTexture9(FTexture))
+      else
+        D3DXCreateTexture(Direct3DDevice9,w,h,0, 0, afmt, D3DPOOL_MANAGED, IDirect3DTexture9(FTexture));
     end;
   end;
 
   FHeight := h;
   FWidth := w;
-  FBitCount := ABitDepth;
+  FBitCount := AParams.BitDepth;
   FBaseWidth := ABmp.Width;
   FBaseHeight := ABmp.Height;
-
+  SetFilters(AParams);
+  
   with IDirect3DTexture9(FTexture) do
   begin
     if Failed(LockRect(0, d3dlr, nil, 0)) then
@@ -816,15 +850,9 @@ begin
       pnt32 := ABmp.ScanLine;
       for y := 0 to ABmp.Height - 1 do
       begin
-        for x := 0 to w - 1 do
-        begin
-          if (x < ABmp.Width) then
-          begin
-            cur32^ := D3DCOLOR_ARGB(pnt32^.a,pnt32^.b,pnt32^.g,pnt32^.r);
-            inc(pnt32);
-          end;
-          inc(cur32);
-        end;
+        Move(pnt32^, cur32^, ABmp.Width * 4);
+        inc(pnt32, ABmp.Width);
+        inc(cur32, w);
       end;
     end;
 
@@ -832,7 +860,7 @@ begin
   end;
 end;
 
-procedure TDXBitmapTexture.SaveToBitmap(ABmp: TAdBitmap);
+procedure TDXBitmapTexture.SaveToBitmap(ABmp: TAd2dBitmap);
 var x,y:integer;
     cur16:PWord;
     cur32:PLongWord;

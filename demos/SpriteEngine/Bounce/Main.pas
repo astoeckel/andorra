@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Dialogs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, AdSetupDlg, AdPng, StdCtrls;
+  AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, AdTypes, AdCanvas,
+  AdSetupDlg, AdPng, AdPerformanceCounter;
 
 type
   TForm1 = class(TForm)
@@ -64,18 +65,23 @@ begin
   if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    
+
     AdDraw.BeginScene;
+
+    AdDraw.ClearSurface(0);
 
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
     AdSpriteEngine.Draw;
     AdSpriteEngine.Dead;
 
+    AdDraw.Options := AdDraw.Options - [doLights];
     with AdDraw.Canvas do
     begin
-      Textout(0,0,inttostr(AdPerCounter.FPS));
+      Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
+      Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
       Release;
     end;
+    AdDraw.Options := AdDraw.Options + [doLights];
 
     AdDraw.EndScene;
     AdDraw.Flip;
@@ -88,6 +94,8 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg:TAdSetup;
 begin
+  ReportMemoryLeaksOnShutdown := true;
+
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
@@ -100,6 +108,7 @@ begin
   if AdSetupDlg.Execute then
   begin
     AdDraw.Options := AdDraw.Options + [doLights];
+    AdDraw.TextureFilter := atLinear;
     if AdDraw.Initialize then
     begin
       AdDraw.AmbientColor := RGB(96,96,96);
@@ -114,7 +123,7 @@ begin
     end
     else
     begin
-      ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
+      ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
                   'mode or another video adapter.');
       halt;
     end;
@@ -123,6 +132,8 @@ begin
   begin
     Halt;
   end;
+
+  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -172,9 +183,9 @@ end;
 procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
-  p:TPoint;
+  p:TAdPoint;
 begin
-  p := AdSpriteEngine.ScreenPointToSpriteCoords(Point(X,Y));
+  p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
   lx := p.x;
   ly := p.y;
 end;
@@ -182,11 +193,11 @@ end;
 procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 var
-  p:TPoint;
+  p:TAdPoint;
 begin
   if ssLeft in Shift then
   begin
-    p := AdSpriteEngine.ScreenPointToSpriteCoords(Point(X,Y));
+    p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
     AdSpriteEngine.X := AdSpriteEngine.X + p.x - lx;
     AdSpriteEngine.Y := AdSpriteEngine.Y + p.y - ly;
     Lx := p.x;
@@ -197,7 +208,14 @@ end;
 procedure TForm1.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 begin
-  AdSpriteEngine.Zoom := AdSpriteEngine.Zoom + WheelDelta / (1000 / AdSpriteEngine.Zoom);
+  if ssLeft in Shift then
+  begin
+    AdSpriteEngine.Rotation := AdSpriteEngine.Rotation + WheelDelta / 5000;
+  end
+  else
+  begin
+    AdSpriteEngine.Zoom := AdSpriteEngine.Zoom + WheelDelta / (1000 / AdSpriteEngine.Zoom);
+  end;
 end;
 
 procedure TForm1.LoadImages;
@@ -212,16 +230,15 @@ begin
     Texture.LoadGraphicFromFile(path+'texture2.bmp',false,clWhite);
     Details := 16;
   end;
-  with AdPictureCollection.Add('sky') do
-  begin
-    Texture.LoadGraphicFromFile(path+'sky.png',false,clBlack);
-    Color := rgb(200,200,255);
-  end;
   with AdPictureCollection.Add('ball') do
   begin
     Texture.LoadGraphicFromFile(path+'ball.bmp',true,clYellow);
     PatternWidth := 32;
     PatternHeight := 32;
+  end;
+  with AdPictureCollection.Add('stars')do
+  begin
+    Texture.LoadGraphicFromFile(path+'stars.png',false,clWhite);
   end;
 
   AdPictureCollection.Restore;
@@ -237,9 +254,8 @@ begin
 
   with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
-    Z := -10;
-    Image := AdPictureCollection.Find('sky');
-    Tiled := true;
+    Image := AdPictureCollection.Find('stars');
+    z := -1;
     Depth := 10;
   end;
 
@@ -317,15 +333,6 @@ begin
 
   Color := RGB(random(255),random(255),random(255));
 
-  {Light := TLightSprite.Create(Engine);
-  with Light do
-  begin
-    Z := -9;
-    Range := 200;
-    Falloff := 5;
-    Color := clWhite;
-  end;}
-
   z := 1;
 end;
 
@@ -384,7 +391,6 @@ var
 begin
   with Engine.Surface.Canvas do
   begin
-    Clear;
     BlendMode := bmAdd;
     DrawIn2D := false;
 

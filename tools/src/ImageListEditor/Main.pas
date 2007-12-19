@@ -5,7 +5,9 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ImgList, ComCtrls, Menus, ToolWin, ExtCtrls, XPMan, StdCtrls,
-  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdPNG, AdJPEG;
+  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdPNG, AdJPEG, 
+  AdCanvas, AdBitmap, AdVCLFormats, AdSimpleCompressors, AdTypes, AdPerformanceCounter,
+  Progress;
 
 type
   TMainDlg = class(TForm)
@@ -15,7 +17,6 @@ type
     MainMenu1: TMainMenu;
     File1: TMenuItem;
     LoadnewImageLibrary1: TMenuItem;
-    N1: TMenuItem;
     LoadLibrary1: TMenuItem;
     N2: TMenuItem;
     SaveLibrary1: TMenuItem;
@@ -24,22 +25,15 @@ type
     Exit1: TMenuItem;
     Image1: TMenuItem;
     Add1: TMenuItem;
-    ToolButton1: TToolButton;
-    ToolButton2: TToolButton;
-    ToolButton3: TToolButton;
-    ToolButton4: TToolButton;
-    ToolButton5: TToolButton;
-    ImageList1: TImageList;
-    ToolButton6: TToolButton;
+    Imgs_Menu: TImageList;
     GroupBox2: TGroupBox;
     ListView1: TListView;
-    ImageList2: TImageList;
+    Imgs_Preview: TImageList;
     PopupMenu1: TPopupMenu;
     Add2: TMenuItem;
     N5: TMenuItem;
     Delete2: TMenuItem;
     Settings2: TMenuItem;
-    ProgressBar1: TProgressBar;
     XPManifest1: TXPManifest;
     OpenPictureDialog1: TOpenPictureDialog;
     N4: TMenuItem;
@@ -52,7 +46,7 @@ type
     ToolBar2: TToolBar;
     ToolButton7: TToolButton;
     ToolButton8: TToolButton;
-    ImageList3: TImageList;
+    Imgs_Anim: TImageList;
     Panel3: TPanel;
     Label1: TLabel;
     Edit1: TEdit;
@@ -67,12 +61,28 @@ type
     Image2: TImage;
     ColorDialog1: TColorDialog;
     bgcolor1: TMenuItem;
+    Imgs_Toolbar: TImageList;
+    ToolButton1: TToolButton;
+    ToolButton3: TToolButton;
+    ToolButton10: TToolButton;
+    ToolButton11: TToolButton;
+    ToolButton12: TToolButton;
+    ToolButton13: TToolButton;
+    ToolButton4: TToolButton;
+    ToolButton5: TToolButton;
+    ToolButton6: TToolButton;
+    StatusBar1: TStatusBar;
+    ToolButton2: TToolButton;
+    N1: TMenuItem;
+    Clearalphachannel1: TMenuItem;
+    Setalphachannel1: TMenuItem;
+    OpenPictureDialog2: TOpenPictureDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure ListView1CustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure CreateFilter;
-    procedure ToolButton5Click(Sender: TObject);
+    procedure ImportClick(Sender: TObject);
     procedure Panel1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -80,14 +90,14 @@ type
     procedure ListView1Change(Sender: TObject; Item: TListItem;
       Change: TItemChange);
     procedure ListView1Click(Sender: TObject);
-    procedure Delete2Click(Sender: TObject);
+    procedure DeleteClick(Sender: TObject);
     procedure ListView1KeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     procedure Settings2Click(Sender: TObject);
     procedure ListView1DblClick(Sender: TObject);
-    procedure ToolButton1Click(Sender: TObject);
-    procedure ToolButton2Click(Sender: TObject);
-    procedure ToolButton4Click(Sender: TObject);
+    procedure NewClick(Sender: TObject);
+    procedure OpenClick(Sender: TObject);
+    procedure SaveClick(Sender: TObject);
     procedure SaveLibraryas1Click(Sender: TObject);
     procedure Setcompressorforallpictures1Click(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -102,13 +112,16 @@ type
       State: TDragState; var Accept: Boolean);
     procedure ListView1DragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure Panel1Resize(Sender: TObject);
+    procedure Panel1MouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure Clearalphachannel1Click(Sender: TObject);
+    procedure Setalphachannel1Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
     AdDraw1:TAdDraw;
     AdImageList:TAdImageList;
     AdPerCounter:TAdPerformanceCounter;
-    TextLabel:TAdImage;
     Tiles:TAdImage;
     AColor:TColor;
 
@@ -118,10 +131,18 @@ type
 
     CurrentFile:string;
 
+    Changed:boolean;
+
+    function CheckSaved:boolean;
+
+    function Save:boolean;
+    function SaveAs:boolean;
+    procedure Load(AFile:string);
+
     procedure Idle(Sender:TObject; var Done:boolean);
     procedure ViewContent;
     procedure UpdateState;
-    procedure WriteText(s:string);
+    procedure CreateAnimPatterns;
   end;
 
 var
@@ -130,6 +151,50 @@ var
 implementation
 
 {$R *.dfm}
+
+function TMainDlg.CheckSaved: boolean;
+var
+  id:integer;
+begin
+  result := true;
+  if Changed then
+  begin
+    id := Application.MessageBox('You probably did not save your changes. Do you want to save them now?','Confirm',MB_YESNOCANCEL);
+    if id = ID_YES then
+    begin
+      result := Save;
+    end
+    else
+    begin
+      if id = ID_CANCEL then
+      begin
+        result := false;
+      end;
+    end;
+  end;
+end;
+
+procedure TMainDlg.Clearalphachannel1Click(Sender: TObject);
+var
+  i:integer;
+  adbmp:TAdBitmap;
+begin
+  for i := 0 to ListView1.Items.Count-1 do
+  begin
+    if ListView1.Items[i].Selected then
+    begin
+      adbmp := TAdBitmap.Create;
+      with AdImageList[i].Texture.Texture do
+      begin
+        adbmp.ReserveMemory(basewidth, baseheight);
+        SaveToBitmap(adbmp);
+        adbmp.ClearAlphaChannel;
+        LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(AdImageList[i].Texture.BitDepth));
+      end;
+      adbmp.Free;
+    end;
+  end;
+end;
 
 procedure TMainDlg.Compoundselectedpictures1Click(Sender: TObject);
 var i,x,y,j,c:integer;
@@ -166,7 +231,7 @@ begin
   end;
   prop := w/h;
   xcount := round(sqrt(listview1.SelCount)*(1/prop));
-  ycount := round(sqrt(listview1.SelCount)*(prop));               
+  ycount := round(sqrt(listview1.SelCount)*(prop));
   if xcount*ycount < ListView1.SelCount then xcount := xcount + 1;
   
 
@@ -198,8 +263,8 @@ begin
         adbmp.ReserveMemory(Texture.Texture.BaseWidth,Texture.Texture.BaseHeight);
         Texture.Texture.SaveToBitmap(adbmp);
       end;
-      adbmp.AssignToBitmap(bmp2);
-      adbmp.AssignAlphaChannelToBitmap(abmp2);
+      adbmp.AssignTo(bmp2);
+      adbmp.AssignAlphaChannelTo(abmp2);
       adbmp.Free;
 
       if (x = 0) and (y = 0) then
@@ -232,12 +297,12 @@ begin
   end;
 
   adbmp := TAdBitmap.Create;
-  adbmp.AssignBitmap(bmp);
+  adbmp.Assign(bmp);
   adbmp.AssignAlphaChannel(abmp);
 
   with AdImageList.Add('animation') do
   begin
-    Texture.Texture.LoadFromBitmap(adbmp);
+    Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
     PatternWidth := w;
     PatternHeight := h;
     Restore;
@@ -257,21 +322,19 @@ procedure TMainDlg.CreateFilter;
 var i,j:integer;
     str:TStringList;
     fmt:string;
-    temp:TPictFormat;
-    cref:TPersistentClass;
+    cref:TAdGraphicFormatClass;
     c:integer;
 begin
   OpenPictureDialog1.Filter := '';
   fmt := '';
   c := 0;
-  for i := 0 to RegisteredFormats.Count-1 do
+  for i := 0 to RegisteredGraphicFormats.Count-1 do
   begin
     str := TStringList.Create;
-    cref := GetClass(RegisteredFormats[i]);
+    cref := TAdGraphicFormatClass(GetClass(RegisteredGraphicFormats[i]));
     if cref <> nil then
     begin
-      temp := TPictFormat(TPictFormatClass(cref).Create);
-      temp.FileExts(str);
+      cref.FileExts(str);
       for j := 0 to str.Count - 1 do
       begin
         OpenPictureDialog1.Filter := OpenPictureDialog1.Filter+
@@ -279,7 +342,6 @@ begin
         fmt := fmt+'*'+str[j]+'; ';
         c := c+1;
       end;
-      temp.Free;
     end;
     str.Free;
   end;
@@ -288,13 +350,28 @@ begin
   OpenPictureDialog1.FilterIndex := c+1;
 end;
 
-procedure TMainDlg.Delete2Click(Sender: TObject);
+procedure TMainDlg.DeleteClick(Sender: TObject);
+var
+  i:integer;
 begin
-  if ListView1.ItemIndex <> -1 then
-  begin
-    AdImageList.Delete(ListView1.ItemIndex);
-    ViewContent;
+
+  ListView1.Items.BeginUpdate;
+
+  try
+    for i := ListView1.Items.Count-1 downto 0 do
+    begin
+      if ListView1.Items[i].Selected then
+      begin
+        AdImageList.Delete(i);
+        ListView1.Items.Delete(i);
+      end;
+    end;
+  finally
+    ListView1.Items.EndUpdate;
   end;
+
+
+  UpdateState;
 end;
 
 procedure TMainDlg.Exit1Click(Sender: TObject);
@@ -317,7 +394,7 @@ begin
         Texture.Texture.SaveToBitmap(adbmp);
       end;
       bmp := TBitmap.Create;
-      adbmp.AssignToBitmap(bmp,false);
+      adbmp.AssignTo(bmp);
       bmp.SaveToFile(changefileext(SavePictureDialog1.FileName,'.bmp'));
       bmp.Free;
       adbmp.Free;
@@ -328,15 +405,24 @@ end;
 procedure TMainDlg.FormClose(Sender: TObject; var Action: TCloseAction);
 var i:integer;
 begin
-  for i := 0 to ListView1.Items.Count - 1 do
+  if CheckSaved then
   begin
-    ListView1.Items[i].Selected := false;
+    for i := 0 to ListView1.Items.Count - 1 do
+    begin
+      ListView1.Items[i].Selected := false;
+    end;
+  end
+  else
+  begin
+    Action := caNone;
   end;
 end;
 
 procedure TMainDlg.FormCreate(Sender: TObject);
 begin
   ReportMemoryLeaksOnShutdown := True;
+
+  ChDir(ExtractFilePath(Application.ExeName));
 
   AdPerCounter := TAdPerformanceCounter.Create;
 
@@ -350,12 +436,16 @@ begin
 
     CreateFilter;
 
-    TextLabel := TAdImage.Create(AdDraw1);
-
     Tiles := TAdImage.Create(AdDraw1);
     Tiles.Texture.LoadFromGraphic(Image2.Picture.Bitmap);    
     Tiles.Restore;
-    
+
+    if ParamCount > 0 then
+    begin
+      Load(ParamStr(1));
+    end;
+
+    UpdateState;
   end
   else
   begin
@@ -368,12 +458,13 @@ procedure TMainDlg.FormDestroy(Sender: TObject);
 begin
   Tiles.Free;
   AdPerCounter.Free;
-  TextLabel.Free;
   AdImageList.Free;
   AdDraw1.Free;
 end;
 
 procedure TMainDlg.Idle(Sender: TObject; var Done: boolean);
+var
+  c:TAndorraColor;
 begin
   if AdDraw1.CanDraw then
   begin
@@ -384,7 +475,7 @@ begin
 
     if TiledBackground1.Checked then
     begin
-      Tiles.StretchBltAlpha(AdDraw1,rect(0,0,Panel1.Width,Panel1.Height),rect(0,0,Panel1.Width,Panel1.Height),0.5,0.5,0,255);
+      Tiles.StretchBltAlpha(AdDraw1,AdRect(0,0,Panel1.Width,Panel1.Height),AdRect(0,0,Panel1.Width,Panel1.Height),0.5,0.5,0,255);
     end;
     
     if ListView1.ItemIndex <> -1 then
@@ -403,8 +494,21 @@ begin
         end;
 
         Draw(AdDraw1,(AdDraw1.Parent.Width - Width) div 2 + OffsetX,(AdDraw1.Parent.Height - Height) div 2 + OffsetY,round(pattern));
-        TextLabel.Draw(AdDraw1,0,0,0);
       end;
+    end;
+
+    with AdDraw1.Canvas do
+    begin
+      c := ColorToAdColor(ColorToRGB(clBtnFace));
+      Brush.Color := c;
+      c.a := 0;
+      Brush.GradientColor := c;
+      Brush.GradientDirecton := gdVertical;
+      Pen.Width := 0;
+
+      Rectangle(0,0,5,Panel1.ClientHeight);
+
+      Release;
     end;
 
     AdDraw1.EndScene;
@@ -425,11 +529,6 @@ begin
     OffsetX := 0;
     OffsetY := 0;
     UpdateState;
-    if (ListView1.SelCount = 1) and (ListView1.ItemIndex <> -1)  then
-    begin
-      WriteText(AdImageList[ListView1.ItemIndex].Name+' Width: '+inttostr(AdImageList[ListView1.ItemIndex].Width)+
-                'px, Height: '+inttostr(AdImageList[ListView1.ItemIndex].Height)+'px');
-    end;
   end;
 end;
 
@@ -503,7 +602,7 @@ begin
   end
   else
   begin
-    ToolButton5Click(nil);
+    ImportClick(nil);
   end;
 end;
 
@@ -511,6 +610,7 @@ procedure TMainDlg.ListView1DragDrop(Sender, Source: TObject; X, Y: Integer);
 var index1,index2:integer; 
     item:TAdImage;
 begin
+  Changed := true;
   index1 := ListView1.ItemFocused.Index;
   if ListView1.GetItemAt(X,Y) <> nil then
   begin
@@ -550,7 +650,7 @@ begin
     i := ListView1.ItemIndex;
     if i <> -1 then
     begin
-      Delete2Click(nil);
+      DeleteClick(nil);
       if i < ListView1.Items.Count then
       begin
         ListView1.ItemIndex := i;
@@ -577,6 +677,19 @@ begin
   end;
 end;
 
+procedure TMainDlg.Load(AFile: string);
+begin
+  Screen.Cursor := crHourglass;
+  try
+    AdImageList.LoadFromFile(AFile);
+    CurrentFile := AFile;
+    Changed := false;
+    ViewContent;
+  finally
+    Screen.Cursor := crDefault;
+  end;
+end;
+
 procedure TMainDlg.bgcolor1Click(Sender: TObject);
 begin
   if ColorDialog1.Execute then
@@ -590,6 +703,7 @@ procedure TMainDlg.Panel1MouseDown(Sender: TObject; Button: TMouseButton;
 begin
   mx := x;
   my := y;
+  Screen.Cursor := crSizeAll;
 end;
 
 procedure TMainDlg.Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -604,6 +718,12 @@ begin
   end;
 end;
 
+procedure TMainDlg.Panel1MouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  Screen.Cursor := crDefault;
+end;
+
 procedure TMainDlg.Panel1Resize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
@@ -614,24 +734,49 @@ end;
 
 procedure TMainDlg.SaveLibraryas1Click(Sender: TObject);
 begin
-  if SaveDialog1.Execute then
+  SaveAs;
+end;
+
+procedure TMainDlg.Setalphachannel1Click(Sender: TObject);
+var
+  i:integer;
+  adbmp:TAdBitmap;
+  bmp:TBitmap;
+begin
+  if OpenPictureDialog2.Execute then
   begin
-    CurrentFile := ChangeFileExt(SaveDialog1.FileName,'.ail');
-    AdImageList.SaveToFile(CurrentFile);
+    bmp := TBitmap.Create;
+    bmp.LoadFromFile(OpenPictureDialog2.FileName);
+
+    for i := 0 to ListView1.Items.Count-1 do
+    begin
+      if (ListView1.Items[i].Selected) and (AdImageList[i].Width = bmp.Width) and (AdImageList[i].Height = bmp.Height)then
+      begin
+        adbmp := TAdBitmap.Create;
+        with AdImageList[i].Texture.Texture do
+        begin
+          adbmp.ReserveMemory(basewidth, baseheight);
+          SaveToBitmap(adbmp);
+          adbmp.AssignAlphaChannel(bmp);
+          LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(AdImageList[i].Texture.BitDepth));
+        end;
+        adbmp.Free;
+      end;
+    end;
+
+    bmp.Free;
   end;
+  ViewContent;
 end;
 
 procedure TMainDlg.Setcompressorforallpictures1Click(Sender: TObject);
-var comp:TCompressors;
-    i:integer;
+var
+  comp:TCompressors;
 begin
   comp := TCompressors.Create(self);
   if comp.ShowModal = mrOk then
   begin
-    for i := 0 to AdImageList.Count - 1 do
-    begin
-      AdImageList.Compressor := TCompressorClass(GetClass(Comp.ListBox1.Items[Comp.ListBox1.ItemIndex]));
-    end;
+    AdImageList.Compressor := TAdGraphicCompressorClass(GetClass(Comp.ListBox1.Items[Comp.ListBox1.ItemIndex]));
   end;
   comp.Free;  
 end;
@@ -644,7 +789,10 @@ begin
   begin
     ii := ListView1.ItemIndex;
     SetDlg := TSettings.Create(self);
-    SetDlg.InsprectImage(AdImageList.Items[ListView1.ItemIndex]);
+    if SetDlg.InspectImage(AdImageList.Items[ListView1.ItemIndex]) = mrOk then
+    begin
+      Changed := true;
+    end;
     ViewContent;
     SetDlg.Free;
     ListView1.Selected := ListView1.Items[ii];
@@ -652,44 +800,69 @@ begin
   end;
 end;
 
-procedure TMainDlg.ToolButton1Click(Sender: TObject);
+procedure TMainDlg.NewClick(Sender: TObject);
 begin
-  CurrentFile := '';
-  AdImageList.Clear;
-  ViewContent;
-end;
-
-procedure TMainDlg.ToolButton2Click(Sender: TObject);
-begin
-  if OpenDialog1.Execute then
+  if CheckSaved then
   begin
-    Screen.Cursor := crHourglass;
-    AdImageList.LoadFromFile(OpenDialog1.FileName);
-    CurrentFile := OpenDialog1.FileName;
+    Changed := false;
+    CurrentFile := '';
+    AdImageList.Clear;
     ViewContent;
-    Screen.Cursor := crDefault;
   end;
 end;
 
-procedure TMainDlg.ToolButton4Click(Sender: TObject);
+procedure TMainDlg.OpenClick(Sender: TObject);
+begin
+  if CheckSaved and OpenDialog1.Execute then
+  begin
+    Load(OpenDialog1.FileName);
+  end;
+end;
+
+function TMainDlg.Save:boolean;
 begin
   if CurrentFile <> '' then
   begin
+    result := true;
     Screen.Cursor := crHourglass;
     AdImageList.SaveToFile(CurrentFile);
+    Changed := false;
     Screen.Cursor := crDefault;
   end
   else
   begin
-    SaveLibraryAs1Click(nil);
+    result := SaveAs;
   end;
 end;
 
-procedure TMainDlg.ToolButton5Click(Sender: TObject);
-var i:integer;
+function TMainDlg.SaveAs: boolean;
+begin
+  result := false;
+  if SaveDialog1.Execute then
+  begin
+    CurrentFile := ChangeFileExt(SaveDialog1.FileName,'.ail');
+    AdImageList.SaveToFile(CurrentFile);
+    Changed := false;
+    result := true;
+  end;
+end;
+
+procedure TMainDlg.SaveClick(Sender: TObject);
+begin
+  Save;
+end;
+
+procedure TMainDlg.ImportClick(Sender: TObject);
+var
+  i:integer;
+  progdlg:TProgressDlg;
 begin
   if OpenPictureDialog1.Execute then
   begin
+    progdlg := TProgressDlg.Create(self);
+    progdlg.Show;
+    progdlg.ProgressBar1.Max := OpenPictureDialog1.Files.Count;
+
     for i := 0 to OpenPictureDialog1.Files.Count - 1 do
     begin
       with AdImageList.Add(extractfilename(copy(OpenPictureDialog1.Files[i],1,
@@ -702,24 +875,39 @@ begin
         finally
           Screen.Cursor := crDefault;
         end;
+
+        Changed := true;
+
+        progdlg.ProgressBar1.Position := progdlg.ProgressBar1.Position + 1;
+        progdlg.Repaint;
       end;
     end;
     AdImageList.Restore;
     ViewContent;
+
+    progdlg.Free;
   end;
 end;
 
 procedure TMainDlg.UpdateState;
-var i,w,h:integer;
-    bmp,bmp2:TBitmap;
-    adbmp:TAdBitmap;
-    r:TRect;
 begin
   Delete2.Enabled := ListView1.ItemIndex <> -1;
   Settings2.Enabled := ListView1.ItemIndex <> -1;
   Export1.Enabled := ListView1.ItemIndex <> -1;
   Compoundselectedpictures1.Enabled := ListView1.SelCount > 1;
+  ToolButton1.Enabled := ListView1.ItemIndex <> -1;
+  ToolButton6.Enabled := ListView1.ItemIndex <> -1;
+  ToolButton13.Enabled := ListView1.ItemIndex <> -1;
 
+  CreateAnimPatterns;
+end;
+
+procedure TMainDlg.CreateAnimPatterns;
+var i,w,h:integer;
+    bmp,bmp2:TBitmap;
+    adbmp:TAdBitmap;
+    r:TAdRect;
+begin
   if (ListView1.ItemIndex <> -1) and (ListView1.SelCount = 1) and (AdImageList.Items[ListView1.ItemIndex].PatternCount > 1) then
   begin
     GroupBox1.Visible := true;
@@ -737,9 +925,9 @@ begin
       Texture.Texture.SaveToBitmap(adbmp);
 
       bmp := TBitmap.Create;
-      adbmp.AssignToBitmap(bmp,false);
+      adbmp.AssignTo(bmp);
 
-      ImageList3.Clear;
+      Imgs_Anim.Clear;
       ListView2.Clear;
 
       ListView2.Items.BeginUpdate;
@@ -766,7 +954,7 @@ begin
         SetStretchBltMode(bmp2.Canvas.Handle, Halftone);
         StretchBlt(bmp2.Canvas.Handle,(32-w) div 2,(32-h) div 2,w,h,bmp.Canvas.Handle,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top,SRCCOPY);
 
-        ImageList3.Add(bmp2,nil);
+        Imgs_Anim.Add(bmp2,nil);
         with ListView2.Items.Add do
         begin
           ImageIndex := i;
@@ -798,10 +986,20 @@ var i:integer;
     w,h:integer;
 begin
   Screen.Cursor := crHourglass;
+
   Caption := 'Image List Editor';
-  if CurrentFile <> '' then Caption := Caption + ' ['+CurrentFile+']';
-  ImageList2.Clear;
+  StatusBar1.SimpleText := 'No file opened';
+  if CurrentFile <> '' then
+  begin
+    Caption := Caption + ' ['+CurrentFile+']';
+    StatusBar1.SimpleText := CurrentFile;
+  end;
+  
+  Imgs_Preview.Clear;
   ListView1.Clear;
+  
+  ListView1.Items.BeginUpdate;
+
   for i := 0 to AdImageList.Count - 1 do
   begin
     with AdImageList[i] do
@@ -825,13 +1023,13 @@ begin
       abmp := TAdBitmap.Create;
       Abmp.ReserveMemory(Texture.Texture.BaseWidth,Texture.Texture.BaseHeight);
       Texture.Texture.SaveToBitmap(ABmp);
-      abmp.AssignToBitmap(bmp2,true);
+      abmp.AssignTo(bmp2);
       abmp.Free;
 
       bmp.Canvas.StretchDraw(bounds((32-w) div 2,(32-h) div 2,w,h),bmp2);
       bmp2.Free;
 
-      ImageList2.Add(bmp,nil);
+      Imgs_Preview.Add(bmp,nil);
 
       bmp.Free;
 
@@ -850,25 +1048,10 @@ begin
       end;
     end;
   end;
+
+  ListView1.Items.EndUpdate;
+
   Screen.Cursor := crDefault;
-end;
-
-procedure TMainDlg.WriteText(s: string);
-var bmp:TBitmap;
-begin
-  bmp := TBitmap.Create;
-
-  bmp.Transparent := true;
-  bmp.TransparentColor := clWhite;
-  bmp.TransparentMode := tmFixed;
-
-  bmp.Canvas.Font.Style := [fsBold];
-  bmp.Width := bmp.Canvas.TextWidth(s);
-  bmp.Height := bmp.Canvas.TextHeight(s);
-  bmp.Canvas.TextOut(0,0,s);
-  TextLabel.Texture.LoadFromGraphic(bmp);
-  TextLabel.Restore;
-  bmp.Free;
 end;
 
 end.

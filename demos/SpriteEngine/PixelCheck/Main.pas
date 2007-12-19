@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, AdSprites, AdPng, AdSetupDlg;
+  Dialogs, AdDraws, AdClasses, AdSprites, AdPng, AdSetupDlg, AdPerformanceCounter;
 
 type
   TAdTestSprite = class(TImageSpriteEx)

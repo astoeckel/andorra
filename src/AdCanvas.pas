@@ -21,13 +21,13 @@ unit AdCanvas;
 interface
 
 uses
-  SysUtils, Classes, Types, AdClasses, AdContainers, AdList, Math;
+  Classes, AdClasses, AdTypes, AdContainers, AdList, AdFont, Math;
 
 type
   TAdColors = array[0..3] of TAndorraColor;
 
-  TAdBrushStyle = (bsClear, bsSolid, bsGradient);
-  TAdPenStyle = (psNone, psSolid);
+  TAdBrushStyle = (abClear, abSolid, abGradient);
+  TAdPenStyle = (apNone, apSolid);
   TAdPenPosition = (ppOuter,ppMiddle,ppInner);
   TAdCanvasTextureMode = (tmTile, tmStretch, tmStretchAlign);
   TAdCanvasTexturePosition = (tpStatic, tpDynamic);
@@ -70,7 +70,7 @@ type
   TAdPen = class
     private
       FColor:TAndorraColor;
-      FWidth:integer;
+      FWidth:single;
       FStyle:TAdPenStyle;
       FDashLength:integer;
       FGapLength:integer;
@@ -80,12 +80,12 @@ type
       FPenPosition:TAdPenPosition;
       FBlendMode:TAd2dBlendMode;
       procedure SetColor(AValue:TAndorraColor);
-      procedure SetWidth(AValue:integer);
+      procedure SetWidth(AValue:single);
       procedure SetTexture(AValue:TAd2dTexture);
       procedure SetStyle(AValue:TAdPenStyle);
     public
       property Color:TAndorraColor read FColor write SetColor;
-      property Width:integer read FWidth write SetWidth;
+      property Width:single read FWidth write SetWidth;
       property Texture:TAd2dTexture read FTexture write SetTexture;
       property TextureMode:TAdCanvasTextureMode read FTextureMode write FTextureMode;
       property TexturePosition:TAdCanvasTexturePosition read FTexturePosition write FTexturePosition;
@@ -107,8 +107,11 @@ type
       FAppl:TAd2dApplication;
       FBrush:TAdBrush;
       FPen:TAdPen;
+      FBlendMode:TAd2DBlendMode;
+      FMatrix:TAdMatrix;
     protected
       property Appl:TAd2dApplication read FAppl;
+      procedure SetMatrix(AValue:TAdMatrix);virtual;abstract;
     public
       constructor Create(AAppl:TAd2DApplication);
       destructor Destroy;override;
@@ -120,6 +123,8 @@ type
 
       property Brush:TAdBrush read FBrush write FBrush;
       property Pen:TAdPen read FPen write FPen;
+      property Matrix:TAdMatrix read FMatrix write SetMatrix;
+      property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
   end;
 
   PAdCanvasObjectList = ^TAdCanvasDisplayList;
@@ -135,6 +140,7 @@ type
       property Items[Index:integer]:TAdCanvasObject read GetItem write SetItem; default;
 
       constructor Create(AAppl:TAd2dApplication);
+      destructor Destroy;override;
 
       procedure ResetTransform;
       procedure Scale(AX, AY, AZ: single);
@@ -171,7 +177,9 @@ type
       FLastQuad:TAdCanvasQuad;
       procedure HashPoint(APoint:TAdLinePoint);
       procedure GenerateTextureCoords(maxlen:double;var vertices:TAdVertexArray);
-      function OrthogonalPoints(x1, y1, x2, y2, d: integer): TAdCanvasQuad;
+      function OrthogonalPoints(x1, y1, x2, y2:integer; d: single): TAdCanvasQuad;
+    protected
+      procedure SetMatrix(AValue:TAdMatrix);override;
     public
       constructor Create(AAppl:TAd2dApplication);
       destructor Destroy;override;
@@ -199,6 +207,8 @@ type
       procedure GenerateTextureCoords(var vertices:TAdVertexArray);
       procedure SetNormals(var vertices:TAdVertexArray);
       procedure CalcQuadSizes(aquad:TAdCanvasColorQuad);
+    protected
+      procedure SetMatrix(AValue:TAdMatrix);override;
     public
       constructor Create(AAppl:TAd2dApplication);
       destructor Destroy;override;
@@ -218,6 +228,78 @@ type
       property MaxY:single read FMaxY;
   end;
 
+  TAdCanvasEllipseObject = class(TAdCanvasObject)
+    private
+      FLine:TAdCanvasLine;
+      FMesh:TAd2dMesh;
+      FOwnPen:boolean;
+      FPos:TAdRect;
+      FCenterX,FCenterY,FWidth,FHeight:single;
+      procedure CalcCenter;
+      procedure GenerateTextureCoords(var vertices:TAdVertexArray);
+    protected
+      procedure SetMatrix(AValue:TAdMatrix);override;
+    public
+      constructor Create(AAppl:TAd2dApplication);
+      destructor Destroy;override;
+                     
+      procedure SetPos(ARect:TAdRect);
+      procedure Draw;override;
+      function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState;override;
+      procedure Update(AItem:TAdCanvasObject);override;
+      procedure Generate;override;
+
+      property Pos:TAdRect read FPos;
+      property CenterX:single read FCenterX;
+      property CenterY:single read FCenterY;
+  end;
+
+  TAdCanvasTextObject = class(TAdCanvasObject)
+    private
+      FFont:TAdFont;
+      FDrawFont:TAdFont;
+      FText:string;
+      FRect:TAdRect;
+    protected
+      procedure SetMatrix(AValue:TAdMatrix);override;
+    public
+      constructor Create(AAppl:TAd2dApplication);
+      destructor Destroy;override;
+
+      procedure Draw;override;
+      function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState;override;
+      procedure Update(AItem:TAdCanvasObject);override;
+      procedure Generate;override;
+
+      property Rect:TAdRect read FRect write FRect;
+      property Font:TAdFont read FFont write FFont;
+      property Text:string read FText write FText;
+  end;
+
+  TAdCanvasPointsObject = class(TAdCanvasObject)
+    private
+      FMesh:TAd2dMesh;
+      FPoints:TAdLinkedList;
+      FHash:integer;
+    protected
+      procedure SetMatrix(AValue:TAdMatrix);override;
+      procedure HashPoint(APoint:TAdLinePoint);
+    public
+      constructor Create(AAppl:TAd2dApplication);
+      destructor Destroy;override;
+
+      procedure Rehash;
+
+      procedure AddPoint(APoint:TAdLinePoint);
+      procedure Draw;override;
+      function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState;override;
+      procedure Update(AItem:TAdCanvasObject);override;
+      procedure Generate;override;
+
+      property Hash:integer read FHash;
+      property Points:TAdLinkedList read FPoints;
+  end;
+
   TAdCanvas = class
     private
       FReleaseIndex:integer;
@@ -230,15 +312,19 @@ type
 
       FCurrentObject:TAdCanvasObject;
       FPen:TAdPen;
+      FTempPen:TAdPen;
       FBrush:TAdBrush;
+      FFont:TAdFont;
 
       procedure DeleteUnusedLists;
       procedure DeleteUnusedItems;
       procedure PushObject;
 
       procedure CreateLinesObject;
+      procedure CreatePointsObject;
       procedure AddLinePoint(ax,ay:integer);
       procedure ColorQuad(var aquad:TAdCanvasColorQuad);
+      procedure DoTextOut(ARect:TAdRect; AText:string);
     public
       FDisplayLists:TAdLinkedList;
 
@@ -253,15 +339,25 @@ type
 
       procedure MoveTo(ax,ay:integer);overload;
       procedure LineTo(ax,ay:integer);overload;
-      procedure MoveTo(ap:TPoint);overload;
-      procedure LineTo(ap:TPoint);overload;
+      procedure MoveTo(ap:TAdPoint);overload;
+      procedure LineTo(ap:TAdPoint);overload;
       procedure Line(ax1,ay1,ax2,ay2:integer);overload;
-      procedure Line(ap1,ap2:TPoint);overload;
+      procedure Line(ap1,ap2:TAdPoint);overload;
+
+      procedure Arrow(ArrowSize, ArrowAngle:Integer; P1, P2:TAdPoint);
+
+      procedure TextOut(AX, AY:integer; AText:string);overload;
 
       procedure Rectangle(ax1,ay1,ax2,ay2:integer);overload;
-      procedure Rectangle(ar:TRect);overload;
-      procedure Rectangle(ap1,ap2:TPoint);overload;
-      procedure Rectangle(ap:TPoint; awidth,aheight:integer);overload;
+      procedure Rectangle(ar:TAdRect);overload;
+      procedure Rectangle(ap1,ap2:TAdPoint);overload;
+      procedure Rectangle(ap:TAdPoint; awidth,aheight:integer);overload;
+
+      procedure PlotPixel(ax, ay:integer);overload;
+      procedure PlotPixel(ax, ay:integer;acolor:TAndorraColor);overload;
+
+      procedure Ellipse(ax1,ay1,ax2,ay2:integer);
+      procedure Circle(acx,acy,ar:integer);
 
       procedure DrawColoredQuad(aquad:TAdCanvasColorQuad);
       procedure DrawQuad(aquad:TAdCanvasQuad);
@@ -270,6 +366,7 @@ type
       property BlendMode:TAd2dBlendMode read FBlendMode write FBlendMode;
       property Pen:TAdPen read FPen write FPen;
       property Brush:TAdBrush read FBrush write FBrush;
+      property Font:TAdFont read FFont write FFont;
   end;
 
 implementation
@@ -284,7 +381,7 @@ begin
   GradientColor := Ad_ARGB(255,255,255,255);
   TextureMode := tmStretch;
   TexturePosition := tpDynamic;
-  Style := bsSolid;
+  Style := abSolid;
 end;
 
 procedure TAdBrush.LoadFromStream(AStream: TStream);
@@ -339,21 +436,21 @@ end;
 
 procedure TAdBrush.SetColor(AValue: TAndorraColor);
 begin
-  FStyle := bsSolid;
+  FStyle := abSolid;
   FColor := AValue;
   UpdateColors;
 end;
 
 procedure TAdBrush.SetGradientColor(AValue: TAndorraColor);
 begin
-  FStyle := bsGradient;
+  FStyle := abGradient;
   FGradientColor := AValue;
   UpdateColors;
 end;
 
 procedure TAdBrush.SetGradientDirection(AValue: TAdCanvasGradientDirection);
 begin
-  FStyle := bsGradient;
+  FStyle := abGradient;
   FGradientDirection := AValue;
   UpdateColors;
 end;
@@ -380,7 +477,7 @@ begin
     FColors[i] := FColor;
   end;
 
-  if Style = bsGradient then
+  if Style = abGradient then
   begin
     case FGradientDirection of
       gdVertical:
@@ -409,7 +506,7 @@ begin
   FTexture := nil;
   FTextureMode := tmTile;
   FPenPosition := ppMiddle;
-  FStyle := psSolid;
+  FStyle := apSolid;
 end;
 
 procedure TAdPen.LoadFromStream(AStream: TStream);
@@ -479,7 +576,7 @@ begin
   FTexture := AValue;
 end;
 
-procedure TAdPen.SetWidth(AValue: integer);
+procedure TAdPen.SetWidth(AValue: single);
 begin
   if AValue >= 1 then
   begin
@@ -487,7 +584,7 @@ begin
   end
   else
   begin
-    FStyle := psNone;
+    FStyle := apNone;
   end;
 end;
 
@@ -498,6 +595,11 @@ begin
   inherited Create;
   FAppl := AAppl;
   ResetTransform;
+end;
+
+destructor TAdCanvasDisplayList.Destroy;
+begin
+  inherited;
 end;
 
 procedure TAdCanvasDisplayList.Notify(Ptr: Pointer; Action: TListNotification);
@@ -546,17 +648,12 @@ end;
 procedure TAdCanvasDisplayList.Draw;
 var
   i:integer;
-  mat1,mat2:TAdMatrix;
 begin
-  FAppl.GetScene(mat1, mat2);
-  FAppl.SetupManualScene(AdMatrix_Multiply(mat1, FTransformMatrix), mat2);
-  
   for i := 0 to Count - 1 do
   begin
+    Items[i].Matrix := FTransformMatrix;
     Items[i].Draw;
   end;
-
-  FAppl.SetupManualScene(mat1, mat2);
 end;
 
 function TAdCanvasDisplayList.GetItem(AIndex: integer): TAdCanvasObject;
@@ -592,6 +689,7 @@ begin
   FDisplayLists := TAdLinkedList.Create;
 
   FPen := TAdPen.Create;
+  FTempPen := TAdPen.Create;
   FBrush := TAdBrush.Create;
 end;
 
@@ -603,6 +701,7 @@ begin
   FDisplayLists.Free;
 
   FPen.Free;
+  FTempPen.Free;
   FBrush.Free;
 
   inherited;
@@ -612,9 +711,10 @@ procedure TAdCanvas.StartFrame;
 begin
   FDisplayLists.StartIteration;
   if not FDisplayLists.ReachedEnd then
-  begin
-    FCurrentDisplayList := TAdCanvasDisplayList(FDisplayLists.GetCurrent);
-  end;
+    FCurrentDisplayList := TAdCanvasDisplayList(FDisplayLists.GetCurrent)
+  else
+    FCurrentDisplayList := nil;
+    
   FReleaseIndex := 0;
   FDrawIndex := 0;
 end;
@@ -622,6 +722,7 @@ end;
 
 procedure TAdCanvas.EndFrame;
 begin
+  Release;
   DeleteUnusedLists;
 end;
 
@@ -630,10 +731,9 @@ var
   i:integer;
 begin
   //Delete all unused canvas items
-  for i := 0 to (FCurrentDisplayList.Count - 1) - FDrawIndex do
+  for i := FCurrentDisplayList.Count - 1 downto FDrawIndex do
   begin
-    TAdCanvasDisplayList(FCurrentDisplayList.Items[i]).Free;
-    FCurrentDisplayList.Delete(FCurrentDisplayList.Count - 1);
+    FCurrentDisplayList.Delete(i);
   end;
 end;
 
@@ -642,17 +742,17 @@ var
   i:integer;
 begin
   //Delete all unused display lists - FReleaseIndex defines how often "Release" was called.
-  for i := 0 to (FDisplayLists.Count - 1) - FReleaseIndex do
+  for i := FDisplayLists.Count - 1 downto FReleaseIndex do
   begin
-    TAdCanvasDisplayList(FDisplayLists.Items[FDisplayLists.Count - 1]).Free;
-    FDisplayLists.Delete(FDisplayLists.Count - 1);
+    TAdCanvasDisplayList(FDisplayLists.Items[i]).Free;
+    FDisplayLists.Delete(i);
   end;
 end;
 
 procedure TAdCanvas.DrawObject(var AObj: TAdCanvasObject);
 begin
   //Create a new display list if necessary
-   if (FCurrentDisplayList = nil) then
+  if (FCurrentDisplayList = nil) then
   begin
     FCurrentDisplayList := TAdCanvasDisplayList.Create(FAppl);
     FDisplayLists.Add(FCurrentDisplayList);
@@ -695,7 +795,8 @@ begin
   if FCurrentObject <> nil then
   begin
     FCurrentObject.Pen := FPen;
-    FCurrentObject.Brush := FBrush; 
+    FCurrentObject.Brush := FBrush;
+    FCurrentObject.BlendMode := FBlendMode;
     DrawObject(FCurrentObject);
     FCurrentObject := nil;
   end;
@@ -757,12 +858,41 @@ end;
 { Canvas Drawing operations }
 
 procedure TAdCanvas.CreateLinesObject;
+var
+  tmp:TAdPen;
 begin
   if (FCurrentObject <> nil) then
   begin
-    PushObject;
+    if FCurrentObject is TAdCanvasLine then
+    begin
+      tmp := FPen;
+      FPen := FTempPen;
+      PushObject;
+      FPen := tmp;
+    end
+    else
+    begin
+      PushObject;
+    end;
   end;
+  FTempPen.Assign(FPen);
   FCurrentObject := TAdCanvasLine.Create(FAppl);
+end;
+
+procedure TAdCanvas.CreatePointsObject;
+begin
+  if FCurrentObject = nil then
+  begin
+    FCurrentObject := TAdCanvasPointsObject.Create(FAppl)
+  end
+  else
+  begin
+    if not (FCurrentObject is TAdCanvasPointsObject) then
+    begin
+      PushObject;
+      FCurrentObject := TAdCanvasPointsObject.Create(FAppl)
+    end;
+  end;
 end;
 
 procedure TAdCanvas.AddLinePoint(ax, ay: integer);
@@ -779,17 +909,22 @@ begin
   TAdCanvasLine(FCurrentObject).AddPoint(p);
 end;
 
+procedure TAdCanvas.Circle(acx, acy, ar: integer);
+begin
+  Ellipse(acx-ar, acy-ar, acx+ar, acy+ar);
+end;
+
 procedure TAdCanvas.ColorQuad(var aquad: TAdCanvasColorQuad);
 begin
   case FBrush.Style of
-    bsSolid:
+    abSolid, abClear:
     begin
       aquad.c[0] := FBrush.Color;
       aquad.c[1] := FBrush.Color;
       aquad.c[2] := FBrush.Color;
       aquad.c[3] := FBrush.Color;
     end;
-    bsGradient:
+    abGradient:
     begin
       case FBrush.GradientDirecton of
         gdVertical:
@@ -811,7 +946,7 @@ begin
   end;
 end;
 
-procedure TAdCanvas.Line(ap1, ap2: TPoint);
+procedure TAdCanvas.Line(ap1, ap2: TAdPoint);
 begin
   MoveTo(ap1.X,ap1.Y);
   LineTo(ap2.X,ap2.Y);
@@ -823,12 +958,12 @@ begin
   LineTo(ax2,ay2);
 end;
 
-procedure TAdCanvas.LineTo(ap: TPoint);
+procedure TAdCanvas.LineTo(ap: TAdPoint);
 begin
   LineTo(ap.X,ap.Y);
 end;
 
-procedure TAdCanvas.MoveTo(ap: TPoint);
+procedure TAdCanvas.MoveTo(ap: TAdPoint);
 begin
   MoveTo(ap.X, ap.Y);
 end;
@@ -851,6 +986,43 @@ begin
   AddLinePoint(ax,ay);
 end;
 
+procedure TAdCanvas.Arrow(ArrowSize, ArrowAngle: Integer; P1, P2: TAdPoint);
+//original code by Christof Urbaczek, adaption by Andreas Stöckel
+//http://www.delphipraxis.net/topic42773_einen+pfeil+zeichnen.html
+
+var
+  Alpha, AlphaZ : double;   
+
+begin
+  MoveTo(P1.X, P1.Y);
+  LineTo(P2.X, P2.Y);
+
+  Alpha := 0;
+  if P2.X = P1.X then
+    AlphaZ := 0
+  else
+    AlphaZ := RadToDeg(ArcTan((P2.Y - P1.Y) / (P2.X - P1.X)));
+
+  if (P2.X > P1.X) and (P2.Y = P1.Y) then Alpha := 0
+  else if (P2.X > P1.X) and (P2.Y < P1.Y) then Alpha := 0 - AlphaZ
+  else if (P2.X = P1.X) and (P2.Y < P1.Y) then Alpha := 90
+  else if (P2.X < P1.X) and (P2.Y < P1.Y) then Alpha := 180 - AlphaZ
+  else if (P2.X < P1.X) and (P2.Y = P1.Y) then Alpha := 180
+  else if (P2.X < P1.X) and (P2.Y > P1.Y) then Alpha := 180 - AlphaZ
+  else if (P2.X = P1.X) and (P2.Y > P1.Y) then Alpha := 270
+  else if (P2.X > P1.X) and (P2.Y > P1.Y) then Alpha := 360 - AlphaZ;
+
+  MoveTo(P2.X, P2.Y);
+  LineTo(
+    round(P2.X - ArrowSize * cos(DegToRad(Alpha - ArrowAngle / 2))),
+    round(P2.Y + ArrowSize * sin(DegToRad(Alpha - ArrowAngle / 2))));
+
+  MoveTo(P2.X, P2.Y);
+  LineTo(
+    round(P2.X - ArrowSize * cos(DegToRad(Alpha + ArrowAngle / 2))),
+    round(P2.Y + ArrowSize * sin(DegToRad(Alpha + ArrowAngle / 2))));
+end;
+
 procedure TAdCanvas.DrawQuad(aquad: TAdCanvasQuad);
 var
   tmpquad:TAdCanvasColorQuad;
@@ -868,6 +1040,8 @@ begin
   begin
     SetQuad(tmpquad);
   end;
+
+  PushObject;
 end;
 
 procedure TAdCanvas.DrawColoredQuad(aquad: TAdCanvasColorQuad);
@@ -879,6 +1053,8 @@ begin
   begin
     SetQuad(AQuad);
   end;
+
+  PushObject;
 end;
 
 procedure TAdCanvas.Rectangle(ax1, ay1, ax2, ay2: integer);
@@ -905,21 +1081,70 @@ begin
   begin
     SetQuad(AQuad);
   end;
+  
+  PushObject;
 end;
 
-procedure TAdCanvas.Rectangle(ar: TRect);
+procedure TAdCanvas.Rectangle(ar: TAdRect);
 begin
   Rectangle(ar.Left, ar.Top, ar.Right, ar.Bottom);
 end;
 
-procedure TAdCanvas.Rectangle(ap1, ap2: TPoint);
+procedure TAdCanvas.Rectangle(ap1, ap2: TAdPoint);
 begin
   Rectangle(ap1.X, ap1.Y, ap2.X, ap2.Y);
 end;
 
-procedure TAdCanvas.Rectangle(ap: TPoint; awidth, aheight: integer);
+procedure TAdCanvas.Rectangle(ap: TAdPoint; awidth, aheight: integer);
 begin
   Rectangle(ap.X, ap.Y, awidth + ap.X, aheight + ap.Y);
+end;
+
+procedure TAdCanvas.Ellipse(ax1, ay1, ax2, ay2: integer);
+begin
+  PushObject;
+
+  FCurrentObject := TAdCanvasEllipseObject.Create(FAppl);
+  with FCurrentObject as TAdCanvasEllipseObject do
+  begin
+    SetPos(AdRect(ax1,ay1,ax2,ay2));
+  end;
+  
+  PushObject;
+end;
+
+procedure TAdCanvas.DoTextOut(ARect: TAdRect; AText: string);
+begin
+  PushObject;
+  
+  FCurrentObject := TAdCanvasTextObject.Create(FAppl);
+  TAdCanvasTextObject(FCurrentObject).Font := FFont;
+  TAdCanvasTextObject(FCurrentObject).Rect := ARect;
+  TAdCanvasTextObject(FCurrentObject).Text := AText;
+
+  PushObject;
+end;
+
+procedure TAdCanvas.TextOut(AX, AY: integer; AText: string);
+begin
+  DoTextOut(AdRect(AX, AY, AX, AY), AText);
+end;
+
+procedure TAdCanvas.PlotPixel(ax, ay: integer);
+begin
+  PlotPixel(ax, ay, FPen.Color);
+end;
+
+procedure TAdCanvas.PlotPixel(ax, ay: integer; acolor: TAndorraColor);
+var
+  p:TAdLinePoint;
+begin
+  CreatePointsObject;
+
+  p.X := ax;
+  p.Y := ay;
+  p.Color := acolor;
+  TAdCanvasPointsObject(FCurrentObject).AddPoint(p);
 end;
 
 { TAdCanvasLines }
@@ -943,7 +1168,8 @@ begin
   end;
   FPoints.Free;
 
-  FreeAndNil(FMesh);
+  FMesh.Free;
+  FMesh := nil;
 
   if FOwnPen then
   begin
@@ -968,7 +1194,9 @@ begin
   result := usDelete;
   if AItem is TAdCanvasLine then
   begin
-    if (FPoints.Count = TAdCanvasLine(AItem).Points.Count) and (AItem.Pen.EqualTo(Pen)) then
+    if (BlendMode = TAdCanvasLine(AItem).BlendMode) and
+       (FPoints.Count = TAdCanvasLine(AItem).Points.Count) and
+       (AItem.Pen.EqualTo(Pen)) then
     begin
       result := usUpdate;
 
@@ -986,21 +1214,30 @@ begin
   begin
     if FPen.Width = 1 then
     begin
-      FMesh.Draw(bmAlpha,adLineStrips);
+      FMesh.Draw(BlendMode,adLineStrips);
     end
     else
     begin
-      FMesh.Draw(bmAlpha,adTriangles);
+      FMesh.Draw(BlendMode,adTriangles);
     end;
   end;
 end;
 
-function TAdCanvasLine.OrthogonalPoints(x1, y1, x2, y2, d: integer): TAdCanvasQuad;
+function TAdCanvasLine.OrthogonalPoints(x1, y1, x2, y2:integer; d: single): TAdCanvasQuad;
 var
   alpha:double;
   l:double;
+  d1,d2:double;
 begin
   FillChar(result, SizeOf(result), 0);
+
+  d1 := 0; d2 := 0;
+
+  case FPen.PenPosition of
+    ppOuter: begin d1 := 0; d2 := d; end;
+    ppMiddle: begin d1 := d / 2; d2 := d1; end;
+    ppInner: begin d1 := d; d2 := 0; end;
+  end;
 
   l := sqrt(sqr(x2-x1)+sqr(y2-y1));
 
@@ -1014,15 +1251,15 @@ begin
     end;
     alpha := - alpha;
 
-    result.p[0].X := x1 + cos(alpha + 0.5*pi) * d / 2;
-    result.p[0].Y := y1 + sin(alpha + 0.5*pi) * d / 2;
-    result.p[1].X := x1 + cos(alpha - 0.5*pi) * d / 2;
-    result.p[1].Y := y1 + sin(alpha - 0.5*pi) * d / 2;
+    result.p[0].X := x1 + cos(alpha + 0.5*pi) * d1;
+    result.p[0].Y := y1 + sin(alpha + 0.5*pi) * d1;
+    result.p[1].X := x1 + cos(alpha - 0.5*pi) * d2;
+    result.p[1].Y := y1 + sin(alpha - 0.5*pi) * d2;
 
-    result.p[2].X := x2 + cos(alpha + 0.5*pi) * d / 2;
-    result.p[2].Y := y2 + sin(alpha + 0.5*pi) * d / 2;
-    result.p[3].X := x2 + cos(alpha - 0.5*pi) * d / 2;
-    result.p[3].Y := y2 + sin(alpha - 0.5*pi) * d / 2;
+    result.p[2].X := x2 + cos(alpha + 0.5*pi) * d1;
+    result.p[2].Y := y2 + sin(alpha + 0.5*pi) * d1;
+    result.p[3].X := x2 + cos(alpha - 0.5*pi) * d2;
+    result.p[3].Y := y2 + sin(alpha - 0.5*pi) * d2;
   end;
 end;
 
@@ -1036,6 +1273,12 @@ begin
   begin
     HashPoint(PAdLinePoint(FPoints.GetCurrent)^);
   end;
+end;
+
+procedure TAdCanvasLine.SetMatrix(AValue: TAdMatrix);
+begin
+  FMatrix := AValue;
+  FMesh.SetMatrix(AValue);
 end;
 
 procedure TAdCanvasLine.Generate;
@@ -1061,7 +1304,7 @@ begin
     FPen.Assign(APen);
   end;
 
-  if FPen.Width = 1 then
+  if CompareValue(FPen.Width, 1, 0.001) = 0 then
   begin
     SetLength(Vertices,Points.Count);
     FPoints.StartIteration;
@@ -1289,7 +1532,8 @@ begin
   result := usDelete;
   if AItem is TAdCanvasQuadObject then
   begin
-    if (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
+    if (BlendMode = TAdCanvasLine(AItem).BlendMode) and    
+       (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
     begin
       result := usEqual;
 
@@ -1309,14 +1553,17 @@ end;
 
 procedure TAdCanvasQuadObject.Draw;
 begin
+  //Draw rectangle
+  if (FBrush.Style <> abClear) then
+  begin
+    FMesh.Draw(BlendMode,FDrawMode);
+  end;
+
   //Draw outer line
-  if (FPen.Width > 0) and (FPen.Style <> psNone) then
+  if (FPen.Style <> apNone) then
   begin
     FLine.Draw;
   end;
-
-  //Draw rectangle  
-  FMesh.Draw(bmAlpha,FDrawMode);
 end;
 
 procedure TAdCanvasQuadObject.Generate;
@@ -1343,7 +1590,7 @@ begin
     FBrush.Assign(ABrush);
   end;
 
-  if (FPen.Style <> psNone) then
+  if (FPen.Style <> apNone) then
   begin
     //Set line object properties if necessary
     if (FLine.Points.Count = 0) then
@@ -1382,11 +1629,12 @@ begin
       p.Color := FPen.Color;
       PAdLinePoint(FLine.Points.GetCurrent)^ := p;
 
+      FLine.BlendMode := BlendMode;
       FLine.Generate;
     end;
   end;
 
-  if (FBrush.Style <> bsClear) then
+  if (FBrush.Style <> abClear) then
   begin
 
     if (FBrush.Texture = nil) or (FBrush.TextureMode <> tmStretchAlign) then
@@ -1520,6 +1768,13 @@ begin
   end;
 end;
 
+procedure TAdCanvasQuadObject.SetMatrix(AValue: TAdMatrix);
+begin
+  FMatrix := AValue;
+  FMesh.SetMatrix(AValue);
+  FLine.SetMatrix(AValue);
+end;
+
 procedure TAdCanvasQuadObject.SetNormals(var vertices: TAdVertexArray);
 var
   i:integer;
@@ -1539,6 +1794,466 @@ procedure TAdCanvasQuadObject.Update(AItem: TAdCanvasObject);
 begin
   FQuad := TAdCanvasQuadObject(AItem).Quad;
   Generate;
+end;
+
+{ TAdCanvasEllipseObject }
+
+constructor TAdCanvasEllipseObject.Create(AAppl: TAd2dApplication);
+begin
+  inherited Create(AAppl);
+
+  FMesh := Appl.CreateMesh;
+  FLine := TAdCanvasLine.Create(Appl);
+  FOwnPen := false;
+end;
+
+destructor TAdCanvasEllipseObject.Destroy;
+begin
+  FLine.Free;
+  FMesh.Free;
+  
+  if FOwnPen then
+  begin
+    FPen.Free;
+    FBrush.Free;
+  end;
+
+  inherited;
+end;
+
+procedure TAdCanvasEllipseObject.Draw;
+begin
+  //Draw filling
+  if FBrush.Style <> abClear then
+  begin
+    FMesh.Draw(BlendMode, adTriangleFan);
+  end;
+
+  //Draw outer line
+  if FPen.Style <> apNone then
+  begin
+    FLine.Draw;
+  end;
+end;
+
+function TAdCanvasEllipseObject.CompareTo(
+  AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  result := usDelete;
+  if AItem is TAdCanvasEllipseObject then
+  begin
+    if (BlendMode = TAdCanvasLine(AItem).BlendMode) and
+       (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
+    begin
+      result := usUpdate;
+
+      if (TAdCanvasEllipseObject(AItem).Pos.Left = FPos.Left) and
+         (TAdCanvasEllipseObject(AItem).Pos.Right = FPos.Right) and
+         (TAdCanvasEllipseObject(AItem).Pos.Top = FPos.Top) and
+         (TAdCanvasEllipseObject(AItem).Pos.Bottom = FPos.Bottom) then
+      begin
+        result := usEqual;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdCanvasEllipseObject.CalcCenter;
+begin
+  FCenterX := (FPos.Left + FPos.Right) / 2;
+  FCenterY := (FPos.Top + FPos.Bottom) / 2;
+  FWidth := FPos.Right - FPos.Left;
+  FHeight := FPos.Bottom - FPos.Top;
+end;
+
+procedure TAdCanvasEllipseObject.Generate;
+var
+  i:integer;
+  steps:integer;
+  vertices:TAdVertexArray;
+  ax, ay, ar, w, v:double;
+  lx,ly:integer;
+  lp:TAdLinePoint;
+  APen:TAdPen;
+  ABrush:TAdBrush;
+begin
+  CalcCenter;
+
+  //Copy pen and brush if necessary
+  if not FOwnPen then
+  begin
+    FOwnPen := true;
+
+    APen := FPen;
+    FPen := TAdPen.Create;
+    FPen.Assign(APen);
+
+    ABrush := FBrush;
+    FBrush := TAdBrush.Create;
+    FBrush.Assign(ABrush);
+  end;
+
+  ar := (abs(FWidth) + abs(FHeight)) / 4;
+  steps := round(Pi * 2 * ar * (0.1/(ar*0.01)));
+
+  if FBrush.Style <> abClear then
+  begin
+    SetLength(vertices, steps + 1);
+
+    Vertices[0].Position := AdVector3(FCenterX, FCenterY, 0);
+    Vertices[0].Color := FBrush.Color;
+    Vertices[0].Normal := AdVector3(0, 0, -1);
+  end;
+
+  if FPen.Style <> apNone then
+  begin
+    if FLine.Points.Count <> 0 then
+    begin
+      FLine.Free;
+      FLine := TAdCanvasLine.Create(FAppl);
+    end;
+    FLine.Pen := FPen;
+  end;
+
+  v := FHeight / FWidth;
+  lx := 0;
+  ly := 0;
+
+  for i := 0 to steps-2 do
+  begin
+    w := (2 * PI) / (steps-1) * i;
+    ax := FCenterX + cos(w) * (FWidth / 2);
+    ay := FCenterY + sin(w) * (FWidth / 2) * v;
+    if FBrush.Style <> abClear then
+    begin
+      Vertices[i+1].Position := AdVector3(ax, ay, 0);
+      case FBrush.Style of
+        abSolid: Vertices[i+1].Color := FBrush.Color;
+        abGradient: Vertices[i+1].Color := FBrush.GradientColor;
+      end;                                                      
+      Vertices[i+1].Normal := AdVector3(0, 0, -1);
+    end;
+    if FPen.Style <> apNone then
+    begin
+      if (round(ax) <> lx) or (round(ay) <> ly) then
+      begin
+        lp.X := round(ax);
+        lp.Y := round(ay);
+        lp.Color := FPen.Color;
+        FLine.AddPoint(lp);
+      end;
+    end;
+    lx := round(ax);
+    ly := round(ay);
+  end;
+
+  //Close circle
+  ax := FCenterX + cos(0) * (FWidth / 2);
+  ay := FCenterY + sin(0) * (FWidth / 2) * v;
+
+  if FPen.Style <> apNone then
+  begin
+    if (round(ax) <> lx) or (round(ay) <> ly) then
+    begin
+      lp.X := round(ax);
+      lp.Y := round(ay);
+      lp.Color := FPen.Color;
+      FLine.AddPoint(lp);
+    end;
+    FLine.BlendMode := BlendMode;
+    FLine.Generate;
+  end;
+
+  if FBrush.Style <> abClear then
+  begin
+    Vertices[steps].Position := AdVector3(ax, ay, 0);
+    case FBrush.Style of
+      abSolid: Vertices[steps].Color := FBrush.Color;
+      abGradient: Vertices[steps].Color := FBrush.GradientColor;
+    end;                                                      
+    Vertices[steps].Normal := AdVector3(0, 0, -1);
+
+    if FBrush.Texture <> nil then
+    begin
+      GenerateTextureCoords(Vertices);
+    end;
+
+    FMesh.PrimitiveCount := steps - 1;
+
+    FMesh.Vertices := vertices;
+    FMesh.IndexBuffer := nil;
+    FMesh.Update;
+    FMesh.SetMatrix(AdMatrix_Identity);
+    FMesh.Texture := FBrush.Texture;
+  end;
+end;
+
+procedure TAdCanvasEllipseObject.GenerateTextureCoords(
+  var vertices: TAdVertexArray);
+var
+  i,c:integer;
+  r:double;
+  wx,wy,fac:double;
+  mx, my:integer;
+begin
+  if FBrush.TexturePosition = tpStatic then
+  begin
+    mx := 0;
+    my := 0;
+  end
+  else
+  begin
+    mx := FPos.Left;
+    my := FPos.Top; 
+  end;
+  
+  if FBrush.TextureMode = tmStretch then
+  begin
+    for i := 0 to High(Vertices) do
+    begin
+      Vertices[i].Texture.x := (Vertices[i].Position.x - FPos.Left + mx) / FWidth;
+      Vertices[i].Texture.y := (Vertices[i].Position.y - FPos.Top + my) / FHeight;
+    end;
+  end else
+  if FBrush.TextureMode = tmTile then
+  begin
+    for i := 0 to High(Vertices) do
+    begin
+      Vertices[i].Texture.x := (Vertices[i].Position.x - FPos.Left + mx) / FBrush.Texture.Width;
+      Vertices[i].Texture.y := (Vertices[i].Position.y - FPos.Top + my) / FBrush.Texture.Height;
+    end;
+  end else
+  if FBrush.TextureMode = tmStretchAlign then
+  begin
+    Vertices[0].Texture := AdVector2(0.5,0.5);
+    c := High(Vertices)-1;
+    for i := 1 to High(Vertices) do
+    begin
+      r := (2*PI)/c * (i-1);
+
+      wx := cos(r)/2+0.5;
+      wy := sin(r)/2+0.5;
+      fac := abs(cos(r));
+
+      wx := round(wx) * fac + wx * (1-fac);
+      wy := wy * fac + round(wy) * (1-fac);
+
+      Vertices[i].Texture := AdVector2(wx,wy);
+    end;
+  end;
+end;
+
+procedure TAdCanvasEllipseObject.Update(AItem: TAdCanvasObject);
+begin
+  FPos := TAdCanvasEllipseObject(AItem).Pos;
+  Generate;
+end;
+
+procedure TAdCanvasEllipseObject.SetMatrix(AValue: TAdMatrix);
+begin
+  FMatrix := AValue;
+  FMesh.SetMatrix(AValue);
+  FLine.SetMatrix(AValue);
+end;
+
+procedure TAdCanvasEllipseObject.SetPos(ARect: TAdRect);
+begin
+  FPos := ARect;
+end;
+
+{ TAdCanvasTextObject }
+
+constructor TAdCanvasTextObject.Create(AAppl: TAd2dApplication);
+begin
+  inherited;
+
+  FDrawFont := TAdFont.Create(AAppl);
+end;
+
+destructor TAdCanvasTextObject.Destroy;
+begin
+  FDrawFont.Free;
+  inherited;
+end;
+
+function TAdCanvasTextObject.CompareTo(
+  AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  result := usDelete;
+  if AItem is TAdCanvasTextObject then
+  begin
+    if (TAdCanvasTextObject(AItem).Font = FFont) then
+    begin
+      result := usUpdate;
+      if Pen.EqualTo(AItem.Pen) and (TAdCanvasTextObject(AItem).Text = FText) and
+         (CompareRects(TAdCanvasTextObject(AItem).Rect,FRect)) and
+         (TAdCanvasTextObject(AItem).Font.TypeSetter.CompareTo(FDrawFont.TypeSetter)) then
+      begin
+        result := usEqual;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdCanvasTextObject.Draw;
+begin
+  if (FRect.Left = FRect.Right) and (FRect.Top = FRect.Bottom) then
+  begin
+    FDrawFont.TextOut(FRect.Left, FRect.Top, FText);
+  end
+  else
+  begin
+    FDrawFont.TextOut(FRect, FText);
+  end;
+end;
+
+procedure TAdCanvasTextObject.Generate;
+begin
+  if FDrawFont.Texture = nil then
+  begin
+    FDrawFont.Color := FPen.Color;
+    FDrawFont.Assign(FFont);
+  end;  
+end;
+
+procedure TAdCanvasTextObject.SetMatrix(AValue: TAdMatrix);
+begin
+  FDrawFont.TransformationMatrix := AValue;
+end;
+
+procedure TAdCanvasTextObject.Update(AItem: TAdCanvasObject);
+begin
+  Pen.Assign(AItem.Pen);
+  FText := TAdCanvasTextObject(AItem).Text;
+  FRect := TAdCanvasTextObject(AItem).Rect;
+  FDrawFont.TypeSetter.Assign(TAdCanvasTextObject(AItem).Font.TypeSetter);
+  FFont.Color := FPen.Color;
+end;
+
+{ TAdCanvasPointObject }
+
+constructor TAdCanvasPointsObject.Create(AAppl: TAd2dApplication);
+begin
+  inherited Create(AAppl);
+
+  FPoints := TAdLinkedList.Create;
+  FMesh := Appl.CreateMesh;
+end;
+
+destructor TAdCanvasPointsObject.Destroy;
+begin
+  FPoints.StartIteration;
+  while not FPoints.ReachedEnd do
+  begin
+    Dispose(PAdLinePoint(FPoints.GetCurrent));
+  end;
+  FPoints.Free;
+  FMesh.Free;  
+  inherited;
+end;
+
+procedure TAdCanvasPointsObject.AddPoint(APoint: TAdLinePoint);
+var
+  PPoint:PAdLinePoint;
+begin
+  HashPoint(APoint);
+  New(PPoint);
+  PPoint^ := APoint;
+  FPoints.Add(PPoint);
+end;
+
+function TAdCanvasPointsObject.CompareTo(
+  AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  result := usDelete;
+  if AItem is TAdCanvasPointsObject then
+  begin
+    if (BlendMode = TAdCanvasPointsObject(AItem).BlendMode) and
+       (FPoints.Count = TAdCanvasPointsObject(AItem).Points.Count) and
+       (AItem.Pen.EqualTo(Pen)) then
+    begin
+      result := usUpdate;
+
+      if Hash = TAdCanvasPointsObject(AItem).Hash then
+      begin
+        result := usEqual;
+      end;
+    end;
+  end;
+end;
+
+procedure TAdCanvasPointsObject.Draw;
+begin
+  FMesh.Draw(BlendMode, adPoints);
+end;
+
+procedure TAdCanvasPointsObject.Generate;
+var
+  Vertices:TAdVertexArray;
+  PPoint:PAdLinePoint;
+  i:integer;
+begin
+  SetLength(Vertices, FPoints.Count);
+  i := 0;
+  FPoints.StartIteration;
+  while not FPoints.ReachedEnd do
+  begin
+    PPoint := PAdLinePoint(FPoints.GetCurrent);
+    Vertices[i].Position := AdVector3(PPoint^.X, PPoint^.Y, 0);
+    Vertices[i].Color := PPoint^.Color;
+    Vertices[i].Normal := AdVector3(0, 0, -1);
+    i := i + 1;
+  end;
+
+  FMesh.Vertices := Vertices;
+  FMesh.IndexBuffer := nil;
+  FMesh.PrimitiveCount := FPoints.Count;
+  FMesh.Update;
+end;
+
+procedure TAdCanvasPointsObject.HashPoint(APoint: TAdLinePoint);
+begin
+  FHash := FHash +
+    ((APoint.X * FPoints.Count) + (APoint.Y * FPoints.Count * 10)) +
+    (APoint.Color.r * FPoints.Count * 100) +
+    (APoint.Color.g * FPoints.Count * 1000) +
+    (APoint.Color.b * FPoints.Count * 10000) +
+    (APoint.Color.a * FPoints.Count * 100000);
+end;
+
+procedure TAdCanvasPointsObject.Rehash;
+begin
+  FHash := 0;
+
+  FPoints.StartIteration;
+  while not FPoints.ReachedEnd do
+  begin
+    HashPoint(PAdLinePoint(FPoints.GetCurrent)^);
+  end;
+end;
+
+procedure TAdCanvasPointsObject.Update(AItem: TAdCanvasObject);
+var
+  p:PAdLinePoint;
+begin
+  FPoints.StartIteration;
+  TAdCanvasPointsObject(AItem).Points.StartIteration;
+
+  FHash := 0;
+
+  while not FPoints.ReachedEnd do
+  begin
+    p := PAdLinePoint(TAdCanvasPointsObject(AItem).Points.GetCurrent);
+    PAdLinePoint(FPoints.GetCurrent)^ := p^;
+    HashPoint(p^);
+  end;
+
+  Generate;
+end;
+
+procedure TAdCanvasPointsObject.SetMatrix(AValue: TAdMatrix);
+begin
+  FMesh.SetMatrix(AValue);
 end;
 
 end.

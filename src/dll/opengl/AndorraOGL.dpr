@@ -18,7 +18,6 @@
 library AndorraOGL;
 
 uses
-  SysUtils,
   AdClasses,
   OGLMain in 'OGLMain.pas';
 

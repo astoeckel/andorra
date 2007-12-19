@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, JvComponentBase, JvInspector, JvExControls, JvComponent, ExtCtrls,
-  StdCtrls, TypInfo;
+  StdCtrls, TypInfo, AdGUI;
 
 type
   TObjectsDlg = class(TForm)
@@ -60,20 +60,17 @@ end;
 
 procedure TObjectsDlg.ItemDoubleClicked(Sender: TObject;
   Item: TJvCustomInspectorItem);
-var
-  PropInfo:PPropInfo;
 begin
-  if (Item.Name = 'Font') and Assigned(OnDblClickFont) then
+  if (Item.Name = 'Fonts') and Assigned(OnDblClickFont) then
   begin
     OnDblClickFont(Self);
   end;
-  if (Item.Name = 'FontColor') and Assigned(OnDblClickFontColor) then
+  if (Item.Data.TypeInfo = TypeInfo(TGUIColor)) and Assigned(OnDblClickFontColor) then
   begin
     OnDblClickFontColor(Self);
   end;
   if (Item.DisplayValue = '(TAdResourceImage)') and Assigned(OnDblClickFont) then
   begin
-    PropInfo := GetPropInfo(Inspector.InspectObject.ClassInfo, Item.Name);
     OnDblClickImage(GetObjectProp(Inspector.InspectObject,Item.Name));
   end;
 end;

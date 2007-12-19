@@ -4,112 +4,86 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, AdDraws, AdGUI;
+  Dialogs, StdCtrls, FontEdit, AdFont, AdFontList;
 
 type
-  TFontColl = class(TForm)
+  TFontCollectionDlg = class(TForm)
+    GroupBox1: TGroupBox;
     ListBox1: TListBox;
     Button1: TButton;
-    Button2: TButton;
     Button3: TButton;
-    FontDialog1: TFontDialog;
-    Button4: TButton;
-    procedure ListBox1DrawItem(Control: TWinControl; Index: Integer;
-      Rect: TRect; State: TOwnerDrawState);
-    procedure ListBox1Click(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
+    Button6: TButton;
+    procedure Button3Click(Sender: TObject);
+    procedure ListBox1KeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure Button6Click(Sender: TObject);
   private
-    Fonts:TAdFontCollection;
-    GUI:TAdGUI;
-    { Private-Deklarationen }
+    Fonts:TAdFontList;
+    procedure ShowList;
   public
-    function ShowDlg(AGUI:TAdGUI):TModalResult;
-    procedure UpdateList;
-end;
+    function ShowDlg(AFonts:TAdFontList):TModalResult;
+    procedure DeleteItem;
+  end;
+
+var
+  FontCollectionDlg: TFontCollectionDlg;
 
 implementation
 
 {$R *.dfm}
 
-procedure TFontColl.Button1Click(Sender: TObject);
+procedure TFontCollectionDlg.Button3Click(Sender: TObject);
 var
-  aname:string;
+  dlg:TFontEditDlg;
+  fnt:TAdFont;
+  fntname:string;
 begin
-  if FontDialog1.Execute then
+  dlg := TFontEditDlg.Create(self);
+  if dlg.ShowDlg(Fonts, fnt, fntname) = mrOk then
   begin
-    aname := FontDialog1.Font.Name+inttostr(FontDialog1.Font.Size);
-    Fonts.Add(aname,FontDialog1.Font.Name,FontDialog1.Font.Style,FontDialog1.Font.Size);
-    UpdateList;
+    Fonts.Add(fntname, fnt, true);
+    ShowList;
+  end;
+  dlg.Free;
+end;
+
+procedure TFontCollectionDlg.Button6Click(Sender: TObject);
+begin
+  DeleteItem;
+end;
+
+procedure TFontCollectionDlg.DeleteItem;
+begin
+  if (ListBox1.ItemIndex > -1) then
+  begin
+    Fonts.Delete(ListBox1.ItemIndex);
+    ListBox1.Items.Delete(ListBox1.ItemIndex);
+    ShowList;
   end;
 end;
 
-procedure RemoveFont(AFont:TAdFont;AComp:TAdComponent);
-var i:integer;
+procedure TFontCollectionDlg.ListBox1KeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
 begin
-  if AComp.Font = AFont then
-  begin
-    AComp.Font := nil;
-  end;
-  for i := 0 to AComp.Components.Count - 1 do
-  begin
-    RemoveFont(AFont,AComp.Components[i]);
-  end;
+  if Key = VK_DELETE then DeleteItem;
 end;
 
-procedure TFontColl.Button2Click(Sender: TObject);
+function TFontCollectionDlg.ShowDlg(AFonts: TAdFontList): TModalResult;
 begin
-  RemoveFont(Fonts.Items[ListBox1.ItemIndex],GUI);
-  Fonts.Delete(ListBox1.ItemIndex);
-  UpdateList;
-end;
-
-procedure TFontColl.ListBox1Click(Sender: TObject);
-begin
-  Button2.Enabled := ListBox1.ItemIndex <> -1;
-  Button3.Enabled := ListBox1.ItemIndex <> -1;
-end;
-
-procedure TFontColl.ListBox1DrawItem(Control: TWinControl; Index: Integer;
-  Rect: TRect; State: TOwnerDrawState);
-begin
-  with (Control as TListbox).Canvas do
-  begin
-    if not (odSelected in State) then
-    begin
-      Brush.Color := clWindow;
-      Font.Color := clBlack;
-    end
-    else
-    begin
-      Brush.Color := clHighLight;
-      Font.Color := clWhite;
-    end;
-    FillRect(Rect);
-    Font.Name := Fonts.Items[Index].Metadata.Name;
-    Brush.Style := bsClear;
-    Textout(rect.Left+2,rect.Top,ListBox1.Items[Index]);
-  end;
-end;
-
-function TFontColl.ShowDlg(AGUI:TAdGUI):TModalResult;
-begin
-  GUI := AGUI;
-  Fonts := AGUI.Fonts;
-  UpdateList;
+  Fonts := AFonts;
+  ShowList;  
   result := ShowModal;
 end;
 
-procedure TFontColl.UpdateList;
-var i:integer;
+procedure TFontCollectionDlg.ShowList;
+var
+  i:integer;
 begin
   ListBox1.Clear;
-  Button2.Enabled := false;
-  Button3.Enabled := false;
   for i := 0 to Fonts.Count - 1 do
   begin
-    ListBox1.Items.Add(Fonts.Items[i].Name);
-  end;
+    ListBox1.Items.Add(Fonts.Names[i]);
+  end;    
 end;
 
 end.

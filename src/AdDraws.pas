@@ -25,19 +25,22 @@ unit AdDraws;
 
 interface
 
-uses {$IFDEF WIN32}Windows,{$ELSE}Libc,{$ENDIF}Controls, Math, {$INCLUDE AdTypes.inc},
-     SysUtils, Classes, AdClasses, AdDLLLoader, Graphics, Huffman, AdBitmapEffects, AdList,
-     AdCanvas;
+uses
+  Controls, SysUtils, Classes,
+  AdClasses, AdTypes, AdDLLLoader, AdList, AdCanvas, AdFontFactory, AdFont, AdBitmap
+  {$IFNDEF AndorraSimple}
+  , AdStandardFontGenerator, AdSimpleCompressors, AdVCLFormats
+  {$ENDIF};
 
 type
 
-  {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
+  ELoad = class(Exception);
+
+  {This is the main class for using Andorra 2D.}
   TAdDraw = class;
   //This represents one image in an ImageList.
   TAdImage = class;
 
-  {Specifies a textures texture state.}
-  TTextureMode = (tmWrap,tmMirror,tmClamp);
   {Specifies the event which called the procedure}
   TSurfaceEventState = (seInitialize,seFinalize,seInitialized);
   {The declaration of the surface event handler}
@@ -52,11 +55,8 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
-      //The lists items property
       property Items[AIndex:integer]:TSurfaceEvent read GetItem write SetItem;default;
-      //Adds an event to the list
       procedure Add(Item:TSurfaceEvent);
-      //Removes an event from the list.
       procedure Remove(Item:TSurfaceEvent);
   end;
 
@@ -71,20 +71,17 @@ type
   //The log system class
   TAdLog = class
     private
-      Items:TStringList;
+      FItems:TStringList;
     public
-      //This specifies an file the log is automaticly saved to. May be '' for no auto saving.
       FileName:string;
-      //A constructor.
+
       constructor Create;
-      //Wow. A destructor.
       destructor Destroy;override;
-      //Load an old logfile
       procedure LoadFromFile(AFile:string);
-      //Save the current logfile. Happens automaticly if FileName is set.
       procedure SaveToFile(AFile:string);
-      //Adds an TAdLog Message Record to the log system.
-      procedure AddMessage(AMessage:TAdLogMessage);
+      procedure AddMessage(AMessage:TAdLogMessage);virtual;
+
+      property Items:TStringList read FItems;
   end;
 
   {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
@@ -97,9 +94,9 @@ type
     FFinalize:TNotifyEvent;
     FInitialize:TNotifyEvent;
     FInitialized:boolean;
-    FDisplayRect:TRect;
+    FDisplayRect:TAdRect;
 
-    FAmbientColor:TColor;
+    FAmbientColor:LongInt;
 
     FLog:TAdLog;
     FLogFileName:string;
@@ -107,94 +104,63 @@ type
 
     FSurfaceEventList:TSurfaceEventList;
     FCanvas:TAdCanvas;
+    FFonts:TAdFontFactory;
 
+    FTextureFilter:TAd2dTextureFilter;
 
     procedure SetDllName(val : string);
-
     procedure SetupThings;
-
     procedure SetOptions(AValue:TAdOptions);
-    procedure SetAmbientColor(AValue:TColor);
-
+    procedure SetAmbientColor(AValue:LongInt);
     procedure SetAutoLoadLog(AValue:boolean);
-
-    function GetDisplayRect:TRect;
-
+    function GetDisplayRect:TAdRect;              
   protected
     procedure CallNotifyEvent(AEventState:TSurfaceEventState);
   public
-    {The Andorra Dll Loader. You can use this class to get direct control over
-    the engine.}
     AdDllLoader : TAdDllLoader;
-    {The Andorra Reference for the DllLoader}
     AdAppl:TAd2DApplication;
-    //This property contains the diplay settings for fullscreen mode (width, height and bitcount)
     Display : TAdDisplay;
 
-    //Create the class. AParent is the handle of the control, where displaying should take place.
     constructor Create(AParent : TWinControl);
-    //This is a destroctor.
     destructor Destroy; override;
 
-    //Here you can read the parent value, you've set in the constructor.
-    property Parent : TWinControl read FParent;
-
-    //The Rect the Displaing takes place
-    property DisplayRect:TRect read FDisplayRect;
-
-    //Initialize the application with all parameters set in "options". Returns false if the operation failed.
     function Initialize: boolean;
-    //Finalize the application
     procedure Finalize;
 
-    //Fills the Surface with a specific color.
-    procedure ClearSurface(Color:TColor);
-    //Starts the output. All graphic commands have to come after this command.
-    procedure BeginScene;
-    //Ends the output. All graphic commands have to come before this command.
-    procedure EndScene;
-    //Set the projection matrix and the camera to a 2D perspective.
-    procedure Setup2DScene;
-    //Flip the backbuffer and the frontbuffer and display the current picture.
+    procedure ClearSurface(Color:LongInt);
     procedure Flip;
-
-    //Returns weather Andorra is ready to draw
     function CanDraw:boolean;
+    procedure BeginScene;
+    procedure EndScene;
 
-    //Recives log events
+    procedure Setup2DScene;
+
+    property Parent : TWinControl read FParent;
+    property DisplayRect:TAdRect read FDisplayRect;
+
     procedure LogProc(LogItem:TAdLogItem);
 
-    //Register an event that will be called if the surface is finalized or initialized.
     procedure RegisterNotifyEvent(AProc:TSurfaceEvent);
-    //UnRegister a registered event.
     procedure UnRegisterNotifyEvent(AProc:TSurfaceEvent);
 
-    //This property contains the options (see TAdDrawMode)
+    function GetTextureParams(ABitDepth:byte):TAd2dBitmapTextureParameters;
+
     property Options : TAdOptions read FOptions write SetOptions;
-    //Set this value to load a library
+    property TextureFilter : TAd2dTextureFilter read FTextureFilter write FTextureFilter;
     property DllName : string read FDllName write SetDllName;
-    //Returns weather the application is initialized
     property Initialized : boolean read FInitialized;
-    //Set the ambient light color here
-    property AmbientColor:TColor read FAmbientColor write SetAmbientColor;
+    property AmbientColor:LongInt read FAmbientColor write SetAmbientColor;
 
-    //Event is called before the application is finalized
-    property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
-    //Event is called after the application is initialized
-    property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
-
-    //The log system
     property Log : TAdLog read FLog;
-    //Specifies weather the log should automaticly be loaded at startup and saved at shutdown.
     property AutoLoadLog: boolean read FAutoLoadLog write SetAutoLoadLog;
-    //The name of the logfile.
     property LogFileName:string read FLogFileName write FLogFileName;
-    //A simple canvas to draw on
     property Canvas:TAdCanvas read FCanvas;
+    property Fonts:TAdFontFactory read FFonts;
+
+    property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
+    property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
   end;
 
-  {TAdLight is the representation of a light in your game. Before using lights
-  be sure that you've turned on "doLights" in the options. You can only use 8 Lights in a scene by one time.}
   TAdLight = class
     private
       FParent:TAdDraw;
@@ -211,21 +177,13 @@ type
     protected
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
-      //Link to Andorras Light
       AdLight:TAd2DLight;
-      //A constructor
       constructor Create(AParent:TAdDraw);
-      //A destructor
       destructor Destroy;override;
 
-      //Pushs the data set into the engine. Has to be called if you want to see the changes you made to the light.
       procedure Restore;
 
-      {Enables the light. Note that most graphic boards can only display 8 Lights a time.
-
-      All lights are automaticly disabled in the "EndScene" routine.}
       procedure Enable;
-      //Disable a light manually.
       procedure Disable;
 
       procedure Initialize;
@@ -239,146 +197,52 @@ type
       property Falloff:double read FFalloff write SetFalloff;
   end;
 
-  TInitialLetters = string[4];
-
-  {The abstract picture compressor class}
-  TCompressor = class(TPersistent)
-    public
-      //Returns the initial letters of this compressor. Will be calles without creating the object!!!
-      function GetInitial:TInitialLetters;virtual;abstract;
-      //Writes the bitmap into a stream
-      procedure Write(AStream:TStream;ABmp:TAdBitmap);virtual;abstract;
-      //Reads the bitmap from the stream
-      procedure Read(AStream:TStream;ABmp:TAdBitmap);virtual;abstract;
-  end;
-
-  //An error raised if there is an error due loading the picture
-  ELoad = class(Exception);
-  //An error raised if the compressor used isn't found.
-  ENoCompressor = class(ELoad);
-
-  {A compressor which doesn't compress}
-  TBMPCompressor = class(TCompressor)
-    public
-      //Returns the initial letters of this compressor. Will be calles without creating the object!!!
-      function GetInitial:TInitialLetters;override;
-      //Writes the bitmap into a stream
-      procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
-      //Reads the bitmap from the stream
-      procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
-  end;
-
-  {The standard compressor. The data will be compressed with the "Huffman"
-  Algorithm. Uses an Huffman-Algorithm written by Marc Schmitz. Available on http://www.delphipraxis.net/topic51522_huffman+algorithmus.html&highlight=huffman}
-  THAICompressor = class(TCompressor)
-    public
-      //Returns the initial letters of this compressor. Will be calles without creating the object!!!
-      function GetInitial:TInitialLetters;override;
-      //Writes the bitmap into a stream
-      procedure Write(AStream:TStream;ABmp:TAdBitmap);override;
-      //Reads the bitmap from the stream
-      procedure Read(AStream:TStream;ABmp:TAdBitmap);override;
-  end;
-
-  {A class of the compressor for easy registering}
-  TCompressorClass = class of TCompressor;
-
-  //An exception class
-  EFormatNotSupportet = class(Exception);
-
-  //A format is a construct which enables the posibility of loading different graphic formats to Andorra. This is only an abstract class.
-  TPictFormat = class(TPersistent)
-    public
-      //Fills a list with its supported graphic extension.
-      procedure FileExts(strs:TStringList);virtual;abstract;
-      //Loads the graphic from a file and stros it in a TAdBitmap.
-      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;virtual;abstract;
-      //Assigns an TGraphic and  stores it in a TAdBitmap
-      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);virtual;abstract;
-      //Returns true if this format supports the graphicclass defined in AGraphicClass
-      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;virtual;abstract;
-  end;
-
-  //A simple format which is able  to load bmps, dibs, wmfs and emfs.
-  TSimpleFormat = class(TPictFormat)
-    public
-      //Fills a list with its supported graphic extension.
-      procedure FileExts(strs:TStringList);override;
-      //Loads the graphic from a file and stros it in a TAdBitmap.
-      function LoadFromFile(AFile:string;ABmp:TAdBitmap;Transparent:boolean;TransparentColor:TColor):boolean;override;
-      //Assigns an TGraphic and  stores it in a TAdBitmap
-      procedure AssignGraphic(AGraphic:TGraphic;ABmp:TAdBitmap);override;
-      //Returns true if this format supports the graphicclass defined in AGraphicClass
-      function SupportsGraphicClass(AGraphicClass:TGraphicClass):boolean;override;
-  end;
-
-  //A class of the picture format
-  TPictFormatClass = class of TPictFormat;
-
-  //Represents a bitmap texture
   TAdTexture = class
     private
       FParent:TAdDraw;
       FCache:TMemoryStream;
       FAd2DTexture:TAd2DBitmapTexture;
-      FCompressor:TCompressor;
-      FCompressorClass:TCompressorClass;
+      FCompressorClass:TAdGraphicCompressorClass;
       FBitDepth:byte;
       function GetInitialized:boolean;
-      procedure SetCompressor(AClass:TCompressorClass);
       function GetBitDepth:byte;
       procedure SetBitDepth(AValue:byte);
     protected
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
-      //Creates an instance of TAdTexture
       constructor Create(AParent:TAdDraw);
-      //Destroys the instance of TAdTexture
       destructor Destroy;override;
-
-      //Loads the texture from a stream.
-      procedure LoadFromStream(AStream:TStream);
-      //Saves the texture to a stream.
-      procedure SaveToStream(AStream:TStream);
-
-      //Saves the texture's data to a file.
-      procedure SaveToFile(AFile:string);
-      //Loads the texture's data from a file. If you want to load the texture's graphic, call LoadGraphicFromFile or LoadFromGraphic
-      procedure LoadFromFile(AFile:string);
-  
-      //Loads the graphic of the texture from a file
-      procedure LoadGraphicFromFile(AFile:string;Transparent:boolean;TransparentColor:TColor);
-      //Loads the graphic of the texture from a TGraphic
-      procedure LoadFromGraphic(AGraphic:TGraphic);
-
-      //Initializes the texture. Creates a TAd2DBitmapTexture object. 
       procedure Initialize;
-      //Finalizes the texture. Frees the TAd2DBitmapTexture object. 
       procedure Finalize;
-      //Clears the textures graphic
       procedure Clear;
-      //A link to Andorras TAd2DBitmapTexture
+
+      procedure LoadFromStream(AStream:TStream);
+      procedure SaveToStream(AStream:TStream);
+      procedure LoadFromFile(AFile:string);
+      procedure SaveToFile(AFile:string);
+
+      procedure LoadFromGraphic(AGraphic:TObject);
+      procedure LoadGraphicFromFile(AFile: string; Transparent: boolean = true;
+        TransparentColor: Longint = 0);
+      procedure SaveToGraphic(AGraphic:TObject);
+
       property Texture:TAd2DBitmapTexture read FAd2DTexture;
-      //Returns whether the texture is initialized
       property Initialized:boolean read GetInitialized;
-      //Set a compressor class. Default: TBMPCompressor;
-      property Compressor:TCompressorClass read FCompressorClass write SetCompressor;
-      //BitDepth
+      property Compressor:TAdGraphicCompressorClass read FCompressorClass write FCompressorClass;
       property BitDepth:byte read GetBitDepth write SetBitDepth;
   end;
 
-  {A list which is able to contain TRects}
   TRectList = class(TAdList)
     private
-     	function GetItem(AIndex:integer):TRect;
-     	procedure SetItem(AIndex:integer;AItem:TRect);
+     	function GetItem(AIndex:integer):TAdRect;
+     	procedure SetItem(AIndex:integer;AItem:TAdRect);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
       {Read/Write acess to the rectangles.}
-     	property Items[AIndex:integer]:TRect read GetItem write SetItem;default;
+     	property Items[AIndex:integer]:TAdRect read GetItem write SetItem;default;
       {Add a rectangle.}
-      procedure Add(ARect:TRect);
+      procedure Add(ARect:TAdRect);
   end;
 
   TAdImageList = class;
@@ -392,13 +256,13 @@ type
       FPatternStop:integer;
       FSkipWidth,FSkipHeight:integer;
       FTexture:TAdTexture;
-      FColor:TColor;
+      FColor:LongInt;
       FLastColor:TAndorraColor;
       FAlpha:byte;
       FName:string;
       FDetails:integer;
       FOwnTexture:boolean;
-      FSrcRect:TRect;
+      FSrcRect:TAdRect;
       FUseIndexBuffer:boolean;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
@@ -413,7 +277,7 @@ type
       procedure SetTexture(AValue:TAdTexture);
     protected
       Rects:TRectList;
-      procedure DrawMesh(DestApp:TAdDraw;DestRect,SourceRect:TRect;Rotation:integer;
+      procedure DrawMesh(DestApp:TAdDraw;DestRect,SourceRect:TAdRect;Rotation:integer;
         RotCenterX,RotCenterY:single;BlendMode:TAd2DBlendMode);
       procedure BuildVertices;
       procedure CreatePatternRects;
@@ -430,15 +294,15 @@ type
       //Draws the image at a specified position. If you've set "PatternWidth" and "PatternHeight", this will draw the pattern you've specified in PatternIndex.
       procedure Draw(Dest:TAdDraw;X,Y,PatternIndex:integer);
       //The same as Draw, but you can stretch the Image.
-      procedure StretchDraw(Dest:TAdDraw;const DestRect:TRect;PatternIndex:integer);
+      procedure StretchDraw(Dest:TAdDraw;const DestRect:TAdRect;PatternIndex:integer);
       //Draw a sprite with additive blending.
-      procedure DrawAdd(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
+      procedure DrawAdd(Dest: TAdDraw; const DestRect: TAdRect; PatternIndex: Integer;
         Alpha: Integer);
       //Draw a sprite with alpha blending.
-      procedure DrawAlpha(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
+      procedure DrawAlpha(Dest: TAdDraw; const DestRect: TAdRect; PatternIndex: Integer;
         Alpha: Integer);
       //Draw only the mask.
-      procedure DrawMask(Dest: TAdDraw; const DestRect: TRect; PatternIndex: Integer;
+      procedure DrawMask(Dest: TAdDraw; const DestRect: TAdRect; PatternIndex: Integer;
         Alpha: Integer);
       //Draw a sprite rotated. CenterX and CenterY specify the center of the rotation - May be a value between 0 and 1. Rotation is a value between 0 and 360.
       procedure DrawRotate(Dest: TAdDraw; X, Y, Width, Height: Integer; PatternIndex: Integer;
@@ -456,9 +320,9 @@ type
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
       //Draw only specified part from the image. Alpha blending.
-      procedure StretchBltAlpha(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
+      procedure StretchBltAlpha(Dest:TAdDraw; SourceRect,DestRect:TAdRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
       //Draw only specified part from the image. Additive blending.
-      procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
+      procedure StretchBltAdd(Dest:TAdDraw; SourceRect,DestRect:TAdRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
       //If you've set the color or a new texture you have to call this function to see your changes.
       procedure Restore;
       //Frees all data
@@ -466,7 +330,7 @@ type
       //Restores all freed date
       procedure Initialize;
       //Returns the rect of one pattern.
-      function GetPatternRect(ANr:integer):TRect;
+      function GetPatternRect(ANr:integer):TAdRect;
       //Saves the image to a stream
       procedure SaveToStream(AStream:TStream);
       //Loads the image from a stream
@@ -498,7 +362,7 @@ type
       //If you have empty patterns, you may set PatternStop. PatternCount will be decrased by PatternStop.
       property PatternStop:integer read FPatternStop write FPatternStop;
       //Here you can set the fonts color
-      property Color:TColor read FColor write FColor;
+      property Color:Longint read FColor write FColor;
       //Name of the image in the imagelist.
       property Name:string read FName write FName;
       //Important for using lights: How many vertices does the image have.
@@ -509,10 +373,10 @@ type
   TAdImageList = class(TAdList)
     private
       FParent:TAdDraw;
-      FCompressor:TCompressorClass;
+      FCompressor:TAdGraphicCompressorClass;
      	function GetItem(AIndex:integer):TAdImage;
      	procedure SetItem(AIndex:integer;AItem:TAdImage);
-      procedure SetCompressor(ACompressor:TCompressorClass);
+      procedure SetCompressor(ACompressor:TAdGraphicCompressorClass);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
@@ -543,204 +407,11 @@ type
       //The parent you've specified in the constructor.
       property Parent:TAdDraw read FParent;
       //Apply the same compressor on every item
-      property Compressor:TCompressorClass read FCompressor write SetCompressor; 
+      property Compressor:TAdGraphicCompressorClass read FCompressor write SetCompressor; 
     published
   end;
 
-  //Defines how the output of the TextOut-Ex function will be
-  TAdFontDrawType = (
-    dtBottom,
-    dtTop,
-    dtMiddle,
-    dtLeft,
-    dtRight,
-    dtCenter,
-    dtClip,
-    dtWordWrap,
-    dtDoLineFeeds
-  );
-
-  //A set of the draw type, used by TAdFont.FontOutEx
-  TAdFontDrawTypes = set of TAdFontDrawType;
-
-  //An array class to store the size of each letter of a font
-  TPointArray = array[0..255] of TPoint;
-
-  TFontMetadata = record
-    Name:string[50];
-    Size:integer;
-    Style:TFontStyles;
-    Shadow:boolean;
-    ShadowDepth:integer;
-    ShadowBlur:integer;
-    ShadowAlpha:byte;
-  end;
-
-  //A text output class
-  TAdFont = class
-    private
-      FTexture:TAdTexture;
-      FMeshList:TAdImageList;
-      FParent:TAdDraw;
-      FLetterSize:TPointArray;
-      FLetterCount:integer;
-      FColor:TColor;
-      FAlpha:byte;
-      FPatternWidth,FPatternHeight:integer;
-      FCompressor:TCompressorClass;
-      FName:string;
-      FOnlyMetadata:boolean;
-      FMetadata:TFontMetadata;
-      procedure SetColor(AValue:TColor);
-      procedure SetAlpha(AValue:byte);
-      function GetLoaded:boolean;
-      procedure SetCompressor(AValue:TCompressorClass);
-    protected
-      property MeshList:TAdImageList read FMeshList;
-      property LetterSize:TPointArray read FLetterSize;
-      property PatternWidth:integer read FPatternWidth;
-      property PatternHeight:integer read FPatternHeight;
-      property Texture:TAdTexture read FTexture write FTexture;
-    public
-      //If true the TAdFontCollection will automaticly free this class
-      CreatedByList:boolean;
-
-      //Creates an instance of TAdFont
-      constructor Create(AParent:TAdDraw);
-      //Destroys the instance of TAdFont
-      destructor Destroy;override;
-
-      //Creates a font
-      procedure CreateFont(AFont:string;AStyle:TFontStyles;ASize:integer;
-        AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
-        AShadowAlpha:byte=64);
-      //Removes the font from memory
-      procedure ClearFont;
-
-      //Writes the text
-      procedure TextOut(AX,AY:integer;AText:string);
-      //An extended Textout function.
-      procedure TextOutEx(ARect:TRect;AText:string;ADrawType:TAdFontDrawTypes);
-      //Returns the width of a specific text
-      function TextWidth(AText:string):integer;
-      //Returns the height of a specific text
-      function TextHeight(AText:string):integer;
-
-      //Saves the font to stream
-      procedure SaveToStream(AStream:TStream);
-      //Loads the font from a stream
-      procedure LoadFromStream(AStream:TStream);
-      //Saves the font to a file
-      procedure SaveToFile(AFile:string);
-      //Loads the font from a file
-      procedure LoadFromFile(AFile:string);
-
-      //Returns wether a font is loaded.
-      property Loaded:boolean read GetLoaded;
-      //The color of the font
-      property Color:TColor read FColor write SetColor;
-      //The transparency of the font
-      property Alpha:byte read FAlpha write SetAlpha;
-      //The compressor used to save the font
-      property Compressor:TCompressorClass read FCompressor write SetCompressor;
-      //The name of the font in the list
-      property Name:string read FName write FName;
-      //Defines wether only metadata to reconstruct the font is saved in files or streams
-      property SaveOnlyMetadata:boolean read FOnlyMetadata write FOnlyMetadata;
-      //Contains informations about the current font
-      property Metadata:TFontMetadata read FMetadata; 
-  end;
-
-  //Contains the fonts
-  TAdFontCollection = class(TAdList)
-    private
-      FParent:TAdDraw;
-      FOnlyMetadata:boolean;
-      procedure SetItem(Index:integer; Value:TAdFont);
-      procedure SetOnlyMetadata(Value:boolean);
-      function GetItem(Index:integer):TAdFont;
-      function GetItemByName(Index:string):TAdFont;
-    protected
-      procedure Notify(Ptr: Pointer; Action: TListNotification); override;
-    public
-      //Creates an instance of TAdFontCollection
-      constructor Create(AParent:TAdDraw);
-      //Destroys the instance
-      destructor Destroy;override;
-      //Adds a font to the list. AName specifies the name you can find the font by.
-      function Add(AName,AFont:String;AStyle:TFontStyles;ASize:integer;
-        AShadow:boolean=false;AShadowDepth:integer=0;AShadowBlur:integer=0;
-        AShadowAlpha:byte=64):TAdFont;overload;
-      //Searches for a specific font
-      property Font[Index:string]:TAdFont read GetItemByName;default;
-      //Searches for a specific item
-      property Items[Index:integer]:TAdFont read GetItem write SetItem;
-      //Defines weather only metadata to reconstruct the fonts is saved in streams or files
-      property SaveOnlyMetadata:boolean read FOnlyMetadata write SetOnlyMetadata;
-      
-      //Saves the whole collection to a stream
-      procedure SaveToStream(AStream:TStream);
-      //Loads the whole collection from a stream
-      procedure LoadFromStream(AStream:TStream);
-      //Saves the whole collection to a file
-      procedure SaveToFile(AFile:string);
-      //Loads the whole collection from file
-      procedure LoadFromFile(AFile:string);
-  end;
-
-  TAdPerformanceCounterState = (psPaused, psResumed, psRunning);
-
-  //Class for calculating the FPS and the TimeGap
-  TAdPerformanceCounter = class
-    private
-      FTimeGap:Double;
-      FFPS:integer;
-      FInterpolate:boolean;
-      FState:TAdPerformanceCounterState;
-      FLastTickCount:LongInt;
-      FTempTime:LongInt;
-      FTempFPS:integer;
-      FInterpolationFactor:integer;
-    public
-      property State:TAdPerformanceCounterState read FState;
-      property FPS:integer read FFPS;
-      property TimeGap:double read FTimeGap;
-      property Interpolate:Boolean read FInterpolate write FInterpolate;
-      property InterpolationFactor:integer read FInterpolationFactor write FInterpolationFactor;
-
-      constructor Create(ACreatePaused:boolean=false);
-
-      procedure Resume;
-      procedure Pause;
-      procedure Calculate;    
-  end;
-
-var
-  //Contains all registered compressors. You must not change the contents.
-  RegisteredCompressors:TStringList;
-  //Contains all registered pictureformats. You must not change the contents.
-  RegisteredFormats:TStringList;
-
-//Is called for registering a compressor class. If you register a compressor it will be automaticly used for decompressing.
-procedure RegisterCompressor(AClass:TClass);
-
-//Is called for registering a format class. The format classes are used to give the ability to load files of serveral formats.
-procedure RegisterFormat(AClass:TClass);
-
-
 implementation
-
-procedure RegisterCompressor(AClass:TClass);
-begin
-  RegisterClass(TPersistentClass(AClass));
-  RegisteredCompressors.Add(AClass.ClassName);
-end;
-
-procedure RegisterFormat(AClass:TClass);
-begin
-  RegisterClass(TPersistentClass(AClass));
-  RegisteredFormats.Add(AClass.ClassName);
-end;
 
 { TAdDraw }
 
@@ -749,13 +420,13 @@ var amsg:TAdLogMessage;
 begin
 	inherited Create;
   FParent := AParent;
-  FAmbientColor := clWhite;
+  FAmbientColor := RGB(255, 255, 255);
   AdDllLoader := TAdDllLoader.Create;
   SetupThings;
 
   FLog := TAdLog.Create;
   FLogFileName := 'adlog.txt';
-
+  FTextureFilter := atLinear; 
   FSurfaceEventList := TSurfaceEventList.Create;
 
   AutoLoadLog := true;
@@ -812,7 +483,7 @@ begin
 end;
 
 
-procedure TAdDraw.SetAmbientColor(AValue: TColor);
+procedure TAdDraw.SetAmbientColor(AValue: Longint);
 begin
   FAmbientColor := AValue;
   if Initialized then
@@ -863,7 +534,9 @@ begin
 end;
 
 function TAdDraw.Initialize: boolean;
-var amsg:TAdLogMessage;
+var
+  amsg:TAdLogMessage;
+  rect:TAdRect;
 begin
 
   result := false;
@@ -884,9 +557,11 @@ begin
 
       result := AdAppl.Initialize(FParent.Handle,Options,Display);
 
-      //AdDllLoader.SetTextureQuality(AdAppl,tqNone);
-
-      AdAppl.Viewport := FParent.ClientRect;
+      rect.Left := FParent.ClientRect.Left;
+      rect.Top := FParent.ClientRect.Top;
+      rect.Right := FParent.ClientRect.Right;
+      rect.Bottom := FParent.ClientRect.Bottom;
+      AdAppl.Viewport := rect;
 
       AdAppl.AmbientLightColor := AD_RGB(GetRValue(FAmbientColor),GetGValue(FAmbientColor),
         GetBValue(FAmbientColor));
@@ -914,7 +589,10 @@ begin
       CallNotifyEvent(seInitialize);
       CallNotifyEvent(seInitialized);
 
+      FFonts := TAdFontFactory.Create(AdAppl);
+
       FCanvas := TAdCanvas.Create(AdAppl);
+      FCanvas.Font := Fonts.GenerateFont('Tahoma', 10, []);
     end;
   end;
 end;
@@ -928,9 +606,18 @@ begin
 
   if AdAppl <> nil then
   begin
-    if FCanvas <> nil then FCanvas.Free;
+    if FCanvas <> nil then
+    begin
+      FCanvas.Free;
+    end;
+    if FFonts <> nil then
+    begin
+      FFonts.Free;
+    end;
+    
     FInitialized := false;
     CallNotifyEvent(seFinalize);
+    
     AdAppl.Finalize;
     if AdAppl <> nil then FreeAndNil(AdAppl);
   end;
@@ -951,7 +638,7 @@ begin
   Log.AddMessage(Temp);
 end;
 
-procedure TAdDraw.ClearSurface(Color:TColor);
+procedure TAdDraw.ClearSurface(Color:Longint);
 begin
   AdAppl.ClearSurface(Ad_ARGB(255,GetRValue(Color),GetGValue(Color),GetBValue(Color)));
 end;
@@ -969,8 +656,8 @@ procedure TAdDraw.EndScene;
 begin
   if AdAppl <> nil then
   begin
-    AdAppl.EndScene;
     FCanvas.EndFrame;
+    AdAppl.EndScene;
   end;
 end;
 
@@ -992,15 +679,32 @@ begin
   end;
 end;
 
-function TAdDraw.GetDisplayRect: TRect;
+function TAdDraw.GetTextureParams(
+  ABitDepth: byte): TAd2dBitmapTextureParameters;
+begin
+  with result do
+  begin
+    if BitDepth <> 0 then    
+      BitDepth := ABitDepth
+    else
+      BitDepth := Display.BitCount;  
+
+    UseMipMaps := doMipmaps in FOptions;
+    MinFilter := FTextureFilter;
+    MagFilter := FTextureFilter;
+    MipFilter := FTextureFilter;
+  end;
+end;
+
+function TAdDraw.GetDisplayRect: TAdRect;
 begin
   if dofullscreen in Options then
   begin
-    result := Bounds(0,0,Display.Width,Display.Height);
+    result := AdBounds(0,0,Display.Width,Display.Height);
   end
   else
   begin
-    result := Bounds(0,0,FParent.ClientWidth,FParent.ClientHeight);
+    result := AdBounds(0,0,FParent.ClientWidth,FParent.ClientHeight);
   end;
 end;
 
@@ -1022,17 +726,17 @@ end;
 
 {TRectList}
 
-procedure TRectList.Add(ARect: TRect);
-var ar:PRect;
+procedure TRectList.Add(ARect: TAdRect);
+var ar:PAdRect;
 begin
   new(ar);
   ar^ := ARect;
   inherited Add(ar);
 end;
 
-function TRectList.GetItem(AIndex:integer):TRect;
+function TRectList.GetItem(AIndex:integer):TAdRect;
 begin
-  result := PRect(inherited Items[AIndex])^;
+  result := PAdRect(inherited Items[AIndex])^;
 end;
 
 procedure TRectList.Notify(Ptr: Pointer; Action: TListNotification);
@@ -1044,9 +748,9 @@ begin
   inherited;
 end;
 
-procedure TRectList.SetItem(AIndex:integer;AItem:TRect);
+procedure TRectList.SetItem(AIndex:integer;AItem:TAdRect);
 begin
-  PRect(inherited Items[AIndex])^ := AItem;
+  PAdRect(inherited Items[AIndex])^ := AItem;
 end;
 
 
@@ -1059,7 +763,7 @@ begin
   FParent := AAdDraw;
   FParent.RegisterNotifyEvent(Notify);
   Rects := TRectList.Create;
-  FColor := clWhite;
+  FColor := RGB(255, 255, 255);
   FAlpha := 255;
   FOwnTexture := true;
   FPatternStop := 0;
@@ -1080,14 +784,14 @@ begin
 end;
 
 procedure TAdImage.DrawMesh(DestApp: TAdDraw; DestRect,
-  SourceRect: TRect; Rotation: integer; RotCenterX, RotCenterY: single;
+  SourceRect: TAdRect; Rotation: integer; RotCenterX, RotCenterY: single;
   BlendMode: TAd2DBlendMode);
 var
   mat1,mat2:TAdMatrix;
   curx,cury:single;
   Mode:TAd2DDrawMode;
 begin
-  if (not CompRects(SourceRect,FSrcRect)) then
+  if (not CompareRects(SourceRect,FSrcRect)) then
   begin
     FSrcRect := SourceRect;
     BuildVertices;
@@ -1225,7 +929,7 @@ begin
     begin
       for ax := 0 to ((FWidth+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
       begin
-        Rects.Add(Bounds(
+        Rects.Add(AdBounds(
           ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
           FPatternWidth,FPatternHeight));
       end;
@@ -1233,7 +937,7 @@ begin
   end
   else
   begin
-    Rects.Add(Rect(0,0,FWidth,FHeight));
+    Rects.Add(AdRect(0,0,FWidth,FHeight));
   end;
 end;
 
@@ -1244,12 +948,12 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex],
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex],
       0, 0, 0, bmAlpha);
   end;
 end;
 
-procedure TAdImage.DrawAdd(Dest: TAdDraw; const DestRect: TRect;
+procedure TAdImage.DrawAdd(Dest: TAdDraw; const DestRect: TAdRect;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1261,7 +965,7 @@ begin
   end;
 end;
 
-procedure TAdImage.DrawAlpha(Dest: TAdDraw; const DestRect: TRect;
+procedure TAdImage.DrawAlpha(Dest: TAdDraw; const DestRect: TAdRect;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1273,7 +977,7 @@ begin
   end;
 end;
 
-procedure TAdImage.DrawMask(Dest: TAdDraw; const DestRect: TRect;
+procedure TAdImage.DrawMask(Dest: TAdDraw; const DestRect: TAdRect;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
@@ -1293,7 +997,7 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
      CenterX, CenterY, bmAlpha);
   end;
 end;
@@ -1307,7 +1011,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-      DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+      DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
         CenterX, CenterY, bmAdd);
   end;
 end;
@@ -1321,7 +1025,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, Rect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
       CenterX,CenterY,bmAlpha);
   end;
 end;
@@ -1335,12 +1039,12 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,Rect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmMask);
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmMask);
   end;
 end;
 
 procedure TAdImage.StretchBltAdd(Dest: TAdDraw; SourceRect,
-  DestRect: TRect; CenterX, CenterY:double; Angle, Alpha: Integer);
+  DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1350,7 +1054,7 @@ begin
 end;
 
 procedure TAdImage.StretchBltAlpha(Dest: TAdDraw; SourceRect,
-  DestRect: TRect; CenterX, CenterY:double; Angle, Alpha: Integer);
+  DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1359,7 +1063,7 @@ begin
   end;
 end;
 
-procedure TAdImage.StretchDraw(Dest: TAdDraw; const DestRect: TRect; PatternIndex: integer);
+procedure TAdImage.StretchDraw(Dest: TAdDraw; const DestRect: TAdRect; PatternIndex: integer);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
@@ -1596,7 +1300,7 @@ begin
   result := Rects.Count - PatternStop;
 end;
 
-function TAdImage.GetPatternRect(ANr: Integer):TRect;
+function TAdImage.GetPatternRect(ANr: Integer):TAdRect;
 begin
   result := Rects[ANr];
 end;
@@ -1766,8 +1470,9 @@ begin
   end;
 end;
 
-procedure TAdImageList.SetCompressor(ACompressor: TCompressorClass);
-var i:integer;
+procedure TAdImageList.SetCompressor(ACompressor: TAdGraphicCompressorClass);
+var
+  i:integer;
 begin
   FCompressor := ACompressor;
   for i := 0 to Count - 1 do
@@ -1907,8 +1612,32 @@ end;
 { TAdLog }
 
 procedure TAdLog.AddMessage(AMessage: TAdLogMessage);
+const
+  cTabulator = 20;
+var
+  Space:integer;
+  LMessage:string;
+  i:integer;
 begin
-  Items.Add('['+AMessage.Sender+']'+' ['+AMessage.Typ+'] '+AMessage.Text);
+  LMessage := '[' + AMessage.Typ + ']';
+
+  Space := cTabulator - length(AMessage.Typ) - 2;
+  if Space < 1 then Space := 1;
+  for i := 0 to Space do
+    LMessage := LMessage + ' ';
+
+
+  LMessage := LMessage + AMessage.Sender + ':';
+
+  Space := cTabulator - length(AMessage.Sender) - 1;
+  if Space < 1 then Space := 1;
+  for i := 0 to Space do
+    LMessage := LMessage + ' ';
+
+
+  LMessage := LMessage + AMessage.Text;
+
+  self.Items.Add(LMessage);
   if FileName <> '' then
   begin
     SaveToFile(FileName);
@@ -1918,7 +1647,7 @@ end;
 constructor TAdLog.Create;
 begin
   inherited Create;
-  Items := TStringList.Create;
+  FItems := TStringList.Create;
 end;
 
 destructor TAdLog.Destroy;
@@ -1982,65 +1711,6 @@ begin
   inherited Items[AIndex] := @AItem;
 end;
 
-{ THAICompressor }
-
-function THAICompressor.GetInitial: TInitialLetters;
-begin
-  result := #3+'HAI'
-end;
-
-procedure THAICompressor.Read(AStream: TStream; ABmp:TAdBitmap);
-var
-  input:TMemoryStream;
-  output:TMemoryStream;
-  dec:THuffmanDecoder;
-  s:int64;
-begin
-  input := TMemoryStream.Create;
-  AStream.Read(s,SizeOf(s));
-  input.CopyFrom(AStream,s);
-
-  output := TMemoryStream.Create;
-  input.Position := 0;
-  dec := THuffmanDecoder.Create;
-  dec.Input := input;
-  dec.Output := output;
-  dec.Decode;
-  input.Free;
-  dec.Free;
-  output.Position := 0;
-
-  ABmp.LoadFromStream(output);
-  output.Free;
-end;
-
-procedure THAICompressor.Write(AStream: TStream; ABmp:TAdBitmap);
-var
-    input:TMemoryStream;
-    output:TMemoryStream;
-    enc:THuffmanEncoder;
-    s:int64;
-begin
-  input := TMemoryStream.Create;
-  ABmp.SaveToStream(input);
-
-  output := TMemoryStream.Create;
-
-  Input.Position := 0;
-
-  enc := THuffmanEncoder.Create;
-  enc.Input := input;
-  enc.Output := output;
-  enc.Encode;
-  enc.Free;
-  input.Free;
-
-  s := Output.Size;
-  AStream.Write(s,SizeOf(s));
-  Output.SaveToStream(AStream);
-  Output.Free;
-end; 
-
 { TAdTexture }
 
 procedure TAdTexture.Clear;
@@ -2058,16 +1728,12 @@ begin
   FParent := AParent;
   Initialize;
   FParent.RegisterNotifyEvent(Notify);
-  Compressor := THAICompressor;
+  FCompressorClass := nil;
   FBitDepth := 32;
 end;
 
 destructor TAdTexture.Destroy;
 begin
-  if FCompressor <> nil then
-  begin
-    FreeAndNil(FCompressor);
-  end;
   FParent.UnRegisterNotifyEvent(Notify);
   Finalize;
   Inherited Destroy;
@@ -2095,7 +1761,7 @@ end;
 
 function TAdTexture.GetInitialized: boolean;
 begin
-  result := FAd2DTexture <> nil;
+  result := (FAd2DTexture <> nil) and (FAd2dTexture.Width > 0) and (FAd2dTexture.Height > 0);
 end;
 
 procedure TAdTexture.Initialize;
@@ -2105,7 +1771,8 @@ begin
 end;
 
 procedure TAdTexture.SaveToFile(AFile: string);
-var ms:TMemoryStream;
+var
+  ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
   SaveToStream(ms);
@@ -2113,7 +1780,8 @@ begin
 end;
 
 procedure TAdTexture.LoadFromFile(AFile: string);
-var ms:TMemoryStream;
+var
+  ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
   ms.LoadFromFile(AFile);
@@ -2122,121 +1790,63 @@ begin
   ms.Free;
 end;
 
-procedure TAdTexture.LoadFromGraphic(AGraphic: TGraphic);
+procedure TAdTexture.LoadFromGraphic(AGraphic: TObject);
 var
-  fmt:TPictFormat;
-  i:integer;
-  cref:TPictFormatClass;
   bmp:TAdBitmap;
 begin
-  fmt := nil;
-  for i := 0 to RegisteredFormats.Count-1 do
-  begin
-    cref := TPictFormatClass(GetClass(RegisteredFormats[i]));
-    if cref <> nil then
-    begin
-      fmt := TPictFormat(cref.Create);
-      if fmt.SupportsGraphicClass(TGraphicClass(AGraphic.ClassType)) then
-      begin
-        break;
-      end;
-      fmt.Free;
-      fmt := nil;
-    end;
+  bmp := TAdBitmap.Create;
+  try
+    bmp.Assign(AGraphic);
+    Texture.LoadFromBitmap(bmp, FParent.GetTextureParams(BitDepth));
+  finally
+    bmp.Free;
   end;
-  if fmt <> nil then
-  begin
-    bmp := TAdBitmap.Create;
-    fmt.AssignGraphic(AGraphic,bmp);
-    Texture.LoadFromBitmap(bmp,FBitDepth);
-    fmt.Free;
+end;
+
+procedure TAdTexture.SaveToGraphic(AGraphic: TObject);
+var
+  bmp:TAdBitmap;
+begin
+  bmp := TAdBitmap.Create;
+  try
+    bmp.ReserveMemory(Texture.BaseWidth, Texture.BaseHeight);
+    Texture.SaveToBitmap(bmp);
+    bmp.AssignTo(AGraphic);
+  finally
     bmp.Free;
   end;
 end;
 
 procedure TAdTexture.LoadGraphicFromFile(AFile: string; Transparent: boolean;
-  TransparentColor: TColor);
+  TransparentColor: LongInt);
 var
-  fmt:TPictFormat;
-  i:integer;
-  cref:TPictFormatClass;
-  ext:string;
-  str:TStringList;
   bmp:TAdBitmap;
 begin
-  fmt := nil;
-  ext := lowercase(ExtractFileExt(AFile));
-  for i := 0 to RegisteredFormats.Count-1 do
-  begin
-    cref := TPictFormatClass(GetClass(RegisteredFormats[i]));
-    if cref <> nil then
-    begin
-      fmt := TPictFormat(cref.Create);
-      str := TStringlist.Create;
-      fmt.FileExts(str);
-      if str.IndexOf(ext) > -1 then
-      begin
-        str.Free;
-        break;
-      end;
-      str.Free;
-      fmt.Free;
-      fmt := nil;
-    end;
-  end;
-  if fmt <> nil then
-  begin
-    bmp := TAdBitmap.Create;
-    fmt.LoadFromFile(AFile,bmp,transparent,transparentcolor);
-    fmt.Free;
-    Texture.LoadFromBitmap(bmp,FBitDepth);
+  bmp := TAdBitmap.Create;
+  try
+    bmp.LoadGraphicFromFile(AFile, Transparent, TransparentColor);
+    Texture.LoadFromBitmap(bmp, FParent.GetTextureParams(BitDepth));
+  finally
     bmp.Free;
   end;
 end;
 
 procedure TAdTexture.LoadFromStream(AStream: TStream);
 var c:char;
-    i:integer;
-    s:string;
-    cref:TPersistentClass;
-    atemp:TCompressor;
     bmp:TAdBitmap;
 begin
   AStream.Read(c,1);
   if c = 'T' then
   begin
-    //Select a compressor
-    SetLength(s,4);
-    AStream.Read(s[1],4);
-    for i := 0 to RegisteredCompressors.Count - 1 do
-    begin
-      cref := GetClass(RegisteredCompressors[i]);
-      if cref <> nil then
-      begin
-        atemp := TCompressor(TCompressorClass(cref).Create);
-        if atemp.GetInitial <> s then
-        begin
-          FreeAndNil(atemp);
-        end
-        else
-        begin
-          break;
-        end;
-      end;
-    end;
-    if ATemp <> nil then
-    begin
-      bmp := TAdBitmap.Create;
-      ATemp.Read(AStream,bmp);
+    bmp := TAdBitmap.Create;
+    try
+      bmp.LoadFromStream(AStream);
       AStream.Read(FBitDepth,1);
-      Texture.LoadFromBitmap(bmp,FBitDepth);
-      Compressor := TCompressorClass(atemp.ClassType);
-      ATemp.Free;
+      Texture.LoadFromBitmap(bmp, FParent.GetTextureParams(BitDepth));
       bmp.Free;
-    end
-    else
-    begin
-      raise ENoCompressor.Create('The compressor '+s+' is not registered!');
+    except
+      bmp.Free;
+      raise;
     end;
   end;
 end;
@@ -2244,21 +1854,21 @@ end;
 procedure TAdTexture.SaveToStream(AStream: TStream);
 var c:char;
     bmp:TAdBitmap;
-    s:string;
     bits:byte;
 begin
-  if (Texture.Loaded) and (FCompressor <> nil) then
+  if (Texture.Loaded) then
   begin
     c := 'T'; AStream.Write(c,1);
 
-    s := FCompressor.GetInitial;
-    AStream.Write(s[1],4);
-
     bmp := TAdBitmap.Create;
-    bmp.ReserveMemory(Texture.BaseWidth,Texture.BaseHeight);
-    Texture.SaveToBitmap(bmp);
-    FCompressor.Write(AStream,bmp);
-    bmp.Free;
+    bmp.Compressor := FCompressorClass;
+    try
+      bmp.ReserveMemory(Texture.BaseWidth,Texture.BaseHeight);
+      Texture.SaveToBitmap(bmp);
+      bmp.SaveToStream(AStream);
+    finally
+      bmp.Free;
+    end;
 
     bits := Texture.BitCount;
     AStream.Write(bits,1);
@@ -2286,7 +1896,7 @@ begin
     end;
     Finalize;
   end;
-  
+
   if AEvent = seInitialize then
   begin
     Initialize;
@@ -2303,774 +1913,5 @@ procedure TAdTexture.SetBitDepth(AValue: byte);
 begin
   FBitDepth := AValue;
 end;
-
-procedure TAdTexture.SetCompressor(AClass: TCompressorClass);
-begin
-  if FCompressor <> nil then
-  begin
-    FreeAndNil(FCompressor);
-  end;
-  FCompressor := AClass.Create;
-  FCompressorClass := AClass;
-end;
-
-{ TAdSimpleFormat }
-
-procedure TSimpleFormat.AssignGraphic(AGraphic: TGraphic; ABmp: TAdBitmap);
-var bmp:TBitmap;
-begin
-  if SupportsGraphicClass(TGraphicClass(AGraphic.ClassType)) then
-  begin
-    bmp := TBitmap.Create;
-    if AGraphic is TBitmap then
-    begin
-      bmp.Assign(AGraphic);
-    end
-    else
-    begin
-      bmp.Width := AGraphic.Width;
-      bmp.Height := AGraphic.Height;
-      bmp.Canvas.StretchDraw(rect(0,0,bmp.Width,bmp.Height),AGraphic);
-    end;
-    ABmp.AssignBitmap(bmp);
-    bmp.Free;
-  end
-  else
-  begin
-    raise EFormatNotSupportet.Create('Can not assign the graphic with the format '+AGraphic.ClassName+'. Only support TBitmap, TIcon and TMetafile.');
-  end;
-end;
-
-procedure TSimpleFormat.FileExts(strs: TStringList);
-begin
-  strs.Add('.bmp');
-  strs.Add('.dib');
-  strs.Add('.ico');
-  strs.Add('.wmf');
-  strs.Add('.emf');
-end;
-
-function TSimpleFormat.LoadFromFile(AFile: string; ABmp: TAdBitmap;Transparent:boolean;TransparentColor:TColor): boolean;
-var
-  pict:TPicture;
-  bmp:TBitmap;
-begin
-  result := true;
-  pict := TPicture.Create;
-  try
-    pict.LoadFromFile(AFile);
-    bmp := TBitmap.Create;
-    if pict.Graphic is TBitmap then
-    begin
-      bmp.Assign(pict.Graphic);
-    end
-    else
-    begin
-      bmp.Width := pict.Graphic.Width;
-      bmp.Height := pict.Graphic.Height;
-      bmp.Canvas.StretchDraw(rect(0,0,bmp.Width,bmp.Height),pict.Graphic);
-    end;
-    bmp.Transparent := Transparent;
-    bmp.TransparentColor := TransparentColor;
-    bmp.TransparentMode := tmFixed;
-    ABmp.AssignBitmap(bmp);
-    bmp.Free;
-  except
-    result := false;
-  end;
-  pict.Free;
-end;
-
-function TSimpleFormat.SupportsGraphicClass(AGraphicClass: TGraphicClass): boolean;
-begin
-  {$IFDEF FPC}
-    result := (AGraphicClass = TBitmap) or (AGraphicClass = TIcon);
-  {$ELSE}
-    result := (AGraphicClass = TBitmap) or (AGraphicClass = TMetafile) or (AGraphicClass = TIcon);
-  {$ENDIF}
-end;
-
-{ TAdFont }
-
-constructor TAdFont.Create(AParent: TAdDraw);
-begin
-  inherited Create;
-  FParent := AParent;
-  FMeshList := TAdImageList.Create(FParent);
-  FTexture := TAdTexture.Create(FParent);
-  FCompressor := FTexture.Compressor;
-  FLetterCount := 0;
-  FColor := clWhite;
-  FAlpha := 255;
-  CreatedByList := false;
-  ClearFont;
-end;
-
-destructor TAdFont.Destroy;
-begin
-  FMeshList.Free;
-  FTexture.Free;
-  inherited;
-end;
-
-{$IFNDEF FPC}
-procedure SetFontQuality (aFont: TFont;  aQuality: Byte);
-var
-  LF : TLogFont;
-begin
-  GetObject(aFont.Handle, SizeOf(TLogFont), @LF);
-  LF.lfQuality := aQuality;
-  aFont.Handle := CreateFontIndirect(LF);
-end;
-{$ENDIF}
-
-procedure TAdFont.CreateFont(AFont: string; AStyle: TFontStyles; ASize: integer;
-  AShadow: boolean; AShadowDepth, AShadowBlur: integer; AShadowAlpha: byte);
-var
-  bmp,bmp2:TBitmap;
-  adbmp:TAdBitmap;
-  maxw,maxh:integer;
-  ax,ay:integer;
-  i: integer;
-begin
-  ClearFont;
-
-  with FMetadata do
-  begin
-    Name := AFont;
-    Style := AStyle;
-    Size := ASize;
-    Shadow := AShadow;
-    ShadowDepth := ShadowDepth;
-    ShadowBlur := ShadowBlur;
-    ShadowAlpha := ShadowAlpha;
-  end;
-
-  FName := AFont+inttostr(ASize);
-
-  bmp := TBitmap.Create;
-  bmp.Width := 1;
-  bmp.Height := 1;
-  with bmp.Canvas do
-  begin
-    with Font do
-    begin
-      Name := AFont;
-      Style := AStyle;
-      Size := ASize;
-      Color := clWhite;
-    end;
-
-    maxw := 0;
-    maxh := 0;
-    for i := 0 to 255 do
-    begin
-      ax := TextWidth(chr(i));
-      ay := TextHeight(chr(i));
-      if (i = 0) or (ax > maxw) then maxw := ax;
-      if (i = 0) or (ay > maxh) then maxh := ay;
-      FLetterSize[i] := point(ax,ay);
-    end;
-
-    maxw := maxw + abs(AShadowDepth) + AShadowBlur;
-    maxh := maxh + abs(AShadowDepth) + AShadowBlur;
-
-    bmp.Width := (maxw+1)*16;
-    bmp.Height := (maxh+1)*16;
-    Brush.Color := clBlack;
-    FillRect(ClipRect);
-
-    Brush.Style := Graphics.bsClear;
-
-    bmp2 := nil;
-    if AShadow then
-    begin
-      bmp2 := TBitmap.Create;
-      bmp2.Assign(bmp);
-      bmp2.Canvas.Brush.Assign(Brush);
-      bmp2.Canvas.Font.Assign(Font);
-      bmp2.Canvas.Font.Color := RGB(AShadowAlpha,AShadowAlpha,AShadowAlpha);
-    end;
-
-    {$IFNDEF FPC}
-      SetFontQuality (bmp.Canvas.Font, NONANTIALIASED_QUALITY);
-    {$ENDIF}
-
-    for ay := 0 to 15 do
-    begin
-      for ax := 0 to 15 do
-      begin
-        if AShadow then
-        begin
-          if AShadowDepth > 0 then
-          begin
-            Textout(ax*(maxw+1),
-                    ay*(maxh+1),chr(ay*16+ax));
-            bmp2.Canvas.Textout(ax*(maxw+1)+AShadowDepth,
-                                ay*(maxh+1)+AShadowDepth,chr(ay*16+ax));
-          end
-          else
-          begin
-            Textout(ax*(maxw+1)+abs(AShadowDepth),
-                    ay*(maxh+1)+abs(AShadowDepth),chr(ay*16+ax));
-            bmp2.Canvas.Textout(ax*(maxw+1),
-                                ay*(maxh+1),chr(ay*16+ax));
-          end;
-        end
-        else
-        begin
-          Textout(ax*(maxw+1),ay*(maxh+1),chr(ay*16+ax));
-        end;
-      end;
-    end;
-  end;
-
-  bmp.Transparent := true;
-  bmp.TransparentColor := clBlack;
-
-  if AShadow then
-  begin
-    if AShadowBlur > 0 then
-    begin
-      {$IFDEF FPC}{$ELSE}
-      BmpGBlur(bmp2,AShadowBlur);
-      {$ENDIF}
-    end;
-    bmp2.Canvas.Draw(0,0,bmp);
-    adbmp := TAdBitmap.Create;
-    adbmp.AssignBitmap(bmp);
-    adbmp.AssignAlphaChannel(bmp2);
-    FTexture.Texture.LoadFromBitmap(AdBmp,32);
-    adbmp.Free;
-  end
-  else
-  begin
-    FTexture.LoadFromGraphic(bmp);
-  end;
-
-  FLetterCount := 256;
-
-  for i := 0 to 255 do
-  begin
-    with FMeshList.Add('') do
-    begin
-      Texture := self.FTexture;
-      PatternWidth := maxw;
-      PatternHeight := maxh;
-      SkipWidth := 1;
-      SkipHeight := 1;
-    end;
-  end;
-  FMeshList.Restore;
-
-  FPatternWidth := maxw;
-  FPatternHeight := maxh;
-
-  bmp.Free;
-  if AShadow then bmp2.Free;
-end;
-
-procedure TAdFont.ClearFont;
-var i:integer;
-begin
-  FTexture.Clear;
-  FMeshList.Clear;
-  for i := 0 to 255 do
-  begin
-    FLetterSize[i] := point(0,0);
-  end;
-  FLetterCount := 0;
-end;
-
-function TAdFont.TextHeight(AText: string): integer;
-var i:integer;
-begin
-  result := 0;
-  for i := 1 to length(AText) do
-  begin
-    if (FLetterSize[ord(AText[i])].Y > result) then
-    begin
-      result := FLetterSize[ord(AText[i])].Y;
-    end;
-  end;
-end;
-
-function TAdFont.TextWidth(AText: string): integer;
-var i:integer;
-begin
-  result := 0;
-  for i := 1 to length(AText) do
-  begin
-    result := result + FLetterSize[ord(AText[i])].X;
-  end;
-end;
-
-procedure TAdFont.TextOut(AX, AY: integer;AText: string);
-var i:integer;
-    x:integer;
-    c:byte;
-begin
-  if Loaded then
-  begin
-    x := 0;
-    for i := 1 to length(AText) do
-    begin
-      c := ord(AText[i]);
-      FMeshList[c].DrawAlpha(FParent,bounds(AX+x,AY,FPatternWidth,FPatternHeight),c,Alpha);
-      x := x + FLetterSize[c].X;
-    end;
-  end;
-end;
-
-procedure TAdFont.TextOutEx(ARect: TRect; AText:string; ADrawType: TAdFontDrawTypes);
-var
-  lines:TStringList;
-  w,h,i,y,lastspace,lastpos:integer;
-  s:string;
-begin
-  lines := TStringList.Create;
-
-  w := ARect.Right - ARect.Left;
-
-  //Calculate text lines if neccessary
-  if dtWordWrap in ADrawType then
-  begin
-    s := '';
-    i := 0;
-    lastspace := -1;
-    lastpos := 0;
-    while i < length(AText) do
-    begin
-      i := i + 1;
-      if ((AText[i] = #10) or (AText[i] = #13)) and (dtDoLineFeeds in ADrawType) then
-      begin
-        lines.Add(s);
-        lastspace := -1;
-        lastpos := i;
-        s := '';
-      end
-      else
-      begin
-        s := s + AText[i];
-        if AText[i] = ' ' then
-        begin
-          lastspace := length(s);
-          lastpos := i;
-        end;
-        if (TextWidth(s) > w) and (lastspace <> -1) then
-        begin
-          i := lastpos;
-          s := Copy(s,1,lastspace-1);
-          lines.Add(s);
-          lastspace := -1;
-          s := '';
-        end;
-      end;
-    end;
-    lines.Add(s);
-  end
-  else
-  begin
-    lines.Add(AText);
-  end;
-
-  h := 0;
-  y := 0;
-
-  if (dtMiddle in ADrawType) or (dtBottom in ADrawType) then
-  begin
-    for i := 0 to lines.Count - 1 do
-    begin
-      h := h + TextHeight(lines[i]);
-    end;
-  end;
-
-  if (dtTop in ADrawType) then
-  begin
-    y := ARect.Top;
-  end else
-  if dtBottom in ADrawType then
-  begin
-    y := ARect.Bottom - h;
-  end else
-  if dtMiddle in ADrawType then
-  begin
-    y := ARect.Top + (ARect.Bottom - ARect.Top - h) div 2;
-  end;
-
-  for i := 0 to lines.Count - 1 do
-  begin
-    if dtLeft in ADrawType then
-    begin
-      TextOut(ARect.Left,y,lines[i]);
-    end else
-    if dtRight in ADrawType then
-    begin
-      TextOut(ARect.Right-TextWidth(lines[i]),y,lines[i]);
-    end else
-    if dtCenter in ADrawType then
-    begin
-      TextOut(ARect.Left+(w-TextWidth(lines[i])) div 2,y,lines[i]);
-    end;
-    y := y + TextHeight(lines[i]);
-  end;
-  
-  lines.Free;
-end;
-
-procedure TAdFont.LoadFromFile(AFile: string);
-var ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  ms.LoadFromFile(AFile);
-  ms.Position := 0;
-  LoadFromStream(ms);
-  ms.Free;
-end;
-
-procedure TAdFont.LoadFromStream(AStream: TStream);
-var
-  i,l:integer;
-  c:char;
-begin
-  AStream.Read(l,SizeOf(l));
-  SetLength(FName,l);
-  AStream.Read(FName[1],l);
-  AStream.Read(c,1);
-  if c = 'R' then
-  begin
-    ClearFont;
-    AStream.Read(FLetterSize[0],SizeOf(FLetterSize));
-    AStream.Read(FPatternWidth,SizeOf(Integer));
-    AStream.Read(FPatternHeight,SizeOf(Integer));
-    FTexture.LoadFromStream(AStream);
-    if FTexture.FAd2DTexture.Loaded then
-    begin
-      FLetterCount := 255;
-      for i := 0 to 255 do
-      begin
-        with FMeshList.Add('') do
-        begin
-          Texture := self.FTexture;
-          PatternWidth := self.FPatternWidth;
-          PatternHeight := self.FPatternHeight;
-          SkipWidth := 1;
-          SkipHeight := 1;
-        end;
-      end;
-      FMeshList.Restore;
-    end;
-  end
-  else
-  begin
-    AStream.Read(FMetadata,SizeOf(TFontMetadata));
-    with FMetadata do
-    begin
-      CreateFont(Name,Style,Size,Shadow,ShadowDepth,ShadowBlur,ShadowAlpha);
-    end;
-    FOnlyMetadata := true;
-  end;
-end;
-
-procedure TAdFont.SaveToFile(AFile: string);
-var ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  SaveToStream(ms);
-  ms.SaveToFile(AFile);
-  ms.Free;
-end;
-
-procedure TAdFont.SaveToStream(AStream: TStream);
-var
-  c:char;
-  l:integer;
-begin
-  l := Length(FName);
-  AStream.Write(l,SizeOf(l));
-  AStream.Write(FName[1],l);
-  if FOnlyMetadata then
-  begin
-    c := 'M';
-    AStream.Write(c,1);
-    AStream.Write(FMetadata,SizeOf(TFontMetadata));
-  end
-  else
-  begin
-    c := 'R';
-    AStream.Write(c,1);
-    AStream.Write(FLetterSize[0],SizeOf(FLetterSize));
-    AStream.Write(FPatternWidth,SizeOf(Integer));
-    AStream.Write(FPatternHeight,SizeOf(Integer));
-    FTexture.SaveToStream(AStream);
-  end;
-end;
-
-function TAdFont.GetLoaded: boolean;
-begin
-  result := FTexture.Texture.Loaded and (FMeshList.Count > 0) and (FLetterCount > 0);
-end;
-
-procedure TAdFont.SetAlpha(AValue: byte);
-begin
-  FAlpha := AValue;
-end;
-
-procedure TAdFont.SetColor(AValue: TColor);
-var i:integer;
-begin
-  if FColor <> AValue then
-  begin
-    FColor := AValue;
-    for i := 0 to FMeshList.Count - 1 do
-    begin
-      FMeshList[i].Color := AValue;
-      FMeshList[i].Restore;
-    end;
-  end;
-end;
-
-procedure TAdFont.SetCompressor(AValue: TCompressorClass);
-begin
-  FTexture.Compressor := AValue;
-  FCompressor := AValue;
-end;
-
-{ TAdFontCollection }
-
-function TAdFontCollection.Add(AName, AFont: String; AStyle: TFontStyles;
-  ASize: integer; AShadow: boolean; AShadowDepth, AShadowBlur: integer;
-  AShadowAlpha: byte):TAdFont;
-begin
-  result := TAdFont.Create(FParent);
-  result.CreateFont(AFont,AStyle,ASize,AShadow,AShadowDepth,AShadowBlur,AShadowAlpha);
-  result.Name := AName;
-  result.CreatedByList := true;
-  result.SaveOnlyMetadata := SaveOnlyMetadata;
-  Add(result);
-end;
-
-constructor TAdFontCollection.Create(AParent: TAdDraw);
-begin
-  inherited Create;
-  FParent := AParent;
-end;
-
-destructor TAdFontCollection.Destroy;
-begin
-  inherited;
-end;
-
-function TAdFontCollection.GetItem(Index: integer): TAdFont;
-begin
-  result := inherited Items[Index];
-end;
-
-function TAdFontCollection.GetItemByName(Index: string): TAdFont;
-var i:integer;
-begin
-  result := nil;
-  for i := 0 to Count-1 do
-  begin
-    if Items[i].Name = Index then
-    begin
-      result := Items[i];
-      break;
-    end;
-  end;
-end;
-
-procedure TAdFontCollection.Notify(Ptr: Pointer; Action: TListNotification);
-begin
-  inherited;
-  if Action = lnDeleted then
-  begin
-    if (ptr <> nil) and TAdFont(ptr).CreatedByList then
-    begin
-      TAdFont(ptr).Free;
-    end;
-  end;
-end;
-
-procedure TAdFontCollection.SetItem(Index: integer; Value: TAdFont);
-begin
-  inherited Items[Index] := Value;
-end;
-
-procedure TAdFontCollection.SetOnlyMetadata(Value: boolean);
-var
-  i:integer;
-begin
-  FOnlyMetadata := Value;
-  for i := 0 to Count - 1 do
-  begin
-    Items[i].SaveOnlyMetadata := Value;
-  end;
-end;
-
-procedure TAdFontCollection.LoadFromFile(AFile: string);
-var
-  ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  ms.LoadFromFile(AFile);
-  ms.Position := 0;
-  LoadFromStream(ms);
-  ms.Free;
-end;
-
-procedure TAdFontCollection.SaveToFile(AFile: string);
-var
-  ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  SaveToStream(ms);
-  ms.SaveToFile(AFile);
-  ms.Free;
-end;
-
-procedure TAdFontCollection.LoadFromStream(AStream: TStream);
-var
-  c,i:integer;
-  tmp:TAdFont;
-begin
-  Clear;
-  AStream.Read(c,SizeOf(c));
-  for i := 0 to c - 1 do
-  begin
-    tmp := TAdFont.Create(FParent);
-    tmp.LoadFromStream(AStream);
-    tmp.CreatedByList := true;
-    Add(tmp);    
-  end;
-end;
-
-procedure TAdFontCollection.SaveToStream(AStream: TStream);
-var
-  c,i:integer;
-begin
-  c := Count;
-  AStream.Write(c,SizeOf(c));
-  for i := 0 to Count - 1 do
-  begin
-    Items[i].SaveToStream(AStream);
-  end;
-end;
-
-{ TBMPCompressor }
-
-function TBMPCompressor.GetInitial: TInitialLetters;
-begin
-  result := #5+'BMP'
-end;
-
-procedure TBMPCompressor.Read(AStream: TStream; ABmp: TAdBitmap);
-begin
-  ABmp.LoadFromStream(AStream);
-end;
-
-procedure TBMPCompressor.Write(AStream: TStream; ABmp: TAdBitmap);
-begin
-  ABmp.SaveToStream(AStream);
-end;
-
-{ TAdPerformanceCounter }
-
-{$IFNDEF WIN32}
-function GetTickCount:Cardinal;
-var
-  tv:timeval;
-begin
-  GetTimeOfDay(tv, nil);
-  result := int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
-end;
-{$ENDIF}
-
-{ TAdPerformanceCounter }
-
-constructor TAdPerformanceCounter.Create(ACreatePaused: boolean);
-begin
-  inherited Create;
-
-  if ACreatePaused then
-  begin
-    FState := psPaused;
-  end
-  else
-  begin
-    FState := psResumed;
-  end;
-
-  FTempTime := 0;
-  FLastTickCount := GetTickCount;
-  FInterpolate := true;
-  FInterpolationFactor := 10;
-end;
-
-procedure TAdPerformanceCounter.Calculate;
-var
-  tc,td:LongInt;
-begin
-  tc := GetTickCount;
-  td := tc - FLastTickCount;
-
-  if FState = psRunning then
-  begin
-    if FInterpolate then
-    begin
-      FTimeGap := (FTimeGap * FInterpolationFactor + (td)) / (FInterpolationFactor + 1);
-    end
-    else
-    begin
-      FTimeGap := td;
-    end;
-  end else
-  begin
-    if FState = psResumed then
-    begin
-      FTimeGap := 1;
-      FState := psRunning;
-    end
-    else
-    begin
-      FTimeGap := 0;
-    end;
-  end;
-
-  FLastTickCount := tc;
-
-  FTempTime := FTempTime + td;
-  FTempFPS := FTempFPS + 1;
-  if FTempTime > 1000 then
-  begin
-    FTempTime := 0;
-    FFPS := FTempFPS;
-    FTempFPS := 0;
-  end;
-end;
-
-procedure TAdPerformanceCounter.Pause;
-begin
-  FState := psPaused;
-end;
-
-procedure TAdPerformanceCounter.Resume;
-begin
-  if FState = psPaused then
-  begin
-    FState := psResumed;
-  end;
-end;
-
-initialization
-  RegisteredCompressors := TStringList.Create;
-  RegisteredFormats := TStringList.Create;
-  RegisterCompressor(TBMPCompressor);
-  RegisterCompressor(THAICompressor);
-  RegisterFormat(TSimpleFormat);
-
-finalization
-  RegisteredCompressors.Free;
-  RegisteredFormats.Free;
 
 end.

@@ -9,7 +9,7 @@
 *
 *Author: Andreas Stöckel
 *Filename: AdDLLExplorer.pas
-*Comment: Lets you search for all Andorra 2D Plugin libraries in a specific directory
+*Comment: Class which lets you search for all Andorra 2D Plugin libraries in a specific directory
 }
 
 {Lets you search for all Andorra 2D Plugin libraries in a specific directory}

@@ -54,7 +54,7 @@ end;
 procedure WriteStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
 begin
   AStream.Position := 0;
-  XMLElem.Properties.Add('data',WriteStreamToString(AStream));
+  XMLElem.Properties.Add(ElemName,WriteStreamToString(AStream));
 end;
 
 procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
@@ -71,7 +71,7 @@ begin
   end
   else
   begin
-    ReadStreamFromString(AStream, XMLElem.Properties.Value('data',''));
+    ReadStreamFromString(AStream, XMLElem.Properties.Value(ElemName,''));
   end;
 end;
 

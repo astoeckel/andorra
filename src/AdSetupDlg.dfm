@@ -78,10 +78,6 @@ object AdSetupFrm: TAdSetupFrm
         Height = 125
         Align = alClient
         Proportional = True
-        ExplicitLeft = 81
-        ExplicitTop = 32
-        ExplicitWidth = 105
-        ExplicitHeight = 105
       end
     end
   end

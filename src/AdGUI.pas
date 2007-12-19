@@ -20,18 +20,21 @@ unit AdGUI;
 
 interface
 
-uses SysUtils, Classes, JvSimpleXML, AdDraws, AdSkin, AdClasses, {$I AdTypes.inc},
-     AdXML, Controls, AdList;
+uses SysUtils, Classes, Controls, JvSimpleXML, AdDraws, AdSkin, AdClasses, AdTypes,
+     AdXML, AdList, AdCanvas, AdFont, AdFontList;
 
-const
-  Opac = 255;
 
 type
+
+  TAdMouseWheelEvent = procedure(Sender: TObject; Shift: TShiftState;
+    WheelDelta: Integer; MousePos: TAdPoint; var Handled: Boolean) of object;
+
+
   TAdDownRgn = (drNone,drMiddle,drLeftTop,drLeftBottom,drRightTop,drRightBottom);
 
   TAdComponent = class;
 
-  TGUIColor = longint;
+  TGUIColor = -$7FFFFFFF-1..$7FFFFFFF;
 
   TAdHint = class
     private
@@ -116,7 +119,7 @@ type
       FOnKeyDown:TKeyEvent;
       FOnMouseEnter:TNotifyEvent;
       FOnMouseLeave:TNotifyEvent;
-      FOnMouseWheel:TMouseWheelEvent;
+      FOnMouseWheel:TAdMouseWheelEvent;
 
       FHint:string;
       FShowHint:boolean;
@@ -127,9 +130,8 @@ type
 
       FFont:TAdFont;
       FFontColor:TGUIColor;
-      FFonts:TAdFontCollection;
-      FFontFromCollection:boolean;
-      FSaveFont:boolean;
+      FFontName:string;
+      FFonts:TAdFontList;
 
       FGridX,FGridY:integer;
       FGrid:Boolean;
@@ -151,17 +153,17 @@ type
       procedure SetHintWnd(Value:TAdHint);
       function GetFont:TAdFont;
       procedure SetFont(Value:TAdFont);
+      procedure SetFontName(Value:string);
+      procedure SetFonts(Value:TAdFontList);
       procedure SetGridX(Value:integer);
       procedure SetGridY(Value:integer);
       procedure SetGrid(Value:boolean);
       procedure SetWidth(Value:integer);
       procedure SetHeight(Value:integer);
-      procedure SetFonts(Value:TAdFontCollection);
-      procedure SetSaveFont(Value:boolean);
       procedure SetLockEvents(Value:boolean);
     protected
-      function GetBoundsRect:TRect;
-      function GetClientRect:TRect;
+      function GetBoundsRect:TAdRect;
+      function GetClientRect:TAdRect;
       procedure DoDraw;virtual;
       procedure DoMove(TimeGap:double);virtual;
 
@@ -182,7 +184,7 @@ type
       function DoKeyPress(key:Char):boolean;virtual;
       function DoKeyUp(key:Word;Shift:TShiftState):boolean;virtual;
       function DoKeyDown(key:Word;Shift:TShiftState):boolean;virtual;
-      function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean):boolean;virtual;
+      function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TAdPoint; var Handled: Boolean):boolean;virtual;
 
       procedure DesignSize(X,Y:integer);
       function GetDownRgn(AX,AY:integer):TAdDownRgn;      
@@ -218,10 +220,6 @@ type
       property MinHeight:integer read FMinHeight write FMinHeight;
       property MaxHeight:integer read FMaxHeight write FMaxHeight;
 
-      property Fonts:TAdFontCollection read FFonts write SetFonts;
-      property FontFromCollection:boolean read FFontFromCollection;
-      property SaveFont:boolean read FSaveFont write SetSaveFont;
-
       property AcceptChildComponents:boolean read FAcceptChildComponents write FAcceptChildComponents;
 
       property LockEvents:boolean read FLockEvents write SetLockEvents;
@@ -238,13 +236,13 @@ type
       function MouseMove(Shift: TShiftState; X, Y: Integer) : boolean;
       function MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer) : boolean;
       function MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer) : boolean;
-      function MouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean) : boolean;
+      function MouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TAdPoint; var Handled: Boolean) : boolean;
       function KeyPress(Key: Char) : boolean;
       function KeyDown(Key: Word;Shift:TShiftState) : boolean;
       function KeyUp(Key: Word;Shift:TShiftState) : boolean;
 
-      function ClientToScreen(p:TPoint):TPoint;
-      function ScreenToClient(p:TPoint):TPoint;
+      function ClientToScreen(p:TAdPoint):TAdPoint;
+      function ScreenToClient(p:TAdPoint):TAdPoint;
 
       constructor Create(AParent:TAdComponent);virtual;
       destructor Destroy;override;
@@ -270,8 +268,8 @@ type
       property Components:TAdComponents read FComponents;
       property AdDraw:TAdDraw read FAdDraw write SetAdDraw;
       property DesignMode:boolean read FDesignMode write SetDesignMode;
-      property BoundsRect:TRect read GetBoundsRect;
-      property ClientRect:TRect read GetClientRect;
+      property BoundsRect:TAdRect read GetBoundsRect;
+      property ClientRect:TAdRect read GetClientRect;
       property CurrentCursor:string read FCurrentCursor write SetCurrentCursor;
       property HintWnd:TAdHint read FHintWnd write SetHintWnd;
 
@@ -281,6 +279,8 @@ type
 
       property FontColor:TGUIColor read FFontColor write FFontColor;
       property Font:TAdFont read GetFont write SetFont;
+      property FontName:string read FFontName write SetFontName;
+      property Fonts:TAdFontList read FFonts write SetFonts;
 
       property FocusedComponent:TAdComponent read GetFocusedComponent;
       procedure SetFocused;
@@ -307,7 +307,7 @@ type
       property OnMouseDown:TMouseEvent read FOnMouseDown write FOnMouseDown;
       property OnMouseEnter:TNotifyEvent read FOnMouseEnter write FOnMouseEnter;
       property OnMouseLeave:TNotifyEvent read FOnMouseLeave write FOnMouseLeave;
-      property OnMouseWheel:TMouseWheelEvent read FOnMouseWheel write FOnMouseWheel;
+      property OnMouseWheel:TAdMouseWheelEvent read FOnMouseWheel write FOnMouseWheel;
       property OnKeyPress:TKeyPressEvent read FOnKeyPress write FOnKeyPress;
       property OnKeyUp:TKeyEvent read FOnKeyUp write FOnKeyUp;
       property OnKeyDown:TKeyEvent read FOnKeyDown write FOnKeyDown;
@@ -393,8 +393,8 @@ type
       FMouseX,FMouseY:integer;
       FOwnHintWnd:boolean;
       FOwnFonts:boolean;
+      FSaveFonts:boolean;
       procedure SetHintWnd(Value:TAdHint);
-      procedure SetFonts(Value:TAdFontCollection);
     protected
       procedure SetCurrentCursor(Value:string);override;
       function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
@@ -412,8 +412,9 @@ type
       property MouseY:integer read FMouseY;
 
       property HintWnd write SetHintWnd;
-      property Fonts write SetFonts;
-      property SaveFont;
+      property SaveFonts:boolean read FSaveFonts write FSaveFonts;
+    published
+      property Fonts;
   end;
 
 type TAdComponentClass = class of TAdComponent;
@@ -431,7 +432,7 @@ begin
   RegisterClass(TPersistentClass(AClass));
 end;
 
-function InRect(x,y:integer;rect:TRect):boolean;
+function InRect(x,y:integer;rect:TAdRect):boolean;
 begin
   result := (x >= rect.Left) and
             (y >= rect.Top) and
@@ -459,7 +460,7 @@ var
 begin
   inherited Create;
 
-  FFontColor := $00FFFFFF;
+  FFontColor := 0;
 
   FParent := AParent;
 
@@ -475,7 +476,6 @@ begin
   FMinHeight := 0;
   FMaxWidth := -1;
   FMaxHeight := -1;
-  FSaveFont := true;
 
   FAcceptChildComponents := true;
 
@@ -493,13 +493,16 @@ begin
     FDesignMode := FParent.DesignMode;
     FHintWnd := FParent.HintWnd;
     Skin := FParent.Skin;
-    FFont := FParent.Font;
+
+    FFont := TAdFont.Create(AdDraw.AdAppl);
+    Font := FParent.Font;
+
     FGrid := FParent.Grid;
     FGridX := FParent.GridX;
     FGridY := FParent.GridY;
-    FFonts := FParent.Fonts;
-    FSaveFont := FParent.SaveFont;
     FFontColor := FParent.FontColor;
+    FFonts := FParent.Fonts;
+    FFontName := '';
   end;
 
   FAlpha := 255;
@@ -518,6 +521,8 @@ begin
     Components[0].Free;
   end;
   Components.Free;
+
+  FFont.Free;
 
   if FParent <> nil then
   begin
@@ -587,7 +592,8 @@ begin
   FHeight := aroot.Properties.IntValue('height',100);
   FX := aroot.Properties.IntValue('x',0);
   FY := aroot.Properties.IntValue('y',0);
-  FFontColor := aroot.Properties.IntValue('fontcolor',$00FFFFFF);
+  FontColor := aroot.Properties.IntValue('fontcolor',0);
+  FontName := aroot.Properties.Value('fontname','');
 
   for i := 0 to aroot.Items.Count - 1 do
   begin
@@ -598,15 +604,6 @@ begin
       begin
         LoadFromXML(aroot.Items[i]);
       end;
-    end;
-  end;
-
-  if FFonts <> nil then
-  begin
-    if aroot.Properties.Value('font','') <> '' then
-    begin
-      Font := Fonts.Font[aroot.Properties.Value('font','')];
-      SaveFont := true;
     end;
   end;
 end;
@@ -636,16 +633,13 @@ begin
     Add('x',round(FX));
     Add('y',round(FY));
     Add('fontcolor',FFontColor);
-    if FSaveFont and FFontFromCollection and (FFont <> nil) then
-    begin
-      Add('font',FFont.Name);
-    end;
+    Add('fontname',FFontName);
   end;
 end;
 
 procedure TAdComponent.DoDraw;
 var
-  r:TRect;
+  r:TAdRect;
   ax,ay:integer;
 begin
   if FDesignMode then
@@ -661,10 +655,10 @@ begin
         Rectangle(r);
 
         Brush.Color := ad_argb(64,64,64,255);
-        Rectangle(Bounds(r.Left,r.Top,4,4));
-        Rectangle(Bounds(r.Left,r.Bottom-4,4,4));
-        Rectangle(Bounds(r.Right-4,r.Top,4,4));
-        Rectangle(Bounds(r.Right-4,r.Bottom-4,4,4));
+        Rectangle(AdBounds(r.Left,r.Top,4,4));
+        Rectangle(AdBounds(r.Left,r.Bottom-4,4,4));
+        Rectangle(AdBounds(r.Right-4,r.Top,4,4));
+        Rectangle(AdBounds(r.Right-4,r.Bottom-4,4,4));
       end;
       if Grid then
       begin
@@ -672,9 +666,9 @@ begin
         begin
           for ay := 0 to round(Height) div FGridY do
           begin
-            PlotPixel((r.Left div FGridX)*FGridX + ax*FGridX,
-                      (r.Top  div FGridY)*FGridY + ay*FGridY,
-                      ad_ARGB(64,128,128,128))
+//            PlotPixel((r.Left div FGridX)*FGridX + ax*FGridX,
+//                      (r.Top  div FGridY)*FGridY + ay*FGridY,
+//                      ad_ARGB(64,128,128,128))
           end;
         end;
       end;
@@ -748,22 +742,22 @@ begin
   end;
 end;
 
-function TAdComponent.GetBoundsRect: TRect;
-var rect:TRect;
+function TAdComponent.GetBoundsRect: TAdRect;
+var rect:TAdRect;
 begin
   if FParent = nil then
   begin
-    result := Bounds(round(FX),round(FY),round(FWidth),round(FHeight));
+    result := AdBounds(round(FX),round(FY),round(FWidth),round(FHeight));
   end
   else
   begin
     rect := FParent.ClientRect;
-    result := Bounds(rect.Left+round(FX),rect.Top+round(FY),round(FWidth),round(FHeight));
+    result := AdBounds(rect.Left+round(FX),rect.Top+round(FY),round(FWidth),round(FHeight));
   end;
 end;
 
-function TAdComponent.GetClientRect: TRect;
-var rect:TRect;
+function TAdComponent.GetClientRect: TAdRect;
+var rect:TAdRect;
 begin
   rect := GetBoundsRect;
   result.Left := rect.Left + FSpacerLeft;
@@ -835,42 +829,53 @@ end;
 function TAdComponent.GetFont: TAdFont;
 begin
   result := FFont;
-  if result = nil then
-  begin
-    result := AdDraw.Canvas.Font;
-  end;
 end;
 
 procedure TAdComponent.SetFont(Value: TAdFont);
 var
   i: Integer;
-begin
-  FFont := Value;
-  FFontFromCollection := (FFonts <> nil) and (FFonts.IndexOf(Value) <> -1);  
+begin  
+  if FFont <> nil then
+  begin
+    if Value <> nil then
+    begin
+      FFont.Assign(Value);
+      i := Fonts.IndexOf(Value);
+      if i >= 0 then
+        FFontName := Fonts.Names[i];
+    end
+    else
+    begin
+      FFont.Assign(AdDraw.Canvas.Font);
+    end;              
+  end;
   for i := 0 to Components.Count - 1 do
   begin
-    Components[i].Font := FFont;
-  end;
+    Components[i].Font := Value;
+  end; 
 end;
 
 procedure TAdComponent.SetFontColor;
 begin
-  if Font.Color <> FFontColor then
-  begin
-    Font.Color := FFontColor;
-  end;
+  FFont.Color := ColorToAdColor(FFontColor);
 end;
 
-procedure TAdComponent.SetFonts(Value: TAdFontCollection);
+procedure TAdComponent.SetFontName(Value: string);
+begin
+  FFontName := Value;
+  Font := Fonts.Font[value];
+end;
+
+procedure TAdComponent.SetFonts(Value: TAdFontList);
 var
   i:integer;
 begin
   FFonts := Value;
-  FFontFromCollection := (FFonts <> nil) and (FFonts.IndexOf(Value) <> -1);
   for i := 0 to Components.Count - 1 do
   begin
-    Components[i].Fonts := FFonts;
+    Components[i].Fonts := Value;
   end;
+  if FontName <> '' then FontName := FFontName;
 end;
 
 procedure TAdComponent.SetGrid(Value: boolean);
@@ -966,17 +971,6 @@ end;
 procedure TAdComponent.SetName(Value: string);
 begin
   FName := GetUniqueName(Value, false);
-end;
-
-procedure TAdComponent.SetSaveFont(Value: boolean);
-var
-  i:integer;
-begin
-  FSaveFont := Value;
-  for i := 0 to Components.Count - 1 do
-  begin
-    Components[i].SaveFont := Value;
-  end;
 end;
 
 procedure TAdComponent.SetSkin(Value: TAdSkin);
@@ -1153,7 +1147,7 @@ begin
   result := result and (not FLockEvents);
 end;
 
-function TAdComponent.ClientToScreen(p: TPoint): TPoint;
+function TAdComponent.ClientToScreen(p: TAdPoint): TAdPoint;
 begin
   with result do
   begin
@@ -1162,7 +1156,7 @@ begin
   end;
 end;
 
-function TAdComponent.ScreenToClient(p: TPoint): TPoint;
+function TAdComponent.ScreenToClient(p: TAdPoint): TAdPoint;
 begin
   with result do
   begin
@@ -1375,7 +1369,7 @@ begin
 end;
 
 function TAdComponent.MouseWheel(Shift: TShiftState; WheelDelta: Integer;
-  MousePos: TPoint; var Handled: Boolean):boolean;
+  MousePos: TAdPoint; var Handled: Boolean):boolean;
 var clicked:boolean;
     i:integer;
 begin
@@ -1528,7 +1522,7 @@ begin
 end;
 
 function TAdComponent.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer;
-  MousePos: TPoint; var Handled: Boolean):boolean;
+  MousePos: TAdPoint; var Handled: Boolean):boolean;
 begin
   result := false;
   if assigned(OnMouseWheel) then OnMouseWheel(self,shift,wheeldelta,mousepos,handled);
@@ -1545,13 +1539,13 @@ begin
   result := drNone;
   w := round(Width);
   h := round(Height);
-  if InRect(AX,AY,rect(0,0,w,h)) then
+  if InRect(AX,AY,AdRect(0,0,w,h)) then
   begin
     result := drMiddle;
-    if InRect(AX,AY,rect(0,0,4,4)) then result := drLeftTop;
-    if InRect(AX,AY,rect(w-4,0,w,4)) then result := drRightTop;
-    if InRect(AX,AY,rect(0,h-4,4,h)) then result := drLeftBottom;
-    if InRect(AX,AY,rect(w-4,h-4,w,h)) then result := drRightBottom;
+    if InRect(AX,AY,AdRect(0,0,4,4)) then result := drLeftTop;
+    if InRect(AX,AY,AdRect(w-4,0,w,4)) then result := drRightTop;
+    if InRect(AX,AY,AdRect(0,h-4,4,h)) then result := drLeftBottom;
+    if InRect(AX,AY,AdRect(w-4,h-4,w,h)) then result := drRightBottom;
   end;
 end;
 
@@ -1913,11 +1907,10 @@ begin
 
   FOwnHintWnd := true;
   FHintWnd := TAdHint.Create(AdDraw);
-  SaveFont := true;
+  SaveFonts := true;
 
   FOwnFonts := true;
-  FFonts := TAdFontCollection.Create(AdDraw);
-  FFonts.SaveOnlyMetadata := true;
+  FFonts := TAdFontList.Create(AdDraw.AdAppl);
 end;
 
 destructor TAdGUI.Destroy;
@@ -1948,23 +1941,20 @@ procedure TAdGUI.LoadFromXML(aroot: TJvSimpleXMLElem);
 var
   ms:TMemoryStream;
 begin
-  if aroot.Properties.Value('fonts','') <> '' then
-  begin
-    if (FFonts <> nil) and FOwnFonts then
-    begin
-      FFonts.Free;
-    end;
-    FFonts := TAdFontCollection.Create(AdDraw);
-    FOwnFonts := true;
-    FSaveFont := true;
+  inherited;
 
+  if FOwnFonts then
+  begin
     ms := TMemoryStream.Create;
-    ReadStreamFromString(ms,aroot.Properties.Value('fonts',''));
-    ms.Position := 0;
-    FFonts.LoadFromStream(ms);
+    ReadStream(ms,aroot,'fontdata');
+    if ms.Size > 0 then
+    begin
+      ms.Position := 0;
+      FFonts.LoadFromStream(ms);
+      Fonts := FFonts;
+    end;
     ms.Free;
   end;
-  inherited;
 end;
 
 function TAdGUI.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
@@ -1972,12 +1962,11 @@ var
   ms:TMemoryStream;
 begin
   result := inherited SaveToXML(aroot);
-  if SaveFont and (Fonts <> nil) then
+  if (FFonts <> nil) and (FSaveFonts) then
   begin
     ms := TMemoryStream.Create;
     FFonts.SaveToStream(ms);
-    ms.Position := 0;
-    result.Properties.Add('fonts',WriteStreamToString(ms));
+    WriteStream(ms,result,'fontdata');
     ms.Free;
   end;
 end;
@@ -1986,16 +1975,6 @@ procedure TAdGUI.SetCurrentCursor(Value: string);
 begin
   inherited;
   Cursors.CurrentCursor := Value;
-end;
-
-procedure TAdGUI.SetFonts(Value: TAdFontCollection);
-begin
-  if FOwnFonts then
-  begin
-    FFonts.Free;
-    FOwnFonts := false;
-  end;
-  inherited;
 end;
 
 procedure TAdGUI.SetHintWnd(Value: TAdHint);
@@ -2062,8 +2041,7 @@ end;
 
 procedure TAdHint.Draw;
 var Width,Height:integer;
-    tmp1:byte;
-    tmp2:longint;
+    tmp2:TAndorraColor;
 begin
   if Visible then
   begin
@@ -2077,13 +2055,10 @@ begin
       Brush.Color := ad_ARGB(round(FCurrentAlpha),GetRValue(Color),GetGValue(Color),GetBValue(Color));
       Rectangle(FX,FY,FX+Width+4,FY+Height+4);
 
-      tmp1 := Font.Alpha;
       tmp2 := Font.Color;
-      Font.Color := FTextColor;
-      Font.Alpha := round(FCurrentAlpha);
+      Font.Color := Ad_ARGB(round(FCurrentAlpha), 0, 0, 0);
 
       Textout(FX+2,FY+2,FText);
-      Font.Alpha := tmp1;
       Font.Color := tmp2;
     end;
   end;
@@ -2150,10 +2125,24 @@ begin
   FFadeIn := false;
 end;
 
+function StringToGUIColor(const Ident: string; var Int: Longint): Boolean;
+begin
+  result := true;
+  Int := StrToIntDef(Ident, 0);
+end;
+
+function GUIColorToString(Int: Longint; var Ident: string): Boolean;
+begin
+  result := true;
+  Ident := '$'+IntToHex(Int, 6);
+end;
+
 initialization
   RegisteredComponents := TStringList.Create;
   RegisterComponent(TAdComponent,'');
   RegisterComponent(TAdGUI,'');
+
+  RegisterIntegerConsts(TypeInfo(TGUIColor), StringToGUIColor, GUIColorToString);
 
 finalization
   RegisteredComponents.Free;

@@ -18,7 +18,9 @@ unit AdSkin;
 
 interface
 
-uses SysUtils, Classes, AdDraws, AdClasses, JvSimpleXML, AdXML, AdList;
+uses
+  SysUtils, Classes, AdDraws, AdClasses, JvSimpleXML, AdXML, AdList, AdTypes,
+  AdVCLFormats, AdSimpleCompressors;
 
 type
   //Defines the type of drawing elements. Currently only Stretch is supported.
@@ -204,8 +206,8 @@ begin
             begin
               Self.Images[Images[AState]].StretchBltAlpha(
                 FParent,
-                rect(ImgSrcX1,ImgSrcY1,ImgSrcX2,ImgSrcY2),
-                rect(AX+X1,AY+Y1,AX+X2,AY+Y2),0.5,0.5,0,Alpha);
+                AdRect(ImgSrcX1,ImgSrcY1,ImgSrcX2,ImgSrcY2),
+                AdRect(AX+X1,AY+Y1,AX+X2,AY+Y2),0.5,0.5,0,Alpha);
             end;
           end;
 

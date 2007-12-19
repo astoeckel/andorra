@@ -3,14 +3,13 @@ unit Main;
 interface
 
 uses
-  Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses, AdPNG,
-  Controls, ExtCtrls, AdSetupDlg;
+  Windows, Dialogs, SysUtils, Graphics, Classes, Forms,
+  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter;
 
 type
   TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure FormResize(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -73,15 +72,6 @@ begin
   AdImageList1.Free;
   AdPerCounter.Free;
   AdDraw.Free;
-end;
-
-procedure TForm1.FormResize(Sender: TObject);
-begin
-  if AdDraw.Initialized then
-  begin
-    AdDraw.Finalize;
-    AdDraw.Initialize;
-  end;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);

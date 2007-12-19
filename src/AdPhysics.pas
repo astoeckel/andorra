@@ -28,7 +28,7 @@ unit AdPhysics;
 
 interface
 
-uses AdClasses, AdDraws, AdSprites, NewtonImport, Classes, {$INCLUDE AdTypes.inc}, Math;
+uses AdClasses, AdDraws, AdSprites, NewtonImport, Classes, AdTypes, Math;
 
 type
   //Contains data about a physical element.
@@ -472,7 +472,7 @@ begin
 end;
 
 procedure TPhysicalSprite.ActivateNeighbours;
-var r:TRect;
+var r:TAdRect;
     ax,ay,i:integer;
     List:TSpriteList;
 begin

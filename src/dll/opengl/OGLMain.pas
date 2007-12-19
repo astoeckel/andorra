@@ -18,17 +18,9 @@
 
 unit OGLMain;
 
-{$IFDEF FPC}
-  {$IFNDEF WIN32}
-    {$DEFINE AdLinux}
-  {$ENDIF}
-{$ENDIF}
-
 interface
 
-uses AdClasses, Classes, Math, dglOpenGL,
-     {$IFDEF AdLinux}glx, gtk, gdk, x, xlib, xutil, Controls;
-     {$ELSE}Windows;{$ENDIF}
+uses AdClasses, AdTypes, AdBitmapClass, Math, dglOpenGL, Windows;
 
 type
   TOGLColor = record
@@ -41,21 +33,14 @@ type
 
   TOGLApplication = class(TAd2DApplication)
     private
-      {$IFDEF AdLinux}
-      {FRC: GLXContext;
-      FDisplay: xlib.PDisplay;
-      FWindow: x.TWindow;
-      FGLWin: x.TWindow;}
-      {$ELSE}
       FDC : HDC;
       FRC : HGLRC;
       FWnd: LongWord;
-      {$ENDIF}
       FLastTexture:TAd2dTexture;
     protected
       procedure SetAmbientLight(AValue:TAndorraColor);override;
       procedure SetOptions(AValue:TAdOptions);override;
-      procedure SetViewPort(AValue:TRect);override;
+      procedure SetViewPort(AValue:TAdRect);override;
     public
       function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
@@ -69,8 +54,6 @@ type
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
-
-      procedure SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;
@@ -102,14 +85,16 @@ type
 
   TOGLBitmapTexture = class(TAd2DBitmapTexture)
     private
+      function GetFilter(AFilter:TAd2dTextureFilter):Integer;
+      function GetMipFilter(AFilter:TAd2dTextureFilter):Integer;
     protected
       function GetLoaded:boolean;override;
     public
       constructor Create(AParent:TOGLApplication);
       destructor Destroy;override;
       procedure FlushTexture;override;
-      procedure LoadFromBitmap(ABmp:TAdBitmap;ABitDepth:byte=32);override;
-      procedure SaveToBitmap(ABmp:TAdBitmap);override;
+      procedure LoadFromBitmap(ABmp:TAd2dBitmap; AParams:TAd2dBitmapTextureParameters);override;
+      procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
   end;
   
   TOGLLight = class(TAd2DLight)
@@ -148,20 +133,9 @@ end;    }
 
 function TOGLApplication.Initialize(AWnd: LongWord; AOptions: TAdOptions;
   ADisplay: TAdDisplay):boolean;
-{$IFDEF AdLinux}
-var
-  GWindow: gdk.PGdkWindow;
-  XVInfo: PXVisualInfo;
-  AttrList: array [0..12] of Integer;
-  WinAttr: TXSetWindowAttributes;
-  CMap: TColormap;
-{$ENDIF}
 begin
   result := false;
   WriteLog(ltNone,'Try to init Andorra OpenGL Plugin.');
-  {$IFDEF AdLinux}
-
-  {$ELSE}
   if InitOpenGL then
   begin
     FOptions := AOptions;
@@ -190,21 +164,15 @@ begin
   else
   begin
     WriteLog(ltFatalError,'Error while initializing OpenGL');
-  end;  
-  {$ENDIF}
+  end;
 end;
 
 procedure TOGLApplication.Finalize;
 begin
   WriteLog(ltNone,'Finalize Andorra OpenGL Plugin');
-  {$IFDEF AdLinux}
-  //glXDestroyContext(FDisplay, FRC);
-  //XDestroyWindow(FDisplay, FGLWin);
-  {$ELSE}
   DeactivateRenderingContext;
   DestroyRenderingContext(FRC);
   ReleaseDC(FWnd, FDC);
-  {$ENDIF}
 end;
 
 procedure TOGLApplication.SetOptions(AValue: TAdOptions);
@@ -262,7 +230,7 @@ begin
   glLoadMatrixf(@AMatView);
 end;
 
-procedure TOGLApplication.SetViewPort(AValue: TRect);
+procedure TOGLApplication.SetViewPort(AValue: TAdRect);
 begin
   inherited;
   glViewPort(AValue.Left,FHeight - AValue.Top - (AValue.Bottom-AValue.Top),AValue.Right-AValue.Left,AValue.Bottom-AValue.Top);
@@ -272,22 +240,6 @@ procedure TOGLApplication.GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatri
 begin
   glGetFloatv(GL_PROJECTION_MATRIX, @AMatProj);
   glGetFloatv(GL_MODELVIEW_MATRIX, @AMatView);
-end;
-
-procedure TOGLApplication.SetTextureFilter(AFilterMode:TAd2DFilterMode;AFilter:TAd2DTextureFilter);
-var aval:DWORD;
-begin
-  case AFilter of
-    atLinear:aval := GL_LINEAR;
-    atAnisotropic:aval := GL_LINEAR;
-  else
-    aval := GL_NEAREST;
-  end;
-  case AFilterMode of
-    fmMagFilter:glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, aval);
-    fmMinFilter:glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, aval);
-    //fmMipFilter:glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIP_FILTER, aval);
-  end;
 end;
 
 {procedure TOGLApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
@@ -307,14 +259,7 @@ end;
 
 procedure TOGLApplication.Flip;
 begin
-  {$IFDEF AdLinux}
-  //if not (FGLWin=0) then
-  //begin
-  //  glXSwapBuffers(FDisplay, FGLWin);
-  //end;
-  {$ELSE}
   SwapBuffers(FDC);
-  {$ENDIF}
 end;
 
 procedure TOGLApplication.ClearSurface(AColor: TAndorraColor);
@@ -525,9 +470,27 @@ begin
   end;
 end;
 
+function TOGLBitmapTexture.GetFilter(AFilter: TAd2dTextureFilter): Integer;
+begin
+  result := GL_NEAREST;
+  case AFilter of
+    atLinear: result := GL_LINEAR;
+    atAnisotropic: result := GL_LINEAR;
+  end;
+end;
+
 function TOGLBitmapTexture.GetLoaded: boolean;
 begin
   result := FTexture <> nil;
+end;
+
+function TOGLBitmapTexture.GetMipFilter(AFilter: TAd2dTextureFilter): Integer;
+begin
+  result := GL_NEAREST_MIPMAP_LINEAR;
+  case AFilter of
+    atLinear: result := GL_LINEAR_MIPMAP_LINEAR;
+    atAnisotropic: result := GL_LINEAR_MIPMAP_LINEAR;
+  end;
 end;
 
 function IsPowerOfTwo(Value: Cardinal): Boolean;
@@ -547,7 +510,7 @@ begin
   Result := (R8ToR4(b) shl 12) or (R8ToR4(g) shl 8) or (R8ToR4(r) shl 4) or (R8ToR4(a));
 end;
 
-procedure TOGLBitmapTexture.LoadFromBitmap(ABmp: TAdBitmap; ABitDepth: byte);
+procedure TOGLBitmapTexture.LoadFromBitmap(ABmp: TAd2dBitmap; AParams:TAd2dBitmapTextureParameters);
 var
   mem:PByte;
   w,h,x,y:integer;
@@ -566,30 +529,29 @@ begin
 
   FWidth := w;
   FHeight := h;
-  FBitCount := ABitDepth;
+  FBitCount := AParams.BitDepth;
   FBaseWidth := ABmp.Width;
   FBaseHeight := ABmp.Height;
 
-  GetMem(mem,w*h*ABitDepth div 8);
+  GetMem(mem,w*h*AParams.BitDepth div 8);
   try
-    if ABitDepth = 32 then
+    if AParams.BitDepth = 32 then
     begin
       cur32 := PLongWord(mem);
       pnt32 := ABmp.ScanLine;
       for y := 0 to ABmp.Height - 1 do
       begin
-        for x := 0 to w - 1 do
-        begin
-          if (x < ABmp.Width) then
-          begin
-            cur32^ :=  (pnt32^.a shl 24) or (pnt32^.b shl 16) or (pnt32^.g shl 8) or (pnt32^.r);
-            inc(pnt32);
-          end;
-          inc(cur32);
-        end;
+        Move(pnt32^, cur32^, ABmp.Width * 4);
+        inc(pnt32, ABmp.Width);
+        inc(cur32, w);
       end;
-      
+
       glTexImage2D(	GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, mem);
+
+      if AParams.UseMipMaps then
+        gluBuild2DMipmaps(GL_TEXTURE_2D, 4, w, h, GL_BGRA, GL_UNSIGNED_BYTE, mem)
+      else
+        glTexImage2D(	GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, mem);
     end
     else
     begin
@@ -611,14 +573,18 @@ begin
       glTexImage2D(	GL_TEXTURE_2D, 0, GL_RGBA16, w, h, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, mem);
     end;
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GetFilter(AParams.MinFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GetFilter(AParams.MagFilter));
+
+    if AParams.UseMipMaps then
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GetMipFilter(AParams.MipFilter));
+
   finally
-    FreeMem(mem,w*h*ABitDepth div 8);
+    FreeMem(mem,w*h*AParams.BitDepth div 8);
   end;
 end;
 
-procedure TOGLBitmapTexture.SaveToBitmap(ABmp: TAdBitmap);
+procedure TOGLBitmapTexture.SaveToBitmap(ABmp: TAd2dBitmap);
 var
   mem, cur1, cur2: PLongWord;
   x,y:integer;

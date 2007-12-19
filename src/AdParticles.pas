@@ -23,7 +23,7 @@ unit AdParticles;
 
 interface
 
-uses SysUtils, {$INCLUDE AdTypes.inc}, Classes, AdDraws, AdClasses, AdList;
+uses SysUtils, AdTypes, Classes, AdDraws, AdClasses, AdList;
 
 type
 
@@ -84,7 +84,7 @@ type
       FParticles:TAdParticleList;
       FDefault:TAdParticle;
       procedure SetTexture(AValue:TAdTexture);
-      function GetBoundsRect:TRect;
+      function GetBoundsRect:TAdRect;
     protected
     public
       //Creates the particle system
@@ -113,7 +113,7 @@ type
       //A link to the system's image list.
       property Images:TAdImageList read FImages;
       //The relative rect of all particles
-      property BoundsRect:TRect read GetBoundsRect;
+      property BoundsRect:TAdRect read GetBoundsRect;
       //A particle which settings are automaticly copied when creating new particles
       property DefaultParticle:TAdParticle read FDefault;
   end;
@@ -142,7 +142,7 @@ type
       FBlendMode:TAd2DBlendMode;
       FSpeedVar:double;
       FName:ShortString;
-      function GetBoundsRect:TRect;
+      function GetBoundsRect:TAdRect;
       function GetValue(StartPos,EndPos,Max,Pos:double):double;
     protected
       function GetImage:TAdImage;virtual;
@@ -188,7 +188,7 @@ type
       //The direction vector of the particle
       property Dir:TAdVector read FDir write FDir;
       //The relative rectangle of the particle system
-      property BoundsRect:TRect read GetBoundsRect;
+      property BoundsRect:TAdRect read GetBoundsRect;
       //The lifetime of a particle
       property LifeTime:double read FLifeTime write FLifeTime;
       //The variation of the lifetime in percent.
@@ -450,7 +450,7 @@ begin
   end;
 end;
 
-function TAdParticleSystem.GetBoundsRect: TRect;
+function TAdParticleSystem.GetBoundsRect: TAdRect;
 var i:integer;
 begin
   for i := 0 to FParticles.Count - 1 do
@@ -534,15 +534,15 @@ begin
   FDeaded := true;
 end;
 
-function MoveRect(ARect:TRect;X,Y:double):TRect;
+function MoveRect(ARect:TAdRect;X,Y:double):TAdRect;
 begin
-  result := Rect(Round(ARect.Left+X),Round(ARect.Top+Y),
-                 Round(ARect.Right+X),Round(ARect.Bottom+Y));
+  result := AdRect(Round(ARect.Left+X),Round(ARect.Top+Y),
+                   Round(ARect.Right+X),Round(ARect.Bottom+Y));
 end;
 
 procedure TAdParticle.DoDraw(AX, AY: double);
 var aimg:TAdImage;
-    arect:TRect;
+    arect:TAdRect;
     w,h:integer;
 begin
   if (not FDeaded) and (BlendMode <> bmMask) then
@@ -571,7 +571,7 @@ end;
 
 procedure TAdParticle.DoPreDraw(AX, AY: double);
 var aimg:TAdImage;
-    arect:TRect;
+    arect:TAdRect;
     w,h:integer;
 begin
   if (FDrawMask or (BlendMode = bmMask)) and not FDeaded then
@@ -610,14 +610,14 @@ begin
   end;
 end;
 
-function TAdParticle.GetBoundsRect: TRect;
+function TAdParticle.GetBoundsRect: TAdRect;
 var s:double;
 begin
   s := GetValue(SizeStart,SizeEnd,LifeTime,FLifedTime);
-  result := Rect(round(FX-(Parent.Texture.Texture.BaseWidth)*s / 2),
-                 round(FY-(Parent.Texture.Texture.BaseHeight)*s / 2),
-                 round(FX+(Parent.Texture.Texture.BaseWidth)*s / 2),
-                 round(FY+(Parent.Texture.Texture.BaseHeight)*s / 2));
+  result := AdRect(round(FX-(Parent.Texture.Texture.BaseWidth)*s / 2),
+                   round(FY-(Parent.Texture.Texture.BaseHeight)*s / 2),
+                   round(FX+(Parent.Texture.Texture.BaseWidth)*s / 2),
+                   round(FY+(Parent.Texture.Texture.BaseHeight)*s / 2));
 end;
 
 function TAdParticle.GetImage: TAdImage;

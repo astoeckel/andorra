@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, AdDraws, AdClasses, VarDlg, ExtDlgs, Buttons;
+  Dialogs, StdCtrls, ExtCtrls, AdDraws, AdClasses, VarDlg, ExtDlgs, Buttons,
+  AdBitmap, AdTypes;
 
 type
   TMyImage = class(TImage)
@@ -63,7 +64,7 @@ type
     ChangedImages:boolean;
     procedure ViewCompressors;
     procedure MakeMask(c:TColor;add:boolean);
-    function InsprectImage(AImage:TAdImage):TModalResult;
+    function InspectImage(AImage:TAdImage):TModalResult;
     { Public-Deklarationen }
   end;
 
@@ -162,7 +163,7 @@ begin
   end;
 end;
 
-function TSettings.InsprectImage(AImage: TAdImage):TModalResult;
+function TSettings.InspectImage(AImage: TAdImage):TModalResult;
 var bmp:TBitmap;
     adbmp:TAdBitmap;
     bits:byte;
@@ -173,7 +174,8 @@ begin
     16:Radiogroup1.ItemIndex := 0;
     32:Radiogroup1.ItemIndex := 1;
   end;
-  ListBox1.ItemIndex := ListBox1.Items.IndexOf(AImage.Texture.Compressor.ClassName);
+  if AImage.Texture.Compressor <> nil then  
+    ListBox1.ItemIndex := ListBox1.Items.IndexOf(AImage.Texture.Compressor.ClassName);
   Edit2.Text := inttostr(AImage.PatternWidth);
   Edit3.Text := inttostr(AImage.PatternHeight);
   Edit4.Text := inttostr(AImage.SkipWidth);
@@ -185,9 +187,9 @@ begin
     adbmp := TAdBitmap.Create;
     adbmp.ReserveMemory(AImage.Texture.Texture.BaseWidth,AImage.Texture.Texture.BaseHeight);
     AImage.Texture.Texture.SaveToBitmap(adbmp);
-    adbmp.AssignToBitmap(bmp);
+    adbmp.AssignTo(bmp);
     Image1.Picture.Assign(bmp);
-    adbmp.AssignAlphaChannelToBitmap(bmp);
+    adbmp.AssignAlphaChannelTo(bmp);
     Image2.Picture.Assign(bmp);
     bmp.Free;
     adbmp.Free;
@@ -223,7 +225,7 @@ begin
       bits := AImage.Texture.BitDepth;
     end;
 
-    AImage.Texture.Compressor := TCompressorClass(GetClass(ListBox1.Items[ListBox1.ItemIndex]));
+    AImage.Texture.Compressor := TAdGraphicCompressorClass(GetClass(ListBox1.Items[ListBox1.ItemIndex]));
     AImage.PatternWidth := strtointdef(Edit2.Text,0);
     AImage.PatternHeight := strtointdef(Edit3.Text,0);
     AImage.SkipWidth := strtointdef(Edit4.Text,0);
@@ -231,13 +233,12 @@ begin
     AImage.PatternStop := strtointdef(Edit6.Text,0);
 
 
-
     if ChangedImages then
     begin
       adbmp := TAdBitmap.Create;
-      adbmp.AssignBitmap(Image1.Picture.Bitmap);
+      adbmp.Assign(Image1.Picture.Bitmap);
       adbmp.AssignAlphaChannel(Image2.Picture.Bitmap);
-      AImage.Texture.Texture.LoadFromBitmap(AdBmp,bits);
+      AImage.Texture.Texture.LoadFromBitmap(AdBmp,AImage.Parent.GetTextureParams(bits));
       adbmp.Free;
     end;
     AImage.Restore;
@@ -307,9 +308,9 @@ procedure TSettings.ViewCompressors;
 var i:integer;
 begin
   ListBox1.Clear;
-  for i := 0 to RegisteredCompressors.Count - 1 do
+  for i := 0 to RegisteredGraphicCompressors.Count - 1 do
   begin
-    ListBox1.Items.Add(RegisteredCompressors[i]);
+    ListBox1.Items.Add(RegisteredGraphicCompressors.ValueFromIndex[i]);
   end;
   ListBox1.ItemIndex := 0;
 end;
