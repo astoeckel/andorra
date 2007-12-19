@@ -666,11 +666,12 @@ begin
         begin
           for ay := 0 to round(Height) div FGridY do
           begin
-//            PlotPixel((r.Left div FGridX)*FGridX + ax*FGridX,
-//                      (r.Top  div FGridY)*FGridY + ay*FGridY,
-//                      ad_ARGB(64,128,128,128))
+            PlotPixel((r.Left div FGridX)*FGridX + ax*FGridX,
+                      (r.Top  div FGridY)*FGridY + ay*FGridY,
+                      ad_ARGB(64,128,128,128))
           end;
         end;
+        Release;
       end;
       if Grid or Focused then Release;
     end;
