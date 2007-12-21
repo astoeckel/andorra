@@ -426,7 +426,7 @@ begin
 
   FLog := TAdLog.Create;
   FLogFileName := 'adlog.txt';
-  FTextureFilter := atLinear; 
+  FTextureFilter := atPoint; 
   FSurfaceEventList := TSurfaceEventList.Create;
 
   AutoLoadLog := true;

@@ -167,7 +167,7 @@ begin
     with params do
     begin
       BitDepth := 32;
-      UseMipmaps := true;
+      UseMipmaps := false;
       MinFilter := atPoint;
       MagFilter := atPoint;
       MipFilter := atPoint;

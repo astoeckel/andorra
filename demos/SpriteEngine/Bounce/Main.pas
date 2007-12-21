@@ -107,8 +107,8 @@ begin
 
   if AdSetupDlg.Execute then
   begin
-    AdDraw.Options := AdDraw.Options + [doLights];
-    AdDraw.TextureFilter := atLinear;
+    AdDraw.Options := AdDraw.Options + [doLights, doMipMaps];
+    AdDraw.TextureFilter := atAnisotropic;
     if AdDraw.Initialize then
     begin
       AdDraw.AmbientColor := RGB(96,96,96);
@@ -220,6 +220,7 @@ end;
 
 procedure TForm1.LoadImages;
 begin
+  AdDraw.TextureFilter := atLinear;
   with AdPictureCollection.Add('wall')do
   begin
     Texture.LoadGraphicFromFile(path+'texture.bmp',false,clWhite);
@@ -236,6 +237,7 @@ begin
     PatternWidth := 32;
     PatternHeight := 32;
   end;
+  AdDraw.TextureFilter := atPoint;
   with AdPictureCollection.Add('stars')do
   begin
     Texture.LoadGraphicFromFile(path+'stars.png',false,clWhite);

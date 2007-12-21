@@ -100,7 +100,6 @@ end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 var
-  i:integer;
   mat1,mat2:TAdMatrix;
 begin
   if AdDraw1.CanDraw then

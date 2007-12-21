@@ -119,7 +119,7 @@
 			<Linker Name="ExeDescription"></Linker>
 		</Linker>
 		<Directories>
-			<Directories Name="OutputDir">..\..\..\bin</Directories>
+			<Directories Name="OutputDir">..\..\..\bin\</Directories>
 			<Directories Name="UnitOutputDir">..\..\..\src\dcu\</Directories>
 			<Directories Name="PackageDLLOutputDir"></Directories>
 			<Directories Name="PackageDCPOutputDir"></Directories>

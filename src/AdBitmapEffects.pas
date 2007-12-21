@@ -33,8 +33,11 @@ type
     private
       FRadius: Single;
     public
-      property Radius:Single read FRadius write FRadius;
+//      con
+
       procedure AssignEffect(Dest:TAd2dBitmap);override;
+
+      property Radius:Single read FRadius write FRadius;
   end;
 
 

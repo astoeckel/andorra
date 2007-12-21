@@ -5,12 +5,12 @@
 			<Option Name="Personality">Delphi.Personality</Option>
 			<Option Name="ProjectType"></Option>
 			<Option Name="Version">1.0</Option>
-			<Option Name="GUID">{542D5D1E-F14D-4CBB-BE72-D254D7EC9FAA}</Option>
+			<Option Name="GUID">{EE913A44-CC25-4ADB-B6A0-A9AA20C43138}</Option>
 		</Option>
 	</PersonalityInfo>
 	<Delphi.Personality>
 		<Source>
-			<Source Name="MainSource">TextDemo.dpr</Source>
+			<Source Name="MainSource">MovingPlanet.dpr</Source>
 		</Source>
 		<FileVersion>
 			<FileVersion Name="Version">7.0</FileVersion>

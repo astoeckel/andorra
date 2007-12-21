@@ -162,6 +162,9 @@ type
       {Gives all sprites the posibility to restore their setings - eg. for Lights in Splitscreenmode}
       procedure Restore;
 
+      {Deletes all sprites}
+      procedure Clear;
+
       {Checks whether this sprite collides with another sprite in the spriteengine.  Returns the count of sprites.}
       function Collision:integer;
       {Checks whether this sprite collides to the sprite, that wants to know whether it collides with another sprite.}
@@ -512,16 +515,23 @@ begin
 end;
 
 destructor TSprite.Destroy;
-var i:integer;
 begin
-  for i := 0 to FList.Count - 1 do
-  begin
-    FList[i].Free;
-  end;    
+  Clear;
   FList.Free;
   FSpriteField.Free;
   inherited Create;
 end;
+
+procedure TSprite.Clear;
+var
+  i:integer;
+begin
+  for i := 0 to FList.Count - 1 do
+  begin
+    FList[i].Free;
+  end;
+  FList.Clear;
+end; 
 
 function TSprite.GetBoundsRect: TAdRect;
 begin
