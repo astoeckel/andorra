@@ -232,7 +232,7 @@ begin
     adbmp := TAdBitmap.Create;
     adbmp.Assign(bmp);
     adbmp.AssignAlphaChannel(bmp);
-    AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
+    AdImg1.Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
     adbmp.Free;
     AdImg1.Color := clWhite;
     AdImg1.Restore;
@@ -477,7 +477,7 @@ begin
     AdImg1 := TAdImage.Create(AdDraw1);
     adbmp.Assign(bmp);
     adbmp.AssignAlphaChannel(bmp);
-    AdImg1.Texture.Texture.LoadFromBitmap(adbmp);
+    AdImg1.Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
     AdImg1.Color := clWhite;
     AdImg1.Restore;
     adbmp.Free;

@@ -6,60 +6,65 @@ This roadmap may change from time to time...
 Project Alpha State
 
 Version 0.1 (Releases: None)
-  Plugin side:
-    - Loading and saving of Textures [DONE]
-    - Initializing [DONE]
-    - Finalizing [DONE]
-    - Using and drawing of Index- and Vertexbuffers [DONE]
-    - Lights [DONE]
-  Application side:
-    - A plugin loader [DONE]
-    - A simple API for creating an application [DONE]
-    - A simple API for creating meshs/images [DONE]
-    - A simple API for loading and saving textures [DONE]
-    - A image/mesh list [DONE]
-    - A sprite engine [DONE]
-    - A particle system engine [DONE]
-    
+Plugin side:
+- Loading and saving of Textures [DONE]
+- Initializing [DONE]
+- Finalizing [DONE]
+- Using and drawing of Index- and Vertexbuffers [DONE]
+- Lights [DONE]
+Application side:
+- A plugin loader [DONE]
+- A simple API for creating an application [DONE]
+- A simple API for creating meshs/images [DONE]
+- A simple API for loading and saving textures [DONE]
+- A image/mesh list [DONE]
+- A sprite engine [DONE]
+- A particle system engine [DONE]
+
 Version 0.1.5 (Releases: BETA)
-  Application side:
-    - Improve SpriteEngine [DONE]
-        
-Version 0.2 (Releases: ALPHA1|ALPHA2|BETA|STABLE)
-  Plugin side:
-    - Transform the view matrix to a 3D view [DONE]
-    - Draw lines [DONE]
-    - Viewports [DONE]
-  Application side:
-    - Canvas [DONE]
-    - GUI [DONE]   
-    - Extended Spriteengine [75%; Zoom works, but rotation doesn't]   
-    
-  With Beta
-    - Improve Demos
-    - Add Terrain Class
-  
-  With Stable:
-    - Linux support
-    - Probably more components
-    - Splitscreen class
-    
-Version 0.2.5 (Releases: BETA|STABLE)
-  Application side:
-    - Load 3D objects [50%]
-    - TGA etc. texture loader and compressor
-    - Expand Newton-Unit
+Application side:
+- Improve SpriteEngine [DONE]
 
-Version 0.3
-  Plugin side:    
-    - Textures as rendertarget
-    - Shader
+Version 0.2 (Releases: ALPHA1|ALPHA2)
+Plugin side:
+- Transform the view matrix to a 3D view [DONE]
+- Draw lines [DONE]
+- Viewports [DONE]
+Application side:
+- Canvas [DONE]
+- GUI [DONE]
 
-Projects Beta State
+Version 0.3 (Releases: BETA|STABLE)
+Plugin side:
+- Move 32Bit bitmaps directly into the texture memory --> Faster [DONE]
+- Create mipmaps [DONE]
+Application side:
+- Rewrite Canvas [DONE]
+- Extended Spriteengine [DONE]
+- Restructure [DONE]
 
-  Planing in progress
-  
-Projects stable state
-  
+Version 0.3.5 (Releases: BETA|STABLE)
+- Write Window/Event manager
+- Linux support
+
+Version 0.4 (Releases: BETA|STABLE)
+Application side:
+- Load 3D objects [50%]
+- TGA etc. texture loader and compressor
+- Expand Newton-Unit
+
+Project Beta State
+
+Version 0.5
+Plugin side:
+- Textures as rendertarget
+- Shader
+
+Version 0.6
+- Animated 3D-Models
+
+Project Stable state
+
 Version 1.0
-  - Everything is done
+- Everything is done
+

@@ -494,15 +494,16 @@ begin
     FHintWnd := FParent.HintWnd;
     Skin := FParent.Skin;
 
+    FFontColor := FParent.FontColor;
+    FFonts := FParent.Fonts;
+    FFontName := '';
+
     FFont := TAdFont.Create(AdDraw.AdAppl);
     Font := FParent.Font;
 
     FGrid := FParent.Grid;
     FGridX := FParent.GridX;
     FGridY := FParent.GridY;
-    FFontColor := FParent.FontColor;
-    FFonts := FParent.Fonts;
-    FFontName := '';
   end;
 
   FAlpha := 255;
