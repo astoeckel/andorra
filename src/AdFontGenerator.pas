@@ -21,10 +21,10 @@ unit AdFontGenerator;
 interface
 
 uses
-  Classes, AdTypes, AdClasses;
+  Classes, AdTypes, AdClasses, AdPersistent;
 
 type
-  TAdFontGenerator = class(TPersistent)
+  TAdFontGenerator = class(TAdPersistent)
     public
       procedure Generate(AData:Pointer;ASize:Cardinal;
         var ASizes:TAdCharSizes; var APatterns: TAdCharPatterns; ATexture:TAd2dBitmapTexture);virtual;abstract;
@@ -43,7 +43,7 @@ implementation
 procedure RegisterFontGeneratorClass(AClass:TAdFontGeneratorClass);
 begin
   RegisteredGenerators.Add(AClass.ClassName);
-  RegisterClass(AClass);
+  AdRegisterClass(AClass);
 end;
 
 initialization

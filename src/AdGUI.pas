@@ -21,7 +21,7 @@ unit AdGUI;
 interface
 
 uses SysUtils, Classes, Controls, JvSimpleXML, AdDraws, AdSkin, AdClasses, AdTypes,
-     AdXML, AdList, AdCanvas, AdFont, AdFontList;
+     AdXML, AdList, AdCanvas, AdFont, AdFontList, AdPersistent;
 
 
 type
@@ -81,7 +81,7 @@ type
       property Items[index:integer]:TAdComponent read GetItem write SetItem; default;
   end;
 
-  TAdComponent = class(TPersistent)
+  TAdComponent = class(TAdPersistent)
     private
       FSkin:TAdSkin;
       FComponents:TAdComponents;
@@ -429,7 +429,7 @@ implementation
 procedure RegisterComponent(AClass:TClass;ACard:string);
 begin
   RegisteredComponents.Add(AClass.ClassName+'='+ACard);
-  RegisterClass(TPersistentClass(AClass));
+  AdRegisterClass(TAdPersistentClass(AClass));
 end;
 
 function InRect(x,y:integer;rect:TAdRect):boolean;
@@ -578,7 +578,7 @@ end;
 procedure TAdComponent.LoadFromXML(aroot: TJvSimpleXMLElem);
 var
   i:integer;
-  cref:TPersistentClass;
+  cref:TAdPersistentClass;
 begin
   Clear;
   
@@ -598,7 +598,7 @@ begin
 
   for i := 0 to aroot.Items.Count - 1 do
   begin
-    cref := GetClass(aroot.Items[i].Name);
+    cref := AdGetClass(aroot.Items[i].Name);
     if cref <> nil then
     begin
       with TAdComponent(TAdComponentClass(cref).Create(self)) do

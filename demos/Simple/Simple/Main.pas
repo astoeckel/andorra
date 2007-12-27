@@ -83,6 +83,12 @@ begin
     AdDraw.ClearSurface(clBlack);
     AdDraw.BeginScene;
 
+    with AdDraw.Canvas do
+    begin
+Font := AdDraw.Fonts.GenerateFont('Comic Sans MS',12,[]);
+Textout(0,0,'Test Text!');
+    end;
+
     AdDraw.EndScene;
     AdDraw.Flip;
   end;

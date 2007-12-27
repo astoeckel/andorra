@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls, AdSkin, AdGUI, AdPNG,
   ExtCtrls, AdGUIConnector, Menus, ClipBrd, JvSimpleXML, ImgList, XMLEdit,
-  AdPerformanceCounter, AdTypes;
+  AdPerformanceCounter, AdTypes, AdPersistent;
 
 type
   TDesignerDlg = class(TForm)
@@ -242,7 +242,7 @@ begin
     ms.Position := 0;
     XML := TJvSimpleXML.Create(nil);
     XML.LoadFromStream(ms);
-    cref := TAdComponentClass(GetClass(XML.Root.Name));
+    cref := TAdComponentClass(AdGetClass(XML.Root.Name));
     if cref <> nil then
     begin
       with TAdComponent(cref.Create(AdGUI.FocusedComponent)) do

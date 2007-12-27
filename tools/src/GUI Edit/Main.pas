@@ -4,8 +4,9 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Menus, ComCtrls, XPMan, Designer, FontCollection, ImgList, Objects, Structure, ExtDlgs,
-  ImageEditor, AdClasses, AdPNG, AdTypes, PngImage, ExtCtrls,
+  Dialogs, Menus, ComCtrls, XPMan, Designer, FontCollection, ImgList, Objects,
+  Structure, ExtDlgs, ImageEditor, AdClasses, AdPNG, AdTypes, PngImage,
+  ExtCtrls, AdPersistent,
 
   //Add all units with components here
   AdGUI, AdComponents;
@@ -105,7 +106,7 @@ implementation
 
 procedure TMainDlg.ToolButtonClick(Sender: TObject);
 begin
-  Designer.AddComponent(TAdComponentClass(GetClass((Sender as TToolButton).Hint)));
+  Designer.AddComponent(TAdComponentClass(AdGetClass((Sender as TToolButton).Hint)));
   SetForegroundWindow(Designer.Handle);
   Saved := false;
 end;

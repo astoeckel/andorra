@@ -18,7 +18,7 @@ unit AdVCLFormats;
 interface
 
 uses
-  Graphics, Classes, AdBitmap, AdTypes;
+  Graphics, Classes, AdBitmap, AdTypes, AdPersistent;
 
 type
   TAdVCLFormat = class(TAdGraphicFormat)
@@ -50,7 +50,7 @@ begin
     begin
       if RegisteredGraphicFormats[i] <> ClassName then
       begin
-        if TAdGraphicFormatClass(GetClass(RegisteredGraphicFormats[i])).SupportsObject(AObj) then
+        if TAdGraphicFormatClass(AdGetClass(RegisteredGraphicFormats[i])).SupportsObject(AObj) then
         begin
           exit;
         end;

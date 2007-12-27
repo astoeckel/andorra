@@ -21,7 +21,7 @@ unit AdFontFactory;
 interface
 
 uses
-  Classes, AdClasses, AdTypes, AdFont, AdFontGenerator, AdContainers;
+  Classes, AdClasses, AdTypes, AdFont, AdFontGenerator, AdContainers, AdPersistent;
 
 type
   TAdFontDataKey = class(TAdMapKey)
@@ -140,7 +140,7 @@ begin
     //An equal font was not found, generate a new one
     for i := 0 to RegisteredGenerators.Count-1 do
     begin
-      cref := TAdFontGeneratorClass(GetClass(RegisteredGenerators[i]));
+      cref := TAdFontGeneratorClass(AdGetClass(RegisteredGenerators[i]));
       if cref <> nil then
       begin
         tmp := cref.Create;

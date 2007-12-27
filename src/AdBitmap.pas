@@ -21,7 +21,7 @@ unit AdBitmap;
 interface
 
 uses
-  SysUtils, Classes, AdTypes, AdBitmapClass;
+  SysUtils, Classes, AdTypes, AdBitmapClass, AdPersistent;
 
 type
   ENoValidCompressor = class(Exception);
@@ -31,7 +31,7 @@ type
 
   TAdGraphicProgress = procedure(Sender:TObject; AMax, AValue:integer) of object;
   
-  TAdGraphicCompressor = class(TPersistent)
+  TAdGraphicCompressor = class(TAdPersistent)
     private
       FProgress:TAdGraphicProgress;
     public
@@ -43,7 +43,7 @@ type
   end;
   TAdGraphicCompressorClass = class of TAdGraphicCompressor;
 
-  TAdGraphicFormat = class(TPersistent)
+  TAdGraphicFormat = class(TAdPersistent)
     public
       class procedure FileExts(strs:TStrings);virtual;abstract;
       class function SupportsObject(AObj:TObject):boolean;virtual;abstract;
@@ -95,13 +95,13 @@ implementation
 
 procedure RegisterGraphicCompressor(AClass:TAdGraphicCompressorClass);
 begin
-  RegisterClass(TPersistentClass(AClass));
+  AdRegisterClass(AClass);
   RegisteredGraphicCompressors.Add(AClass.ID+'='+AClass.ClassName);
 end;
 
 procedure RegisterGraphicFormat(AClass:TAdGraphicFormatClass);
 begin
-  RegisterClass(TPersistentClass(AClass));
+  AdRegisterClass(AClass);
   RegisteredGraphicFormats.Add(AClass.ClassName);
 end;
 
@@ -126,7 +126,7 @@ begin
   result := nil;
   for i := 0 to RegisteredGraphicFormats.Count - 1 do
   begin
-    cref := TAdGraphicFormatClass(GetClass(RegisteredGraphicFormats[i]));
+    cref := TAdGraphicFormatClass(AdGetClass(RegisteredGraphicFormats[i]));
     if cref.SupportsObject(AObj) then
     begin
       result := cref.Create;
@@ -240,7 +240,7 @@ begin
   classname := RegisteredGraphicCompressors.Values[s];
   if classname <> '' then
   begin
-    cref := TAdGraphicCompressorClass(GetClass(classname));
+    cref := TAdGraphicCompressorClass(AdGetClass(classname));
     if cref <> nil then
     begin
       tmp := cref.Create;
@@ -294,7 +294,7 @@ begin
   ext := lowercase(ExtractFileExt(AFile));
   for i := 0 to RegisteredGraphicFormats.Count-1 do
   begin
-    cref := TAdGraphicFormatClass(GetClass(RegisteredGraphicFormats[i]));
+    cref := TAdGraphicFormatClass(AdGetClass(RegisteredGraphicFormats[i]));
     if cref <> nil then
     begin
       tmp := cref.Create;

@@ -107,7 +107,6 @@ type
       FAppl:TAd2dApplication;
       FBrush:TAdBrush;
       FPen:TAdPen;
-      FBlendMode:TAd2DBlendMode;
       FMatrix:TAdMatrix;
     protected
       property Appl:TAd2dApplication read FAppl;
@@ -124,7 +123,6 @@ type
       property Brush:TAdBrush read FBrush write FBrush;
       property Pen:TAdPen read FPen write FPen;
       property Matrix:TAdMatrix read FMatrix write SetMatrix;
-      property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
   end;
 
   PAdCanvasObjectList = ^TAdCanvasDisplayList;
@@ -307,7 +305,6 @@ type
 
       FAppl:TAd2DApplication;
       FDrawIn2d:boolean;
-      FBlendMode:TAd2dBlendMode;
       FCurrentDisplayList:TAdCanvasDisplayList;
 
       FCurrentObject:TAdCanvasObject;
@@ -363,7 +360,6 @@ type
       procedure DrawQuad(aquad:TAdCanvasQuad);
 
       property DrawIn2d:boolean read FDrawIn2d write FDrawIn2d;
-      property BlendMode:TAd2dBlendMode read FBlendMode write FBlendMode;
       property Pen:TAdPen read FPen write FPen;
       property Brush:TAdBrush read FBrush write FBrush;
       property Font:TAdFont read FFont write FFont;
@@ -796,7 +792,6 @@ begin
   begin
     FCurrentObject.Pen := FPen;
     FCurrentObject.Brush := FBrush;
-    FCurrentObject.BlendMode := FBlendMode;
     DrawObject(FCurrentObject);
     FCurrentObject := nil;
   end;
@@ -1194,8 +1189,7 @@ begin
   result := usDelete;
   if AItem is TAdCanvasLine then
   begin
-    if (BlendMode = TAdCanvasLine(AItem).BlendMode) and
-       (FPoints.Count = TAdCanvasLine(AItem).Points.Count) and
+    if (FPoints.Count = TAdCanvasLine(AItem).Points.Count) and
        (AItem.Pen.EqualTo(Pen)) then
     begin
       result := usUpdate;
@@ -1214,11 +1208,11 @@ begin
   begin
     if FPen.Width = 1 then
     begin
-      FMesh.Draw(BlendMode,adLineStrips);
+      FMesh.Draw(FPen.BlendMode,adLineStrips);
     end
     else
     begin
-      FMesh.Draw(BlendMode,adTriangles);
+      FMesh.Draw(FPen.BlendMode,adTriangles);
     end;
   end;
 end;
@@ -1532,8 +1526,7 @@ begin
   result := usDelete;
   if AItem is TAdCanvasQuadObject then
   begin
-    if (BlendMode = TAdCanvasLine(AItem).BlendMode) and    
-       (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
+    if (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
     begin
       result := usEqual;
 
@@ -1556,7 +1549,7 @@ begin
   //Draw rectangle
   if (FBrush.Style <> abClear) then
   begin
-    FMesh.Draw(BlendMode,FDrawMode);
+    FMesh.Draw(FBrush.BlendMode,FDrawMode);
   end;
 
   //Draw outer line
@@ -1600,14 +1593,14 @@ begin
       begin
         p.X := round(FQuad.p[i].X);
         p.Y := round(FQuad.p[i].Y);
-        p.Color := FQuad.c[i];
+        p.Color := FPen.Color;
         FLine.AddPoint(p)
       end;
 
       //Close line
       p.X := round(FQuad.p[0].X);
       p.Y := round(FQuad.p[0].Y);
-      p.Color := FQuad.c[0];
+      p.Color := FPen.Color;
       FLine.AddPoint(p);
 
       FLine.Generate;
@@ -1629,7 +1622,6 @@ begin
       p.Color := FPen.Color;
       PAdLinePoint(FLine.Points.GetCurrent)^ := p;
 
-      FLine.BlendMode := BlendMode;
       FLine.Generate;
     end;
   end;
@@ -1826,7 +1818,7 @@ begin
   //Draw filling
   if FBrush.Style <> abClear then
   begin
-    FMesh.Draw(BlendMode, adTriangleFan);
+    FMesh.Draw(FBrush.BlendMode, adTriangleFan);
   end;
 
   //Draw outer line
@@ -1842,8 +1834,7 @@ begin
   result := usDelete;
   if AItem is TAdCanvasEllipseObject then
   begin
-    if (BlendMode = TAdCanvasLine(AItem).BlendMode) and
-       (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
+    if (AItem.Brush.EqualTo(Brush)) and (AItem.Pen.EqualTo(Pen)) then
     begin
       result := usUpdate;
 
@@ -1960,7 +1951,6 @@ begin
       lp.Color := FPen.Color;
       FLine.AddPoint(lp);
     end;
-    FLine.BlendMode := BlendMode;
     FLine.Generate;
   end;
 
@@ -2168,8 +2158,7 @@ begin
   result := usDelete;
   if AItem is TAdCanvasPointsObject then
   begin
-    if (BlendMode = TAdCanvasPointsObject(AItem).BlendMode) and
-       (FPoints.Count = TAdCanvasPointsObject(AItem).Points.Count) and
+    if (FPoints.Count = TAdCanvasPointsObject(AItem).Points.Count) and
        (AItem.Pen.EqualTo(Pen)) then
     begin
       result := usUpdate;
@@ -2184,7 +2173,7 @@ end;
 
 procedure TAdCanvasPointsObject.Draw;
 begin
-  FMesh.Draw(BlendMode, adPoints);
+  FMesh.Draw(FBrush.BlendMode, adPoints);
 end;
 
 procedure TAdCanvasPointsObject.Generate;
