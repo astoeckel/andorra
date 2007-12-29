@@ -91,7 +91,9 @@ type
 
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
-      procedure Draw(AState,AX,AY,AWidth,AHeight:integer;Alpha:byte=255);
+
+      procedure Draw(AState,AX,AY,AWidth,AHeight:integer;Alpha:byte=255);overload;
+      procedure Draw(AState:integer;ARect:TAdRect;Alpha:byte=255);overload;
 
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
@@ -185,7 +187,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TAdSkinItem.Draw(AState, AX, AY, AWidth, AHeight: integer;Alpha:byte=255);
+procedure TAdSkinItem.Draw(AState:integer; ARect: TAdRect; Alpha: byte);
+begin
+  Draw(AState, ARect.Left, ARect.Top, ARect.Right - ARect.Left, ARect.Bottom - ARect.Top, Alpha);
+end;
+
+procedure TAdSkinItem.Draw(AState, AX, AY, AWidth, AHeight: integer;Alpha: byte);
 var i:integer;
 begin
   if (FBaseWidth <> AWidth) or (FBaseHeight <> AHeight) then

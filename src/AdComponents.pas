@@ -324,13 +324,19 @@ type
     private
       FText:string;
       FSkinItem:TAdSkinItem;
-      FSelStart:integer;
-      FSelStop:integer;
-      FCursorVisible:boolean;
       FCursorTime:double;
+      FCursorBlinkSpeed:double;
+      FCursorVisible:boolean;
+      FCursorPos:integer;
+      FTextStart:integer;
+      FSelStart:integer;
+      function CalcRelCursorPos(ACurPos:integer):integer;
+      function CalcRelPixelCursorPos(ACurPos:integer):integer;
+      function IsNotSpecialCharacter(AChar: char): boolean;
+      function CalcCursorPos(x:integer):integer;
       function GetSelCount:integer;
-      procedure DelSelText;
-      function MouseToSelPos(AX: integer): integer;
+      procedure DeleteSelectedText;
+      procedure CheckRange;
     protected
       procedure LoadSkinItem; override;
       procedure DoDraw;override;
@@ -338,16 +344,15 @@ type
       function DoKeyDown(Key:Word;shift:TShiftState):boolean;override;
       function DoKeyPress(Key:Char):boolean;override;
       function DoClick:boolean;override;
+      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+        Y: integer):boolean;override;
       function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
         Y: integer):boolean;override;
       function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
-      property CursorVisible:boolean read FCursorVisible write FCursorVisible;
-      property CursorTime:double read FCursorTime write FCursorTime;
+
+      property CursorBlinkSpeed:double read FCursorBlinkSpeed write FCursorBlinkSpeed;
     public
       constructor Create(AParent:TAdComponent);override;
-      property SelStart:integer read FSelStart write FSelStart;
-      property SelStop:integer read FSelStop write FSelStop;
-      property SelCount:integer read GetSelCount;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
@@ -1598,82 +1603,157 @@ end;
 
 { TAdEdit }
 
+constructor TAdEdit.Create(AParent: TAdComponent);
+begin
+  inherited;
+  AcceptChildComponents := false;
+
+  FCursorBlinkSpeed := 0.5;
+  FTextStart := 1;
+  FCursorPos := 0;
+end;
+
+procedure TAdEdit.DeleteSelectedText;
+var
+  start:integer;
+begin
+  if GetSelCount > 0 then
+  begin
+    if FCursorPos > FSelStart then
+      start := FSelStart
+    else
+      start := FCursorPos;
+
+    Delete(FText, start + 1, GetSelCount);
+
+    FCursorPos := start;
+    FSelStart := FCursorPos;
+  end;
+end;
+
+function TAdEdit.CalcCursorPos(x: integer): integer;
+var
+  i:integer;
+  s:string;
+begin
+  x := x - GetClientRect.Left;
+  s := '';
+  result := Length(FText);
+  for i := FTextStart to Length(FText) do
+  begin
+    if Font.TextWidth(s) >= x then
+    begin
+      result := i - 1;
+      break;
+    end;
+    s := s + FText[i];
+  end;
+end;
+
+function TAdEdit.CalcRelCursorPos(ACurPos:integer): integer;
+begin
+  result := ACurPos - FTextStart;
+end;
+
+function TAdEdit.CalcRelPixelCursorPos(ACurPos:integer): integer;
+var
+  s:string;
+begin
+  s := copy(FText, FTextStart, CalcRelCursorPos(ACurPos) + 1);
+  result := Font.TextWidth(s);
+end;
+
+procedure TAdEdit.CheckRange;
+var
+  curxpos:integer;
+  rect:TAdRect;
+begin
+  rect := GetClientRect;
+  curxpos := CalcRelPixelCursorPos(FCursorPos);
+  while curxpos > rect.Right - rect.Left do
+  begin
+    FTextStart := FTextStart + 1;
+    curxpos := CalcRelPixelCursorPos(FCursorPos);
+  end;
+  
+  if (curxpos < 10) and (FTextStart > 1) then
+  begin
+    FTextStart := FTextStart - 1;
+  end;
+end;
+
+function TAdEdit.GetSelCount: integer;
+begin
+  result := abs(FSelStart - FCursorPos);
+end;
+
+procedure TAdEdit.DoDraw;
+var
+  rect:TAdRect;
+  s:string;
+  curxpos, curxpos2:integer;
+  curheight:integer;
+  y1pos, y2pos:integer;
+begin
+  if FSkinItem <> nil then
+  begin
+    rect := GetBoundsRect;
+    FSkinItem.Draw(0, rect);
+
+    rect := GetClientRect;
+
+    SetFontColor;
+
+    curxpos := rect.Left + CalcRelPixelCursorPos(FCursorPos);
+    curheight := Font.TextHeight('W');
+    y1pos := rect.Top + (rect.Bottom - rect.Top) div 2 - curheight div 2;
+    y2pos := rect.Top + (rect.Bottom - rect.Top) div 2 + curheight div 2;
+
+    if Focused and FCursorVisible and not Designmode then
+    begin
+      with AdDraw.Canvas do
+      begin
+        Pen.Color := ColorToAdColor(FontColor);
+        Pen.Width := 1;
+        MoveTo(curxpos, y1pos);
+        LineTo(curxpos, y2pos);
+        Release;
+      end;
+    end;
+
+    if GetSelCount > 0 then
+    begin
+      curxpos2 := rect.Left + CalcRelPixelCursorPos(FSelStart);
+      if curxpos2 > rect.Right then curxpos2 := rect.Right;
+      
+      with AdDraw.Canvas do
+      begin
+        Pen.Style := apNone;
+        Brush.Color := Ad_ARGB(200,128,128,128);
+        Rectangle(curxpos,y1pos,curxpos2,y2pos);
+        Release;
+      end;
+    end;
+
+    with Font do
+    begin
+      with TypeSetter as TAdSimpleTypeSetter do
+      begin
+        DrawMode := [dtCut, dtLeft, dtMiddle];
+      end;
+      s := Copy(FText, FTextStart, Length(FText) - FTextStart + 1);
+      TextOut(rect, s);
+    end;
+  end;
+  
+  inherited;
+end;
+
 function TAdEdit.DoClick:boolean;
 begin
   inherited DoClick;
   result := true;
   SetFocused;
-end;
-
-procedure TAdEdit.DoDraw;
-var
-  r,cr:TAdRect;
-  w,h,th:integer;
-  SelStartX:integer;
-  SelStopX:integer;
-  XDif:integer;
-begin
-  r := BoundsRect;
-  cr := ClientRect;
-  FSkinItem.Draw(0,r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
-
-  w := cr.Right-cr.Left;
-  h := cr.Bottom-cr.Top;
-  th := Font.TextHeight(FText+'W');
-  SetFontColor;
-
-  SelStartX := Font.TextWidth(copy(Text,1,SelStart));
-  SelStopX  := Font.TextWidth(copy(Text,1,SelStop));
-
-  XDif := 0;
-  if SelStopX > w - 5 then
-  begin
-    XDif := SelStopX-w+Font.TextWidth('W')*2;
-  end;
-
-  with AdDraw.Canvas do
-  begin
-    if SelCount > 0 then
-    begin
-      Brush.Color := Ad_ARGB(128,128,128,128);
-      Pen.Style := apNone;
-      Rectangle(
-        AdRect(
-          cr.Left + SelStartX-XDif,
-          cr.Top + (h-th) div 2,
-          cr.Left + SelStopX-XDif,
-          cr.Top + (h+th) div 2));
-      Release;
-    end;
-
-    self.Font.TextOut(cr.Left-XDif,cr.Top+(h-th) div 2,FText);
-
-    if (CursorVisible) and (Enabled) and (Focused) and (not DesignMode) then
-    begin
-      Pen.Color := ColorToAdColor(FontColor);
-      MoveTo(cr.Left+SelStopX-XDif,cr.Top+(h-th) div 2);
-      LineTo(cr.Left+SelStopX-XDif,cr.Top+(h+th) div 2);
-      Release;
-    end;
-  end;
-
-  inherited;
-end;
-
-constructor TAdEdit.Create(AParent: TAdComponent);
-begin
-  inherited;
-  AcceptChildComponents := false;
-end;
-
-procedure TAdEdit.DelSelText;
-var s:integer;
-begin
-  s := selStart;
-  if SelStart > SelStop then s := SelStop;
-  Delete(FText,S+1,SelCount);
-  SelStart := s;
-  SelStop := s;
 end;
 
 const
@@ -1683,208 +1763,136 @@ const
   VK_HOME = 36;
   VK_END = 35;
   VK_RIGHT = 39;
+  VK_SHIFT = $10;
 
-function TAdEdit.DoKeyDown(Key:Word;shift:TShiftState):boolean;
+function TAdEdit.DoKeyDown(Key:Word;Shift:TShiftState):boolean;
+var
+  pressed : boolean;
 begin
+  inherited DoKeyDown(Key, Shift);
   result := true;
-  CursorVisible := true;
-  CursorTime := 0;
-  if key = VK_BACK then
+  pressed := false;
+
+  FCursorVisible := true;
+  FCursorTime := 0;
+
+  if Key = VK_BACK then
   begin
-    if SelCount = 0 then
-    begin
-      Delete(FText,SelStart,1);
-      SelStart := SelStart-1;
-      SelStop := SelStart;
-    end
+    pressed := true;
+    if GetSelCount > 0 then
+      DeleteSelectedText
     else
     begin
-      DelSelText;
+      Delete(FText, FCursorPos, 1);
+      FCursorPos := FCursorPos - 1;
     end;
-  end;
-  if key = VK_DELETE then
+  end else
+  if Key = VK_DELETE then
   begin
-    if SelCount = 0 then
-    begin
-      Delete(FText,SelStart+1,1);
-    end
+    pressed := true;
+    if GetSelCount > 0 then
+      DeleteSelectedText
     else
-    begin
-      DelSelText;
-    end;
-  end;
+      Delete(FText, FCursorPos + 1, 1);
+  end else
   if key = VK_LEFT then
   begin
-    if ssShift in Shift then
-    begin
-      SelStop := SelStop-1;
-    end
-    else
-    begin
-      if SelStop < SelStart then
-      begin
-        SelStart := SelStop;
-      end
-      else
-      begin
-        if SelStop > SelStart then
-        begin
-          SelStart := SelStop;
-        end
-        else
-        begin
-          SelStart := SelStart-1;
-          SelStop := SelStart;
-        end;
-      end;
-    end;
-  end;
-  if key = VK_HOME then
-  begin
-    if ssShift in Shift then
-    begin
-      SelStop := 0;
-    end
-    else
-    begin
-      SelStart := 0;
-      SelStop := 0;
-    end;
-  end;
-  if key = VK_END then
-  begin
-    if ssShift in Shift then
-    begin
-      SelStop := Length(Text);
-    end
-    else
-    begin
-      SelStart := Length(Text);
-      SelStop := Length(Text);
-    end;
-  end;
+    pressed := true;
+    FCursorPos := FCursorPos - 1;
+  end else
   if key = VK_RIGHT then
   begin
-    if ssShift in Shift then
-    begin
-      SelStop := SelStop+1;
-    end
-    else
-    begin
-      if SelStop < SelStart then
-      begin
-        SelStart := SelStop;
-      end
-      else
-      begin
-        if SelStop > SelStart then
-        begin
-          SelStart := SelStop;
-        end
-        else
-        begin
-          SelStart := SelStart+1;
-          SelStop := SelStart;
-        end;
-      end;
-    end;
+    pressed := true;
+    FCursorPos := FCursorPos + 1;
+  end else
+  if key = VK_HOME then
+  begin
+    pressed := true;
+    FCursorPos := 0;
+    FTextStart := 1;
+  end else
+  if key = VK_END then
+  begin
+    pressed := true;
+    FCursorPos := Length(FText) + 1;
   end;
-  if SelStart < 0 then SelStart := 0;
-  if SelStart > Length(Text) then SelStart := Length(Text);
-  if SelStop < 0 then SelStop := 0;
-  if SelStop > Length(Text) then SelStop := Length(Text);
+
+  if FCursorPos < 0 then FCursorPos := 0;
+  if FCursorPos > Length(FText) then FCursorPos := Length(FText);
+
+  if pressed and not (ssShift in Shift) then FSelStart := FCursorPos;
+end;
+
+function TAdEdit.IsNotSpecialCharacter(AChar:char):boolean;
+begin
+  result := (AChar > #31) and ((AChar < #127) or (AChar > #159));
 end;
 
 function TAdEdit.DoKeyPress(Key: Char):boolean;
 begin
   inherited DoKeyPress(Key);
-  result := true;
-  if (ord(key) > 31) and ((ord(key) < 127) or (ord(key) > 159)) then
+  result := false;
+
+  FCursorVisible := true;
+  FCursorTime := 0;
+
+  if IsNotSpecialCharacter(Key) then
   begin
-    if SelCount > 0 then
-    begin
-      DelSelText;
-    end;
-    if SelStart >= Length(FText)-1 then
-    begin
-      Text := Text + Key;
-    end
-    else
-    begin
-      Insert(Key,FText,SelStart+1);
-    end;
-    SelStart := SelStart+1;
-    SelStop := SelStart;
-  end;  
+    DeleteSelectedText;
+
+    FCursorPos := FCursorPos + 1;
+    Insert(Key, FText, FCursorPos);
+    FSelStart := FCursorPos;
+  end;
+
+  CheckRange;
 end;
 
 procedure TAdEdit.DoMove(timegap: double);
 begin
   inherited;
-  CursorTime := CursorTime + timegap * 10;
-  If CursorTime > 1 then
+
+  FCursorTime := FCursorTime + timegap;
+  if FCursorTime > FCursorBlinkSpeed then
   begin
-    CursorVisible := not CursorVisible;
-    CursorTime := 0;
-  end;
-end;
-
-function TAdEdit.MouseToSelPos(AX:integer):integer;
-var
-  i:integer;
-  XDif:integer;
-  SelStopX:integer;
-  w:integer;
-begin
- { Result := length(FText);
-
-  w := (ClientRect.Right - ClientRect.Left);
-  SelStopX  := Font.TextWidth(copy(Text,1,SelStop));
-
-  XDif := 0;
-  if SelStopX > w - 5 then
-  begin
-    XDif := SelStopX - w;
+    FCursorTime := 0;
+    FCursorVisible := not FCursorVisible;
   end;
 
-  AX := XDif + (AX - Clientrect.Left);
-
-  for i := 0 to length(FText) do
-  begin
-    if Font.TextWidth(copy(FText,1,i)) >= AX then
-    begin
-      result := i;
-      break;
-    end;
-  end;   }
+  CheckRange;
 end;
 
 function TAdEdit.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
 begin
   inherited DoMouseMove(Shift,X,Y);
   result := true;
+
   if ssLeft in Shift then
   begin
-    SelStop := MouseToSelPos(X);
+    FSelStart := CalcCursorPos(x);
   end;
+end;
+
+function TAdEdit.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: integer): boolean;
+begin
+  inherited DoMouseUp(Button, Shift, X, Y);
+  result := true;
+  MousePreview := false;
 end;
 
 function TAdEdit.DoMouseDown(Button:TMouseButton; Shift:TShiftState;X,Y:integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
   result := true;
+
   if Button = mbLeft then
   begin
-    SelStart := MouseToSelPos(X);
-    SelStop := SelStart;
+    FCursorPos := CalcCursorPos(x);
+    MousePreview := true;
   end;
-end;
 
-
-
-function TAdEdit.GetSelCount: integer;
-begin
-  result := abs(SelStop-SelStart);
+  if not (ssShift in Shift) then FSelStart := FCursorPos;
 end;
 
 procedure TAdEdit.LoadSkinItem;
