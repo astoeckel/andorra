@@ -16,7 +16,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdParticles, AdClasses, ExtCtrls, StdCtrls, Menus, XPMan,
-  ComCtrls, ExtDlgs, Math, AdPerformanceCounter, AdTypes, AdVCLFormats, AdBitmap;
+  ComCtrls, ExtDlgs, Math, AdPerformanceCounter, AdTypes, AdVCLFormats, AdBitmap,
+  Buttons;
 
 type
   TForm1 = class(TForm)
@@ -36,23 +37,11 @@ type
     GroupBox2: TGroupBox;
     Button1: TButton;
     Image1: TImage;
-    ListBox1: TListBox;
-    Button2: TButton;
-    Edit2: TEdit;
-    Edit3: TEdit;
-    Edit4: TEdit;
-    Label1: TLabel;
-    Label2: TLabel;
-    Label3: TLabel;
-    Label4: TLabel;
-    Edit5: TEdit;
     Image2: TImage;
     XPManifest1: TXPManifest;
     CheckBox2: TCheckBox;
     Label5: TLabel;
     ComboBox1: TComboBox;
-    Button3: TButton;
-    Button4: TButton;
     Environment1: TMenuItem;
     Backgroundcolor1: TMenuItem;
     ColorDialog1: TColorDialog;
@@ -122,20 +111,17 @@ type
     OpenDialog1: TOpenDialog;
     StatusBar1: TStatusBar;
     Label37: TLabel;
+    ListBox1: TListBox;
+    SpeedButton1: TSpeedButton;
+    SpeedButton2: TSpeedButton;
+    SpeedButton3: TSpeedButton;
+    SpeedButton4: TSpeedButton;
+    Button2: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-    procedure ListBox1Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
-    procedure Button4Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
-    procedure ListBox1KeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
     procedure CheckBox2Click(Sender: TObject);
     procedure Backgroundcolor1Click(Sender: TObject);
-    procedure ListBox1DrawItem(Control: TWinControl; Index: Integer;
-      Rect: TRect; State: TOwnerDrawState);
-    procedure ListBox1DblClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Panel1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -159,6 +145,16 @@ type
     procedure LoadFile1Click(Sender: TObject);
     procedure Button6Click(Sender: TObject);
     procedure Panel1Resize(Sender: TObject);
+    procedure SpeedButton3Click(Sender: TObject);
+    procedure ListBox1DrawItem(Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState);
+    procedure ListBox1DblClick(Sender: TObject);
+    procedure ColorDialog1Show(Sender: TObject);
+    procedure ColorDialog1Close(Sender: TObject);
+    procedure SpeedButton4Click(Sender: TObject);
+    procedure SpeedButton1Click(Sender: TObject);
+    procedure SpeedButton2Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -198,8 +194,7 @@ procedure TForm1.ApplicationIdle(Sender: TObject; var Done: boolean);
 begin
   Render;
   done := false;
-end;
-
+end;      
 
 procedure TForm1.Backgroundcolor1Click(Sender: TObject);
 begin
@@ -228,55 +223,43 @@ begin
   begin
     bmp := TBitmap.Create;
     bmp.LoadFromFile(OpenPictureDialog1.FileName);
+    if AdImg1 <> nil then AdImg1.Free;
     AdImg1 := TAdImage.Create(AdDraw1);
     adbmp := TAdBitmap.Create;
     adbmp.Assign(bmp);
     adbmp.AssignAlphaChannel(bmp);
     AdImg1.Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
     adbmp.Free;
-    AdImg1.Color := clWhite;
+
     AdImg1.Restore;
-    PartSys.Texture.Free;
     PartSys.Texture := AdImg1.Texture;
     Image2.Picture.Bitmap.Assign(bmp);
+
     bmp.Free;
   end;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
+var
+  s:string;
+  v:integer;
+  col:TAndorraColor;
 begin
-  PartSys.DefaultParticle.Colors.Add(Ad_ARGB(StrToIntDef(Edit5.Text,255),
-                                             StrToIntDef(Edit2.Text,255),
-                                             StrToIntDef(Edit3.Text,255),
-                                             StrToIntDef(Edit4.Text,255)));
-  UpdateControls;
-  ListBox1Click(nil);  
-end;
-
-procedure TForm1.Button3Click(Sender: TObject);
-var i,e:integer;
-begin
-  i := ListBox1.ItemIndex;
-  e := ListBox1.ItemIndex - 1;
-  ListBox1.Items.Exchange(i,e);
-  PartSys.DefaultParticle.Colors.Exchange(i,e);
-  ListBox1.ItemIndex := e;
-  ListBox1Click(nil);
-  ListBox1.Repaint;
-  DrawColorPreview;
-end;
-
-procedure TForm1.Button4Click(Sender: TObject);
-var i,e:integer;
-begin
-  i := ListBox1.ItemIndex;
-  e := ListBox1.ItemIndex + 1;
-  ListBox1.Items.Exchange(i,e);
-  PartSys.DefaultParticle.Colors.Exchange(i,e);
-  ListBox1.ItemIndex := e;
-  ListBox1Click(nil);
-  ListBox1.Repaint;
-  DrawColorPreview;
+  if ListBox1.ItemIndex > -1 then
+  begin
+    s := InputBox('Alpha value','Enter a value between 0 and 255','');
+    if s <> '' then
+    begin
+      v := StrToIntDef(s, -1);
+      if (v >= 0) and (v <= 255) then
+      begin
+        col := PartSys.DefaultParticle.Colors[ListBox1.ItemIndex];
+        col.a := v;
+        PartSys.DefaultParticle.Colors[ListBox1.ItemIndex] := col;
+        UpdateControls;
+      end;
+    end;
+  end;
 end;
 
 procedure TForm1.Button5Click(Sender: TObject);
@@ -297,6 +280,16 @@ end;
 procedure TForm1.Close1Click(Sender: TObject);
 begin
   Close;
+end;
+
+procedure TForm1.ColorDialog1Close(Sender: TObject);
+begin
+  PerCount.Resume;
+end;
+
+procedure TForm1.ColorDialog1Show(Sender: TObject);
+begin
+  PerCount.Pause;
 end;
 
 procedure TForm1.ComboBox1Change(Sender: TObject);
@@ -359,31 +352,30 @@ var x,y,i:integer;
 begin
   with Image1.Picture.Bitmap.Canvas do
   begin
-    //First draw a black and white chess field
     i := 0;
-    for x := 0 to 54 do
-      for y := 0 to 6 do
+    for x := 0 to Image1.Width div 4 do
+    begin
+      for y := 0 to Image1.Height div 4 do
       begin
         i := i + 1;
         if i mod 2 = 0 then
-        begin
-          brush.Color := clBlack;
-          pen.Color := clBlack;
-        end
+          Brush.Color := clSilver
         else
-        begin
-          brush.Color := clGray;
-          pen.Color := clGray;
-        end;
-        rectangle(x*4,y*4,(x+1)*4,(y+1)*4);
+          Brush.Color := clGray;
+
+        Pen.Color := Brush.Color;
+
+        Rectangle(x*4,y*4,(x+1)*4,(y+1)*4);
       end;
+      i := i + 1;
+    end;
 
     //Then draw the colors
-    for x := 0 to 216 do
+    for x := 0 to Image1.Width do
     begin
-      for y := 0 to 24 do
+      for y := 0 to Image1.Height do
       begin
-        acol2 := PartSys.DefaultParticle.Colors.GetColor(216,x);
+        acol2 := PartSys.DefaultParticle.Colors.GetColor(Image1.Width,x);
         a := acol2.a / 255;
         acol := RGB(round(GetRValue(Pixels[x,y])*(1-a)+acol2.r*a),
                     round(GetGValue(Pixels[x,y])*(1-a)+acol2.g*a),
@@ -462,14 +454,19 @@ procedure TForm1.FormCreate(Sender: TObject);
 var bmp:TBitmap;
     adbmp:TAdBitmap;
 begin
+  ReportMemoryLeaksOnShutdown := true;
+  
   Randomize;
 
   //Initialize Andorra 2D
   AdDraw1 := TAdDraw.Create(Panel1);
   AdDraw1.DllName := 'AndorraOGL.dll';
 
+
   if AdDraw1.Initialize then
   begin
+    AdDraw1.TextureFilter := atLinear;
+
     //Load the texture
     bmp := TBitmap.Create;
     bmp.Assign(Image2.Picture.Bitmap);
@@ -490,8 +487,8 @@ begin
     PartSys := TAdParticleSystem.Create(AdDraw1);
     PartSys.Texture := AdImg1.Texture;
 
-    Image1.Picture.Bitmap.Width := 216;
-    Image1.Picture.Bitmap.Height := 23;
+    Image1.Picture.Bitmap.Width := Image1.Width;
+    Image1.Picture.Bitmap.Height := Image1.Height;
     UpdateControls;
 
     mx := Panel1.Width div 2;
@@ -533,23 +530,21 @@ begin
   DrawAnglePreview;
 end;
 
-procedure TForm1.ListBox1Click(Sender: TObject);
-begin
-  if ListBox1.ItemIndex <> -1 then
-  begin
-    if ListBox1.ItemIndex < ListBox1.Count-1 then Button4.Enabled := true else Button4.Enabled := false;
-    if ListBox1.ItemIndex > 0                then Button3.Enabled := true else Button3.Enabled := false;
-  end;
-end;
-
 procedure TForm1.ListBox1DblClick(Sender: TObject);
+var
+  a:byte;
+  col:TAndorraColor;
 begin
-  if ListBox1.ItemIndex <> -1 then
+  if ListBox1.ItemIndex > -1 then
   begin
-    Edit2.Text := inttostr(PartSys.DefaultParticle.Colors[ListBox1.ItemIndex].r);
-    Edit3.Text := inttostr(PartSys.DefaultParticle.Colors[ListBox1.ItemIndex].g);
-    Edit4.Text := inttostr(PartSys.DefaultParticle.Colors[ListBox1.ItemIndex].b);
-    Edit5.Text := inttostr(PartSys.DefaultParticle.Colors[ListBox1.ItemIndex].a);
+    if ColorDialog1.Execute then
+    begin
+      a := PartSys.DefaultParticle.Colors[ListBox1.ItemIndex].a;
+      col := ColorToAdColor(ColorDialog1.Color);
+      col.a := a;
+      PartSys.DefaultParticle.Colors[ListBox1.ItemIndex] := col;
+      UpdateControls;
+    end;
   end;
 end;
 
@@ -558,27 +553,17 @@ procedure TForm1.ListBox1DrawItem(Control: TWinControl; Index: Integer;
 begin
   with ListBox1.Canvas do
   begin
-    Brush.Color := AdColorToColor(PartSys.DefaultParticle.Colors.Items[Index]);
-    Pen.Color := Brush.Color;
-    Rectangle(Rect);
-    Font.Color := RGB(255-GetRValue(Pen.Color),255-GetGValue(Pen.Color),255-GetBValue(Pen.Color));
-    Textout(Rect.Left,Rect.Top,ListBox1.Items[index]);
-  end;
-end;
+    if odSelected in State then
+      Brush.Color := clHighlight
+    else
+      Brush.Color := clWindow;
 
-procedure TForm1.ListBox1KeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-  if (Key = VK_DELETE) and (ListBox1.ItemIndex <> -1) and (ListBox1.Items.Count > 1)then
-  begin
-    PartSys.DefaultParticle.Colors.Delete(ListBox1.ItemIndex);
-    ListBox1.Items.Delete(ListBox1.ItemIndex);
-    DrawColorPreview;
-    ListBox1.Repaint;
-  end
-  else
-  begin
-    beep;
+    FillRect(Rect);
+    Brush.Color := AdColorToColor(PartSys.DefaultParticle.Colors[Index]);
+    Pen.Color := clBlack;
+    Rectangle(Rect.Left + 3, Rect.Top + 3, Rect.Left + 19, Rect.Bottom - 3);
+    Brush.Style := bsClear;
+    TextOut(Rect.Left + 21, Rect.Top, ListBox1.Items[Index]);
   end;
 end;
 
@@ -695,6 +680,56 @@ begin
   end;
 end;
 
+procedure TForm1.SpeedButton1Click(Sender: TObject);
+var
+  tmp:TAndorraColor;
+begin
+  if (ListBox1.ItemIndex > 0) then
+  begin
+    with PartSys.DefaultParticle.Colors do
+    begin
+      tmp := Items[ListBox1.ItemIndex - 1];
+      Items[ListBox1.ItemIndex - 1] := Items[ListBox1.ItemIndex];
+      Items[ListBox1.ItemIndex] := tmp;
+    end;
+    UpdateControls;
+  end;
+end;
+
+procedure TForm1.SpeedButton2Click(Sender: TObject);
+var
+  tmp:TAndorraColor;
+begin
+  if (ListBox1.ItemIndex > -1) and (ListBox1.ItemIndex < ListBox1.Items.Count - 1) then
+  begin
+    with PartSys.DefaultParticle.Colors do
+    begin
+      tmp := Items[ListBox1.ItemIndex + 1];
+      Items[ListBox1.ItemIndex + 1] := Items[ListBox1.ItemIndex];
+      Items[ListBox1.ItemIndex] := tmp;
+    end;
+    UpdateControls;
+  end;
+end;
+
+procedure TForm1.SpeedButton3Click(Sender: TObject);
+begin
+  if ColorDialog1.Execute then
+  begin
+    PartSys.DefaultParticle.Colors.Add(ColorToAdColor(ColorDialog1.Color));
+    UpdateControls;
+  end;
+end;
+
+procedure TForm1.SpeedButton4Click(Sender: TObject);
+begin
+  if ListBox1.ItemIndex > -1 then
+  begin
+    PartSys.DefaultParticle.Colors.Delete(ListBox1.ItemIndex);
+    UpdateControls;
+  end;
+end;
+
 procedure TForm1.UpdateControls;
 var i:integer;
     nx,ny,l:double;
@@ -703,17 +738,19 @@ begin
   changing := true;
   with PartSys.DefaultParticle do
   begin
-    ListBox1.Clear;
-    for i := 0 to Colors.Count - 1 do
-    begin
-      ListBox1.Items.Add('a: '+inttostr(Colors[i].a)+' '+
-                         'r: '+inttostr(Colors[i].r)+' '+
-                         'g: '+inttostr(Colors[i].g)+' '+
-                         'b: '+inttostr(Colors[i].b)+' ');
-    end;
     DrawColorPreview;
-    ListBox1.Repaint;
     CheckBox2.Checked := DrawMask;
+
+    ListBox1.Clear;
+    for i := 0 to Colors.Count-1 do
+    begin
+      ListBox1.Items.Add(
+        'r:'+inttostr(Colors[i].r)+
+        ' g:'+inttostr(Colors[i].g)+
+        ' b:'+inttostr(Colors[i].b)+
+        ' a:'+inttostr(Colors[i].a));
+    end;
+
     Edit1.Text := Name;
     Edit6.Text := FormatFloat('0.00',LifeTime);
     Edit7.Text := Inttostr(LifeTimeVariation);

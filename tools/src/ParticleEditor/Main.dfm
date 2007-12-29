@@ -78,37 +78,9 @@ object Form1: TForm1
           TabOrder = 1
           object Image1: TImage
             Left = 3
-            Top = 216
+            Top = 200
             Width = 216
-            Height = 24
-          end
-          object Label1: TLabel
-            Left = 143
-            Top = 109
-            Width = 11
-            Height = 13
-            Caption = 'R:'
-          end
-          object Label2: TLabel
-            Left = 143
-            Top = 138
-            Width = 11
-            Height = 13
-            Caption = 'G:'
-          end
-          object Label3: TLabel
-            Left = 143
-            Top = 165
-            Width = 10
-            Height = 13
-            Caption = 'B:'
-          end
-          object Label4: TLabel
-            Left = 143
-            Top = 197
-            Width = 11
-            Height = 13
-            Caption = 'A:'
+            Height = 39
           end
           object Image2: TImage
             Left = 159
@@ -234,6 +206,80 @@ object Form1: TForm1
             Transparent = True
             WordWrap = True
           end
+          object SpeedButton1: TSpeedButton
+            Left = 61
+            Top = 167
+            Width = 23
+            Height = 22
+            Glyph.Data = {
+              76010000424D7601000000000000760000002800000020000000100000000100
+              04000000000000010000120B0000120B00001000000000000000000000000000
+              800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+              FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333000333
+              3333333333777F33333333333309033333333333337F7F333333333333090333
+              33333333337F7F33333333333309033333333333337F7F333333333333090333
+              33333333337F7F33333333333309033333333333FF7F7FFFF333333000090000
+              3333333777737777F333333099999990333333373F3333373333333309999903
+              333333337F33337F33333333099999033333333373F333733333333330999033
+              3333333337F337F3333333333099903333333333373F37333333333333090333
+              33333333337F7F33333333333309033333333333337373333333333333303333
+              333333333337F333333333333330333333333333333733333333}
+            NumGlyphs = 2
+            OnClick = SpeedButton1Click
+          end
+          object SpeedButton2: TSpeedButton
+            Left = 90
+            Top = 167
+            Width = 23
+            Height = 22
+            Glyph.Data = {
+              76010000424D7601000000000000760000002800000020000000100000000100
+              04000000000000010000120B0000120B00001000000000000000000000000000
+              800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+              FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333303333
+              333333333337F33333333333333033333333333333373F333333333333090333
+              33333333337F7F33333333333309033333333333337373F33333333330999033
+              3333333337F337F33333333330999033333333333733373F3333333309999903
+              333333337F33337F33333333099999033333333373333373F333333099999990
+              33333337FFFF3FF7F33333300009000033333337777F77773333333333090333
+              33333333337F7F33333333333309033333333333337F7F333333333333090333
+              33333333337F7F33333333333309033333333333337F7F333333333333090333
+              33333333337F7F33333333333300033333333333337773333333}
+            NumGlyphs = 2
+            OnClick = SpeedButton2Click
+          end
+          object SpeedButton3: TSpeedButton
+            Left = 3
+            Top = 167
+            Width = 23
+            Height = 22
+            Glyph.Data = {
+              F6000000424DF600000000000000760000002800000010000000100000000100
+              0400000000008000000000000000000000001000000000000000000000000000
+              8000008000000080800080000000800080008080000080808000C0C0C0000000
+              FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00FFFFFFF99FFF
+              FFFFFFFFFF9999FFFFFFFFFFFF9999FFFFFFFFFFFF9999FFFFFFFFFFFF9999FF
+              FFFFFFFFFF9999FFFFFFF99999999999999F9999999999999999999999999999
+              9999F99999999999999FFFFFFF9999FFFFFFFFFFFF9999FFFFFFFFFFFF9999FF
+              FFFFFFFFFF9999FFFFFFFFFFFF9999FFFFFFFFFFFFF99FFFFFFF}
+            OnClick = SpeedButton3Click
+          end
+          object SpeedButton4: TSpeedButton
+            Left = 32
+            Top = 167
+            Width = 23
+            Height = 22
+            Glyph.Data = {
+              F6000000424DF600000000000000760000002800000010000000100000000100
+              0400000000008000000000000000000000001000000000000000000000000000
+              8000008000000080800080000000800080008080000080808000C0C0C0000000
+              FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00FFFFFFFFFFFF
+              FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+              FFFFFFFFFFFFFFFFFFFFFCCCCCCCCCCCCCCFCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+              CCCCFCCCCCCCCCCCCCCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+              FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF}
+            OnClick = SpeedButton4Click
+          end
           object Button1: TButton
             Left = 3
             Top = 39
@@ -243,60 +289,6 @@ object Form1: TForm1
             TabOrder = 0
             OnClick = Button1Click
           end
-          object ListBox1: TListBox
-            Left = 3
-            Top = 101
-            Width = 134
-            Height = 109
-            Style = lbOwnerDrawVariable
-            ItemHeight = 13
-            TabOrder = 1
-            OnClick = ListBox1Click
-            OnDblClick = ListBox1DblClick
-            OnDrawItem = ListBox1DrawItem
-            OnKeyDown = ListBox1KeyDown
-          end
-          object Button2: TButton
-            Left = 143
-            Top = 70
-            Width = 72
-            Height = 25
-            Caption = 'Add color'
-            TabOrder = 2
-            OnClick = Button2Click
-          end
-          object Edit2: TEdit
-            Left = 160
-            Top = 101
-            Width = 55
-            Height = 21
-            TabOrder = 3
-            Text = '255'
-          end
-          object Edit3: TEdit
-            Left = 160
-            Top = 128
-            Width = 55
-            Height = 21
-            TabOrder = 4
-            Text = '255'
-          end
-          object Edit4: TEdit
-            Left = 160
-            Top = 155
-            Width = 55
-            Height = 21
-            TabOrder = 5
-            Text = '255'
-          end
-          object Edit5: TEdit
-            Left = 160
-            Top = 189
-            Width = 55
-            Height = 21
-            TabOrder = 6
-            Text = '255'
-          end
           object CheckBox2: TCheckBox
             Left = 3
             Top = 245
@@ -305,7 +297,7 @@ object Form1: TForm1
             Caption = 'Draw background mask'
             Checked = True
             State = cbChecked
-            TabOrder = 7
+            TabOrder = 1
             OnClick = CheckBox2Click
           end
           object ComboBox1: TComboBox
@@ -316,7 +308,7 @@ object Form1: TForm1
             Style = csDropDownList
             ItemHeight = 13
             ItemIndex = 1
-            TabOrder = 8
+            TabOrder = 2
             Text = 'bmAdd'
             OnChange = ComboBox1Change
             Items.Strings = (
@@ -324,25 +316,25 @@ object Form1: TForm1
               'bmAdd'
               'bmMask')
           end
-          object Button3: TButton
+          object ListBox1: TListBox
             Left = 3
             Top = 70
-            Width = 62
-            Height = 25
-            Caption = 'Move up'
-            Enabled = False
-            TabOrder = 9
-            OnClick = Button3Click
+            Width = 216
+            Height = 91
+            Style = lbOwnerDrawFixed
+            ItemHeight = 13
+            TabOrder = 3
+            OnDblClick = ListBox1DblClick
+            OnDrawItem = ListBox1DrawItem
           end
-          object Button4: TButton
-            Left = 71
-            Top = 70
-            Width = 66
-            Height = 25
-            Caption = 'Move down'
-            Enabled = False
-            TabOrder = 10
-            OnClick = Button4Click
+          object Button2: TButton
+            Left = 119
+            Top = 167
+            Width = 100
+            Height = 22
+            Caption = 'Set Alpha...'
+            TabOrder = 4
+            OnClick = Button2Click
           end
         end
         object GroupBox3: TGroupBox
@@ -472,10 +464,6 @@ object Form1: TForm1
       object TabSheet2: TTabSheet
         Caption = 'Movement'
         ImageIndex = 1
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object GroupBox5: TGroupBox
           Left = 0
           Top = 0
@@ -859,22 +847,30 @@ object Form1: TForm1
     Top = 16
   end
   object ColorDialog1: TColorDialog
+    OnClose = ColorDialog1Close
+    OnShow = ColorDialog1Show
     Left = 336
     Top = 16
   end
   object OpenPictureDialog1: TOpenPictureDialog
+    OnClose = ColorDialog1Close
+    OnShow = ColorDialog1Show
     Filter = 'Bitmaps (*.bmp)|*.bmp'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 368
     Top = 16
   end
   object SaveDialog1: TSaveDialog
+    OnClose = ColorDialog1Close
+    OnShow = ColorDialog1Show
     Filter = 'Andorra Particle File (*.apf)|*.apf'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 240
     Top = 48
   end
   object OpenDialog1: TOpenDialog
+    OnClose = ColorDialog1Close
+    OnShow = ColorDialog1Show
     Filter = 'Andorra Particle File (*.apf)|*.apf|All Files (*.*)|*.*'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 272
