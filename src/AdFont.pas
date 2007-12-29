@@ -47,6 +47,8 @@ type
       FCharPatterns:TAdCharPatterns;
       FChanged:boolean;
     protected
+      FTextWidth:integer;
+      FTextHeight:integer;
     public
       constructor Create;virtual;
 
@@ -62,6 +64,9 @@ type
       property CharSizes:TAdCharSizes read FCharSizes write FCharSizes;
       property CharPatterns:TAdCharPatterns read FCharPatterns write FCharPatterns;
       property Changed:boolean read FChanged write FChanged;
+
+      property TextWidth:integer read FTextWidth;
+      property TextHeight:integer read FTextHeight;
   end;
 
   TAdTypeSetterClass = class of TAdTypeSetter;
@@ -124,7 +129,7 @@ type
 
       procedure SetTypeSetter(ATypeSetter:TAdTypeSetter);
       procedure SetColor(AValue:TAndorraColor);
-      procedure CalcTextSize(ATextSet:TAdTextSet);
+      procedure CalcTextSizes(AText:string);
     protected
       property Mesh:TAd2dMesh read FMesh;
 
@@ -238,6 +243,9 @@ var
   lastspace:integer;
   deletedchars:integer;
 begin
+  FTextWidth := 0;
+  FTextHeight := 0;
+
   FChanged := false;
   ypos := 0;
   lineheight := MaxHeight * FCharHeight * FLineHeight;
@@ -310,6 +318,7 @@ begin
       ypos := ypos + lineheight;
     end;
   end;
+  if ypos > FTextHeight then FTextHeight := round(ypos);
 
   //Adjust text
   for i := 0 to High(ATextSet) do
@@ -340,6 +349,8 @@ end;
 procedure TAdSimpleTypeSetter.GenerateLine(AX, AY: double; AText: string;
   var ATextSet: TAdTextSet);
 begin
+  FTextWidth := 0;
+  FTextHeight := 0;
   FChanged := false;
   SetLength(ATextSet, length(AText));
   LineGeneration(AX, AY, 0, AText, ATextSet, 0, Length(AText));
@@ -359,13 +370,15 @@ begin
     charw := CharSizes[ord(AText[i])].X * FCharWidth;
     patw := (CharPatterns[ord(AText[i])].Right - CharPatterns[ord(AText[i])].Left) * FCharWidth;
     path := (CharPatterns[ord(AText[i])].Bottom - CharPatterns[ord(AText[i])].Top) * FCharHeight;
+    if path > FTextHeight then FTextHeight := round(path);
 
     ATextSet[i-1+AOffset].Position := AdRect(width, ay, width + patw, ay + path);
-    ATextSet[i-1+AOffset].TexCoords := CharPatterns[ord(AText[i])]; 
+    ATextSet[i-1+AOffset].TexCoords := CharPatterns[ord(AText[i])];
 
     width := width + charw + FCharSpacing;
     i := i + 1;
   end;
+  if width > FTextWidth then FTextWidth := round(width);
 
   for i := 0 to ACount-1 do
   begin
@@ -504,28 +517,6 @@ begin
   end;
 end;
 
-procedure TAdFont.CalcTextSize(ATextSet: TAdTextSet);
-var
-  i:integer;
-  maxx, minx, maxy, miny:integer;
-begin
-  FLastWidth := 0; FLastHeight := 0;
-  if Length(ATextSet) > 0 then
-  begin
-    maxx := ATextSet[0].Position.Right; minx := ATextSet[0].Position.Left;
-    maxy := ATextSet[0].Position.Bottom; miny := ATextSet[0].Position.Top;
-    for i := 1 to High(ATextSet) do
-    begin
-      if ATextSet[i].Position.Left < minx then minx := ATextSet[i].Position.Left;
-      if ATextSet[i].Position.Right > maxx then maxx := ATextSet[i].Position.Right;
-      if ATextSet[i].Position.Top < miny then miny := ATextSet[i].Position.Top;
-      if ATextSet[i].Position.Bottom > maxy then maxy := ATextSet[i].Position.Bottom;
-    end;
-    FLastWidth := maxx - minx;
-    FLastHeight := maxy - miny;
-  end;
-end;
-
 procedure TAdFont.GenerateText;
 var
   i, j:integer;
@@ -627,8 +618,9 @@ begin
     SetLength(FTextSet, Length(FText));
     TypeSetter.GenerateLine(AX, AY, FText, FTextSet);
 
-    CalcTextSize(FTextSet);
     FLastText := AText;
+    FLastHeight := TypeSetter.FTextHeight;
+    FLastWidth := TypeSetter.FTextWidth;
 
     GenerateText;
   end;
@@ -648,8 +640,9 @@ begin
     SetLength(FTextSet, Length(FText));
     TypeSetter.Generate(FRect, FText, FTextSet);
 
-    CalcTextSize(FTextSet);
     FLastText := AText;
+    FLastHeight := TypeSetter.FTextHeight;
+    FLastWidth := TypeSetter.FTextWidth;
 
     GenerateText;
   end;
@@ -657,29 +650,28 @@ begin
   Draw;
 end;
 
-function TAdFont.TextHeight(AText: string):integer;
+procedure TAdFont.CalcTextSizes(AText:string);
 var
   ATextSet:TAdTextSet;
 begin
   if (TypeSetter.Changed) or (AText <> FLastText) then
   begin
     TypeSetter.GenerateLine(0, 0, AText, ATextSet);
-    CalcTextSize(ATextSet);
     FLastText := AText;
+    FLastWidth := TypeSetter.TextWidth;
+    FLastHeight := TypeSetter.TextHeight;
   end;
+end;
+
+function TAdFont.TextHeight(AText: string):integer;
+begin
+  CalcTextSizes(AText);
   result := FLastHeight;
 end;
 
 function TAdFont.TextWidth(AText: string):integer;
-var
-  ATextSet:TAdTextSet;
 begin
-  if (TypeSetter.Changed) or (AText <> FLastText) then
-  begin
-    TypeSetter.GenerateLine(0, 0, AText, ATextSet);
-    CalcTextSize(ATextSet);
-    FLastText := AText;
-  end;
+  CalcTextSizes(AText);
   result := FLastWidth;
 end;
 
