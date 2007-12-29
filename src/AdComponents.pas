@@ -355,6 +355,10 @@ type
       constructor Create(AParent:TAdComponent);override;
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+
+      property SelStart:integer read FSelStart write FSelStart;
+      property CursorPos:integer read FCursorPos;
+      property SelCount:integer read GetSelCount;      
     published
       property Text:string read FText write FText;
       property FontName;
