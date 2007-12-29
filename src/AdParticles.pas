@@ -367,7 +367,7 @@ end;
 
 procedure TAdColorList.SetItem(AIndex:integer;AItem:TAndorraColor);
 begin
-  inherited Items[AIndex] := @AItem;
+  PAndorraColor(inherited Items[AIndex])^ := AItem;
 end;
 
 
