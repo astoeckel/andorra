@@ -157,7 +157,7 @@ begin
       p1 := ABitmap.ScanLine;
       p2 := Scanline;
 
-      for i := 0 to Size - 1 do
+      for i := 0 to (Size div 4) - 1 do
       begin
         p2^.a := p1^.a;
         inc(p1);
@@ -200,5 +200,6 @@ end;
 initialization
   RegisterGraphicCompressor(TAdBMPCompressor);
   RegisterGraphicCompressor(TAdHAICompressor);
+  RegisterGraphicFormat(TAdBitmapFormat);
 
 end.

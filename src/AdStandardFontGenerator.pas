@@ -18,7 +18,7 @@ unit AdStandardFontGenerator;
 interface
 
 uses
-  AdTypes, AdClasses, AdFontGenerator, Graphics, AdBitmap;
+  AdTypes, AdClasses, AdFontGenerator, Graphics, AdBitmap, AdBitmapEffects;
 
 type
   TAdStandardFontProperties = packed record
@@ -56,9 +56,12 @@ var
   c:char;
   maxw, maxh, ax, ay, sx, sy, cx, cy:integer;
   shadow:boolean;
-  adbmp:TAdBitmap;
+  adbmp,adeffect:TAdBitmap;
   alphacolor:longint;
   params:TAd2dBitmapTextureParameters;
+  blur:TAdBitmapBlur;
+  p1,p2:PRGBARec;
+  p3:PRGBRec;
 begin
   tmp := AData;
   inc(tmp, 5);
@@ -116,6 +119,8 @@ begin
       alpha.Canvas.FillRect(ClipRect);
       alpha.Canvas.Brush.Style := bsClear;
 
+      if ColorToRGB(ShadowColor) = AdTypes.RGB(255,255,255) then
+        ShadowColor := AdTypes.RGB(254,254,254);
       Brush.Color := ShadowColor;
       FillRect(ClipRect);
       Brush.Style := bsClear;
@@ -148,13 +153,14 @@ begin
             alpha.Canvas.TextOut(cx + ShadowOffsetX, cy + ShadowOffsetY, c);
           end;
 
-          ASizes[i * 16 + j] := AdPoint(ax, ay);
+          ASizes[i * 16 + j] := AdPoint(TextWidth(c), TextHeight(c));
           APatterns[i * 16 + j] := AdRect(j*maxw, i*maxh, j*maxw + (maxw + ax) div 2, i*maxh + (maxh + ay) div 2);
 
           //Alphachannel
           alpha.Canvas.Font.Color := clWhite;
           alpha.Canvas.TextOut(cx, cy, c);
           
+          Font.Color := clWhite;
           TextOut(cx, cy, c);
         end;
       end;
@@ -162,7 +168,40 @@ begin
 
     adbmp := TAdBitmap.Create;
     adbmp.Assign(rgb);
-    adbmp.AssignAlphaChannel(alpha);
+    if ShadowBlur = 0 then
+    begin
+      adbmp.AssignAlphaChannel(alpha);
+    end
+    else
+    begin
+      //Blur alpha channel
+      adeffect := TAdBitmap.Create;
+      adeffect.Assign(alpha);
+
+      blur := TAdBitmapBlur.Create;
+      blur.Radius := data^.ShadowBlur;
+      blur.AssignEffect(adeffect);
+      blur.Free;
+
+      //Copy blured bitmap into the alphachannel
+      p1 := adbmp.ScanLine;
+      p2 := adeffect.ScanLine;
+      rgb.PixelFormat := pf24Bit;
+      for i := 0 to adeffect.Height - 1 do
+      begin
+        p3 := rgb.ScanLine[i];
+        for j := 0 to adeffect.Width - 1 do
+        begin
+          //Keep unblured text
+          if (p3^.r = 255) and (p3^.g = 255) and (p3^.b = 255) then
+            p1^.a := 255
+          else
+            p1^.a := (p2^.r + p2^.g + p2^.b) div 3;
+          inc(p1); inc(p2); inc(p3);
+        end;
+      end;              
+      adeffect.Free;
+    end;
 
     with params do
     begin

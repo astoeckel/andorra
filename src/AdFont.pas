@@ -528,8 +528,8 @@ begin
   begin
     if FMesh.Loaded then
     begin
-      FMesh.Vertices := nil;
-      FMesh.Update;
+      FMesh.Free;
+      FMesh := FAppl.CreateMesh;
     end;
     exit;
   end;

@@ -17,8 +17,8 @@ type
       FFPS:integer;
       FInterpolate:boolean;
       FState:TAdPerformanceCounterState;
-      FLastTickCount:LongInt;
-      FTempTime:LongInt;
+      FLastTickCount:Double;
+      FTempTime:Double;
       FTempFPS:integer;
       FInterpolationFactor:integer;
       FMaximumTimeGap:double;
@@ -50,7 +50,23 @@ begin
   result := int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
 end;
 {$ELSE}
-function GetTickCount:LongWord; external 'kernel32.dll' name 'GetTickCount';
+var
+  Frequency:int64 = 0;
+  
+function QueryPerformanceCounter(var lpPerformanceCount: int64): boolean; stdcall; external 'kernel32.dll';
+function QueryPerformanceFrequency(var lpFrequency: int64): boolean; stdcall; external 'kernel32.dll';
+
+function GetTickCount:Double;
+var
+  ticks:int64;
+begin
+  if Frequency = 0 then
+    QueryPerformanceFrequency(Frequency);
+
+  QueryPerformanceCounter(ticks);
+
+  result := ticks * 1000 / Frequency;
+end;
 {$ENDIF}
 
 constructor TAdPerformanceCounter.Create(ACreatePaused: boolean);
@@ -75,7 +91,7 @@ end;
 
 procedure TAdPerformanceCounter.Calculate;
 var
-  tc,td:LongInt;
+  tc,td:Double;
 begin
   tc := GetTickCount;
   td := tc - FLastTickCount;

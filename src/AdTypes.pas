@@ -22,13 +22,18 @@ type
   TAndorraColor = packed record
     r,g,b,a:byte;
   end;
-  PRGBARec = ^TAndorraColor;
   PAndorraColor = ^TAndorraColor;
+  TRGBARec = TAndorraColor;
+  PRGBARec = ^TRGBARec;
+  TRGBAArray = array[0..0] of TRGBARec;
+  PRGBAArray = ^TRGBAArray;   
 
   TRGBRec = packed record
     r,g,b:byte;
   end;
   PRGBRec = ^TRGBRec;
+  TRGBArray = array[0..0] of TRGBRec;
+  PRGBArray = ^TRGBArray;
 
   { 3D-Data }
 
@@ -130,9 +135,9 @@ function Ad_RGB(r,g,b:byte):TAndorraColor;
 
 function AdColorToString(AColor:TAndorraColor):string;
 function StringToAdColor(AString:string):TAndorraColor;
-function AdColorToColor(AAdColor:TAndorraColor):LongWord;
+function AdColorToColor(AAdColor:TAndorraColor):Longint;
 function ColorToAdColor(AColor:LongInt):TAndorraColor;
-function RGB(r,g,b:byte):LongWord;
+function RGB(r,g,b:byte):Longint;
 function GetRValue(AColor:LongInt):byte;
 function GetGValue(AColor:LongInt):byte;
 function GetBValue(AColor:LongInt):byte;
@@ -361,12 +366,12 @@ begin
     CharToValue(AString[7]) * 16 + CharToValue(AString[8]);
 end;
 
-function RGB(r,g,b:byte):LongWord;
+function RGB(r,g,b:byte):Longint;
 begin
   result := R + G shl 8 + B shl 16; 
 end;
 
-function AdColorToColor(AAdColor:TAndorraColor):LongWord;
+function AdColorToColor(AAdColor:TAndorraColor):Longint;
 begin
   result := RGB(AAdColor.r,AAdColor.g,AAdColor.b);
 end;

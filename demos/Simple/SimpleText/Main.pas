@@ -82,13 +82,13 @@ begin
     AdDraw1.ClearSurface(clBlack);
     AdDraw1.BeginScene;
 
-    with AdDraw1.Fonts.GenerateFont('Verdana',36,[]) do
+    with AdDraw1.Fonts.GenerateFont('Verdana',36,[],clLime,128,-5,-5,5) do
     begin
       with TypeSetter as TAdSimpleTypeSetter do
       begin
         DrawMode := [dtCenter, dtMiddle];
       end;
-      Color := Ad_ARGB(128,0,0,255);
+      Color := Ad_ARGB(255,255,255,255);
       TextOut(AdRect(0,0,ClientWidth,ClientHeight),timestr);
     end;
 

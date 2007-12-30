@@ -31,6 +31,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg : TAdSetup;
 begin
+  ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
@@ -49,7 +50,7 @@ begin
       AdImageList1 := TAdImageList.Create(AdDraw);
       with AdImageList1.Add('logo') do
       begin
-        Texture.LoadGraphicFromFile('icon64.png',true,clWhite);
+        Texture.LoadGraphicFromFile('icon64.png');
       end;
       AdImageList1.Restore;
     end
