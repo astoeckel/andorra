@@ -16,6 +16,7 @@
 * Comment: This unit contains the Andorra 2D canvas environment
 }
 
+{This unit contains classes and types which are used for a hardware accelerated canvas environment}
 unit AdCanvas;
 
 interface
@@ -24,15 +25,43 @@ uses
   Classes, AdClasses, AdTypes, AdContainers, AdList, AdFont, Math;
 
 type
+  {A set of three colors used to define the colors of a quad-object.}
   TAdColors = array[0..3] of TAndorraColor;
 
-  TAdBrushStyle = (abClear, abSolid, abGradient);
-  TAdPenStyle = (apNone, apSolid);
-  TAdPenPosition = (ppOuter,ppMiddle,ppInner);
-  TAdCanvasTextureMode = (tmTile, tmStretch, tmStretchAlign);
-  TAdCanvasTexturePosition = (tpStatic, tpDynamic);
-  TAdCanvasGradientDirection = (gdVertical, gdHorizontal);
+  {Defines the style of the brush.}
+  TAdBrushStyle = (
+    abClear {<The filling isn't drawn}, 
+    abSolid{<The filling is filled with one solid color}, 
+    abGradient{<The filling is drawn using a gradient defined by "GradientDirection". @seealso(TAdCanvasGradientDirection)});
+    
+  {Defines the style of the pen.}
+  TAdPenStyle = (
+    apNone{<The outer line of the object won't be drawn.}, 
+    apSolid{<The outer line is drawn and filled with a solid color.});
+  
+  {Defines the position of the pen.}
+  TAdPenPosition = (
+    ppOuter,{<The pen is possitionated on the outer bound of the object}
+    ppMiddle,{<The pen is centered on the outer bound of the object}
+    ppInner{<The pen is possitionated  on the inner bound of the object});
+  
+  {Defines how the texture is drawn.}
+  TAdCanvasTextureMode = (
+    tmTile, {<The texture is tiled in the object.}
+    tmStretch,{<The texture is stretched to the size of the object.} 
+    tmStretchAlign{<The texture is streched to the size of the object and aligned to the outer bounds.});
+  
+  {Defines the relative position of the texture.}
+  TAdCanvasTexturePosition = (
+    tpStatic, {<The position of the texture is relative to the position of the object}
+    tpDynamic{The position of the texture is relative to the position of the coordinate system orgin});
+    
+  {Defines the direction of the gradient. @seealso(TAdBrushStyle)}
+  TAdCanvasGradientDirection = (
+    gdVertical,{<The gradient is drawn from left to right} 
+    gdHorizontal{<The gradient is drawn from top to bottom});
 
+  {Class which defines the look of the brush of the canvas. The brush is used to define the filling of a object.}
   TAdBrush = class
     private
       FColors:TAdColors;
@@ -51,22 +80,36 @@ type
       procedure SetGradientDirection(AValue:TAdCanvasGradientDirection);
       procedure UpdateColors;
     public
+      {Defines the first color of the object. This color is used for the solid and the gradient mode. Changing this color will cause in setting the brush style to "abSolid". @seealso(TAndorraColor)}
       property Color:TAndorraColor read FColor write SetColor;
+      {Defines the second color of the object. This color is used for the gradient fill mode. Changing this color will cause in setting the brush style to "abGradient". @seealso(TAndorraColor)}
       property GradientColor:TAndorraColor read FGradientColor write SetGradientColor;
+      {Defines the direction of the gradient. Changing this mode will cause in setting the brush style to "abGradient".}
       property GradientDirecton:TAdCanvasGradientDirection read FGradientDirection write SetGradientDirection;
+      {Defines the style of the brush. @seealso(TAdBrushStyle)}
       property Style:TAdBrushStyle read FStyle write SetStyle;
+      {Set a texture for filling the brush. You can recive a TAd2dTexture via TAdImage.Texture.Texture. Please notice, that the textures have to have a power of two size.}
       property Texture:TAd2dTexture read FTexture write SetTexture;
+      {Sets the texture mode. @seealso(TAdCanvasTextureMode)}
       property TextureMode:TAdCanvasTextureMode read FTextureMode write FTextureMode;
+      {Sets the position of the texture. @seealso(TAdCanvasPosition)}
       property TexturePosition:TAdCanvasTexturePosition read FTexturePosition write FTexturePosition;
+      {Sets the mode the filling of the object is drawn in.}
       property BlendMode:TAd2dBlendMode read FBlendMode write FBlendMode;
 
+      {Creates an instance of TAdBrush.}
       constructor Create;
+      {Saves the settings of TAdBrush to a stream.}
       procedure SaveToStream(AStream:TStream);
+      {Loads the settings of TAdBrush from a stream.}
       procedure LoadFromStream(AStream:TStream);
+      {Assigns the settings to another brush using Load/SaveToStream and TMemoryStream.}
       procedure Assign(ABrush:TAdBrush);
+      {Test if this brush is equal to another brush.}
       function EqualTo(ABrush:TAdBrush):Boolean;
   end;
 
+  {A class which defines the settings of the outer line of a canvas object.}
   TAdPen = class
     private
       FColor:TAndorraColor;
@@ -84,24 +127,42 @@ type
       procedure SetTexture(AValue:TAd2dTexture);
       procedure SetStyle(AValue:TAdPenStyle);
     public
+      {Defines the color of the line.}
       property Color:TAndorraColor read FColor write SetColor;
+      {Sets the width of the line. Accepts a equal or greater one.}
       property Width:single read FWidth write SetWidth;
+      {Defines a texture the line is filled with. The texture is only used when width is greater one. Please notice, that the textures have to have a power of two size.} 
       property Texture:TAd2dTexture read FTexture write SetTexture;
+      {Sets the texture mode. @seealso(TAdCanvasTextureMode)}
       property TextureMode:TAdCanvasTextureMode read FTextureMode write FTextureMode;
+      {Sets the position of the texture. @seealso(TAdCanvasPosition)}
       property TexturePosition:TAdCanvasTexturePosition read FTexturePosition write FTexturePosition;
+      {Sets the position of the pen. @seealso(TAdPenPosition)}
       property PenPosition:TAdPenPosition read FPenPosition write FPenPosition;
+      {Sets the style of the pen. @seealso(TAdPenStyle)}
       property Style:TAdPenStyle read FStyle write SetStyle;
+      {Sets the mode the line is blended in.}
       property BlendMode:TAd2dBlendMode read FBlendMode write FBlendMode;
 
+      {Creates an instance of TAdPen.}
       constructor Create;
+      {Saves the pen data to a stream.}
       procedure SaveToStream(AStream:TStream);
+      {Loads the pen data from a stream.}
       procedure LoadFromStream(AStream:TStream);
+      {Assigns the pen data to another pen using LoadFromStream/SaveToStream and a temporary TMemoryStream.}
       procedure Assign(APen:TAdPen);
+      {Tests if the pen is equal to another pen.}
       function EqualTo(APen:TAdPen):Boolean;
   end;
 
-  TAdCanvasUpdateState = (usEqual, usUpdate, usDelete);
+  {Tells TAdCanvas what to do when comparing to canvas objects.}
+  TAdCanvasUpdateState = (
+    usEqual, {<The two objects are equal - nothing has to be done.}
+    usUpdate {<The two objects are nearly equal and the object already existsing can be updated.}, 
+    usDelete{<The two objects are totaly different. The object already existsing hase to be deleted.});
 
+  {An abstract class, which represents an object which can be present on the TAdCanvas surface.}
   TAdCanvasObject = class
     private
       FAppl:TAd2dApplication;
@@ -112,20 +173,31 @@ type
       property Appl:TAd2dApplication read FAppl;
       procedure SetMatrix(AValue:TAdMatrix);virtual;abstract;
     public
+      {Creates an instance of TAdCanvasObject.}
       constructor Create(AAppl:TAd2DApplication);
+      {Destroys the instance of TAdCanvasObject}
       destructor Destroy;override;
 
+      {This procedure should be used to draw the canvas object.}
       procedure Draw;virtual;abstract;
+      {This object is called to compare to canvas objects. @seealso(TAdCanvasUpdateState)}
       function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState;virtual;abstract;
+      {When the "CompareTo" function returned "usUpdate", Update is  called to transform this objects to the other objects state.}
       procedure Update(AItem:TAdCanvasObject);virtual;abstract;
+      {Generates the canvas object, so that it can be drawn.}
       procedure Generate;virtual;abstract;
 
+      {Contains the brush which was active in TAdCanvas when creating the object.}
       property Brush:TAdBrush read FBrush write FBrush;
+      {Contains the pen which was active in TAdCanvas when creating the object.}
       property Pen:TAdPen read FPen write FPen;
+      {Use the matrix to transform the object in 3D space.}
       property Matrix:TAdMatrix read FMatrix write SetMatrix;
   end;
 
+  {A pointer to TAdCanvasDisplayList. @seealso(TAdCanvasDisplayList)}
   PAdCanvasObjectList = ^TAdCanvasDisplayList;
+  {Contains multiple TAdCanvasObject objects. The objects can be drawn at once and transformed in 3D space using simple functions.}
   TAdCanvasDisplayList = class(TAdList)
     private
       FTransformMatrix:TAdMatrix;
@@ -135,37 +207,57 @@ type
     protected
       procedure Notify(Ptr:Pointer; Action:TListNotification);override;
     public
-      property Items[Index:integer]:TAdCanvasObject read GetItem write SetItem; default;
-
+      {Creates an instance of TAdCanvasDisplayList.}
       constructor Create(AAppl:TAd2dApplication);
+      {Destroys the instance of TAdCanvasDisplayList.}
       destructor Destroy;override;
 
+      {Resets the matrix used to transform the objects to an identity matrix.}
       procedure ResetTransform;
+      {Creates a scale matrix and multiplies it with the transformation matrix.}
       procedure Scale(AX, AY, AZ: single);
+      {Creates a translation matrix and multiplies it with the transformation matrix.}
       procedure Translate(AX, AY, AZ: single);
+      {Creates a rotate x matrix and multiplies it with the transformation matrix.}
       procedure RotateX(ARotation: single);
+      {Creates a rotate y matrix and multiplies it with the transformation matrix.}
       procedure RotateY(ARotation: single);
+      {Creates a rotate z matrix and multiplies it with the transformation matrix.}
       procedure RotateZ(ARotation: single);
+      {Multiplies "AMatrix" with the transformation matrix.}
       procedure MatrixTransform(AMatrix:TAdMatrix);
 
+      {Draws all objects in the list.}
       procedure Draw;
+      
+      {Property used to have acces on each object in the list.}
+      property Items[Index:integer]:TAdCanvasObject read GetItem write SetItem; default;      
   end;
 
+  {@exclude}
   PAdLinePoint = ^TAdLinePoint;
+  
+  {@exclude}
   TAdLinePoint = record
     X,Y:integer;
     Color:TAndorraColor;
   end;
 
+  {Represents the four positions of a quad.}
   TAdCanvasQuad = record
+    {@exlude}
     p:array[0..3] of TAdVector2;
   end;
 
+  {Represents the four positions of a quad with the correspondenting colors.}
   TAdCanvasColorQuad = record
+    {@exclude}
     p:array[0..3] of TAdVector2;
+    {@exclude}
     c:array[0..3] of TAndorraColor;
   end;
 
+  {@exclude}
   TAdCanvasLine = class(TAdCanvasObject)
     private
       FMesh:TAd2dMesh;
@@ -194,6 +286,7 @@ type
       property Hash:integer read FHash;
   end;
 
+  {@exclude}
   TAdCanvasQuadObject = class(TAdCanvasObject)
     private
       FQuad:TAdCanvasColorQuad;
@@ -226,6 +319,7 @@ type
       property MaxY:single read FMaxY;
   end;
 
+  {@exclude}
   TAdCanvasEllipseObject = class(TAdCanvasObject)
     private
       FLine:TAdCanvasLine;
@@ -252,6 +346,7 @@ type
       property CenterY:single read FCenterY;
   end;
 
+  {@exclude}
   TAdCanvasTextObject = class(TAdCanvasObject)
     private
       FFont:TAdFont;
@@ -274,6 +369,7 @@ type
       property Text:string read FText write FText;
   end;
 
+  {@exclude}
   TAdCanvasPointsObject = class(TAdCanvasObject)
     private
       FMesh:TAd2dMesh;
@@ -298,6 +394,7 @@ type
       property Points:TAdLinkedList read FPoints;
   end;
 
+  {This is the main canvas class.}
   TAdCanvas = class
     private
       FReleaseIndex:integer;
@@ -312,6 +409,7 @@ type
       FTempPen:TAdPen;
       FBrush:TAdBrush;
       FFont:TAdFont;
+      FDisplayLists:TAdLinkedList;
 
       procedure DeleteUnusedLists;
       procedure DeleteUnusedItems;
@@ -323,45 +421,72 @@ type
       procedure ColorQuad(var aquad:TAdCanvasColorQuad);
       procedure DoTextOut(ARect:TAdRect; AText:string);
     public
-      FDisplayLists:TAdLinkedList;
-
+      {Creates an instance of TAdCanvas.}
       constructor Create(AAppl:TAd2dApplication);
+      {Destroys an instance of TAdCanvas.}
       destructor Destroy;override;
 
+      {Does some preparations which have to be done at the beginning of a frame. This function is automatically called by TAdDraw.}
       procedure StartFrame;
+      {Finalizes the frame and calles release. This function is automatically called by TAdDraw.}
       procedure EndFrame;
+      {The "Release" procedure draws the objects which are in the current display list and creates a new display list. @seealso(ReturnDisplayList)}
       procedure Release;
+      {Returns the current display list without drawing and creates a new display list. Use ReturnDisplay list if you want to draw objects aside from TAdCanvas and without calling the draw functions each time. @seealso(Release) @seealso(TAdCanvasDisplayList)}
       function ReturnDisplayList:TAdCanvasDisplayList;
+      {Draws the specified canvas object.}
       procedure DrawObject(var AObj:TAdCanvasObject);
 
+      {Moves the startpoint of the line to the specified coordinates. @seealso(LineTo) @seealso(Line)}
       procedure MoveTo(ax,ay:integer);overload;
+      {Draws a line from the start point to the specified coordinates. @seealso(MoveTo) @seealso(Line)}
       procedure LineTo(ax,ay:integer);overload;
+      {Moves the start of the line to the specified coordinates. @seealso(LineTo) @seealso(Line)}
       procedure MoveTo(ap:TAdPoint);overload;
+      {Draws a line from the start point to the specified coordinates. @seealso(MoveTo) @seealso(Line)}
       procedure LineTo(ap:TAdPoint);overload;
+      {Draws a line from the start point to the specified coordinates. @seealso(MoveTo) @seealso(Line)}
       procedure Line(ax1,ay1,ax2,ay2:integer);overload;
+      {Draws a line from the start point to the specified coordinates. @seealso(MoveTo) @seealso(Line)}
       procedure Line(ap1,ap2:TAdPoint);overload;
 
+      {Draws an arrow from P1 to P2. ArrowSize specifies the length of the arrowhead. ArrowAngle specifies the inner angle between the to arrowhead lines.}
       procedure Arrow(ArrowSize, ArrowAngle:Integer; P1, P2:TAdPoint);
 
+      {Draws a text using the font specified in the "Font" property.}
       procedure TextOut(AX, AY:integer; AText:string);overload;
 
+      {Draws a rectangle.}
       procedure Rectangle(ax1,ay1,ax2,ay2:integer);overload;
+      {Draws a rectangle.}
       procedure Rectangle(ar:TAdRect);overload;
+      {Draws a rectangle.}
       procedure Rectangle(ap1,ap2:TAdPoint);overload;
+      {Draws a rectangle.}
       procedure Rectangle(ap:TAdPoint; awidth,aheight:integer);overload;
 
+      {Draws a single pixel using the color specified in TAdPen.Color}
       procedure PlotPixel(ax, ay:integer);overload;
+      {Draws a single pixel using the color specified in the "AColor" parameter.}
       procedure PlotPixel(ax, ay:integer;acolor:TAndorraColor);overload;
 
+      {Draws an ellipse within the specified coordinates.}
       procedure Ellipse(ax1,ay1,ax2,ay2:integer);
+      {Draws a circle with the center "acx;acy" and the readius "ar".}
       procedure Circle(acx,acy,ar:integer);
 
+      {Draws a colored quad. @seealso(TAdCanvasColorQuad).}
       procedure DrawColoredQuad(aquad:TAdCanvasColorQuad);
+      {Draws a simple quad using the color specified in "Brush". @seealso(TAdCanvasQuad) @seealso(TAdBrush)}
       procedure DrawQuad(aquad:TAdCanvasQuad);
 
+      {Specifies, wether the view/projection matrix should be reseted to the 2D mode when drawing.}
       property DrawIn2d:boolean read FDrawIn2d write FDrawIn2d;
+      {The pen object, which represents the settings for the outline of the objects. @seealso(TAdPen)}
       property Pen:TAdPen read FPen write FPen;
+      {The brush object, which represents the settings for the filling of the objects. @seealso(TAdBrush)}
       property Brush:TAdBrush read FBrush write FBrush;
+      {Set the "Font" property to the font you would like to use with "TextOut".}
       property Font:TAdFont read FFont write FFont;
   end;
 

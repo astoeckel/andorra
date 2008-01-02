@@ -16,6 +16,7 @@
 * Comment: This unit contains the Andorra 2D gui classes
 }
 
+{Contains components which can be used with the Andorra GUI.}
 unit AdComponents;
 
 interface
@@ -25,11 +26,29 @@ uses
   Controls, Classes, Graphics, SysUtils, AdCanvas, AdFont;
 
 type
-  TAdAlignment = (alLeft,alCenter,alRight);
-  TAdTextPos = (tpTop,tpCenter,tpBottom);
+  {Specifies the horizontal text alignment.}
+  TAdAlignment = (
+    alLeft,{<The text is aligned on the left}
+    alCenter,{<The text is aligned in the center}
+    alRight{The text is aligned on the right});
+    
+  {Specifies the vertical text alignment.}
+  TAdTextPos = (
+    tpTop,{<The text is aligned on the top.}
+    tpCenter,{< The text is aligned in the center.}
+    tpBottom{<The text is aligned on the bottom.});
+    
+  {@exclude}
   TAdAlignmentEx = (axLeft, axRight, axTop, axBottom);
-  TAdButtonState = (bsNormal, bsDown, bsHover, bsFocus, bsDisabled);
+  {Defines the state a button control is currently in.}
+  TAdButtonState = (
+    bsNormal,{<The button is in its standard state.}
+    bsDown, {<The button is currently down.}
+    bsHover, {<The button is hovered.}
+    bsFocus, {< The button hase the focus}
+    bsDisabled {< The button is currently disabled});
 
+  {@exclude}
   TAdSkinBtn = class(TAdComponent)
     private
       FSkinName:string;
@@ -49,9 +68,11 @@ type
       constructor Create(AParent:TAdComponent);override;
       property SkinName:string read FSkinName write SetSkinName;
   end;
-
+  
+  {A event which is called when closing a form.}
   TCloseEvent = procedure(Sender:TObject; var CanClose:boolean) of object;
 
+  {A formular component.}
   TAdForm = class(TAdComponent)
     private
       FCaption:string;
@@ -80,27 +101,42 @@ type
       procedure SetShowCloseButton(AValue:boolean);
       procedure CloseBtnClick(Sender:TObject);
     public
+      {Creates an instance of TAdForm.}
       constructor Create(AParent:TAdComponent);override;
+      {Destroys the instance of TAdForm.}
       destructor Destroy;override;
+      {Loads the form data from XML.}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      {Saves the from data to XML.}
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      {Closes the form}
       procedure Close;
+      {Link to the close button, which is displayed in the top-right edge.}
       property CloseButton:TAdSkinBtn read FCloseButton;
     published
+      {Event, which is called when the form is closed.}
       property OnClose:TCloseEvent read FOnClose write FOnClose;
+      {The caption of the formular.}
       property Caption:string read FCaption write FCaption;
+      {Specifies, wether the form should be in the center of its parent element.}
       property Center:boolean read FCenter write SetCenter;
+      {Specifies, wether the close button should be shown.}
       property ShowCloseButton:boolean read GetShowCloseButton write SetShowCloseButton;
+      {Specifies, wether the form is moveable.}
       property Movable:boolean read FMovable write FMovable;
+      {Specifies the name of the font.}
       property FontName;
+      {Specifies the color of the font.}
       property FontColor;
   end;
 
+  {A simple component which may contain other components.}
   TAdContainer = class(TAdComponent)
     protected
       procedure DoDraw;override;
   end;
 
+  {A label component.}
   TAdLabel = class(TAdComponent)
     private
       FCaption:string;
@@ -111,19 +147,30 @@ type
     protected
       procedure DoDraw;override;
     public
+      {Creates an instance of TAdLabel. }
       constructor Create(AParent:TAdComponent);override;
+      {Loads the settings from XML.}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      {Saves the settings to XML}
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
     published
+      {The caption of the label.}
       property Caption:string read FCaption write FCaption;
+      {The horizontal position of the text.}
       property TextPos:TAdTextPos read FTextPos write FTextPos;
+      {The vertical alignment of the text.}
       property Alignment:TAdAlignment read FAlignment write FAlignment;
+      {Defines, whether the text should be wrapped.}
       property WordWrap:boolean read FWordWrap write FWordWrap;
+      {Defines, whether the text should be clipped when it runs out of the bounds of the component.}
       property ClipText:boolean read FClipText write FClipText;
+      {Defines the name of the font.}
       property FontName;
+      {Degines the color of the font.}
       property FontColor;
   end;
 
+  {A simple panel.}
   TAdPanel = class(TAdLabel)
     private
       FSkinItem:TAdSkinItem;
@@ -131,9 +178,11 @@ type
       procedure LoadSkinItem;override;
       procedure DoDraw;override;
     public
+      {Creates an instance of TAdPanel.}
       constructor Create(AParent:TAdComponent);override;
   end;
 
+  {A simple gui button.}
   TAdButton = class(TAdComponent)
     private
       FSkinItem:TAdSkinItem;
@@ -149,18 +198,26 @@ type
       function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
       function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
     public
+      {Creates a new instance of TAdButton.}
       constructor Create(AParent:TAdComponent);override;
+      {Destroys the instance of TAdButton.}
       destructor Destroy;override;
+      {Loads the settings from XML.}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      {Saves the settings to XML.}
       function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      {Returns the state the button is currently in.}
       property State:TAdButtonState read FState;
     published
+      {Defines the caption of the button}
       property Caption:string read FCaption write FCaption;
+      {Defines the font, which is used to draw the caption}      
       property FontName;
+      {Defines the font color, which is used to draw the caption}
       property FontColor;
     end;
 
-  //Written by Michael Morstein alias Neutral General
+  {A simple CheckBox control. @author(Written by Michael Morstein alias Neutral General)}
   TAdCheckBox = class(TAdComponent)
     private
       FState: TAdButtonState;
@@ -179,19 +236,29 @@ type
       function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean;override;
       function DoMouseEnter:boolean;override;
       function DoMouseLeave:boolean;override;
-    public
+    public      
+      {Creates an instance of TAdCheckBoc}
       constructor Create(AParent:TAdComponent);override;
+      {Loads the settings from XML}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      {Saves the settings to XML}
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
+      {Returns, wether the checkbox is checked or not. Set this property to check/uncheck the checkbox.}
       property Checked:Boolean read FChecked write SetChecked;
+      {Defines the caption of the checkbox.}
       property Caption:String read FCaption write FCaption;
+      {Sets the alignment of the checkbox.}
       property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
+      {If groupindex is unequal zero,  TAdCheckBox will behave like a radio button. It is grouped with all other checkboxes with the same group index on the same parent element.}
       property GroupIndex:integer read FGroupIndex write SetGroupIndex;
+      {Defines the font, which is used to draw the caption}      
       property FontName;
+      {Defines the font color, which is used to draw the caption}
       property FontColor;
   end;
 
+  {A simple image, which may be stored in components.}
   TAdResourceImage = class
     private
       FImage:TAdImage;
@@ -205,23 +272,39 @@ type
       procedure UpdateTransparency;
       function GetLoaded:boolean;
     public
+      {Creates an instance of TAdResourceImage.}
       constructor Create(AParent:TAdDraw);
+      {Destroys the instance of TAdResourceImage.}
       destructor Destroy;override;
+      {Loads the image from the specified file.}
       procedure LoadFromFile(AFile:string;ATransparent:boolean;ATransparentColor:LongInt);
+      {Loads the image from the specified graphic.}
       procedure LoadFromGraphic(AGraphic:TGraphic);
+      {Draws the image somewhere on the screen}
       procedure Draw(X,Y:integer);
+      {Loads the picture data from a string}
       procedure LoadFromString(AString:string);
+      {Saves the picture data to a string}
       function SaveToString:string;
+      {Loads the picture data from a stream.}
       procedure LoadFromStream(AStream:TStream);
+      {Saves the picture data to a stream.}
       procedure SaveToStream(AStream:TStream);
+      {Link to the internal used TAdImage}
       property Picture:TAdImage read FImage;
+      {Toggles whether the transparent color is used.}
       property Transparent:boolean read FTransparent write SetTransparent;
+      {Set the transparent color here. Transparent will automaticly set to "true" when using it.}
       property TransparentColor:TColor read FTransparentColor write SetTransparentColor;
+      {Link to the parent TAdDraw.}
       property Parent:TAdDraw read FParent;
+      {The compressor which should be used to compress the picture.}
       property Compressor:TAdGraphicCompressorClass read FCompressor write SetCompressor;
+      {Returns whether the picture is loaded.}
       property Loaded:boolean read GetLoaded;
   end;
 
+  {A simple button, which uses bitmap resources to draw.}
   TAdBitmapButton = class(TAdComponent)
     private
       FImgHover:TAdResourceImage;
@@ -245,23 +328,38 @@ type
       function DoMouseEnter:boolean; override;
       function DoMouseLeave:boolean; override;
     public
+      {Creates an instance of TAdBitmapButton.}
       constructor Create(AParent:TAdComponent);override;
+      {Destroys the instance of TAdBitmapButton.}
       destructor Destroy;override;
+      {Loads the settings and pictures from XML}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      {Stores the settings and pictures in XML}
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      {Returns the state of the button. @seealso(TAdButtonState)}
       property State:TAdButtonState read FState;
     published
+      {The image, which is used to draw the button in its normal state.}
       property ImgNormal:TAdResourceImage read FImgNormal;
+      {The image, which is used to draw the button in its hover state}
       property ImgHover:TAdResourceImage read FImgHover;
+      {The image, which is used to draw the button when it is down.}
       property ImgDown:TAdResourceImage read FImgDown;
+      {The image, which is used to draw the button when it is disabled.}
       property ImgDisabled:TAdResourceImage read FImgDisabled;
+      {The image, which should be drawn when the button is down (checked) and hovered.}
       property ImgCheckedHover:TAdResourceImage read FImgCheckedHover;
+      {Set wether the button should be down. Only possible, if groupindex is unequal zero or checkbutton is true}
       property Down:boolean read FDown write SetDown;
+      {Set this to true, if the button should behave like a checkbox.}
       property CheckButton:boolean read FCheckButton write FCheckButton;
+      {If true, the button is sized to the size of the "normal" image.}
       property AutoSize:boolean read FAutoSize write FAutoSize;
+      {If groupindex is unequal zero,  TAdBitmapButton will behave like a radio button. It is grouped with all other TAdBitmapButtons with the same group index on the same parent element.}      
       property GroupIndex:integer read FGroupIndex write SetGroupIndex;
   end;
 
+  {A simple progressbar component.}
   TAdProgressBar = class(TAdComponent)
     private
       FSmooth:boolean;
@@ -280,22 +378,36 @@ type
       procedure LoadSkinItem; override;
       procedure DoDraw; override;
     public
+      {Creates an instance of TAdProgressBar.}
       constructor Create(AParent:TAdComponent);override;
+      {Destroys the instance of TAdProgressBar.}
       destructor Destroy;override;
+      {Loads the settings from XML.}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      {Stors the settings in XML.}
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      {Returns the percentage, with which the TAdProgressBar is filled.}
       function Percent:single;
     published
+      {The minimum value of the progressbar.}
       property Min:integer read FMin write SetMin;
+      {The maximum percentage of the progressbar.}
       property Max:integer read FMax write SetMax;
+      {The position of the progressbar.}
       property Position:integer read FPosition write SetPosition;
+      {If true, the percentage of the progress is displayed in the middle of the control.}
       property ShowPercentage:boolean read FShowPercentage write FShowPercentage;
+      {If "Smooth" is true, the progress bar will be draw as one solid block. If false, there will be multiple blocks visible.}
       property Smooth:boolean read FSmooth write SetSmooth;
+      {Defines, where the percentage text should stand. @seealso(TAdAlignment)}
       property Align:TAdAlignment read FAlign write FAlign;
+      {The name of the font, which is used to draw the percentage.}
       property FontName;
+      {The color of the font, which is used to draw the percentage.}
       property FontColor;
   end;
 
+  {A simple image component.}
   TAdGUIImage = class(TAdComponent)
     private
       FCenter:boolean;
@@ -308,18 +420,28 @@ type
       procedure DoMove(timegap:double);override;
       function DestinationRect:TAdRect;
     public
+      {Creates an instance of TAdGUIImage.}
       constructor Create(AParent:TAdComponent);override;
+      {Destroys the instance of TAdGUIImage.}
       destructor Destroy;override;
+      {Loads the settings and picture data from XML.}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      {Saves the settings and picture data to XML.}
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
     published
+      {Specifies, whether the image should be centered.}
       property Center:boolean read FCenter write FCenter;
+      {Specifies, whether the image should be streched.}
       property Stretch:boolean read FStretch write FStretch;
+      {Specifies, wheter the image should be streched proportional. If true the image will automaticly be minimized, if the component is smaller than the image.}
       property Proportional:boolean read FProportional write FProportional;
+      {If true, the size of the component will automaticly be set to the size of the image}
       property AutoSize:boolean read FAutoSize write FAutoSize;
+      {The picture resource.}
       property Picture:TAdResourceImage read FPicture;
   end;
 
+  {A simple edit component.}
   TAdEdit = class(TAdComponent)
     private
       FText:string;
@@ -352,23 +474,32 @@ type
 
       property CursorBlinkSpeed:double read FCursorBlinkSpeed write FCursorBlinkSpeed;
     public
+      {Creates an instance of TAdEdit.}
       constructor Create(AParent:TAdComponent);override;
+      {Loads the settings from XML.}
       procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      {Stores the settings in XML.}
       function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
 
+      {The start of the selection. If nothing is selected, "SelStart" will be equal to "CursorPos"}
       property SelStart:integer read FSelStart write FSelStart;
+      {The position of the edit field.}
       property CursorPos:integer read FCursorPos;
+      {The count of selected chars.}
       property SelCount:integer read GetSelCount;      
     published
+      {The text, which is written in the edit field.}
       property Text:string read FText write FText;
+      {The font the text should be written in.}
       property FontName;
+      {The color the text should be written in.}
       property FontColor;
   end;
 
-  const               
-    SPACING = 5;
-
 implementation
+
+const               
+  SPACING = 5;
 
 { TAdPanel }
 

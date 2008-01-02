@@ -42,7 +42,14 @@ type
   TAdIndexArray = array of Word;
 
   {Contains information about how the scene is displayed.}
-  TAdOption = (doFullscreen, doVSync, doHardware, doZBuffer, doAntialias, doLights, doMipmaps);
+  TAdOption = (
+    doFullscreen, {<The scene will be displayed in the fullscreen mode}
+    doVSync, {<The scene will be displayed using V-Sync. The frame rate is linked to the vertical frequncy of the screen}
+    doHardware, {< The scene will be displayed using hardware acceleration.}
+    doZBuffer, {< The Z-Buffer will be activated.}
+    doAntialias,{< Antialias will be enabled when drawing the scene.}
+    doLights, {< Lights will be enabled when drawing the scene.}
+    doMipmaps {<Mipmaps will be enabled when drawing the scne.});
 
   {Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
   TAdOptions = set of TAdOption;
@@ -97,9 +104,9 @@ type
   );
 
   TAd2DTextureFilter = (
-    atPoint,
-    atLinear,
-    atAnisotropic
+    atPoint,{< The filter with worst quality. The pixels won't be interpolated.}
+    atLinear,{< The pixels will be interpolated using  a linear filter.}
+    atAnisotropic{< The pixels will be interpolated using an anisotropic filter.}
   );
   
   {An abstract class which represents a light in Andorra's engine. }
@@ -146,7 +153,9 @@ type
     Lib3D:boolean;
   end;
 
+  {Procedure used in the dll to receive information about the library.}
   TAndorra2DLibraryInformation = procedure(var libinfo:TAd2DLibInfo);stdcall;
+  {Procedure used in the dll to receive the abilities of the library.}
   TAndorra2DLibraryAbilities = procedure(var libabilities:TAd2DLibAbilities);stdcall;
 
   {Abstract class which represents an Andorra 2D application.}
@@ -306,12 +315,13 @@ type
       property Texture:TAd2DTexture read FTexture write SetTexture;
   end;
 
+  {Defines how the texture should be processed when loading from a TAd2dBitmap.}
   TAd2dBitmapTextureParameters = record
-    BitDepth:byte;
-    UseMipMaps:boolean;
-    MagFilter:TAd2dTextureFilter;
-    MinFilter:TAd2dTextureFilter;
-    MipFilter:TAd2dTextureFilter;
+    BitDepth:byte;{< Can be 16 or 32.}
+    UseMipMaps:boolean;{< Specifies wether MipMaps should be generated and used when loading the texture}
+    MagFilter:TAd2dTextureFilter;{< Specifies the filter the texture should be drawn with when it is displayed in a large size.}
+    MinFilter:TAd2dTextureFilter;{< Specifies the filter the texture should be drawn with when it is displayed in a tall size.}
+    MipFilter:TAd2dTextureFilter;{< Specifies the filter which should be used to interpolate between the mipmaps.}
   end;
 
   {An abstract class which represents a bitmap texture in Andorra's engine. }

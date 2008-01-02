@@ -14,17 +14,24 @@
 * Creation Date: 10-12-07
 }
 
+{This unit contains some container classes for the every day use in andorra 2d.}
 unit AdContainers;
 
-interface       
+interface
+   
 type
+  {Pointer on TAdLinkedListItem}
   PAdLinkedListItem = ^TAdLinkedListItem;
+  
+  {A list item used in TAdLinked list.}
   TAdLinkedListItem = record
-    next:PAdLinkedListItem;
-    data:Pointer;
+    next:PAdLinkedListItem;{<Pointer to the next element}
+    data:Pointer;{<Pointer to the stored object.}
   end;
 
+  {Pointer on a TAdLinkedList.}
   PAdLinkedList = ^TAdLinkedList;
+  {A linked list class.}
   TAdLinkedList = class
     private
       FStart,FLast:PAdLinkedListItem;
@@ -37,57 +44,86 @@ type
     protected
 
     public
+      {Don't now what this is for...}
       Tag:integer;
+      {Returns the count of elements in the list}
       property Count:Integer read FCount;
+      {Direct access the the items. Don't use in  time-critical cases.}
       property Items[Index:integer]:Pointer read GetItem write SetItem; default;
 
+      {Creates an instance of TAdLinkedList.}
       constructor Create;
+      {Destroys the instance of TAdLinkedList}
       destructor Destroy;override;
 
+      {Adds an item to the list and returns its position.}
       function Add(AItem:Pointer):Integer;
+      {Inserts a item on a specific place in the list.}
       procedure Insert(AIndex:integer;AItem:Pointer);
+      {Removes an item from the list.}
       function Remove(AItem:Pointer):boolean;
+      {Delets an item with a specific index from the list.}
       function Delete(AIndex:integer):boolean;
+      {Returns the index of a specific item.}
       function IndexOf(AItem:Pointer):integer;
+      {Pointer to the first item. @seealso(TAdLinkedListItem)} 
       function First:Pointer;
+      {Pointer to the last item. @seealso(TAdLinkedListItem) }
       function Last:Pointer;
 
+      {Resets the iterator.}
       procedure StartIteration;
+      {Returns true, if the iterator reached the end of the list.}
       function ReachedEnd:boolean;
+      {Returns the current item of the iterator and steps to the next item.}
       function GetCurrent:Pointer;
   end;
 
+  {An abstract class for the use in TAdMap. Represents a key in the hashmap.}
   TAdMapKey = class
     public
+      {Returns the hash of the object.}
       function Hash:Cardinal;virtual;abstract;
+      {Returns, whether this key is equal to another one.}
       function Equal(AItem:TAdMapKey):boolean;virtual;abstract;
   end;
 
+  {Pointer on TAdMapPair.}
   PAdMapPair = ^TAdMapPair;
+  
+  {Represents a key and a value stored in the hash map.}
   TAdMapPair = record
-    Key:TAdMapKey;
-    Value:TObject;
+    Key:TAdMapKey;{The key of the value}
+    Value:TObject;{The value}
   end;
 
+  {A simple bucket hash map class.}
   TAdMap = class
     private
       FCapacity:Cardinal;
       FData:Pointer;
       FMemSize:Cardinal;
       procedure Rehash(ACapacity:Cardinal);
-    protected
+    protected      
       FCount:Cardinal;
       procedure FreeMemory;
       property Data:Pointer read FData write FData;
     public
+      {Creates a new instance of TAdMap. ACapacity specifies the size of the data array the elements are stored in.}
       constructor Create(ACapacity:Cardinal=128);
+      {Destroys the instance of TAdMap}
       destructor Destroy;override;
 
+      {Inserts a key connected to a value in the hash map.}
       function Insert(AKey:TAdMapKey;AValue:TObject):Boolean;
+      {Returns the stored object or nil, if the object is not found. AKey specifies the key you search with.}
       function GetValue(AKey:TAdMapKey):TObject;
+      {Removes the object connected to the key from the hash map}
       function Remove(AKey:TAdMapKey):Boolean;
 
+      {Returns the count of elements in the list}
       property Count:Cardinal read FCount;
+      {Returns the capacity of the data array.}
       property Capacity:Cardinal read FCapacity;
   end;
 

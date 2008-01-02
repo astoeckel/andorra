@@ -12,7 +12,7 @@
 *Comment: Class which lets you search for all Andorra 2D Plugin libraries in a specific directory
 }
 
-{Lets you search for all Andorra 2D Plugin libraries in a specific directory}
+{Lets you search for all Andorra 2D Plugin libraries within a specific directory}
 unit AdDLLExplorer;
 
 interface
@@ -24,6 +24,7 @@ type
   {A callback procedure for TAdDllExplorer}
   TAdDLLExplorerCallBack = procedure (DllFileName:string;DllInfo:TAd2DLibInfo;DllAbilities:TAd2DLibAbilities) of object;
 
+  {A class, which lets you search for all Andorra 2D Plugin libraries within a specific directory.}
   TAdDLLExplorer = class
     private
       FStrings:TStrings;
