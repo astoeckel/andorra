@@ -16,13 +16,15 @@
 * Comment: This unit contains the 3D-Object generation code
 }
 
+{This unit contains some 3D-Object classes. Please notice, that those classes are not ready yet. This will be done for version 0.4}
 unit Ad3DObj;
 
 interface
 
-uses Classes, {$INCLUDE AdTypes.inc}, AdClasses, AdDraws;
+uses Classes, AdTypes, AdClasses, AdDraws;
 
 type
+  {This class represents a main 3D-object, which can be rotated scaled and translated.}
   TAdMesh = class
     private
       FBuffer:TAd2DMesh;
@@ -43,45 +45,74 @@ type
       property Depth:single index 11 read FDepth write UpdateMatrix;
       property Matrix:TAdMatrix read FMatrix write FMatrix;
     public
+      {The constructor of the TAdMesh class. AParent specifies the target AdDraw. TAdMesh will automaticly connect to the AdDraws surface events for finalization and initialization.}
       constructor Create(AParent:TAdDraw);
+      {The destructor of the TAdMesh class. Destroys all used objects.}
       destructor Destroy;override;
 
+      {Initializes the mesh. This means creating a TAd2dMesh and loading the mesh data by calling the virtual "CreateMesh" function.}
       procedure Initialize;
+      {Destroys the instance of TAd2dMesh.}
       procedure Finalize;
 
+      {This virtual function should be used to load the mesh data (so vertices and indices) into the TAd2dMesh}
       procedure CreateMesh;virtual;
 
+      {This draws the TAd2dMesh buffer using the specified "BlendMode" and "DrawMode"}
       procedure Draw;virtual;
 
+      {A link to the TAd2dMesh buffer}
       property Buffer:TAd2DMesh read FBuffer;
+      {A link to the parent TAdDraw}
       property Parent:TAdDraw read FParent;
 
+      {Setting this property will set the X-Coordinate of the object by updating the matrix of the mesh}
       property X:single index 0 read FX write UpdateMatrix;
+      {Setting this property will set the Y-Coordinate of the object by updating the matrix of the mesh}
       property Y:single index 1 read FY write UpdateMatrix;
+      {Setting this property will set the Z-Coordinate of the object by updating the matrix of the mesh}
       property Z:single index 2 read FZ write UpdateMatrix;
+      {Setting this property will set the X-Roation of the object by updating the matrix of the mesh}      
       property RotationX:single index 3 read FRotX write UpdateMatrix;
+      {Setting this property will set the Y-Roation of the object by updating the matrix of the mesh}      
       property RotationY:single index 4 read FRotY write UpdateMatrix;
+      {Setting this property will set the Z-Roation of the object by updating the matrix of the mesh}      
       property RotationZ:single index 5 read FRotZ write UpdateMatrix;
+      {Setting this property will set the X-Scale of the object by updating the matrix of the mesh}      
       property ScaleX:single index 6 read FScaleX write UpdateMatrix;
+      {Setting this property will set the Y-Scale of the object by updating the matrix of the mesh}      
       property ScaleY:single index 7 read FScaleY write UpdateMatrix;
+      {Setting this property will set the Z-Scale of the object by updating the matrix of the mesh}      
       property ScaleZ:single index 8 read FScaleZ write UpdateMatrix;
+
+      {This property sets the color which should be used by the "CreateMesh" function}      
       property Color:TAndorraColor read FColor write FColor;
 
+      {This property sets the blendmode the object is drawn with}      
       property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
+      {This property sets the drawmode the object is drawn with}      
       property DrawMode:TAd2DDrawMode read FDrawMode write FDrawMode;
 
+      {This virtual function stores the mesh data into a stream}      
       procedure SaveToStream(AStream:TStream);virtual;
+      {This virtual function loads the mesh data from a stream}      
       procedure LoadFromStream(AStream:TStream);virtual;
+      {This procedure uses SaveToStream using a "TMemoryStream" to store the mesh data in a file}      
       procedure SaveToFile(AFile:string);
+      {This procedure uses LoadFromStream using a "TMemoryStream" to load the mesh data from a file}      
       procedure LoadFromFile(AFile:string);
   end;
 
+  {This simple child class of TAdMesh creates a simple plane}
   TAdPlane = class(TAdMesh)
     private
     protected
     public
+      {This base function creates the base mesh consisting of four vertices}
       procedure CreateMesh;override;
+      {Use this property to set the width of the created plane}
       property Width;
+      {Use this property to set the size of the created plane}
       property Height;
   end;
 

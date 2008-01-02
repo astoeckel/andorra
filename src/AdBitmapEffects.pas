@@ -16,6 +16,7 @@
 * Comment: This unit contains effects which may be assigned to TAdBitmap
 }
 
+{This unit contains various bitmap effects, which may be assigned to a TAd2dBitmap.}
 unit AdBitmapEffects;
 
 interface
@@ -24,18 +25,24 @@ uses
   AdTypes, AdBitmapClass;
 
 type
+  {This is the abstract bitmap effect base class. @seealso(TAdBitmapBlur)}
   TAdBitmapEffect = class
     public
+      {This procedure is used to assign the effect to the specified bitmap.}
       procedure AssignEffect(Dest:TAd2dBitmap);virtual;abstract;
   end;
 
+  {A array used by TAdBitmap blur. @seealso(TAdBitmapBlur)}
   TAdBlurMatrix = array[-100..100] of Single;
+  {Class which is able to blur a bitmap @seealso(TAdBitmapEffect) @seealso(TAd2dBimtap) @author(This class uses code written by Phantom1 (http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html))}
   TAdBitmapBlur = class(TAdBitmapEffect)
     private
       FRadius: Single;
       function CalculateMatrix(var ARadius:Single):TAdBlurMatrix;
     public
+      {Assign the blur effect to the destination bitmap specified by "Dest".}
       procedure AssignEffect(Dest:TAd2dBitmap);override;
+      {Set the radius of the blur effect. Accepts values between 0 and 100.}
       property Radius:Single read FRadius write FRadius;
   end;
 

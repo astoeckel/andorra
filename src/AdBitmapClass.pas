@@ -16,6 +16,7 @@
 * Comment: This unit contains the base TAdBitmap class, which is used by the plugin dlls
 }
 
+{This unit contains the main bitmap class, which is used to transfer bitmap data between the host and the plugin dlls.}
 unit AdBitmapClass;
 
 interface
@@ -24,6 +25,7 @@ uses
   AdTypes;
 
 type   
+  {TAd2dBitmap is the base bitmap class, which is used to transfer bitmap data between the host and the plugin dlls. TAd2dBitmap is only depended to AdTypes.pas.}
   TAd2DBitmap = class
     private
       FLastX, FLastY:int64;
@@ -38,20 +40,31 @@ type
       FSize:int64;
       procedure ClearMemory;
     public
+      {Creates a instance of TAd2dBitmap and initializes all used variables.}
       constructor Create;
+      {Destroys the instance of TAd2dBitmap and frees used memory.}
       destructor Destroy;override;
 
+      {Use this procedure to reserve a specific amount of memory. This is important when loading bitmap data from a plugin dll via TAd2dTexture.SaveToBitmap. }
       procedure ReserveMemory(AWidth,AHeight:integer);
 
+      {This procedure resets the alpha channel of the bitmap to 255.}
       procedure ClearAlphaChannel;
 
+      {Returns the pointer to the beginning of a pixel line.}
       function ScanLine(AY:integer):pointer;overload;
+      {Returns the pointer to the first pixel. All pixels are written from top-left to bottom-right. The pixels are stored a TRGBARec.}
       function ScanLine:pointer;overload;
+      {Returns wether memory for the bitmap is reserved.}
       function Loaded:boolean;
 
+      {Returns the width of the bitmap in pixels.}
       property Width:integer read FWidth;
+      {Returns the height of the bitmap in pixels.}
       property Height:integer read FHeight;
+      {Returns the size of the bitmap in bytes.}
       property Size:int64 read FSize;
+      {Use the pixels property to have easy access to each pixel of the bitmap.}
       property Pixels[X, Y:integer]:TAndorraColor read GetPixel write SetPixel;
   end;
 
