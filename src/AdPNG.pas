@@ -129,7 +129,6 @@ var
 begin
   PNG := TPNGObject.Create;
   PNG.LoadFromStream(AStream);
-  ABitmap.ReserveMemory(PNG.Width,PNG.Height);
   GetAlpha(PNG,ABitmap);
   PNG.RemoveTransparency;
   GetRGB(PNG,ABitmap);
@@ -221,6 +220,7 @@ begin
   begin
     png := TPNGObject(AGraphic);
     AddRGB(png, ABitmap);
+    AddAlpha(png, ABitmap);
     result := true;
   end;
 end;
