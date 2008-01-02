@@ -461,7 +461,7 @@ object MainDlg: TMainDlg
             object Button9: TSpeedButton
               Left = 4
               Top = -324
-              Width = 154
+              Width = 137
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Add Element'
@@ -498,7 +498,7 @@ object MainDlg: TMainDlg
             object Button10: TSpeedButton
               Left = 4
               Top = -293
-              Width = 154
+              Width = 137
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Delete Element'
@@ -536,7 +536,7 @@ object MainDlg: TMainDlg
             object SpeedButton6: TSpeedButton
               Left = 4
               Top = -262
-              Width = 154
+              Width = 137
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Wizzard....'
@@ -575,7 +575,7 @@ object MainDlg: TMainDlg
             object GroupBox7: TGroupBox
               Left = 5
               Top = -231
-              Width = 154
+              Width = 137
               Height = 104
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Anchors:'
@@ -620,7 +620,7 @@ object MainDlg: TMainDlg
             object GroupBox8: TGroupBox
               Left = 5
               Top = -124
-              Width = 154
+              Width = 137
               Height = 133
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Position:'
@@ -702,18 +702,18 @@ object MainDlg: TMainDlg
             object GroupBox9: TGroupBox
               Left = 4
               Top = 9
-              Width = 154
+              Width = 137
               Height = 283
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Images:'
               TabOrder = 1
               DesignSize = (
-                154
+                137
                 283)
               object GroupBox3: TGroupBox
                 Left = 3
                 Top = 16
-                Width = 143
+                Width = 126
                 Height = 113
                 Anchors = [akLeft, akTop, akRight]
                 Caption = 'Source rectangle:'
@@ -786,13 +786,13 @@ object MainDlg: TMainDlg
               object GroupBox11: TGroupBox
                 Left = 5
                 Top = 135
-                Width = 141
+                Width = 124
                 Height = 138
                 Anchors = [akLeft, akTop, akRight]
                 Caption = 'Image:'
                 TabOrder = 1
                 DesignSize = (
-                  141
+                  124
                   138)
                 object Label10: TLabel
                   Left = 16
@@ -811,7 +811,7 @@ object MainDlg: TMainDlg
                 object ComboBox1: TComboBox
                   Left = 16
                   Top = 43
-                  Width = 109
+                  Width = 92
                   Height = 21
                   Style = csDropDownList
                   Anchors = [akLeft, akTop, akRight]
@@ -822,7 +822,7 @@ object MainDlg: TMainDlg
                 object ComboBox2: TComboBox
                   Left = 16
                   Top = 91
-                  Width = 109
+                  Width = 92
                   Height = 21
                   Style = csDropDownList
                   Anchors = [akLeft, akTop, akRight]

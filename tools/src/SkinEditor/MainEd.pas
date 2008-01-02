@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, Menus, XPMan, ComCtrls, Tabs, AdSkin, AdDraws,
   AdClasses, ExtDlgs, AdPng, Buttons, CompDlg, Wizzard, AdBitmap, AdTypes,
-  AdCanvas, AdStandardFontGenerator;
+  AdCanvas, AdStandardFontGenerator, AdPersistent;
 
 type
   TRHandleTyp = (rhLT,rhRT,rhLB,rhRB);
@@ -307,7 +307,7 @@ begin
     for i := 0 to AdSkin.Count-1 do
     begin
       AdSkin[i].Images.Compressor :=
-        TAdGraphicCompressorClass(GetClass(dlg.ListBox1.Items[dlg.ListBox1.ItemIndex]));
+        TAdGraphicCompressorClass(AdGetClass(dlg.ListBox1.Items[dlg.ListBox1.ItemIndex]));
     end;
   end;
   dlg.Free;
@@ -450,7 +450,7 @@ var i,j:integer;
     str:TStringList;
     fmt:string;
     temp:TAdGraphicFormat;
-    cref:TPersistentClass;
+    cref:TAdPersistentClass;
     c:integer;
 begin
   OpenPictureDialog1.Filter := '';
@@ -459,7 +459,7 @@ begin
   for i := 0 to RegisteredGraphicFormats.Count-1 do
   begin
     str := TStringList.Create;
-    cref := GetClass(RegisteredGraphicFormats[i]);
+    cref := AdGetClass(RegisteredGraphicFormats[i]);
     if cref <> nil then
     begin
       temp := TAdGraphicFormat(TAdGraphicFormatClass(cref).Create);

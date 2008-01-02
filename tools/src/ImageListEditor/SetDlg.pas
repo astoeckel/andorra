@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, AdDraws, AdClasses, VarDlg, ExtDlgs, Buttons,
-  AdBitmap, AdTypes;
+  AdBitmap, AdTypes, AdPersistent;
 
 type
   TMyImage = class(TImage)
@@ -225,7 +225,7 @@ begin
       bits := AImage.Texture.BitDepth;
     end;
 
-    AImage.Texture.Compressor := TAdGraphicCompressorClass(GetClass(ListBox1.Items[ListBox1.ItemIndex]));
+    AImage.Texture.Compressor := TAdGraphicCompressorClass(AdGetClass(ListBox1.Items[ListBox1.ItemIndex]));
     AImage.PatternWidth := strtointdef(Edit2.Text,0);
     AImage.PatternHeight := strtointdef(Edit3.Text,0);
     AImage.SkipWidth := strtointdef(Edit4.Text,0);

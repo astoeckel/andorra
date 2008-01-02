@@ -393,7 +393,7 @@ var
 begin
   with Engine.Surface.Canvas do
   begin
-    BlendMode := bmAdd;
+    Brush.BlendMode := bmAdd;
     DrawIn2D := false;
 
     Brush.Color := Ad_ARGB(round(Alpha/2),255,255,255);
@@ -403,7 +403,7 @@ begin
     Release;
 
     DrawIn2D := true;
-    BlendMode := bmAlpha;
+    Brush.BlendMode := bmAlpha;
   end;
   Image.Color := Color;
   old := Engine.Surface.AmbientColor;

@@ -5,8 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs,
-  AdDraws, AdClasses, AdPNG, PngImage, AdSetupDlg, AdCanvas, AdPerformanceCounter,
-  AdTypes, AdFont, AdFontFactory, AdStandardFontGenerator;
+  AdDraws, AdTypes, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter, AdCanvas;
 
 type
   TForm1 = class(TForm)
@@ -17,7 +16,6 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    AdImage:TAdImage;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -49,10 +47,6 @@ begin
     if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
-
-      AdImage := TAdImage.Create(AdDraw);
-      AdImage.Texture.LoadGraphicFromFile('icon64.png');
-      AdImage.Restore;
     end
     else
     begin
@@ -70,12 +64,13 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdImage.Free;
   AdPerCounter.Free;
   AdDraw.Free;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+var
+  i:integer;
 begin
   if AdDraw.CanDraw then
   begin
@@ -85,8 +80,16 @@ begin
 
     with AdDraw.Canvas do
     begin
-Font := AdDraw.Fonts.GenerateFont('Comic Sans MS',12,[]);
-Textout(0,0,'Test Text!');
+      Pen.BlendMode := bmAdd;
+      Pen.Color := Ad_ARGB(128, 128, 255, 28);
+      Brush.Style := abClear;
+      for i := 0 to 200 do
+      begin
+        Rectangle(100 + i * 2 - i mod 10, 100 + i * 2 + i mod 10, 200 + i * 2, 200 + i * 2);
+        Release;
+      end;
+
+      Textout(0,0,IntToStr(AdPerCounter.FPS));
     end;
 
     AdDraw.EndScene;

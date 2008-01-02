@@ -1867,6 +1867,7 @@ begin
         Brush.Color := Ad_ARGB(200,128,128,128);
         Rectangle(curxpos,y1pos,curxpos2,y2pos);
         Release;
+        Pen.Style := apSolid;
       end;
     end;
 

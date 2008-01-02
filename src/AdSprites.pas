@@ -1419,7 +1419,7 @@ begin
     Emit(c);
   end;
   FPartSys.Move(TimeGap);
-  if (FAutoDeath) and (FPartSys.Items.Count = 0) then
+  if (FAutoDeath) and (FPartSys.Items.Count = 0) and (FEmissionCount = 0) then
   begin
     Dead;
   end;
@@ -1448,6 +1448,7 @@ procedure TParticleSprite.SetEmissionCount(AValue: integer);
 begin
   if AValue > 0 then
   begin
+    FEmissionCount := AValue;
     FWait := 1000/AValue;
   end
   else

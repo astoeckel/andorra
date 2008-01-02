@@ -715,7 +715,7 @@ function TAdComponent.FindComponent(AName: string): TAdComponent;
 var
   i:integer;
 begin
-  if Name = AName then
+  if LowerCase(Name) = LowerCase(AName) then
   begin
     result := self;
   end

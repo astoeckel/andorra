@@ -158,8 +158,10 @@ type
       procedure DoDraw(AX,AY:double);virtual;
       //Called by the particle system, is called before DoDraw is called. Used to draw a background mask.
       procedure DoPreDraw(AX,AY:double);virtual;
-      
-      //Signs the system that this particle has to be freed.
+      //Called by the particle engine when changing the texture
+      procedure Reset;
+
+      //Shows the system that this particle has to be freed.
       procedure Dead;virtual;
       
       //Copies the settings of another particle to this particle.
@@ -481,7 +483,12 @@ begin
 end;
 
 procedure TAdParticleSystem.SetTexture(AValue: TAdTexture);
+var
+  i:integer;
 begin
+  for i := 0 to Items.Count - 1 do
+    Items[i].Reset;
+
   FImages.Clear;
   FTexture := AValue;
 end;
@@ -624,7 +631,7 @@ function TAdParticle.GetImage: TAdImage;
 var acolor:TAndorraColor;
 begin
   acolor := FColors.GetColor(FLifeTime,FLifedTime);
-  if not CompareColors(acolor,fcolor) then
+  if (not CompareColors(acolor,fcolor)) or (FLastImage = nil) then
   begin
     fcolor := acolor;
     result := FSystem.GetImage(acolor);
@@ -639,6 +646,11 @@ begin
   begin
     result := FLastImage;
   end;
+end;
+
+procedure TAdParticle.Reset;
+begin
+  FLastImage := nil;
 end;
 
 function TAdParticle.GetValue(StartPos, EndPos, Max, Pos: double): double;

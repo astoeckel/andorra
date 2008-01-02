@@ -7,7 +7,7 @@ uses
   Dialogs, ImgList, ComCtrls, Menus, ToolWin, ExtCtrls, XPMan, StdCtrls,
   ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdPNG, AdJPEG, 
   AdCanvas, AdBitmap, AdVCLFormats, AdSimpleCompressors, AdTypes, AdPerformanceCounter,
-  Progress;
+  Progress, AdPersistent;
 
 type
   TMainDlg = class(TForm)
@@ -331,7 +331,7 @@ begin
   for i := 0 to RegisteredGraphicFormats.Count-1 do
   begin
     str := TStringList.Create;
-    cref := TAdGraphicFormatClass(GetClass(RegisteredGraphicFormats[i]));
+    cref := TAdGraphicFormatClass(AdGetClass(RegisteredGraphicFormats[i]));
     if cref <> nil then
     begin
       cref.FileExts(str);
@@ -776,7 +776,7 @@ begin
   comp := TCompressors.Create(self);
   if comp.ShowModal = mrOk then
   begin
-    AdImageList.Compressor := TAdGraphicCompressorClass(GetClass(Comp.ListBox1.Items[Comp.ListBox1.ItemIndex]));
+    AdImageList.Compressor := TAdGraphicCompressorClass(AdGetClass(Comp.ListBox1.Items[Comp.ListBox1.ItemIndex]));
   end;
   comp.Free;  
 end;
