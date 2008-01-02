@@ -390,7 +390,7 @@ end;
 procedure TBall.DoDraw;
 var
   old:TColor;
-begin
+begin 
   with Engine.Surface.Canvas do
   begin
     Brush.BlendMode := bmAdd;

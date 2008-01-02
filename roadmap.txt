@@ -48,9 +48,14 @@ Version 0.3.5 (Releases: BETA|STABLE)
 - Linux support
 
 Version 0.4 (Releases: BETA|STABLE)
+Plugin sie
+- Add Render State system
+- Add point sprites
+- Add antialiasing
 Application side:
+- Rewrite particle systems
 - Load 3D objects [50%]
-- TGA etc. texture loader and compressor
+- TGA etc. texture loader [Tested with GraphicEx]
 - Expand Newton-Unit
 
 Project Beta State
@@ -67,4 +72,3 @@ Project Stable state
 
 Version 1.0
 - Everything is done
-

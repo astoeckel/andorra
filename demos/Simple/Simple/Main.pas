@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs,
-  AdDraws, AdTypes, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter, AdCanvas;
+  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter;
 
 type
   TForm1 = class(TForm)
@@ -69,28 +69,12 @@ begin
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
-var
-  i:integer;
 begin
   if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
     AdDraw.ClearSurface(clBlack);
     AdDraw.BeginScene;
-
-    with AdDraw.Canvas do
-    begin
-      Pen.BlendMode := bmAdd;
-      Pen.Color := Ad_ARGB(128, 128, 255, 28);
-      Brush.Style := abClear;
-      for i := 0 to 200 do
-      begin
-        Rectangle(100 + i * 2 - i mod 10, 100 + i * 2 + i mod 10, 200 + i * 2, 200 + i * 2);
-        Release;
-      end;
-
-      Textout(0,0,IntToStr(AdPerCounter.FPS));
-    end;
 
     AdDraw.EndScene;
     AdDraw.Flip;
