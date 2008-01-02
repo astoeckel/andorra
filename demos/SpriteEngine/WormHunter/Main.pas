@@ -44,6 +44,7 @@ type
       property Direction:TDirection read FDirection;
 
       procedure DoMove(TimeGap:double);override;
+      procedure DoDraw;override;
       procedure SetDir(ADirection:TDirection);
       procedure SetState(AState:TState);
     public
@@ -311,6 +312,11 @@ begin
   
   Speed := 150;
   AnimSpeed := 15;
+end;
+
+procedure TCharacter.DoDraw;
+begin
+  inherited;
 end;
 
 procedure TCharacter.DoMove(TimeGap: double);
