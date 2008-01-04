@@ -248,6 +248,8 @@ type
     {@exlude}
     p:array[0..3] of TAdVector2;
   end;
+  {Pointer type of TAdCanvasQuad}
+  PAdCanvasQuad = ^TAdCanvasQuad;
 
   {Represents the four positions of a quad with the correspondenting colors.}
   TAdCanvasColorQuad = record
@@ -264,10 +266,12 @@ type
       FPoints:TAdLinkedList;
       FOwnPen:boolean;
       FHash:integer;
-      FLastQuad:TAdCanvasQuad;
+      FLastPoint:PAdLinePoint;
       procedure HashPoint(APoint:TAdLinePoint);
       procedure GenerateTextureCoords(maxlen:double;var vertices:TAdVertexArray);
-      function OrthogonalPoints(x1, y1, x2, y2:integer; d: single): TAdCanvasQuad;
+      function OrthogonalPoints(x1, y1, x2, y2 : integer; d: single): TAdCanvasQuad;
+      function IntersectPoint(v1, v2, p, q : TAdVector2 ):TAdPoint;
+      function Determinant(v1, v2 : TAdVector2):double;
     protected
       procedure SetMatrix(AValue:TAdMatrix);override;
     public
@@ -1277,6 +1281,7 @@ begin
   FMesh := Appl.CreateMesh;
   FHash := 0;
   FOwnPen := false;
+  FLastPoint := nil;
 end;
 
 destructor TAdCanvasLine.Destroy;
@@ -1303,10 +1308,16 @@ procedure TAdCanvasLine.AddPoint(APoint: TAdLinePoint);
 var
   PPoint:PAdLinePoint;
 begin
+  if FLastPoint <> nil then
+  begin
+    if (FLastPoint^.X = APoint.X) and
+       (FLastPoint^.Y = APoint.Y) then exit;
+  end;
   HashPoint(APoint);
   New(PPoint);
   PPoint^ := APoint;
   FPoints.Add(PPoint);
+  FLastPoint := PPoint;
 end;
 
 function TAdCanvasLine.CompareTo(AItem: TAdCanvasObject): TAdCanvasUpdateState;
@@ -1337,16 +1348,16 @@ begin
     end
     else
     begin
-      FMesh.Draw(FPen.BlendMode,adTriangles);
+      FMesh.Draw(FPen.BlendMode,adTriangleStrips);
     end;
   end;
 end;
 
 function TAdCanvasLine.OrthogonalPoints(x1, y1, x2, y2:integer; d: single): TAdCanvasQuad;
 var
-  alpha:double;
   l:double;
   d1,d2:double;
+  alpha:double;
 begin
   FillChar(result, SizeOf(result), 0);
 
@@ -1400,20 +1411,49 @@ begin
   FMesh.SetMatrix(AValue);
 end;
 
+function TAdCanvasLine.Determinant(v1, v2: TAdVector2): double;
+begin
+  result := v1.x*v2.y - v1.y*v2.x;
+end;
+
+function TAdCanvasLine.IntersectPoint(v1, v2, p, q : TAdVector2 ):TAdPoint;
+var
+  ps:TAdPointEx;
+  mu:double;
+begin
+  ps.x := - p.x + q.x;
+  ps.y := - p.y + q.y;
+
+  mu := (ps.y*v1.x - v1.y*ps.x) / Determinant(v1, v2);
+
+  result.x := round(-v2.x * mu + q.X);
+  result.y := round(-v2.y * mu + q.Y);
+end;
+
 procedure TAdCanvasLine.Generate;
 var
-  i : integer;
+  i, v : integer;
 
   APen:TAdPen;
 
   Vertices : TAdVertexArray;
-  Indices : TAdIndexArray;
 
   quad:TAdCanvasQuad;
 
-  lp,cp:PAdLinePoint;
-  maxlen:double;
+  v1, v2:TAdVector2;
+  maxlen, l:double;
+
+  p1,q1,p2,q2:TAdVector2;
+  k1, k2:TAdPoint;
+
+  pnts: array of TAdLinePoint;
+
+  vertexcount:integer;
+  primitivecount:integer;
 begin
+  if FPoints.Count < 2 then
+    exit;
+  
   //Copy pen if necessary
   if not FOwnPen then
   begin
@@ -1448,49 +1488,90 @@ begin
   end
   else
   begin
-    FillChar(quad, SizeOf(quad), 0);
-    SetLength(Vertices,FPoints.Count * 2);
-    SetLength(Indices,(FPoints.Count-1) * 6);
+    //Copy points into an array
 
-    //Calculate Vertices
+    SetLength(pnts, FPoints.Count);
     FPoints.StartIteration;
     i := 0;
-    lp := nil;
-    maxlen := 0;
     while not FPoints.ReachedEnd do
     begin
-      cp := PAdLinePoint(FPoints.GetCurrent);
+      pnts[i] := PAdLinePoint(FPoints.GetCurrent)^;
+      i := i + 1;
+    end;
 
-      if lp <> nil then
+    vertexcount := FPoints.Count * 2;
+    primitivecount := (FPoints.Count - 1) * 2;
+
+    SetLength(Vertices,vertexcount);
+
+    //Calculate Vertices
+    i := 0;
+    v := 0;
+    maxlen := 0;
+
+    quad := OrthogonalPoints(pnts[0].X, pnts[0].Y, pnts[1].X, pnts[1].Y, Pen.Width);
+
+    Vertices[v].Color := pnts[i].Color;
+    Vertices[v].Position := AdVector3(quad.p[0].x, quad.p[0].y, 0); inc(v);
+    Vertices[v].Color := pnts[i].Color;
+    Vertices[v].Position := AdVector3(quad.p[1].x, quad.p[1].y, 0); inc(v);
+
+    while i < Length(pnts) - 2 do
+    begin
+      maxlen := maxlen + sqrt(sqr(pnts[i].X-pnts[i+1].X)+sqr(pnts[i].Y-pnts[i+1].Y));
+
+      v1 := AdVector2(pnts[i+1].X - pnts[i].X, pnts[i+1].Y - pnts[i].Y);
+      v2 := AdVector2(pnts[i+2].X - pnts[i+1].X, pnts[i+2].Y - pnts[i+1].Y);
+
+      l := Determinant(v1, v2);
+      if CompareValue(l, 0, 0.001) <> 0 then
       begin
-        FLastQuad := quad;
-        quad := OrthogonalPoints(lp^.x, lp^.y, cp^.x, cp^.y, FPen.Width);
+        quad := OrthogonalPoints(
+          pnts[i].X, pnts[i].Y, pnts[i+1].X, pnts[i+1].Y, Pen.Width);
 
-        if (Pen.Texture <> nil) and (Pen.TextureMode = tmStretch) then
-        begin
-          maxlen := maxlen +
-            sqrt( sqr(lp^.X - cp^.X) + sqr(lp^.Y - cp^.Y));
-        end;
+        p1 := quad.p[0];
+        q1 := quad.p[1];
 
+        quad := OrthogonalPoints(
+          pnts[i+1].X, pnts[i+1].Y, pnts[i+2].X, pnts[i+2].Y, Pen.Width);
 
-        Vertices[i*2].Position   := AdVector3(quad.p[2].x, quad.p[2].y, 0);
-        Vertices[i*2].Color := cp^.Color;
-        Vertices[i*2].Normal := AdVector3(0,0,-1);
-        Vertices[i*2+1].Position := AdVector3(quad.p[3].x, quad.p[3].y, 0);
-        Vertices[i*2+1].Color := cp^.Color;
-        Vertices[i*2+1].Normal := AdVector3(0,0,-1);
+        p2 := quad.p[2];
+        q2 := quad.p[3];
 
-        if i = 1 then
-        begin
-          Vertices[0].Position   := AdVector3(quad.p[0].x, quad.p[0].y, 0);
-          Vertices[0].Color := lp^.Color;
-          Vertices[1].Position := AdVector3(quad.p[1].x, quad.p[1].y, 0);
-          Vertices[1].Color := lp^.Color;
-        end;
+        k1 := IntersectPoint(v1, v2, p1, p2);
+        k2 := IntersectPoint(v1, v2, q1, q2);
+
+        Vertices[v].Color := pnts[i].Color;
+        Vertices[v].Position := AdVector3(k1.x, k1.y, 0); inc(v);
+        Vertices[v].Color := pnts[i].Color;
+        Vertices[v].Position := AdVector3(k2.x, k2.y, 0); inc(v);
+      end
+      else
+      begin
+        primitivecount := primitivecount - 2;
       end;
 
-      lp := cp;
+
       i := i + 1;
+    end;
+
+    maxlen := maxlen + sqrt(sqr(pnts[i].X-pnts[i+1].X)+sqr(pnts[i].Y-pnts[i+1].Y));
+    
+    quad := OrthogonalPoints(
+      pnts[High(pnts)-1].X, pnts[High(pnts)-1].Y,
+      pnts[High(pnts)].X, pnts[High(pnts)].Y,
+      Pen.Width);
+
+    Vertices[v].Color := pnts[i].Color;
+    Vertices[v].Position := AdVector3(quad.p[2].x, quad.p[2].y, 0); inc(v);
+    Vertices[v].Color := pnts[i].Color;
+    Vertices[v].Position := AdVector3(quad.p[3].x, quad.p[3].y, 0); inc(v);
+
+    SetLength(Vertices, v);
+
+    for i := 0 to Length(Vertices)-1 do
+    begin
+      Vertices[i].Normal := AdVector3(0,0,-1);
     end;
 
     //Calculate Texture coordinate
@@ -1499,20 +1580,8 @@ begin
       GenerateTextureCoords(maxlen, Vertices);
     end;
 
-    //Calculate Indices
-    for i := 0 to FPoints.Count - 2 do
-    begin
-      Indices[i * 6]     := (i * 2) + 1;
-      Indices[i * 6 + 1] := (i * 2);
-      Indices[i * 6 + 2] := (i * 2) + 2;
-      Indices[i * 6 + 3] := (i * 2) + 1;
-      Indices[i * 6 + 4] := (i * 2) + 2;
-      Indices[i * 6 + 5] := (i * 2) + 3;
-    end;
-
     FMesh.Vertices := Vertices;
-    FMesh.IndexBuffer := Indices;
-    FMesh.PrimitiveCount := (FPoints.Count-1) * 2;
+    FMesh.PrimitiveCount := primitivecount;
     FMesh.Texture := FPen.Texture;
     FMesh.Update;
     FMesh.SetMatrix(AdMatrix_Identity);
@@ -1522,70 +1591,46 @@ end;
 procedure TAdCanvasLine.GenerateTextureCoords(maxlen: double;
   var Vertices: TAdVertexArray);
 var
-  i:integer;
-  lp,cp:PAdLinePoint;
-  ax,ay1,ay2,len:double;
+  i : integer;
+  ay1,ay2,len:double;
 begin
-  //Stretch coordinates
-  if Pen.TextureMode = tmStretch then
+  ay1 := 0.5 - (FPen.Width / 2) / (Pen.Texture.Height);
+  ay2 := 0.5 + (FPen.Width / 2) / (Pen.Texture.Height);
+
+  for i := 0 to Length(Vertices) div 2 - 1 do
   begin
-    FPoints.StartIteration;
-    i := 0;
-    lp := nil;
-    ax := 0;
-    while not FPoints.ReachedEnd do
+    if Pen.TextureMode = tmTile then
     begin
-      cp := PAdLinePoint(FPoints.GetCurrent);
-
-      Vertices[i*2].Texture.Y := 0;
-      Vertices[i*2+1].Texture.Y := 1;
-      if lp = nil then
-      begin
-        Vertices[0].Texture.X := 0;
-        Vertices[1].Texture.X := 0;
-      end
-      else
-      begin
-        len := sqrt(sqr(lp^.X - cp^.X) + sqr(lp^.Y - cp^.Y));
-        ax := ax + len/maxlen;
-        Vertices[i*2].Texture.X := ax;
-        Vertices[i*2+1].Texture.X := ax;
-      end;
-      lp := cp;
-      i := i + 1;
-    end;
-  end;
-
-  //Tile Coordinates
-  if Pen.TextureMode = tmTile then
-  begin
-    FPoints.StartIteration;
-    i := 0;
-    lp := nil;
-    ax := 0;
-    ay1 := 0.5 - (FPen.Width / 2) / (Pen.Texture.Height);
-    ay2 := 0.5 + (FPen.Width / 2) / (Pen.Texture.Height);
-    while not FPoints.ReachedEnd do
-    begin
-      cp := PAdLinePoint(FPoints.GetCurrent);
-
-      Vertices[i*2].Texture.Y := ay1;
+      Vertices[i*2+0].Texture.Y := ay1;
       Vertices[i*2+1].Texture.Y := ay2;
+    end else
+    begin
+      Vertices[i*2+0].Texture.Y := 0;
+      Vertices[i*2+1].Texture.Y := 1;
+    end;
 
-      if lp = nil then
+    if i = 0 then
+    begin
+      Vertices[0].Texture.X := 0;
+      Vertices[1].Texture.X := 0;
+    end
+    else
+    begin
+      len :=
+        (sqrt(sqr(Vertices[i*2-2].Position.X - Vertices[i*2+0].Position.X)   +
+              sqr(Vertices[i*2-2].Position.Y - Vertices[i*2+0].Position.Y))  +
+         sqrt(sqr(Vertices[i*2-1].Position.X - Vertices[i*2+1].Position.X)   +
+              sqr(Vertices[i*2-1].Position.Y - Vertices[i*2+1].Position.Y))) / 2;
+
+      if Pen.TextureMode = tmTile then
       begin
-        Vertices[0].Texture.X := 0;
-        Vertices[1].Texture.X := 0;
-      end
-      else
+        Vertices[i*2+0].Texture.X := Vertices[i*2-2].Texture.X + len / Pen.Texture.Width;
+        Vertices[i*2+1].Texture.X := Vertices[i*2-1].Texture.X + len / Pen.Texture.Width;
+      end else
       begin
-        len := sqrt(sqr(lp^.X - cp^.X) + sqr(lp^.Y - cp^.Y));
-        ax := ax + len/Pen.Texture.Width;
-        Vertices[i*2].Texture.X := ax;
-        Vertices[i*2+1].Texture.X := ax;
+        Vertices[i*2+0].Texture.X := Vertices[i*2-2].Texture.X + len / maxlen;
+        Vertices[i*2+1].Texture.X := Vertices[i*2-1].Texture.X + len / maxlen;
       end;
-      lp := cp;
-      i := i + 1;
     end;
   end;
 end;
@@ -1711,8 +1756,14 @@ begin
   if (FPen.Style <> apNone) then
   begin
     //Set line object properties if necessary
-    if (FLine.Points.Count = 0) then
+    if (FLine.Points.Count < 4) then
     begin
+      if FLine.Points.Count > 0 then
+      begin
+        FLine.Free;
+        FLine := TAdCanvasLine.Create(FAppl);
+      end;
+      
       FLine.Pen := FPen;
       for i := 0 to 3 do
       begin

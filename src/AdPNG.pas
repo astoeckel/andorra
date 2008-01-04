@@ -107,12 +107,32 @@ end;
 
 procedure AddRGB(APNG:TPNGObject;ABMP:TAdBitmap);
 var
-  Bmp:TBitmap;
+  x,y:integer;
+  sl1:PRGBRec;
+  sl2:PRGBARec;
+  bmp : TBitmap;
 begin
-  Bmp := TBitmap.Create;
-  ABMP.AssignTo(Bmp);
-  APNG.Assign(Bmp);
-  Bmp.Free;
+  bmp := TBitmap.Create;
+  bmp.Width := ABMP.Width;
+  bmp.Height := ABMP.Height;
+  bmp.PixelFormat := pf24Bit;
+  
+  sl2 := ABMP.ScanLine;
+  for y := 0 to ABMP.Height - 1 do
+  begin
+    sl1 := bmp.Scanline[y];
+    for x := 0 to ABMP.Width - 1 do
+    begin
+      sl1^.r := sl2^.r;
+      sl1^.g := sl2^.g;
+      sl1^.b := sl2^.b;
+      inc(sl1); inc(sl2);
+    end;
+  end;
+
+  APNG.Assign(bmp);
+
+  bmp.Free;
 end;
 
 
@@ -129,6 +149,7 @@ var
 begin
   PNG := TPNGObject.Create;
   PNG.LoadFromStream(AStream);
+  ABitmap.ReserveMemory(PNG.Width,PNG.Height);
   GetAlpha(PNG,ABitmap);
   PNG.RemoveTransparency;
   GetRGB(PNG,ABitmap);
@@ -220,6 +241,7 @@ begin
   begin
     png := TPNGObject(AGraphic);
     AddRGB(png, ABitmap);
+    png.CreateAlpha;
     AddAlpha(png, ABitmap);
     result := true;
   end;

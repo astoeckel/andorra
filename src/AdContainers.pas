@@ -66,9 +66,9 @@ type
       function Delete(AIndex:integer):boolean;
       {Returns the index of a specific item.}
       function IndexOf(AItem:Pointer):integer;
-      {Pointer to the first item. @seealso(TAdLinkedListItem)} 
+      {Pointer to the first item.} 
       function First:Pointer;
-      {Pointer to the last item. @seealso(TAdLinkedListItem) }
+      {Pointer to the last item.}
       function Last:Pointer;
 
       {Resets the iterator.}
