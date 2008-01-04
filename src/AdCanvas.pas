@@ -1794,7 +1794,7 @@ begin
 
       //Clsoe line
       p.X := round(FQuad.p[0].X);
-      p.Y := round(FQuad.p[0].Y);
+      p.Y := round(FQuad.p[0].Y - trunc(Pen.Width / 2));
       p.Color := FPen.Color;
       PAdLinePoint(FLine.Points.GetCurrent)^ := p;
 
