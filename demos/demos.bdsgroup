@@ -8,9 +8,7 @@
 			<Option Name="GUID">{9376E7B6-C184-4D8C-95C3-62017320F41D}</Option>
 		</Option>
 	</PersonalityInfo>
-	<Default.Personality>  
-    
-    <Projects>
+	<Default.Personality>  <Projects>
       <Projects Name="WormHunter.exe">SpriteEngine\WormHunter\WormHunter.bdsproj</Projects>
       <Projects Name="Simple.exe">Simple\Simple\Simple.bdsproj</Projects>
       <Projects Name="Image.exe">Simple\Image\Image.bdsproj</Projects>
@@ -25,7 +23,8 @@
       <Projects Name="MovingPlanet.exe">SpriteEngine\Moving Planet\MovingPlanet.bdsproj</Projects>
       <Projects Name="SimpleText.exe">Simple\SimpleText\SimpleText.bdsproj</Projects>
       <Projects Name="TextDemo.exe">Simple\TextDemo\TextDemo.bdsproj</Projects>
-      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe</Projects>
+      <Projects Name="Spiral.exe">Simple\Spiral\Spiral.bdsproj</Projects>
+      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>
