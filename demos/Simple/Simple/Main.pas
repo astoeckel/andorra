@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs,
-  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter, AdSimpleCompressors;
+  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter, AdSimpleCompressors,
+  AdTypes;
 
 type
   TForm1 = class(TForm)
@@ -16,7 +17,6 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    AdImage:TAdImage;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -48,11 +48,6 @@ begin
     if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
-
-      AdImage := TAdImage.Create(AdDraw);
-      AdImage.Texture.LoadGraphicFromFile('icon64.png');
-      AdImage.Restore;
-      AdImage.Texture.Compressor := TAdPNGCompressor;
     end
     else
     begin
@@ -70,7 +65,6 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdImage.Free;
   AdPerCounter.Free;
   AdDraw.Free;
 end;
@@ -82,7 +76,7 @@ begin
     AdPerCounter.Calculate;
     AdDraw.ClearSurface(clBlack);
     AdDraw.BeginScene;
-    AdImage.Draw(AdDraw, 0, 0, 0);
+
     AdDraw.EndScene;
     AdDraw.Flip;
   end;

@@ -101,7 +101,6 @@ begin
     with AdDraw1.Canvas do
     begin
       Pen.Width := 16;
-//      Pen.Texture := AdImageList[0].Texture.Texture;
       Pen.TextureMode := tmTile;
       Pen.TexturePosition := tpDynamic;
 
@@ -137,6 +136,8 @@ begin
         end;
       end;
 
+      //It would be better to use "ReturnDisplayList" and draw each spiral once.
+      //Rotation is possible by using TAdDisplayList.RotateZ.
       Release;
     end;
 
