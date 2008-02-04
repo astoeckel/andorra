@@ -12,23 +12,17 @@
 *
 * Project: Andorra 2D
 * Author: Andreas Stöckel
-* Filename: AndorraOGL.dpr
+* Filename: AndorraOGL.lpr
 }
 
-library AndorraOGL;
+library AndorraOGLLaz;
 
-{$IFDEF FPC}
-  {$MODE delphi}
-{$ENDIF}
+{$mode delphi}{$H+}
 
 uses
   AdClasses,
   OGLMain in 'OGLMain.pas';
-
-{$E .dll}
-
-{$R *.res}
-
+  
 function CreateApplication:TAd2DApplication;stdcall;
 begin
   result := TOGLApplication.Create;

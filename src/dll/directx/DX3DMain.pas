@@ -13,7 +13,9 @@ unit DX3DMain;
 
 interface
 
-uses SysUtils, d3dx9, Direct3D9, AdClasses, Windows, Math, AdTypes, AdBitmapClass;
+uses                 
+  Sysutils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
+  AdTypes, AdBitmapClass;
 
 type
   TDXApplication = class(TAd2DApplication)
@@ -40,13 +42,16 @@ type
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
-      function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
+      function Initialize(AWnd:TAdWindowFramework; AOptions:TAdOptions;
+        ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
+
+      function SupportsWindowFramework(AClassId:ShortString):boolean;override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;
@@ -154,7 +159,7 @@ begin
 
 end;    }
 
-function TDXApplication.Initialize(AWnd: LongWord; AOptions: TAdOptions;
+function TDXApplication.Initialize(AWnd: TAdWindowFramework; AOptions: TAdOptions;
   ADisplay: TAdDisplay):boolean;
 var
   d3dpp : TD3DPresent_Parameters;
@@ -278,7 +283,8 @@ begin
     FPresent := d3dpp;
 
     //Create device
-    hr := Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype, AWnd, vp, @d3dpp, Direct3DDevice9);
+    hr := Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype,
+      TAdHandleWindowFramework(AWnd).Handle, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
     begin
       WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
@@ -423,6 +429,13 @@ begin
   vp.MaxZ := 1;
 
   direct3ddevice9.SetViewport(vp);
+end;
+
+function TDXApplication.SupportsWindowFramework(
+  AClassId:ShortString): boolean;
+begin
+  result :=
+    Pos('tadhandlewindowframework',lowercase(AClassId)) > 0;
 end;
 
 {procedure TDXApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);

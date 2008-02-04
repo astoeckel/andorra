@@ -18,9 +18,15 @@
 
 unit OGLMain;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
-uses AdClasses, AdTypes, AdBitmapClass, Math, dglOpenGL, Windows;
+uses
+  SysUtils, AdWindowFramework, AdClasses, AdTypes, AdBitmapClass, Math, dglOpenGL
+  {$IFDEF WIN32}, Windows{$ENDIF};
 
 type
   TOGLColor = record
@@ -31,11 +37,16 @@ type
   TOGLVector3Array = array of TAdVector3;
   TOGLVector2Array = array of TAdVector2;
 
+  TOGLWindowType = (wtHandle, wtContext);
+
   TOGLApplication = class(TAd2DApplication)
     private
+      {$IFDEF WIN32}
       FDC : HDC;
       FRC : HGLRC;
-      FWnd: LongWord;
+      {$ENDIF}
+      FWnd: TAdWindowFramework;
+      FWindowType:TOGLWindowType;
       FLastTexture:TAd2dTexture;
     protected
       procedure SetAmbientLight(AValue:TAndorraColor);override;
@@ -47,13 +58,15 @@ type
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
       //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
-      function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
+      function Initialize(AWnd:TAdWindowFramework; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
+
+      function SupportsWindowFramework(AClassId:shortstring):boolean;override;
 
       procedure ClearSurface(AColor: TAndorraColor);override;
       procedure BeginScene;override;
@@ -131,23 +144,37 @@ begin
 
 end;    }
 
-function TOGLApplication.Initialize(AWnd: LongWord; AOptions: TAdOptions;
+function TOGLApplication.Initialize(AWnd: TAdWindowFramework; AOptions: TAdOptions;
   ADisplay: TAdDisplay):boolean;
+var
+  FHandle:LongInt;
 begin
   result := false;
   WriteLog(ltNone,'Try to init Andorra OpenGL Plugin.');
   if InitOpenGL then
   begin
     FOptions := AOptions;
+
     FWnd := AWnd;
 
-    FDC := GetDC(AWnd);
-    FRC := CreateRenderingContext(FDC,[opDoubleBuffered],32,24,0,0,0,0);
+    {$IFDEF WIN32}
+    if FWindowType = wtHandle then
+    begin
+      FHandle := TAdHandleWindowFramework(AWnd).Handle;
 
-    FHeight := ADisplay.Height;
-    FWidth := ADisplay.Width;
+      FDC := GetDC(FHandle);
+      FRC := CreateRenderingContext(FDC,[opDoubleBuffered],32,24,0,0,0,0);
 
-    ActivateRenderingContext(FDC,FRC);
+      FHeight := ADisplay.Height;
+      FWidth := ADisplay.Width;
+
+      ActivateRenderingContext(FDC,FRC);
+    end else{$ENDIF}
+    begin
+      InitOpenGL;
+      ReadExtensions;
+      ReadImplementationProperties;
+    end;    
 
     result := true;
 
@@ -170,9 +197,14 @@ end;
 procedure TOGLApplication.Finalize;
 begin
   WriteLog(ltNone,'Finalize Andorra OpenGL Plugin');
-  DeactivateRenderingContext;
-  DestroyRenderingContext(FRC);
-  ReleaseDC(FWnd, FDC);
+  {$IFDEF WIN32}
+  if FWindowType = wtHandle then
+  begin
+    DeactivateRenderingContext;
+    DestroyRenderingContext(FRC);
+    ReleaseDC(TAdHandleWindowFramework(FWnd).Handle, FDC);
+  end;
+  {$ENDIF}
 end;
 
 procedure TOGLApplication.SetOptions(AValue: TAdOptions);
@@ -236,6 +268,21 @@ begin
   glViewPort(AValue.Left,FHeight - AValue.Top - (AValue.Bottom-AValue.Top),AValue.Right-AValue.Left,AValue.Bottom-AValue.Top);
 end;
 
+function TOGLApplication.SupportsWindowFramework(AClassId: shortstring): boolean;
+begin
+  result := false;
+  {$IFDEF WIN32}if (Pos('tadhandlewindowframework',lowercase(AClassId)) > 0) then
+  begin
+    FWindowType := wtHandle;
+    result := true;
+  end else{$ENDIF}
+  if (Pos('tadglcontextgeneratingwindowframework',lowercase(AClassId)) > 0) then
+  begin
+    FWindowType := wtContext;
+    result := true;
+  end;
+end;
+
 procedure TOGLApplication.GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);
 begin
   glGetFloatv(GL_PROJECTION_MATRIX, @AMatProj);
@@ -259,7 +306,13 @@ end;
 
 procedure TOGLApplication.Flip;
 begin
-  SwapBuffers(FDC);
+  {$IFDEF WIN32}if FWindowType = wtHandle then
+  begin
+    SwapBuffers(FDC);
+  end else{$ENDIF}
+  begin
+    TAdGLContextGeneratingWindowFramework(FWnd).Swap;
+  end;
 end;
 
 procedure TOGLApplication.ClearSurface(AColor: TAndorraColor);
