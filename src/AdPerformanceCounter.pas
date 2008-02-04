@@ -4,7 +4,7 @@ interface
 
 {$IFNDEF WIN32}
 uses
-  LibC;
+  LclIntf;
 {$ENDIF}
 
 type
@@ -41,15 +41,7 @@ implementation
 
 { TAdPerformanceCounter }
 
-{$IFNDEF WIN32}
-function GetTickCount:Cardinal;
-var
-  tv:timeval;
-begin
-  GetTimeOfDay(tv, nil);
-  result := int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
-end;
-{$ELSE}
+{$IFDEF WIN32}
 var
   Frequency:int64 = 0;
   

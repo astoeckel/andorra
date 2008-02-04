@@ -20,7 +20,7 @@ unit AdClasses;
 interface
 
 uses
-  AdTypes, AdBitmapClass;
+  AdWindowFramework, AdTypes, AdBitmapClass;
 
 type   
   {Andorras vertex format}
@@ -189,7 +189,8 @@ type
       procedure SetLogProc(ALogProc:TAdLogProc);
 
       {Initializes the engine. AWnd is the handle to the window.}
-      function Initialize(AWnd:LongWord; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;virtual;abstract;
+      function Initialize(AWnd:TAdWindowFramework; AOptions:TAdOptions;
+        ADisplay:TAdDisplay):boolean;virtual;abstract;
       {Finalizes the engine.}
       procedure Finalize;virtual;abstract;
 
@@ -210,6 +211,9 @@ type
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);virtual;abstract;
       {Returns the current view and projection matrix}
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);virtual;abstract;
+
+      {Returns whether the given windowframework is supported.}
+      function SupportsWindowFramework(AClassId:ShortString):boolean;virtual;abstract;
 
       {Returns the width of the engines surface}
       property Width:integer read FWidth;

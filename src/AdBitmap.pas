@@ -19,6 +19,10 @@
 {This unit contains a improved bitmap, which may load data from different picture sources and gives the possibility of easy pixel access.}
 unit AdBitmap;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
@@ -179,7 +183,7 @@ var
 begin
   tmp := GetObjectFormat(AGraphic);
   if tmp = nil then
-    raise ENoValidFormat('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
   tmp.Assign(self, AGraphic);
   tmp.Free;  
 end;
@@ -190,7 +194,7 @@ var
 begin
   tmp := GetObjectFormat(AGraphic);
   if tmp = nil then
-    raise ENoValidFormat('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
   tmp.AssignAlphaChannel(self, AGraphic);
   tmp.Free;
 end;
@@ -201,7 +205,7 @@ var
 begin
   tmp := GetObjectFormat(AGraphic);
   if tmp = nil then
-    raise ENoValidFormat('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
   tmp.AssignAlphaChannelTo(self, AGraphic);
   tmp.Free;                                
 end;
@@ -212,7 +216,7 @@ var
 begin
   tmp := GetObjectFormat(AGraphic);
   if tmp = nil then
-    raise ENoValidFormat('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
   tmp.AssignTo(self, AGraphic);
   tmp.Free;
 end;
@@ -267,7 +271,7 @@ end;
 procedure TAdBitmap.LoadFromStream(AStream: TStream);
 var
   s:TAdVeryShortString;
-  classname:string;
+  aclassname:string;
   cref:TAdGraphicCompressorClass;
   tmp:TAdGraphicCompressor;
 begin
@@ -275,10 +279,10 @@ begin
 
   SetLength(s, 4);  
   AStream.Read(s[1], 4);
-  classname := RegisteredGraphicCompressors.Values[s];
-  if classname <> '' then
+  aclassname := RegisteredGraphicCompressors.Values[s];
+  if aclassname <> '' then
   begin
-    cref := TAdGraphicCompressorClass(AdGetClass(classname));
+    cref := TAdGraphicCompressorClass(AdGetClass(aclassname));
     if cref <> nil then
     begin
       tmp := cref.Create;
@@ -340,7 +344,12 @@ begin
       tmp.FileExts(str);
       if str.IndexOf(ext) > -1 then
       begin
-        tmp.LoadFromFile(self, AFile, ATransparent, ATransparentColor);
+        if tmp.LoadFromFile(self, AFile, ATransparent, ATransparentColor) then
+        begin
+          str.Free;
+          tmp.Free;
+          exit;
+        end;
       end;
       str.Free;
       tmp.Free;

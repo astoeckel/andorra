@@ -783,7 +783,7 @@ end;
 
 function TAdCanvasDisplayList.GetItem(AIndex: integer): TAdCanvasObject;
 begin
-  result := inherited Items[AIndex];
+  result := TAdCanvasObject(inherited Items[AIndex]);
 end;
 
 procedure TAdCanvasDisplayList.SetItem(AIndex: integer; AValue: TAdCanvasObject);
@@ -940,7 +940,7 @@ begin
     FDrawIndex := 0;
     if not FDisplayLists.ReachedEnd then
     begin
-      FCurrentDisplayList := FDisplayLists.GetCurrent;
+      FCurrentDisplayList := TAdCanvasDisplayList(FDisplayLists.GetCurrent);
     end
     else
     begin
@@ -970,7 +970,7 @@ begin
 
     if not FDisplayLists.ReachedEnd then
     begin
-      FCurrentDisplayList := FDisplayLists.GetCurrent;
+      FCurrentDisplayList := TAdCanvasDisplayList(FDisplayLists.GetCurrent);
     end
     else
     begin
@@ -1289,7 +1289,7 @@ begin
   FPoints.StartIteration;
   while not FPoints.ReachedEnd do
   begin
-    Dispose(FPoints.GetCurrent);
+    Dispose(PAdLinePoint(FPoints.GetCurrent));
   end;
   FPoints.Free;
 

@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs,
   AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter, AdSimpleCompressors,
-  AdTypes;
+  AdTypes, StdCtrls, ExtCtrls, AdVCLWindow, AdGUIConnector, AdGUI, AdComponents;
 
 type
   TForm1 = class(TForm)
@@ -17,6 +17,9 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
+
+    AdGUI:TAdGUI;
+    AdGUIConnector:TAdGUIConnector;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -48,6 +51,14 @@ begin
     if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
+
+      AdGUI := TAdGUI.Create(AdDraw);
+      AdGUI.Cursors.LoadFromFile('cursors.xml');
+      AdGUI.Skin.LoadFromFile('sunna.axs');
+      AdGUI.LoadFromFile('test.axg');
+
+      AdGUIConnector := TAdGUIConnector.Create(AdGUI);
+      AdGUIConnector.ConnectEventHandlers(AdDraw.Window);
     end
     else
     begin
@@ -65,6 +76,8 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  AdGUIConnector.Free;
+  AdGUI.Free;
   AdPerCounter.Free;
   AdDraw.Free;
 end;
@@ -76,6 +89,9 @@ begin
     AdPerCounter.Calculate;
     AdDraw.ClearSurface(clBlack);
     AdDraw.BeginScene;
+
+    AdGUI.Move(AdPerCounter.TimeGap / 1000);
+    AdGUI.Draw;
 
     AdDraw.EndScene;
     AdDraw.Flip;

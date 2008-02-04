@@ -396,7 +396,7 @@ begin
   Combobox1.Items.Clear;
 
   explorer := TAdDllExplorer.Create;
-  explorer.GetPlugins(PluginCallBack, ExtractFilePath(ParamStr(0)),'dll');
+  explorer.GetPlugins(PluginCallBack, ExtractFilePath(ParamStr(0)), 'dll');
   explorer.Free;
 
   result := Combobox1.Items.Count > 0;

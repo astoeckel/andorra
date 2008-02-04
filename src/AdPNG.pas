@@ -150,6 +150,7 @@ begin
   PNG := TPNGObject.Create;
   PNG.LoadFromStream(AStream);
   ABitmap.ReserveMemory(PNG.Width,PNG.Height);
+  PNG.CreateAlpha;
   GetAlpha(PNG,ABitmap);
   PNG.RemoveTransparency;
   GetRGB(PNG,ABitmap);

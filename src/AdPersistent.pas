@@ -48,7 +48,6 @@ type
   TAdClassKey = class(TAdMapKey)
     public
       Value:ShortString;
-      ClassReference:TAdPersistentClass;
       function Hash:Cardinal;override;
       function Equal(AItem:TAdMapKey):boolean;override;
   end;

@@ -20,6 +20,10 @@ unit AdFont;
 
 interface
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 uses
   AdClasses, AdTypes;
 

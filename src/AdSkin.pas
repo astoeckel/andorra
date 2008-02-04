@@ -19,8 +19,7 @@ unit AdSkin;
 interface
 
 uses
-  SysUtils, Classes, AdDraws, AdClasses, JvSimpleXML, AdXML, AdList, AdTypes,
-  AdVCLFormats, AdSimpleCompressors;
+  SysUtils, Classes, AdSimpleXML, AdXML, AdList, AdDraws, AdTypes;
 
 type
   //Defines the type of drawing elements. Currently only Stretch is supported.
@@ -52,9 +51,9 @@ type
       //Array which contains the imageindex of this element for each state. 
       Images:array of integer;
       //Loads the element from a JvSimpleXMlComponent
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);virtual;
       //Saves the element to a JvSimpleXMlComponent
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
       //Creates an instance of the element
       constructor Create;
       //Destroys the instance of the element
@@ -89,8 +88,8 @@ type
     public
       CreatedByList:boolean;
 
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);virtual;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
 
       procedure Draw(AState,AX,AY,AWidth,AHeight:integer;Alpha:byte=255);overload;
       procedure Draw(AState:integer;ARect:TAdRect;Alpha:byte=255);overload;
@@ -107,7 +106,7 @@ type
       property Images:TAdImageList read FImages write FImages;
   end;
 
-  TAdSkin = class(TList)
+  TAdSkin = class(TAdList)
     private
       FParent:TAdDraw;
       procedure SetItem(Index:integer;Value:TAdSkinItem);
@@ -126,8 +125,8 @@ type
       procedure SaveToStream(AStream:TStream);
       procedure LoadFromStream(AStream:TStream);
 
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);
 
       function Add(Item:TAdSkinItem):integer;overload;
       function Add(Name:string):integer;overload;
@@ -224,10 +223,10 @@ begin
   end;
 end;
 
-procedure TAdSkinItem.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdSkinItem.LoadFromXML(aroot: TAdSimpleXMLElem);
 var
   i:integer;
-  trunk:TJvSimpleXMLElem;
+  trunk:TAdSimpleXMLElem;
   ms:TMemoryStream;
   elem:TAdSkinElem;
 begin
@@ -270,10 +269,10 @@ begin
   Images.Restore;
 end;
 
-function TAdSkinItem.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdSkinItem.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 var
   i:integer;
-  trunk:TJvSimpleXMLElem;
+  trunk:TAdSimpleXMLElem;
   ms:TMemoryStream;
 begin
   result := aroot.Add('item');
@@ -476,24 +475,25 @@ begin
 end;
 
 procedure TAdSkin.LoadFromStream(AStream: TStream);
-var XML:TJvSimpleXML;
+var XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   XML.LoadFromStream(AStream);
   LoadFromXML(XML.Root);
   XML.Free;
 end;
 
 procedure TAdSkin.SaveToStream(AStream: TStream);
-var XMl:TJvSimpleXML;
+var
+  XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   SaveToXML(XML.Root.Items);
   XML.SaveToStream(AStream);
   XML.Free;
 end;
 
-procedure TAdSkin.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdSkin.LoadFromXML(aroot: TAdSimpleXMLElem);
 var
   tmp:TAdSkinItem;
   i:integer;
@@ -508,7 +508,7 @@ begin
   end;
 end;
 
-function TAdSkin.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdSkin.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 var i:integer;
 begin
   result := aroot.Add('skin');
@@ -560,9 +560,9 @@ begin
   inherited Destroy;
 end;
 
-procedure TAdSkinElem.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdSkinElem.LoadFromXML(aroot: TAdSimpleXMLElem);
 var s:string;
-    trunk:TJvSimpleXMLElem;
+    trunk:TAdSimpleXMLElem;
     i:integer;
 begin
   x1 := aroot.Properties.IntValue('x1',0);
@@ -594,10 +594,10 @@ begin
   end;
 end;
 
-function TAdSkinElem.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdSkinElem.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 var s:string;
     i:integer;
-    trunk:TJvSimpleXMLElem;
+    trunk:TAdSimpleXMLElem;
 begin
   result := aroot.Add('element');
   result.Properties.Add('x1',x1);

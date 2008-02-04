@@ -16,19 +16,18 @@
 * Comment: Contains the main GUI Components
 }
 
+{Contains the main GUI classes.}
 unit AdGUI;
 
 interface
 
-uses SysUtils, Classes, Controls, JvSimpleXML, AdDraws, AdSkin, AdClasses, AdTypes,
-     AdXML, AdList, AdCanvas, AdFont, AdFontList, AdPersistent;
+uses
+  SysUtils, Classes,
+  AdEvents, AdSimpleXML, AdDraws, AdSkin, AdClasses, AdTypes,
+  AdXML, AdList, AdCanvas, AdFont, AdFontList, AdPersistent;
 
 
 type
-
-  TAdMouseWheelEvent = procedure(Sender: TObject; Shift: TShiftState;
-    WheelDelta: Integer; MousePos: TAdPoint; var Handled: Boolean) of object;
-
 
   TAdDownRgn = (drNone,drMiddle,drLeftTop,drLeftBottom,drRightTop,drRightBottom);
 
@@ -57,7 +56,7 @@ type
     public
       constructor Create(AParent:TAdDraw);
       destructor Destroy; override;
-      procedure Show(MouseX,MouseY:integer; Text:string;Sender:TAdComponent);virtual;
+      procedure Show(MouseX,MouseY:integer; Text:string; Sender:TAdComponent);virtual;
       procedure Hide;virtual;
       procedure Draw;virtual;
       procedure Move(TimeGap:double);virtual;
@@ -109,16 +108,16 @@ type
       FDraging:boolean;
       FOX,FOY:integer;
 
-      FOnMouseDown:TMouseEvent;
-      FOnMouseUp:TMouseEvent;
-      FOnMouseMove:TMouseMoveEvent;
-      FOnDblClick:TNotifyEvent;
-      FOnClick:TNotifyEvent;
-      FOnKeyPress:TKeyPressEvent;
-      FOnKeyUp:TKeyEvent;
-      FOnKeyDown:TKeyEvent;
-      FOnMouseEnter:TNotifyEvent;
-      FOnMouseLeave:TNotifyEvent;
+      FOnMouseDown:TAdMouseEvent;
+      FOnMouseUp:TAdMouseEvent;
+      FOnMouseMove:TAdMouseMoveEvent;
+      FOnDblClick:TAdClickEvent;
+      FOnClick:TAdClickEvent;
+      FOnKeyPress:TAdKeyPressEvent;
+      FOnKeyUp:TAdKeyEvent;
+      FOnKeyDown:TAdKeyEvent;
+      FOnMouseEnter:TAdNotifyEvent;
+      FOnMouseLeave:TAdNotifyEvent;
       FOnMouseWheel:TAdMouseWheelEvent;
 
       FHint:string;
@@ -174,17 +173,17 @@ type
       procedure SetCurrentCursor(Value:string);virtual;
 
       function DoResize:boolean;virtual;
-      function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;virtual;
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;virtual;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;virtual;
+      function DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;virtual;
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X, Y: Integer):boolean;virtual;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X, Y: Integer):boolean;virtual;
       function DoMouseEnter:boolean;virtual;
       function DoMouseLeave:boolean;virtual;
-      function DoClick:boolean;virtual;
-      function DoDblClick:boolean;virtual;
+      function DoClick(X, Y:Integer):boolean;virtual;
+      function DoDblClick(X, Y:Integer):boolean;virtual;
       function DoKeyPress(key:Char):boolean;virtual;
-      function DoKeyUp(key:Word;Shift:TShiftState):boolean;virtual;
-      function DoKeyDown(key:Word;Shift:TShiftState):boolean;virtual;
-      function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TAdPoint; var Handled: Boolean):boolean;virtual;
+      function DoKeyUp(Key:Word; Shift:TAdShiftState):boolean;virtual;
+      function DoKeyDown(Key:Word; Shift:TAdShiftState):boolean;virtual;
+      function DoMouseWheel(Shift: TAdShiftState; WheelDelta: Integer; X, Y: Integer):boolean;virtual;
 
       procedure DesignSize(X,Y:integer);
       function GetDownRgn(AX,AY:integer):TAdDownRgn;      
@@ -233,13 +232,13 @@ type
 
       function DblClick(X,Y:integer) : boolean;
       function Click(X,Y:integer) : boolean;
-      function MouseMove(Shift: TShiftState; X, Y: Integer) : boolean;
-      function MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer) : boolean;
-      function MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer) : boolean;
-      function MouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TAdPoint; var Handled: Boolean) : boolean;
+      function MouseMove(Shift: TAdShiftState; X, Y: Integer) : boolean;
+      function MouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X, Y: Integer) : boolean;
+      function MouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X, Y: Integer) : boolean;
+      function MouseWheel(Shift: TAdShiftState; WheelDelta: Integer; X, Y: Integer) : boolean;
       function KeyPress(Key: Char) : boolean;
-      function KeyDown(Key: Word;Shift:TShiftState) : boolean;
-      function KeyUp(Key: Word;Shift:TShiftState) : boolean;
+      function KeyDown(Key: Word; Shift:TAdShiftState) : boolean;
+      function KeyUp(Key: Word; Shift:TAdShiftState) : boolean;
 
       function ClientToScreen(p:TAdPoint):TAdPoint;
       function ScreenToClient(p:TAdPoint):TAdPoint;
@@ -251,8 +250,8 @@ type
       procedure LoadFromFile(AFile:string);
       procedure SaveToStream(AStream:TStream);
       procedure LoadFromStream(AStream:TStream);
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);virtual;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
 
       procedure BringToFront;
       procedure SendToBack;
@@ -300,17 +299,17 @@ type
       property Hint:string read FHint write FHint;
       property ShowHint:boolean read FShowHint write FShowHint;
 
-      property OnClick:TNotifyEvent read FOnClick write FOnClick;
-      property OnDblClick:TNotifyEvent read FOnDblClick write FOnDblClick;
-      property OnMouseMove:TMouseMoveEvent read FOnMouseMove write FOnMouseMove;
-      property OnMouseUp:TMouseEvent read FOnMouseUp write FOnMouseUp;
-      property OnMouseDown:TMouseEvent read FOnMouseDown write FOnMouseDown;
-      property OnMouseEnter:TNotifyEvent read FOnMouseEnter write FOnMouseEnter;
-      property OnMouseLeave:TNotifyEvent read FOnMouseLeave write FOnMouseLeave;
+      property OnClick:TAdClickEvent read FOnClick write FOnClick;
+      property OnDblClick:TAdClickEvent read FOnDblClick write FOnDblClick;
+      property OnMouseMove:TAdMouseMoveEvent read FOnMouseMove write FOnMouseMove;
+      property OnMouseUp:TAdMouseEvent read FOnMouseUp write FOnMouseUp;
+      property OnMouseDown:TAdMouseEvent read FOnMouseDown write FOnMouseDown;
+      property OnMouseEnter:TAdNotifyEvent read FOnMouseEnter write FOnMouseEnter;
+      property OnMouseLeave:TAdNotifyEvent read FOnMouseLeave write FOnMouseLeave;
       property OnMouseWheel:TAdMouseWheelEvent read FOnMouseWheel write FOnMouseWheel;
-      property OnKeyPress:TKeyPressEvent read FOnKeyPress write FOnKeyPress;
-      property OnKeyUp:TKeyEvent read FOnKeyUp write FOnKeyUp;
-      property OnKeyDown:TKeyEvent read FOnKeyDown write FOnKeyDown;
+      property OnKeyPress:TAdKeyPressEvent read FOnKeyPress write FOnKeyPress;
+      property OnKeyUp:TAdKeyEvent read FOnKeyUp write FOnKeyUp;
+      property OnKeyDown:TAdKeyEvent read FOnKeyDown write FOnKeyDown;
   end;
 
   TAdMouseLibrary = class;
@@ -335,8 +334,8 @@ type
       procedure Move(TimeGap:double);
       procedure Draw(X,Y:integer);
 
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);virtual;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
 
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
@@ -375,8 +374,8 @@ type
 
       procedure LoadFromFile(AFile:string);
       procedure SaveToFile(AFile:string);
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);virtual;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;virtual;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);virtual;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
 
       property Items[Index:integer]:TAdMouseCursor read GetItem write SetItem;
       property Images:TAdImageList read FImages write FImages;
@@ -397,13 +396,13 @@ type
       procedure SetHintWnd(Value:TAdHint);
     protected
       procedure SetCurrentCursor(Value:string);override;
-      function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;override;
     public
       constructor Create(AParent:TAdDraw);reintroduce;
       destructor Destroy;override;
 
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);override;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;override;
 
       procedure Update(TimeGap:double);
 
@@ -540,42 +539,42 @@ end;
 //Load/Save
 
 procedure TAdComponent.LoadFromFile(AFile: string);
-var XML:TJvSimpleXML;
+var XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   XML.LoadFromFile(AFile);
   LoadFromXML(XML.Root);
   XML.Free;
 end;
 
 procedure TAdComponent.SaveToFile(AFile: string);
-var XML:TJvSimpleXML;
+var XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   SaveToXML(XML.Root.Items);
   XML.SaveToFile(AFile);
   XML.Free;
 end;
 
 procedure TAdComponent.LoadFromStream(AStream: TStream);
-var XML:TJvSimpleXML;
+var XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   XML.LoadFromStream(AStream);
   LoadFromXML(XML.Root);
   XML.Free;
 end;
 
 procedure TAdComponent.SaveToStream(AStream: TStream);
-var XML:TJvSimpleXML;
+var XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   SaveToXML(XML.Root.Items);
   XML.SaveToStream(AStream);
   XML.Free;
 end;
 
-procedure TAdComponent.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdComponent.LoadFromXML(aroot: TAdSimpleXMLElem);
 var
   i:integer;
   cref:TAdPersistentClass;
@@ -609,7 +608,7 @@ begin
   end;
 end;
 
-function TAdComponent.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdComponent.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 var
   i: Integer;
 begin
@@ -1138,7 +1137,7 @@ begin
     begin
       if not DesignMode then
       begin
-        result := DoClick;
+        result := DoClick(X, Y);
       end
       else
       begin
@@ -1189,7 +1188,7 @@ begin
     begin
       if not DesignMode then
       begin
-        result := DoDblClick;
+        result := DoDblClick(X, Y);
       end
       else
       begin
@@ -1200,7 +1199,7 @@ begin
   result := result or FLockEvents;
 end;
 
-function TAdComponent.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+function TAdComponent.MouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 var clicked:boolean;
     i:integer;
@@ -1237,7 +1236,7 @@ begin
   result := result or FLockEvents;
 end;
 
-function TAdComponent.MouseMove(Shift: TShiftState; X, Y: Integer):boolean;
+function TAdComponent.MouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 var clicked:boolean;
     overcomp:TAdComponent;
     i:integer;
@@ -1316,7 +1315,7 @@ begin
   result := result or FLockEvents;
 end;
 
-function TAdComponent.MouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdComponent.MouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 var clicked:boolean;
     i:integer;
@@ -1370,22 +1369,22 @@ begin
   result := result or FLockEvents;
 end;
 
-function TAdComponent.MouseWheel(Shift: TShiftState; WheelDelta: Integer;
-  MousePos: TAdPoint; var Handled: Boolean):boolean;
+function TAdComponent.MouseWheel(Shift: TAdShiftState; WheelDelta: Integer;
+  X, Y: integer):boolean;
 var clicked:boolean;
     i:integer;
 begin
   result := false;
 
-  if (visible or (designmode and (not SubComponent))) and (InRect(mousepos.x,mousepos.y,boundsrect)) then
+  if (visible or (designmode and (not SubComponent))) and (InRect(X,Y,boundsrect)) then
   begin
     clicked := true;
     for i := Components.Count-1 downto 0 do
     begin
-      if (Components[i].Visible or DesignMode) and InRect(mousepos.x,mousepos.y,Components[i].BoundsRect) then
+      if (Components[i].Visible or DesignMode) and InRect(X,Y,Components[i].BoundsRect) then
       begin
         clicked := false;
-        result := Components[i].MouseWheel(Shift,WheelDelta,MousePos,Handled);
+        result := Components[i].MouseWheel(Shift,WheelDelta,X,Y);
         break;
       end;
     end;
@@ -1393,14 +1392,14 @@ begin
     begin
       if not DesignMode then
       begin
-        result := DoMouseWheel(Shift,WheelDelta,MousePos,Handled);
+        result := DoMouseWheel(Shift,WheelDelta,X,Y);
       end;
     end;
   end;
   result := result or FLockEvents;
 end;
 
-function TAdComponent.KeyDown(Key: Word; Shift: TShiftState):boolean;
+function TAdComponent.KeyDown(Key: Word; Shift: TAdShiftState):boolean;
 var i:integer;
 begin
   result := false;
@@ -1436,7 +1435,7 @@ begin
   result := result or FLockEvents;
 end;
 
-function TAdComponent.KeyUp(Key: Word; Shift: TShiftState):boolean;
+function TAdComponent.KeyUp(Key: Word; Shift: TAdShiftState):boolean;
 var i:integer;
 begin
   result := false;
@@ -1454,20 +1453,21 @@ begin
   result := result or FLockEvents;
 end;
 
-function TAdComponent.DoClick:boolean;
+function TAdComponent.DoClick(X, Y: Integer):boolean;
 begin
   result := false;
   if assigned(OnClick) then
-    OnClick(self);
+    OnClick(self, X, Y);
 end;
 
-function TAdComponent.DoDblClick:boolean;
+function TAdComponent.DoDblClick(X, Y: Integer):boolean;
 begin
   result := false;
-  if assigned(OnDblClick) then OnDblClick(self);
+  if assigned(OnDblClick) then
+    OnDblClick(self, X, Y);
 end;
 
-function TAdComponent.DoKeyDown(key: Word; Shift: TShiftState):boolean;
+function TAdComponent.DoKeyDown(key: Word; Shift: TAdShiftState):boolean;
 begin
   result := false;
   if assigned(OnKeyDown) then OnKeyDown(Self,Key,Shift);
@@ -1479,14 +1479,14 @@ begin
   if assigned(OnKeyPress) then OnKeyPress(Self,Key);
 end;
 
-function TAdComponent.DoKeyUp(key: Word; Shift: TShiftState):boolean;
+function TAdComponent.DoKeyUp(key: Word; Shift: TAdShiftState):boolean;
 begin
   result := false;
   if assigned(OnKeyUp) then OnKeyUp(Self,Key,Shift);
 end;
 
-function TAdComponent.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
-  Y: Integer):boolean;
+function TAdComponent.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+  X, Y: Integer):boolean;
 begin
   result := false;
   if assigned(OnMouseDown) then OnMouseDown(Self,Button,Shift,X,Y);
@@ -1510,24 +1510,27 @@ begin
   end;
 end;
 
-function TAdComponent.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
+function TAdComponent.DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 begin
   result := false;
-  if assigned(OnMouseMove) then OnMouseMove(Self,Shift,X,Y);
+  if assigned(OnMouseMove) then
+    OnMouseMove(Self, Shift, X, Y);
 end;
 
-function TAdComponent.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdComponent.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   result := false;
-  if assigned(OnMouseUp) then OnMouseUp(Self,Button,Shift,X,Y);
+  if assigned(OnMouseUp) then
+    OnMouseUp(Self, Button, Shift, X, Y);
 end;
 
-function TAdComponent.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer;
-  MousePos: TAdPoint; var Handled: Boolean):boolean;
+function TAdComponent.DoMouseWheel(Shift: TAdShiftState; WheelDelta: Integer;
+  X, Y: Integer):boolean;
 begin
   result := false;
-  if assigned(OnMouseWheel) then OnMouseWheel(self,shift,wheeldelta,mousepos,handled);
+  if assigned(OnMouseWheel) then
+    OnMouseWheel(Self, Shift, Wheeldelta, X, Y);
 end;
 
 function TAdComponent.DoResize:boolean;
@@ -1686,7 +1689,7 @@ begin
   end;
 end;
 
-procedure TAdMouseCursor.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdMouseCursor.LoadFromXML(aroot: TAdSimpleXMLElem);
 var i:integer;
     ms:TMemoryStream;
 begin
@@ -1729,8 +1732,8 @@ begin
   end;
 end;
 
-function TAdMouseCursor.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
-var trunk:TJvSimpleXMLElem;
+function TAdMouseCursor.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
+var trunk:TAdSimpleXMLElem;
     ms:TMemoryStream;
 begin
   result := aroot.Add('cursor');
@@ -1805,10 +1808,10 @@ end;
 
 procedure TAdMouseLibrary.LoadFromFile(AFile: string);
 var
-  XML:TJvSimpleXML;
+  XML:TAdSimpleXML;
   str:string;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   XML.LoadFromFile(AFile);
   LoadFromXML(XML.Root);
   XML.Free;
@@ -1820,15 +1823,15 @@ end;
 
 procedure TAdMouseLibrary.SaveToFile(AFile: string);
 var
-  XML:TJvSimpleXML;
+  XML:TAdSimpleXML;
 begin
-  XML := TJvSimpleXML.Create(nil);
+  XML := TAdSimpleXML.Create;
   SaveToXML(XML.Root.Items);
   XML.SaveToFile(AFile);
   XML.Free;
 end;
 
-procedure TAdMouseLibrary.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdMouseLibrary.LoadFromXML(aroot: TAdSimpleXMLElem);
 var
   tmp:TAdMouseCursor;
   i: Integer;
@@ -1859,7 +1862,7 @@ begin
   end;
 end;
 
-function TAdMouseLibrary.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdMouseLibrary.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 var i:integer;
 begin
   result := aroot.Add('set');
@@ -1931,7 +1934,7 @@ begin
   inherited;
 end;
 
-function TAdGUI.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
+function TAdGUI.DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 begin
   inherited DoMouseMove(Shift,X,Y);
   FMouseX := X;
@@ -1939,7 +1942,7 @@ begin
   result := false;
 end;
 
-procedure TAdGUI.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdGUI.LoadFromXML(aroot: TAdSimpleXMLElem);
 var
   ms:TMemoryStream;
 begin
@@ -1959,7 +1962,7 @@ begin
   end;
 end;
 
-function TAdGUI.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdGUI.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 var
   ms:TMemoryStream;
 begin

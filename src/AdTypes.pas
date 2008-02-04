@@ -98,13 +98,12 @@ type
 
   { Misc types}
 
-  PByte = ^Byte;
+//  PByte = ^Byte;
 
 
 function AdBounds(X,Y,Width,Height:LongInt):TAdRect;
 procedure AdOffsetRect(var Rect:TAdRect; X, Y:LongInt);
 function AdRect(X1,Y1,X2,Y2:LongInt):TAdRect;overload;
-function AdRect(X1,Y1,X2,Y2:single):TAdRect;overload;
 function AdRect(X1,Y1,X2,Y2:double):TAdRect;overload;
 function AdBoundsEx(X,Y,Width,Height:double):TAdRectEx;
 function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;
@@ -203,17 +202,6 @@ begin
     Top := Y1;
     Right := X2;
     Bottom := Y2;
-  end;
-end;
-
-function AdRect(X1,Y1,X2,Y2:single):TAdRect;
-begin
-  with result do
-  begin
-    Left := round(X1);
-    Top := round(Y1);
-    Right := round(X2);
-    Bottom := round(Y2);
   end;
 end;
 

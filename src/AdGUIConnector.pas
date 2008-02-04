@@ -16,44 +16,62 @@
 * Comment: Connects the event handlers of a TAdComponent to the event-handlers of a TForm.
 }
 
+{Contains a helper class which connects a TAdWindowFramework to a TAdComponent.}
 unit AdGUIConnector;
 
 interface
 
-uses Forms, Controls, Classes, AdGUI, AdTypes, Types;
+uses
+  AdWindowFramework, AdEvents, AdGUI, AdTypes;
 
 type
+  {Connects a TAdWindowFramework to a TAdComponent.}
   TAdGUIConnector = class
     private
       FParent:TAdComponent;
-      FForm:TForm;
+      FWindow:TAdWindowFramework;
       FConnected:boolean;
-      FOldClick:TNotifyEvent;
-      FOldDblClick:TNotifyEvent;
-      FOldMouseDown:TMouseEvent;
-      FOldMouseUp:TMouseEvent;
-      FOldMouseMove:TMouseMoveEvent;
-      FOldKeyPress:TKeyPressEvent;
-      FOldKeyDown:TKeyEvent;
-      FOldKeyUp:TKeyEvent;
-      FOldMouseWheel:TMouseWheelEvent;
+      FOldClick:TAdClickEvent;
+      FOldDblClick:TAdClickEvent;
+      FOldMouseDown:TAdMouseEvent;
+      FOldMouseUp:TAdMouseEvent;
+      FOldMouseMove:TAdMouseMoveEvent;
+      FOldKeyPress:TAdKeyPressEvent;
+      FOldKeyDown:TAdKeyEvent;
+      FOldKeyUp:TAdKeyEvent;
+      FOldMouseWheel:TAdMouseWheelEvent;
     protected
-      procedure Click(Sender: TObject);
-      procedure DblClick(Sender: TObject);
-      procedure MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-      procedure MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-      procedure MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-      procedure MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-      procedure KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-      procedure KeyPress(Sender: TObject; var Key: Char);
-      procedure KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+      procedure Click(Sender: TObject; X, Y: Integer);
+      procedure DblClick(Sender: TObject; X, Y: Integer);
+      procedure MouseDown(Sender: TObject; Button: TAdMouseButton;
+        Shift: TAdShiftState; X, Y: Integer);
+      procedure MouseUp(Sender: TObject; Button: TAdMouseButton;
+        Shift: TAdShiftState; X, Y: Integer);
+      procedure MouseMove(Sender: TObject; Shift: TAdShiftState; X, Y: Integer);
+      procedure MouseWheel(Sender: TObject; Shift: TAdShiftState;
+        WheelDelta: integer; X, Y: integer);
+      procedure KeyDown(Sender: TObject; Key: Word; Shift: TAdShiftState);
+      procedure KeyPress(Sender: TObject; Key: Char);
+      procedure KeyUp(Sender: TObject; Key: Word; Shift: TAdShiftState);
     public
+      {Creates a new instance of TAdGUIConnector. AParent specifies the target
+      component. Remember to free TAdGUIConnector befor destroying the component.}
       constructor Create(AParent:TAdComponent);
+      {Destroys the instance of TAdGUIConnector and restores the event handlers.}
       destructor Destroy;override;
-      procedure ConnectEventHandlers(Form:TForm);
+      {Connects the event handlers to the given window framework. Commonly
+      AdDraw.Window is used here. TAdGUIConnector will call the events which
+      were earlier connected to the window framework. It is not recommended
+      to override the event handlers while TAdGUIConnector is connected to
+      the window.}
+      procedure ConnectEventHandlers(Window:TAdWindowFramework);
+      {Restores the event connections made.}
       procedure RestoreEventHandlers;
+      {The parent gui component.}
       property Parent:TAdComponent read FParent;
-      property Form:TForm read FForm;
+      {The window framework the events are taken from.}
+      property Window:TAdWindowFramework read FWindow;
+      {Specifies whether TAdGUIConnector is currently connected to a window framework.}
       property Connected:boolean read FConnected;
   end;
 
@@ -74,34 +92,34 @@ begin
   inherited;
 end;
 
-procedure TAdGUIConnector.ConnectEventHandlers(Form: TForm);
+procedure TAdGUIConnector.ConnectEventHandlers(Window: TAdWindowFramework);
 begin
   if FConnected then
   begin
     RestoreEventHandlers;
   end;
 
-  FForm := Form;
+  FWindow := Window;
 
-  FOldDblClick := FForm.OnDblClick;
-  FOldClick := FForm.OnClick;
-  FOldKeyDown := FForm.OnKeyDown;
-  FOldKeyUp := FForm.OnKeyUp;
-  FOldKeyPress := FForm.OnKeyPress;
-  FOldMouseMove := FForm.OnMouseMove;
-  FOldMouseDown := FForm.OnMouseDown;
-  FOldMouseUp := FForm.OnMouseUp;
-  FOldMouseWheel := FForm.OnMouseWheel;
+  FOldDblClick := FWindow.Events.OnDblClick;
+  FOldClick := FWindow.Events.OnClick;
+  FOldKeyDown := FWindow.Events.OnKeyDown;
+  FOldKeyUp := FWindow.Events.OnKeyUp;
+  FOldKeyPress := FWindow.Events.OnKeyPress;
+  FOldMouseMove := FWindow.Events.OnMouseMove;
+  FOldMouseDown := FWindow.Events.OnMouseDown;
+  FOldMouseUp := FWindow.Events.OnMouseUp;
+  FOldMouseWheel := FWindow.Events.OnMouseWheel;
 
-  FForm.OnDblClick := DblClick;
-  FForm.OnClick := Click;
-  FForm.OnKeyDown := KeyDown;
-  FForm.OnKeyUp := KeyUp;
-  FForm.OnKeyPress := KeyPress;
-  FForm.OnMouseMove := MouseMove;
-  FForm.OnMouseDown := MouseDown;
-  FForm.OnMouseUp := MouseUp;
-  FForm.OnMouseWheel := MouseWheel;
+  FWindow.Events.OnDblClick := DblClick;
+  FWindow.Events.OnClick := Click;
+  FWindow.Events.OnKeyDown := KeyDown;
+  FWindow.Events.OnKeyUp := KeyUp;
+  FWindow.Events.OnKeyPress := KeyPress;
+  FWindow.Events.OnMouseMove := MouseMove;
+  FWindow.Events.OnMouseDown := MouseDown;
+  FWindow.Events.OnMouseUp := MouseUp;
+  FWindow.Events.OnMouseWheel := MouseWheel;
 
   FConnected := true;
 end;
@@ -112,109 +130,85 @@ begin
   begin
     FConnected := false;
 
-    FForm.OnDblClick := FOldDblClick;
-    FForm.OnClick := FOldClick;
-    FForm.OnKeyDown := FOldKeyDown;
-    FForm.OnKeyUp := FOldKeyUp;
-    FForm.OnKeyPress := FOldKeyPress;
-    FForm.OnMouseMove := FOldMouseMove;
-    FForm.OnMouseDown := FOldMouseDown;
-    FForm.OnMouseUp := FOldMouseUp;
-    FForm.OnMouseWheel := FOldMouseWheel;
+    FWindow.Events.OnDblClick := FOldDblClick;
+    FWindow.Events.OnClick := FOldClick;
+    FWindow.Events.OnKeyDown := FOldKeyDown;
+    FWindow.Events.OnKeyUp := FOldKeyUp;
+    FWindow.Events.OnKeyPress := FOldKeyPress;
+    FWindow.Events.OnMouseMove := FOldMouseMove;
+    FWindow.Events.OnMouseDown := FOldMouseDown;
+    FWindow.Events.OnMouseUp := FOldMouseUp;
+    FWindow.Events.OnMouseWheel := FOldMouseWheel;
   end;
 end;
 
-procedure TAdGUIConnector.DblClick(Sender: TObject);
-var p:TPoint;
+procedure TAdGUIConnector.DblClick(Sender: TObject; X, Y: Integer);
 begin
-  p := Mouse.CursorPos;
-  p := Form.ScreenToClient(p);
-  FParent.DblClick(p.X,p.Y);
+  FParent.DblClick(X, Y);
   if Assigned(FOldDblClick) then
-  begin
-    FOldDblClick(Sender);
-  end;
+    FOldDblClick(Sender, X, Y);
 end;
 
-procedure TAdGUIConnector.Click(Sender: TObject);
-var p:TPoint;
+procedure TAdGUIConnector.Click(Sender: TObject; X, Y: Integer);
 begin
-  p := Mouse.CursorPos;
-  p := Form.ScreenToClient(p);
-  FParent.Click(p.X,p.Y);
+  FParent.Click(X, Y);
   if Assigned(FOldClick) then
-  begin
-    FOldClick(Sender);
-  end;
+    FOldClick(Sender, X, Y);
 end;
 
-procedure TAdGUIConnector.KeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
+procedure TAdGUIConnector.KeyDown(Sender: TObject; Key: Word;
+  Shift: TAdShiftState);
 begin
   FParent.KeyDown(Key, Shift);
   if Assigned(FOldKeyDown) then
-  begin
     FOldKeyDown(Sender, Key, Shift);
-  end;
 end;
 
-procedure TAdGUIConnector.KeyPress(Sender: TObject; var Key: Char);
+procedure TAdGUIConnector.KeyPress(Sender: TObject; Key: Char);
 begin
   FParent.KeyPress(Key);
   if Assigned(FOldKeyPress) then
-  begin
     FOldKeyPress(Sender, Key);
-  end;
 end;
 
-procedure TAdGUIConnector.KeyUp(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
+procedure TAdGUIConnector.KeyUp(Sender: TObject; Key: Word;
+  Shift: TAdShiftState);
 begin
   FParent.KeyUp(Key, Shift);
   if Assigned(FOldKeyUp) then
-  begin
     FOldKeyUp(Sender, Key, Shift);
-  end;
 end;
 
-procedure TAdGUIConnector.MouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
+procedure TAdGUIConnector.MouseDown(Sender: TObject; Button: TAdMouseButton;
+  Shift: TAdShiftState; X, Y: Integer);
 begin
   FParent.MouseDown(Button, Shift, X, Y);
   if Assigned(FOldMouseDown) then
-  begin
     FOldMouseDown(Sender, Button, Shift, X, Y);
-  end;
 end;
 
-procedure TAdGUIConnector.MouseMove(Sender: TObject; Shift: TShiftState; X,
+procedure TAdGUIConnector.MouseMove(Sender: TObject; Shift: TAdShiftState; X,
   Y: Integer);
 begin
   FParent.MouseMove(Shift, X, Y);
   if Assigned(FOldMouseMove) then
-  begin
     FOldMouseMove(Sender, Shift, X, Y);
-  end;  
 end;
 
-procedure TAdGUIConnector.MouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
+procedure TAdGUIConnector.MouseUp(Sender: TObject; Button: TAdMouseButton;
+  Shift: TAdShiftState; X, Y: Integer);
 begin
   FParent.MouseUp(Button, Shift, X, Y);
   if Assigned(FOldMouseUp) then
-  begin
     FOldMouseUp(Sender, Button, Shift, X, Y);
-  end;
 end;
 
-procedure TAdGUIConnector.MouseWheel(Sender: TObject; Shift: TShiftState;
-  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+procedure TAdGUIConnector.MouseWheel(Sender: TObject; Shift: TAdShiftState;
+  WheelDelta: Integer; X, Y: Integer);
 begin
-  FParent.MouseWheel(Shift, WheelDelta, AdPoint(MousePos.X, MousePos.Y), Handled);
+  FParent.MouseWheel(Shift, WheelDelta, X, Y);
   if Assigned(FOldMouseWheel) then
-  begin
-    FOldMouseWheel(Sender, Shift, WheelDelta, MousePos, Handled);
-  end;
+    FOldMouseWheel(Sender, Shift, WheelDelta, X, Y);
 end;
 
 end.

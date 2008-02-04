@@ -26,10 +26,16 @@ unit AdDraws;
 interface
 
 uses
-  Controls, SysUtils, Classes,
-  AdClasses, AdTypes, AdDLLLoader, AdList, AdCanvas, AdFontFactory, AdFont, AdBitmap
-  {$IFNDEF AndorraSimple}
-  , AdStandardFontGenerator, AdSimpleCompressors, AdVCLFormats
+
+  SysUtils, Classes,
+  AdClasses, AdTypes, AdList, AdPersistent,
+  AdWindowFramework, AdDLLLoader,
+  AdCanvas, AdBitmap, AdFontFactory, AdFont
+  {$IFNDEF DO_NOT_INCLUDE_STD_FORMATS}
+  ,AdStandardFontGenerator, AdSimpleCompressors, AdFormats
+  {$ENDIF}
+  {$IFNDEF DO_NOT_INCLUDE_STD_WINDOWMGR}
+  ,AdVCLComponentWindow
   {$ENDIF};
 
 type
@@ -88,7 +94,7 @@ type
   TAdDraw = class
   private
 
-    FParent:TWinControl;
+    FParent:Pointer;
     FOptions:TAdOptions;
     FDllName:string;
     FFinalize:TNotifyEvent;
@@ -107,13 +113,15 @@ type
     FFonts:TAdFontFactory;
 
     FTextureFilter:TAd2dTextureFilter;
+    FWnd:TAdWindowFramework;
 
     procedure SetDllName(val : string);
     procedure SetupThings;
     procedure SetOptions(AValue:TAdOptions);
     procedure SetAmbientColor(AValue:LongInt);
     procedure SetAutoLoadLog(AValue:boolean);
-    function GetDisplayRect:TAdRect;              
+    function GetDisplayRect:TAdRect;
+    function SearchWindowFramework:boolean;
   protected
     procedure CallNotifyEvent(AEventState:TSurfaceEventState);
   public
@@ -121,7 +129,7 @@ type
     AdAppl:TAd2DApplication;
     Display : TAdDisplay;
 
-    constructor Create(AParent : TWinControl);
+    constructor Create(AParent : Pointer);
     destructor Destroy; override;
 
     function Initialize: boolean;
@@ -135,13 +143,15 @@ type
 
     procedure Setup2DScene;
 
-    property Parent : TWinControl read FParent;
+    property Parent : Pointer read FParent;
     property DisplayRect:TAdRect read FDisplayRect;
 
     procedure LogProc(LogItem:TAdLogItem);
 
     procedure RegisterNotifyEvent(AProc:TSurfaceEvent);
     procedure UnRegisterNotifyEvent(AProc:TSurfaceEvent);
+
+    procedure Run;
 
     function GetTextureParams(ABitDepth:byte):TAd2dBitmapTextureParameters;
 
@@ -156,6 +166,7 @@ type
     property LogFileName:string read FLogFileName write FLogFileName;
     property Canvas:TAdCanvas read FCanvas;
     property Fonts:TAdFontFactory read FFonts;
+    property Window:TAdWindowFramework read FWnd;
 
     property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
     property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
@@ -223,7 +234,7 @@ type
 
       procedure LoadFromGraphic(AGraphic:TObject);
       procedure LoadGraphicFromFile(AFile: string; Transparent: boolean = true;
-        TransparentColor: Longint = 0);
+        TransparentColor: Longint = $1FFFFFFF);
       procedure SaveToGraphic(AGraphic:TObject);
 
       property Texture:TAd2DBitmapTexture read FAd2DTexture;
@@ -415,7 +426,7 @@ implementation
 
 { TAdDraw }
 
-constructor TAdDraw.Create(AParent : TWinControl);
+constructor TAdDraw.Create(AParent : Pointer);
 var amsg:TAdLogMessage;
 begin
 	inherited Create;
@@ -483,6 +494,12 @@ begin
 end;
 
 
+procedure TAdDraw.Run;
+begin
+  if FWnd <> nil then
+    FWnd.Run;
+end;
+
 procedure TAdDraw.SetAmbientColor(AValue: Longint);
 begin
   FAmbientColor := AValue;
@@ -533,10 +550,34 @@ begin
   end;
 end;
 
+function TAdDraw.SearchWindowFramework: boolean;
+var
+  PSS:^ShortString;
+  cref:TAdWindowFrameworkClass;
+begin
+  result := false;
+  RegisteredWindowFrameworks.StartIteration;
+  while not RegisteredWindowFrameworks.ReachedEnd do
+  begin
+    PSS := RegisteredWindowFrameworks.GetCurrent;
+    cref := TAdWindowFrameworkClass(AdGetClass(PSS^));
+    FWnd := cref.Create;
+    result := FWnd.BindTo(FParent) and AdAppl.SupportsWindowFramework(FWnd.IdentStr);
+    if not result then
+    begin
+      FWnd.Free; FWnd := nil;
+    end else
+    begin
+      exit;
+    end;
+  end;
+end;
+
 function TAdDraw.Initialize: boolean;
 var
   amsg:TAdLogMessage;
   rect:TAdRect;
+  props:TAdDisplayProperties;
 begin
 
   result := false;
@@ -546,27 +587,46 @@ begin
     //Create the new Application
     AdAppl := AdDllLoader.CreateApplication;
     
-    if (AdAppl <> nil) and (FParent <> nil) and (AdDllLoader.LibraryLoaded) then
+    if AdAppl <> nil then
     begin
       //Give the Plugin the possibility to send logs
       AdAppl.SetLogProc(LogProc);
-      
-      FDisplayRect := GetDisplayRect;
-      Display.Width := FDisplayRect.Right;
-      Display.Height := FDisplayRect.Bottom;
 
-      result := AdAppl.Initialize(FParent.Handle,Options,Display);
+      if SearchWindowFramework then
+      begin
+        props.Width := Display.Width;
+        props.Height := Display.Height;
+        props.BitDepth := Display.BitCount;
+        if doFullscreen in Options then
+          props.Mode := dmFullscreen
+        else
+          props.Mode := dmWindowed;
+          
+        FWnd.InitDisplay(props);
 
-      rect.Left := FParent.ClientRect.Left;
-      rect.Top := FParent.ClientRect.Top;
-      rect.Right := FParent.ClientRect.Right;
-      rect.Bottom := FParent.ClientRect.Bottom;
-      AdAppl.Viewport := rect;
+        FDisplayRect := GetDisplayRect;
+        Display.Width := FDisplayRect.Right;
+        Display.Height := FDisplayRect.Bottom;
 
-      AdAppl.AmbientLightColor := AD_RGB(GetRValue(FAmbientColor),GetGValue(FAmbientColor),
-        GetBValue(FAmbientColor));
+        result := AdAppl.Initialize(FWnd,Options,Display);
 
-      Setup2DScene;
+        rect.Left := 0;
+        rect.Top := 0;
+        rect.Right := FWnd.ClientWidth;
+        rect.Bottom := FWnd.ClientHeight;
+        AdAppl.Viewport := rect;
+
+        AdAppl.AmbientLightColor := AD_RGB(GetRValue(FAmbientColor),GetGValue(FAmbientColor),
+          GetBValue(FAmbientColor));
+
+        Setup2DScene;
+      end else
+      begin
+        amsg.Text := 'Unable to find a supported Window Framework. Try to use another Plugin or bind another window framework class.';
+        amsg.Sender := 'TAdDraw';
+        amsg.Typ := 'Fatal Error';
+        Log.AddMessage(amsg);
+      end;
     end
     else
     begin
@@ -603,6 +663,9 @@ begin
   begin
     FFinalize(Self);
   end;
+
+  if FWnd <> nil then
+    FWnd.Free;
 
   if AdAppl <> nil then
   begin
@@ -704,7 +767,7 @@ begin
   end
   else
   begin
-    result := AdBounds(0,0,FParent.ClientWidth,FParent.ClientHeight);
+    result := AdBounds(0,0,FWnd.ClientWidth,FWnd.ClientHeight);
   end;
 end;
 
@@ -743,7 +806,7 @@ procedure TRectList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   if Action = lnDeleted then
   begin
-    Dispose(Ptr);
+    Dispose(PAdRect(Ptr));
   end;
   inherited;
 end;
@@ -1686,7 +1749,7 @@ procedure TSurfaceEventList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   if Action = lnDeleted then
   begin
-    Dispose(Ptr);
+    Dispose(PSurfaceEvent(Ptr));
   end;
   inherited;
 end;

@@ -131,22 +131,16 @@ end;
 
 function TAd2dBitmap.ScanLine: Pointer;
 begin
-  if Loaded then
-  begin
-    result := FMemory;
-  end
-  else
-  begin
-    result := nil;
-  end;
+  result := FMemory;
 end;
 
 function TAd2dBitmap.ScanLine(AY: integer): Pointer;
-var ptr:pByte;
+var
+  ptr:PByte;
 begin
   if ay < Height then
   begin
-    ptr := Scanline;
+    ptr := FMemory;
     inc(ptr,AY*4*FWidth);
     result := ptr;
   end

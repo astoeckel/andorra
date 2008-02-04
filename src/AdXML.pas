@@ -17,12 +17,13 @@ unit AdXML;
 
 interface
 
-uses JvSimpleXML, Classes, SysUtils;
+uses
+  AdSimpleXML, Classes, SysUtils;
 
 function WriteStreamToString(AStream:TStream):string;
 procedure ReadStreamFromString(AStream:TStream;AString:string);
-procedure WriteStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
-procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
+procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
+procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
 
 implementation
 
@@ -51,13 +52,13 @@ begin
   end;
 end;
 
-procedure WriteStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
+procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
 begin
   AStream.Position := 0;
   XMLElem.Properties.Add(ElemName,WriteStreamToString(AStream));
 end;
 
-procedure ReadStream(AStream:TStream;XMLElem:TJvSimpleXMLElem;ElemName:string='data');
+procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
 var
   ms:TMemoryStream;
 begin
@@ -76,3 +77,4 @@ begin
 end;
 
 end.
+

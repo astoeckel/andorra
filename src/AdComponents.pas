@@ -22,8 +22,8 @@ unit AdComponents;
 interface
 
 uses
-  JvSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap,
-  Controls, Classes, Graphics, SysUtils, AdCanvas, AdFont;
+  AdSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap,
+  Classes, Graphics, SysUtils, AdCanvas, AdFont, AdEvents;
 
 type
   {Specifies the horizontal text alignment.}
@@ -61,8 +61,10 @@ type
       procedure DoDraw;override;
       function DoMouseEnter:boolean;override;
       function DoMouseLeave:boolean;override;
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y: Integer):boolean;override;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y: Integer):boolean;override;
       procedure LoadSkinItem;override;
     public
       constructor Create(AParent:TAdComponent);override;
@@ -93,22 +95,24 @@ type
       procedure DoDraw;override;
       function DoResize:boolean;override;
 
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
-      function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y: Integer):boolean;override;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y: Integer):boolean;override;
+      function DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;override;
 
       function GetShowCloseButton:boolean;
       procedure SetShowCloseButton(AValue:boolean);
-      procedure CloseBtnClick(Sender:TObject);
+      procedure CloseBtnClick(Sender:TObject; X, Y:integer);
     public
       {Creates an instance of TAdForm.}
       constructor Create(AParent:TAdComponent);override;
       {Destroys the instance of TAdForm.}
       destructor Destroy;override;
       {Loads the form data from XML.}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);override;
       {Saves the from data to XML.}
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;override;
       {Closes the form}
       procedure Close;
       {Link to the close button, which is displayed in the top-right edge.}
@@ -150,9 +154,9 @@ type
       {Creates an instance of TAdLabel. }
       constructor Create(AParent:TAdComponent);override;
       {Loads the settings from XML.}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);override;
       {Saves the settings to XML}
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;override;
     published
       {The caption of the label.}
       property Caption:string read FCaption write FCaption;
@@ -195,17 +199,19 @@ type
       procedure DoDraw;override;
       function DoMouseEnter:boolean;override;
       function DoMouseLeave:boolean;override;
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y: Integer):boolean;override;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y: Integer):boolean;override;
     public
       {Creates a new instance of TAdButton.}
       constructor Create(AParent:TAdComponent);override;
       {Destroys the instance of TAdButton.}
       destructor Destroy;override;
       {Loads the settings from XML.}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem);override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem);override;
       {Saves the settings to XML.}
-      function SaveToXML(aroot:TJvSimpleXMLElems):TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;override;
       {Returns the state the button is currently in.}
       property State:TAdButtonState read FState;
     published
@@ -232,17 +238,19 @@ type
     protected
       procedure LoadSkinItem; override;
       procedure DoDraw; override;
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean;override;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean;override;
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y:Integer):boolean;override;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y:Integer):boolean;override;
       function DoMouseEnter:boolean;override;
       function DoMouseLeave:boolean;override;
     public      
       {Creates an instance of TAdCheckBoc}
       constructor Create(AParent:TAdComponent);override;
       {Loads the settings from XML}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
       {Saves the settings to XML}
-      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
     published
       {Returns, wether the checkbox is checked or not. Set this property to check/uncheck the checkbox.}
       property Checked:Boolean read FChecked write SetChecked;
@@ -323,8 +331,10 @@ type
     protected
       procedure DoMove(TimeGap:double); override;
       procedure DoDraw; override;
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean; override;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:Integer):boolean; override;
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y:Integer):boolean; override;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
+        X, Y:Integer):boolean; override;
       function DoMouseEnter:boolean; override;
       function DoMouseLeave:boolean; override;
     public
@@ -333,9 +343,9 @@ type
       {Destroys the instance of TAdBitmapButton.}
       destructor Destroy;override;
       {Loads the settings and pictures from XML}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
       {Stores the settings and pictures in XML}
-      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
       {Returns the state of the button. @seealso(TAdButtonState)}
       property State:TAdButtonState read FState;
     published
@@ -383,9 +393,9 @@ type
       {Destroys the instance of TAdProgressBar.}
       destructor Destroy;override;
       {Loads the settings from XML.}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
       {Stors the settings in XML.}
-      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
       {Returns the percentage, with which the TAdProgressBar is filled.}
       function Percent:single;
     published
@@ -425,9 +435,9 @@ type
       {Destroys the instance of TAdGUIImage.}
       destructor Destroy;override;
       {Loads the settings and picture data from XML.}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
       {Saves the settings and picture data to XML.}
-      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
     published
       {Specifies, whether the image should be centered.}
       property Center:boolean read FCenter write FCenter;
@@ -463,23 +473,23 @@ type
       procedure LoadSkinItem; override;
       procedure DoDraw;override;
       procedure DoMove(timegap:double);override;
-      function DoKeyDown(Key:Word;shift:TShiftState):boolean;override;
+      function DoKeyDown(Key:Word; Shift:TAdShiftState):boolean;override;
       function DoKeyPress(Key:Char):boolean;override;
-      function DoClick:boolean;override;
-      function DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+      function DoClick(X, Y:integer):boolean;override;
+      function DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
         Y: integer):boolean;override;
-      function DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+      function DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
         Y: integer):boolean;override;
-      function DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;override;
+      function DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;override;
 
       property CursorBlinkSpeed:double read FCursorBlinkSpeed write FCursorBlinkSpeed;
     public
       {Creates an instance of TAdEdit.}
       constructor Create(AParent:TAdComponent);override;
       {Loads the settings from XML.}
-      procedure LoadFromXML(aroot:TJvSimpleXMLElem); override;
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
       {Stores the settings in XML.}
-      function SaveToXML(aroot:TJvSimpleXMLElems): TJvSimpleXMLElem;override;
+      function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
 
       {The start of the selection. If nothing is selected, "SelStart" will be equal to "CursorPos"}
       property SelStart:integer read FSelStart write FSelStart;
@@ -565,7 +575,7 @@ begin
   inherited DoDraw;
 end;
 
-function TAdButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+function TAdButton.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
@@ -597,7 +607,7 @@ begin
   result := true;
 end;
 
-function TAdButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdButton.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseUp(Button,Shift,X,Y);
@@ -628,7 +638,7 @@ begin
   if FStateNr < 0 then FStateNr := 0;  
 end;
 
-procedure TAdButton.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdButton.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited;
   with aroot.Properties do
@@ -637,7 +647,7 @@ begin
   end;
 end;
 
-function TAdButton.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdButton.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
@@ -672,7 +682,7 @@ begin
   end;
 end;
 
-procedure TAdForm.CloseBtnClick(Sender: TObject);
+procedure TAdForm.CloseBtnClick(Sender: TObject; X, Y:integer);
 begin
   Close;
 end;
@@ -703,7 +713,7 @@ begin
   inherited DoDraw;
 end;
 
-function TAdForm.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+function TAdForm.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
@@ -722,11 +732,11 @@ begin
   end;
 end;
 
-function TAdForm.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
+function TAdForm.DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 begin
   inherited DoMouseMove(Shift,X,Y);
   result := true;
-  if (FMovable) and (ssLeft in Shift) and FDown then
+  if (FMovable) and (asLeft in Shift) and FDown then
   begin
     self.X := self.X + (X-FMX);
     self.Y := self.Y + (Y-FMY);
@@ -735,7 +745,7 @@ begin
   end;
 end;
 
-function TAdForm.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdForm.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseUp(Button,Shift,X,Y);
@@ -754,7 +764,7 @@ begin
   SetCenter(FCenter);
 end;
 
-procedure TAdForm.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdForm.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited;
   CreateButtons;
@@ -768,7 +778,7 @@ begin
   end;
 end;
 
-function TAdForm.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdForm.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
@@ -881,7 +891,7 @@ begin
   inherited DoDraw;
 end;
 
-function TAdCheckBox.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
+function TAdCheckBox.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
   X, Y: Integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
@@ -903,7 +913,7 @@ begin
   FState := bsNormal;
 end;
 
-function TAdCheckBox.DoMouseUp(Button: TMouseButton; Shift: TShiftState;
+function TAdCheckBox.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
   X, Y: Integer):boolean;
 begin
   inherited DoMouseUp(Button,Shift,X,Y);
@@ -935,7 +945,7 @@ begin
   MinHeight := FSkinitem.BaseHeight;
 end;
 
-procedure TAdCheckBox.LoadFromXML(ARoot: TJvSimpleXMLElem);
+procedure TAdCheckBox.LoadFromXML(ARoot: TAdSimpleXMLElem);
 begin
   inherited;
   with ARoot.Properties do
@@ -947,7 +957,7 @@ begin
   end;
 end;
 
-function TAdCheckBox.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdCheckBox.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   Result := inherited SaveToXML(aroot);
   with Result.Properties do
@@ -1190,7 +1200,7 @@ begin
   inherited;
 end;
 
-function TAdBitmapButton.DoMouseDown(Button: TMouseButton; Shift: TShiftState;
+function TAdBitmapButton.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
   X, Y: Integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
@@ -1230,7 +1240,7 @@ begin
   end;
 end;
 
-function TAdBitmapButton.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdBitmapButton.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseUp(Button,Shift,X,Y);
@@ -1255,7 +1265,7 @@ begin
   end;
 end;
 
-procedure TAdBitmapButton.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdBitmapButton.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited;
   with aroot.Properties do
@@ -1272,7 +1282,7 @@ begin
   end;
 end;
 
-function TAdBitmapButton.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdBitmapButton.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   Result := inherited SaveToXML(aroot);
   with Result.Properties do
@@ -1392,7 +1402,7 @@ begin
   inherited;
 end;
 
-procedure TAdLabel.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdLabel.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited;
   with aroot.Properties do
@@ -1404,7 +1414,7 @@ begin
   end;
 end;
 
-function TAdLabel.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdLabel.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
@@ -1493,7 +1503,7 @@ begin
   inherited DoDraw;
 end;
 
-procedure TAdProgressBar.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdProgressBar.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited;
   with aroot.Properties do
@@ -1507,7 +1517,7 @@ begin
   end;
 end;
 
-function TAdProgressBar.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdProgressBar.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
@@ -1710,7 +1720,7 @@ begin
   end;
 end;
 
-procedure TAdGUIImage.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdGUIImage.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited LoadFromXML(aroot);
   with aroot.Properties do
@@ -1723,7 +1733,7 @@ begin
   end;
 end;
 
-function TAdGUIImage.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdGUIImage.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
@@ -1885,23 +1895,14 @@ begin
   inherited;
 end;
 
-function TAdEdit.DoClick:boolean;
+function TAdEdit.DoClick(X, Y:integer):boolean;
 begin
-  inherited DoClick;
+  inherited DoClick(X, Y);
   result := true;
   SetFocused;
 end;
 
-const
-  VK_BACK = $08;
-  VK_DELETE = $2E;
-  VK_LEFT = 37;
-  VK_HOME = 36;
-  VK_END = 35;
-  VK_RIGHT = 39;
-  VK_SHIFT = $10;
-
-function TAdEdit.DoKeyDown(Key:Word;Shift:TShiftState):boolean;
+function TAdEdit.DoKeyDown(Key:Word; Shift:TAdShiftState):boolean;
 var
   pressed : boolean;
 begin
@@ -1912,7 +1913,7 @@ begin
   FCursorVisible := true;
   FCursorTime := 0;
 
-  if Key = VK_BACK then
+  if Key = AVK_BACK then
   begin
     pressed := true;
     if GetSelCount > 0 then
@@ -1923,7 +1924,7 @@ begin
       FCursorPos := FCursorPos - 1;
     end;
   end else
-  if Key = VK_DELETE then
+  if Key = AVK_DELETE then
   begin
     pressed := true;
     if GetSelCount > 0 then
@@ -1931,23 +1932,23 @@ begin
     else
       Delete(FText, FCursorPos + 1, 1);
   end else
-  if key = VK_LEFT then
+  if key = AVK_LEFT then
   begin
     pressed := true;
     FCursorPos := FCursorPos - 1;
   end else
-  if key = VK_RIGHT then
+  if key = AVK_RIGHT then
   begin
     pressed := true;
     FCursorPos := FCursorPos + 1;
   end else
-  if key = VK_HOME then
+  if key = AVK_HOME then
   begin
     pressed := true;
     FCursorPos := 0;
     FTextStart := 1;
   end else
-  if key = VK_END then
+  if key = AVK_END then
   begin
     pressed := true;
     FCursorPos := Length(FText) + 1;
@@ -1956,7 +1957,7 @@ begin
   if FCursorPos < 0 then FCursorPos := 0;
   if FCursorPos > Length(FText) then FCursorPos := Length(FText);
 
-  if pressed and not (ssShift in Shift) then FSelStart := FCursorPos;
+  if pressed and not (asShift in Shift) then FSelStart := FCursorPos;
 end;
 
 function TAdEdit.IsNotSpecialCharacter(AChar:char):boolean;
@@ -1998,18 +1999,18 @@ begin
   CheckRange;
 end;
 
-function TAdEdit.DoMouseMove(Shift: TShiftState; X, Y: Integer):boolean;
+function TAdEdit.DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 begin
   inherited DoMouseMove(Shift,X,Y);
   result := true;
 
-  if ssLeft in Shift then
+  if asLeft in Shift then
   begin
     FSelStart := CalcCursorPos(x);
   end;
 end;
 
-function TAdEdit.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdEdit.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: integer): boolean;
 begin
   inherited DoMouseUp(Button, Shift, X, Y);
@@ -2017,18 +2018,18 @@ begin
   MousePreview := false;
 end;
 
-function TAdEdit.DoMouseDown(Button:TMouseButton; Shift:TShiftState;X,Y:integer):boolean;
+function TAdEdit.DoMouseDown(Button:TAdMouseButton; Shift:TAdShiftState; X,Y:integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
   result := true;
 
-  if Button = mbLeft then
+  if Button = abLeft then
   begin
     FCursorPos := CalcCursorPos(x);
     MousePreview := true;
   end;
 
-  if not (ssShift in Shift) then FSelStart := FCursorPos;
+  if not (asShift in Shift) then FSelStart := FCursorPos;
 end;
 
 procedure TAdEdit.LoadSkinItem;
@@ -2037,13 +2038,13 @@ begin
   SetSpacer(FSkinItem);
 end;
 
-function TAdEdit.SaveToXML(aroot: TJvSimpleXMLElems): TJvSimpleXMLElem;
+function TAdEdit.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
   result := inherited SaveToXML(aroot);
   result.Properties.Add('text',FText)
 end;
 
-procedure TAdEdit.LoadFromXML(aroot: TJvSimpleXMLElem);
+procedure TAdEdit.LoadFromXML(aroot: TAdSimpleXMLElem);
 begin
   inherited;
   FText := aroot.Properties.Value('text','');
@@ -2104,7 +2105,7 @@ begin
   end;
 end;
 
-function TAdSkinBtn.DoMouseDown(Button: TMouseButton; Shift: TShiftState; X,
+function TAdSkinBtn.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
@@ -2129,7 +2130,7 @@ begin
   GetStateNr;
 end;
 
-function TAdSkinBtn.DoMouseUp(Button: TMouseButton; Shift: TShiftState; X,
+function TAdSkinBtn.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseUp(Button,Shift,X,Y);
