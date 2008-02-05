@@ -16,6 +16,10 @@
 {Contains classes for the skin management of the gui components}
 unit AdSkin;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

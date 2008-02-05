@@ -19,6 +19,10 @@
 {Contains a helper class which connects a TAdWindowFramework to a TAdComponent.}
 unit AdGUIConnector;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

@@ -1,5 +1,9 @@
 unit AdVCLComponentWindow;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
@@ -56,6 +60,8 @@ type
       procedure SetTitle(AValue:string);override;
 
       procedure SetupEvents;
+
+      procedure SetCursorVisible(AValue:Boolean);override;
 
       function ConvertButton(Button: TMouseButton): TAdMouseButton;
       function ConvertShift(Shift: TShiftState): TAdShiftState;
@@ -123,6 +129,18 @@ end;
 procedure TAdVCLComponentWindow.Run;
 begin
   //Application is already running
+end;
+
+procedure TAdVCLComponentWindow.SetCursorVisible(AValue: Boolean);
+begin
+  inherited;
+  if FInitialized then
+  begin
+    if AValue then
+      FControl.Cursor := crDefault
+    else
+      FControl.Cursor := crNone;
+  end;
 end;
 
 procedure TAdVCLComponentWindow.SetTitle(AValue: string);

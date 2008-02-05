@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="1"/>
+      <ActiveEditorIndexAtStart Value="6"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value=""/>
@@ -24,7 +24,7 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="46">
+    <Units Count="58">
       <Unit0>
         <Filename Value="NoVCL.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -32,16 +32,16 @@
         <CursorPos X="6" Y="1"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
-        <UsageCount Value="35"/>
+        <UsageCount Value="36"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="36" Y="25"/>
+        <CursorPos X="1" Y="89"/>
         <TopLine Value="1"/>
         <EditorIndex Value="1"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
@@ -70,9 +70,7 @@
         <UnitName Value="AdBitmap"/>
         <CursorPos X="36" Y="29"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="9"/>
         <UsageCount Value="13"/>
-        <Loaded Value="True"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\..\src\AdStandardFontGenerator.pas"/>
@@ -84,10 +82,10 @@
       <Unit7>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
         <UnitName Value="AdDraws"/>
-        <CursorPos X="58" Y="10"/>
-        <TopLine Value="1"/>
-        <EditorIndex Value="6"/>
-        <UsageCount Value="18"/>
+        <CursorPos X="23" Y="1510"/>
+        <TopLine Value="1486"/>
+        <EditorIndex Value="9"/>
+        <UsageCount Value="19"/>
         <Loaded Value="True"/>
       </Unit7>
       <Unit8>
@@ -116,9 +114,7 @@
         <UnitName Value="AdFontFactory"/>
         <CursorPos X="20" Y="326"/>
         <TopLine Value="309"/>
-        <EditorIndex Value="11"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\..\src\AdVCLFormats.pas"/>
@@ -132,18 +128,14 @@
         <UnitName Value="AdLCLFormats"/>
         <CursorPos X="10" Y="117"/>
         <TopLine Value="87"/>
-        <EditorIndex Value="8"/>
         <UsageCount Value="15"/>
-        <Loaded Value="True"/>
       </Unit13>
       <Unit14>
         <Filename Value="..\..\..\src\AdFormats.pas"/>
         <UnitName Value="AdFormats"/>
         <CursorPos X="22" Y="6"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="7"/>
         <UsageCount Value="15"/>
-        <Loaded Value="True"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\lcl\intfgraphics.pas"/>
@@ -182,9 +174,7 @@
         <UnitName Value="Graphics"/>
         <CursorPos X="31" Y="242"/>
         <TopLine Value="225"/>
-        <EditorIndex Value="4"/>
         <UsageCount Value="13"/>
-        <Loaded Value="True"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
@@ -271,27 +261,21 @@
         <UnitName Value="math"/>
         <CursorPos X="1" Y="848"/>
         <TopLine Value="831"/>
-        <EditorIndex Value="3"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit33>
       <Unit34>
         <Filename Value="..\..\..\src\AdWin32Window.pas"/>
         <UnitName Value="AdWin32Window"/>
-        <CursorPos X="1" Y="19"/>
+        <CursorPos X="9" Y="21"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="2"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit34>
       <Unit35>
         <Filename Value="..\..\..\src\AdDevIL.pas"/>
         <UnitName Value="AdDevIL"/>
         <CursorPos X="11" Y="125"/>
         <TopLine Value="97"/>
-        <EditorIndex Value="12"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit35>
       <Unit36>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\Borland\BDS\4.0\lib\DevIL\DevIL.pas"/>
@@ -319,9 +303,7 @@
         <UnitName Value="AdBitmapClass"/>
         <CursorPos X="51" Y="155"/>
         <TopLine Value="126"/>
-        <EditorIndex Value="10"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit39>
       <Unit40>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\lcl\include\customform.inc"/>
@@ -345,7 +327,7 @@
       <Unit43>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\lcl\interfaces\win32\win32wscontrols.pp"/>
         <UnitName Value="Win32WSControls"/>
-        <CursorPos X="36" Y="232"/>
+        <CursorPos X="4" Y="235"/>
         <TopLine Value="214"/>
         <UsageCount Value="10"/>
       </Unit43>
@@ -360,12 +342,118 @@
         <UnitName Value="AdPNG"/>
         <CursorPos X="63" Y="23"/>
         <TopLine Value="22"/>
+        <UsageCount Value="10"/>
+      </Unit45>
+      <Unit46>
+        <Filename Value="..\..\..\src\AdVCLComponentWindow.pas"/>
+        <UnitName Value="AdVCLComponentWindow"/>
+        <CursorPos X="9" Y="5"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit46>
+      <Unit47>
+        <Filename Value="..\..\..\src\AdSkin.pas"/>
+        <UnitName Value="AdSkin"/>
+        <CursorPos X="1" Y="237"/>
+        <TopLine Value="72"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit47>
+      <Unit48>
+        <Filename Value="..\..\..\src\AdFontList.pas"/>
+        <UnitName Value="AdFontList"/>
+        <CursorPos X="33" Y="166"/>
+        <TopLine Value="141"/>
+        <EditorIndex Value="6"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit48>
+      <Unit49>
+        <Filename Value="..\..\..\src\AdGUI.pas"/>
+        <UnitName Value="AdGUI"/>
+        <CursorPos X="1" Y="1826"/>
+        <TopLine Value="1809"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit49>
+      <Unit50>
+        <Filename Value="..\..\..\src\AdComponents.pas"/>
+        <UnitName Value="AdComponents"/>
+        <CursorPos X="9" Y="24"/>
+        <TopLine Value="69"/>
+        <EditorIndex Value="10"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit50>
+      <Unit51>
+        <Filename Value="..\..\..\src\AdGUIConnector.pas"/>
+        <UnitName Value="AdGUIConnector"/>
+        <CursorPos X="9" Y="24"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit51>
+      <Unit52>
+        <Filename Value="..\..\..\src\dll\opengl\AndorraOGLLaz.lpr"/>
+        <UnitName Value="AndorraOGLLaz"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit52>
+      <Unit53>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <UnitName Value="AdSimpleXml"/>
+        <CursorPos X="23" Y="63"/>
+        <TopLine Value="42"/>
         <EditorIndex Value="5"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
-      </Unit45>
+      </Unit53>
+      <Unit54>
+        <Filename Value="..\..\..\src\AdXML.pas"/>
+        <UnitName Value="AdXML"/>
+        <CursorPos X="1" Y="70"/>
+        <TopLine Value="51"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit54>
+      <Unit55>
+        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\packages\fcl-base\src\inc\inifiles.pp"/>
+        <UnitName Value="IniFiles"/>
+        <CursorPos X="3" Y="61"/>
+        <TopLine Value="44"/>
+        <EditorIndex Value="7"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit55>
+      <Unit56>
+        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\packages\fcl-base\src\inc\contnrs.pp"/>
+        <UnitName Value="contnrs"/>
+        <CursorPos X="1" Y="1261"/>
+        <TopLine Value="1244"/>
+        <EditorIndex Value="8"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit56>
+      <Unit57>
+        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\rtl\objpas\classes\classesh.inc"/>
+        <CursorPos X="14" Y="488"/>
+        <TopLine Value="519"/>
+        <UsageCount Value="10"/>
+      </Unit57>
     </Units>
-    <JumpHistory Count="0" HistoryIndex="-1"/>
+    <JumpHistory Count="2" HistoryIndex="1">
+      <Position1>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <Caret Line="65" Column="30" TopLine="42"/>
+      </Position1>
+      <Position2>
+        <Filename Value="..\..\..\src\AdFontList.pas"/>
+        <Caret Line="23" Column="9" TopLine="1"/>
+      </Position2>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="5"/>

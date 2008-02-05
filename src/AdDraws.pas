@@ -622,6 +622,8 @@ begin
         Setup2DScene;
       end else
       begin
+        AdAppl.Free; AdAppl := nil;
+
         amsg.Text := 'Unable to find a supported Window Framework. Try to use another Plugin or bind another window framework class.';
         amsg.Sender := 'TAdDraw';
         amsg.Typ := 'Fatal Error';

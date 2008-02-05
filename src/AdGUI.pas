@@ -19,6 +19,10 @@
 {Contains the main GUI classes.}
 unit AdGUI;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

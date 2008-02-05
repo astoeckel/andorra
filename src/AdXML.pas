@@ -15,10 +15,14 @@
 
 unit AdXML;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
-  AdSimpleXML, Classes, SysUtils;
+  Dialogs, AdSimpleXML, Classes, SysUtils;
 
 function WriteStreamToString(AStream:TStream):string;
 procedure ReadStreamFromString(AStream:TStream;AString:string);
@@ -61,6 +65,7 @@ end;
 procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
 var
   ms:TMemoryStream;
+  i:integer;
 begin
   if XMLElem.Properties.Value('source','') <> '' then
   begin

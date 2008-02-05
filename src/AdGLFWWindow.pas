@@ -19,6 +19,7 @@ type
       function GetClientWidth:integer;override;
       function GetClientHeight:integer;override;
       procedure SetTitle(AValue:string);override;
+      procedure SetCursorVisible(AValue:boolean);override;
     public
       constructor Create;override;
       destructor Destroy;override;
@@ -185,10 +186,8 @@ begin
   MouseX := X;
   MouseY := Y;
 
-
-
   if Assigned(WindowInstance.Events.OnMouseMove) then
-    WindowInstance.Events.OnMouseMove(WindowInstance, GetShiftState, X, Y);
+    WindowInstance.Events.OnMouseMove(WindowInstance, GetShiftState, MouseX, MouseY);
 end;
 
 procedure KeyCallback(Key, Action: Integer); stdcall;
@@ -383,6 +382,8 @@ begin
       glfwSetWindowRefreshCallback(PaintCallback);
       glfwSetWindowCloseCallback(CloseCallback);
       glfwSetWindowSizeCallback(ResizeCallback);
+
+      glfwEnable(GLFW_KEY_REPEAT);
     end;
 
     result := FInitialized;
@@ -422,6 +423,15 @@ begin
   begin
     glfwCloseWindow;
   end;
+end;
+
+procedure TAdGLFWWindow.SetCursorVisible(AValue: Boolean);
+begin
+  inherited;
+  if AValue then
+    glfwEnable(GLFW_MOUSE_CURSOR)
+  else
+    glfwDisable(GLFW_MOUSE_CURSOR);
 end;
 
 procedure TAdGLFWWindow.SetTitle(AValue: string);

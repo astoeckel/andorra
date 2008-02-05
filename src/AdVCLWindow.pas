@@ -54,6 +54,8 @@ type
 
       function GetClientWidth:integer;override;
       function GetClientHeight:integer;override;
+
+      procedure SetCursorVisible(AValue:Boolean);override;
     public
       constructor Create;override;
       destructor Destroy;override;
@@ -169,6 +171,8 @@ begin
     FInitialized := true;
     FHandle := FForm.Handle;
 
+    SetCursorVisible(true);
+
     SetupEvents;
   end;
 end;
@@ -186,6 +190,18 @@ begin
   if FForm <> nil then
   begin
     FForm.Close;
+  end;
+end;
+
+procedure TAdVCLWindow.SetCursorVisible(AValue: Boolean);
+begin
+  inherited;
+  if FInitialized then
+  begin
+    if AValue then
+      FForm.Cursor := crDefault
+    else
+      FForm.Cursor := crNone; 
   end;
 end;
 

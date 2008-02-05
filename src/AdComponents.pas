@@ -19,6 +19,10 @@
 {Contains components which can be used with the Andorra GUI.}
 unit AdComponents;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

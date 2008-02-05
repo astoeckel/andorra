@@ -69,10 +69,12 @@ type
     private
       FTitle:string;
       FEvents:TAdEventHandler;
+      FCursorVisible:Boolean;
     protected
       function GetClientWidth:integer;virtual;abstract;
       function GetClientHeight:integer;virtual;abstract;
       procedure SetTitle(AValue:string);virtual;
+      procedure SetCursorVisible(AValue:Boolean);virtual;
     public
       constructor Create;virtual;
       destructor Destroy;override;
@@ -89,6 +91,7 @@ type
       property Events:TAdEventHandler read FEvents;
       property ClientWidth:integer read GetClientWidth;
       property ClientHeight:integer read GetClientHeight;
+      property CursorVisible:Boolean read FCursorVisible write SetCursorVisible;
   end;
   TAdWindowFrameworkClass = class of TAdWindowFramework;
 
@@ -166,6 +169,11 @@ begin
     result := result + '.' + aclass.ClassName;
     aclass := aclass.ClassParent;
   end;
+end;
+
+procedure TAdWindowFramework.SetCursorVisible(AValue: Boolean);
+begin
+  FCursorVisible := AValue;
 end;
 
 procedure TAdWindowFramework.SetTitle(AValue: string);

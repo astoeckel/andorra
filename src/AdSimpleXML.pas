@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.1 2008/02/04 16:57:32 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.2 2008/02/05 10:04:02 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -55,10 +55,10 @@ uses
   SysUtils, Classes, Variants, IniFiles;
 
 type
-  {$IFDEF COMPILER5}
+  {$IFDEF FPC}
   THashedStringList = class(TStringList);
-  THandle = Longword;
-  {$ENDIF COMPILER5}
+  {$ENDIF}
+//  THandle = Longword;
   TAdSimpleXML = class;
 
   EAdSimpleXMLError = class(Exception);
@@ -2144,14 +2144,21 @@ end;
 
 function TAdSimpleXMLProps.GetItemNamedDefault(const Name, Default: string): TAdSimpleXMLProp;
 var
-  I: Integer;
+  I, Index: Integer;
 begin
   Result := nil;
   if FProperties <> nil then
   begin
-    I := FProperties.IndexOf(Name);
-    if I <> -1 then
-      Result := TAdSimpleXMLProp(FProperties.Objects[I])
+    //I := FProperties.IndexOf(Name);
+    Index := -1;
+    for I := 0 to FProperties.Count - 1 do
+      if FProperties[i] = Name then
+      begin
+        Index := I;
+        break;
+      end;
+    if Index <> -1 then
+      Result := TAdSimpleXMLProp(FProperties.Objects[Index])
     else
     if Assigned(FParent) and Assigned(FParent.SimpleXML) and (sxoAutoCreate in FParent.SimpleXML.Options) then
       Result := Add(Name, Default);

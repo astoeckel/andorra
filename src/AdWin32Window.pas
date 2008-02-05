@@ -16,6 +16,10 @@
 {Contains a non-vcl Win32 window.}
 unit AdWin32Window;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 
@@ -35,6 +39,7 @@ type
       FClose : boolean;
       FClicked : boolean;
       FDblClicked : boolean;
+      FHCur : HCursor;
       function WndProc(hWnd: HWND; uMsg: UINT; wParam: wParam; lParam: LParam):lresult; stdcall;
       function MakeProcInstance(M: TMethod): Pointer;
       function ChangeResolution(width, height, bitdepth : LongWord):boolean;
@@ -55,6 +60,7 @@ type
       function GetClientWidth:integer;override;
       function GetClientHeight:integer;override;
       procedure SetTitle(AValue:string);override;
+      procedure SetCursorVisible(AValue:Boolean);override;
     public
       constructor Create;override;
       destructor Destroy;override;
@@ -171,6 +177,8 @@ begin
 
     FProps := AProps;
 
+    SetCursorVisible(true);
+    
     FWnd.cbSize := SizeOf(TWndClassEx);
     FWnd.style := CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS;
     FWnd.lpfnWndProc := FWndProc;
@@ -182,7 +190,7 @@ begin
     FWnd.hIconSm := 0;
     FWnd.hInstance := hInstance;
     FWnd.hIcon := LoadIcon(hInstance, MAKEINTRESOURCE(100));
-    FWnd.hCursor := LoadCursor(0, IDC_ARROW);;
+    FWnd.hCursor := FHCur;
 
     RegisterClassEx(FWnd);
     FHandle := CreateWindowEx(0, 'WndClass', PChar(Title), WndStyle,
@@ -216,6 +224,15 @@ begin
       if Assigned(Events.OnIdle) then Events.OnIdle(self, Done);
     end;
   end;
+end;
+
+procedure TAdWin32Window.SetCursorVisible(AValue: Boolean);
+begin
+  inherited;
+  if AValue then
+    FHCur := LoadCursor(0, IDC_ARROW)
+  else
+    FHCur := 0;
 end;
 
 procedure TAdWin32Window.SetTitle(AValue: string);
@@ -481,6 +498,11 @@ begin
       ProcessKey(uMsg, wParam);
     WM_CHAR:
       if Assigned(Events.OnKeyPress) then Events.OnKeyPress(Self, Chr(wParam));
+    WM_SETCURSOR:
+      if (lParam and $0000FFFF) = (HTCLIENT) then
+        Windows.SetCursor(FHCur)
+      else
+        Result := DefWindowProc(hWnd, uMsg, wParam, lParam);
   else
     Result := DefWindowProc(hWnd, uMsg, wParam, lParam);
   end;

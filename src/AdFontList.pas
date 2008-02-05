@@ -18,6 +18,10 @@
 
 unit AdFontList;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
@@ -159,7 +163,7 @@ begin
       TAdFont(PAdFontListData(ptr)^.fnt).Free;
     end;
     SetLength(PAdFontListData(ptr)^.name, 0);
-    Dispose(ptr);
+    Dispose(PAdFontListData(ptr));
   end;
 end;
 
