@@ -7,8 +7,8 @@ unit Main;
 interface
 
 uses
-  AdClasses, AdEvents, AdDraws, AdGLFWWindow, AdDevIL,
-  AdGUI, AdComponents, AdGUIConnector;
+  AdClasses, AdEvents, AdDraws, AdDevIL,
+  AdGUI, AdComponents, AdGUIConnector, AdVCLWindow;
 
 type
   TAdAppl = class
@@ -59,8 +59,6 @@ end;
 
 procedure TAdAppl.Run;
 begin
-  ReportMemoryLeaksOnShutdown := true;
-  
   AdDraw := TAdDraw.Create(nil);
 
   {$IFDEF FPC}
@@ -76,7 +74,7 @@ begin
   AdDraw.Display.Width := 800;
   AdDraw.Display.Height := 600;
   AdDraw.Display.BitCount := 32;
-  AdDraw.Options := AdDraw.Options + [doMipmaps, doFullscreen];
+  AdDraw.Options := AdDraw.Options + [doMipmaps];
   if AdDraw.Initialize then
   begin
     AdDraw.Window.Events.OnIdle := Idle;
@@ -94,10 +92,13 @@ begin
     AdGUIConnector := TAdGUIConnector.Create(AdGUI);
     AdGUIConnector.ConnectEventHandlers(AdDraw.Window);
 
+    AdDraw.Window.CursorVisible := false;
+
     AdDraw.Run;
+
+    AdGUIConnector.Free;
+    AdGUI.Free;
   end;
-  AdGUIConnector.Free;
-  AdGUI.Free;
   AdDraw.Free;
 end;
 
