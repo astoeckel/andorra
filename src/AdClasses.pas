@@ -179,6 +179,7 @@ type
       function CreateLight:TAd2DLight;virtual;abstract;
       {Creates and returns a TAd2DBitmapTexture}
       function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
+      {Creates and returns a TAd2dRenderTargetTexture}
       //function CreateRenderTargetTexture:TAdRenderTargetTexture;virtual;abstract;
       {Creates and returns a TAd2DMesh}
       function CreateMesh:TAd2DMesh;virtual;abstract;

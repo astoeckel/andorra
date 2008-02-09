@@ -3,7 +3,7 @@ program NoVCL;
 {$MODE Delphi}
 
 uses
-  Main in 'Main.pas';
+  Main in 'Main.pas', AdLCLOGLWindow, LazOpenGLContext;
   
 var
   appl:TAdAppl;

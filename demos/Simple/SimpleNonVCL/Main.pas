@@ -8,7 +8,7 @@ interface
 
 uses
   AdClasses, AdEvents, AdDraws, AdDevIL,
-  AdGUI, AdComponents, AdGUIConnector, AdVCLWindow;
+  AdGUI, AdComponents, AdGUIConnector, AdStdWindow;
 
 type
   TAdAppl = class
@@ -32,7 +32,7 @@ procedure TAdAppl.Idle(Sender: TObject; var Done: boolean);
 begin
   if AdDraw.CanDraw then
   begin
-    AdDraw.ClearSurface(0);
+    AdDraw.ClearSurface($FF00FF);
     AdDraw.BeginScene;
 
     AdGUI.Update(1);

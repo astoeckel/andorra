@@ -2,8 +2,7 @@ program Simple;
 
 uses
   Forms,
-  Main in 'Main.pas',
-  AdVCLComponentWindow in '..\..\..\src\AdVCLComponentWindow.pas';
+  Main in 'Main.pas';
 
 {$R *.res}
 

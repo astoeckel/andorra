@@ -14,7 +14,7 @@ unit DX3DMain;
 interface
 
 uses                 
-  Sysutils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
+  SysUtils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
   AdTypes, AdBitmapClass;
 
 type

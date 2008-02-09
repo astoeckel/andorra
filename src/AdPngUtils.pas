@@ -1,4 +1,4 @@
-unit AdPngUtils;
+unit AdPNGUtils;
 
 {$IFDEF FPC}
   {$MODE DELPHI}

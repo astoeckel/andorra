@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.2 2008/02/05 10:04:02 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.3 2008/02/09 16:33:42 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -46,7 +46,7 @@ Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 {$ENDIF}
 
 {Unit which is used for parsing XML-Files. Originally "JclSimpleXML.pas".}
-unit AdSimpleXml;
+unit AdSimpleXML;
 
 interface
 

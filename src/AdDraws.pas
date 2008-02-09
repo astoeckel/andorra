@@ -35,7 +35,7 @@ uses
   ,AdStandardFontGenerator, AdSimpleCompressors, AdFormats
   {$ENDIF}
   {$IFNDEF DO_NOT_INCLUDE_STD_WINDOWMGR}
-  ,AdVCLComponentWindow
+  ,AdComponentWindow
   {$ENDIF};
 
 type
@@ -89,6 +89,22 @@ type
 
       property Items:TStringList read FItems;
   end;
+
+  {TAdSurface = class
+    private
+      FParent : TAdDraw;
+    protected
+      FWidth, FHeight : integer;
+    public
+      constructor Create(AParent:TAdDraw);
+      
+      procedure Activate;abstract;virtual;
+      procedure Render(ATarget:TAdSurface);abstract;virtual;      
+      procedure SetSize(AWidth, AHeight:integer);virtual;
+
+      property Width : integer read FWidth;
+      property Height : integer read FHeight;
+  end;                }
 
   {This is the main class for using Andorra 2D. It is comparable to DelphiX's TDXDraw.}
   TAdDraw = class

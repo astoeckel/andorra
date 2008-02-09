@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="6"/>
+      <ActiveEditorIndexAtStart Value="4"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value=""/>
@@ -24,21 +24,26 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="58">
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LazOpenGLContext"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="63">
       <Unit0>
         <Filename Value="NoVCL.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="NoVCL"/>
-        <CursorPos X="6" Y="1"/>
+        <CursorPos X="55" Y="6"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
-        <UsageCount Value="36"/>
+        <UsageCount Value="37"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="1" Y="89"/>
+        <CursorPos X="26" Y="10"/>
         <TopLine Value="1"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
@@ -82,9 +87,9 @@
       <Unit7>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
         <UnitName Value="AdDraws"/>
-        <CursorPos X="23" Y="1510"/>
-        <TopLine Value="1486"/>
-        <EditorIndex Value="9"/>
+        <CursorPos X="15" Y="38"/>
+        <TopLine Value="13"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="19"/>
         <Loaded Value="True"/>
       </Unit7>
@@ -179,16 +184,20 @@
       <Unit21>
         <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
         <UnitName Value="AdVCLWindow"/>
-        <CursorPos X="1" Y="172"/>
-        <TopLine Value="135"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="93"/>
+        <EditorIndex Value="6"/>
         <UsageCount Value="11"/>
+        <Loaded Value="True"/>
       </Unit21>
       <Unit22>
         <Filename Value="..\..\..\src\AdWindowFramework.pas"/>
         <UnitName Value="AdWindowFramework"/>
-        <CursorPos X="13" Y="168"/>
-        <TopLine Value="1"/>
+        <CursorPos X="17" Y="107"/>
+        <TopLine Value="91"/>
+        <EditorIndex Value="8"/>
         <UsageCount Value="11"/>
+        <Loaded Value="True"/>
       </Unit22>
       <Unit23>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\lcl\include\application.inc"/>
@@ -355,37 +364,29 @@
         <Filename Value="..\..\..\src\AdSkin.pas"/>
         <UnitName Value="AdSkin"/>
         <CursorPos X="1" Y="237"/>
-        <TopLine Value="72"/>
-        <EditorIndex Value="2"/>
+        <TopLine Value="68"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit47>
       <Unit48>
         <Filename Value="..\..\..\src\AdFontList.pas"/>
         <UnitName Value="AdFontList"/>
-        <CursorPos X="33" Y="166"/>
+        <CursorPos X="39" Y="166"/>
         <TopLine Value="141"/>
-        <EditorIndex Value="6"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit48>
       <Unit49>
         <Filename Value="..\..\..\src\AdGUI.pas"/>
         <UnitName Value="AdGUI"/>
         <CursorPos X="1" Y="1826"/>
         <TopLine Value="1809"/>
-        <EditorIndex Value="3"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit49>
       <Unit50>
         <Filename Value="..\..\..\src\AdComponents.pas"/>
         <UnitName Value="AdComponents"/>
         <CursorPos X="9" Y="24"/>
         <TopLine Value="69"/>
-        <EditorIndex Value="10"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit50>
       <Unit51>
         <Filename Value="..\..\..\src\AdGUIConnector.pas"/>
@@ -403,39 +404,31 @@
       </Unit52>
       <Unit53>
         <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
-        <UnitName Value="AdSimpleXml"/>
+        <UnitName Value="AdSimpleXML"/>
         <CursorPos X="23" Y="63"/>
         <TopLine Value="42"/>
-        <EditorIndex Value="5"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit53>
       <Unit54>
         <Filename Value="..\..\..\src\AdXML.pas"/>
         <UnitName Value="AdXML"/>
         <CursorPos X="1" Y="70"/>
         <TopLine Value="51"/>
-        <EditorIndex Value="4"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit54>
       <Unit55>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\packages\fcl-base\src\inc\inifiles.pp"/>
         <UnitName Value="IniFiles"/>
         <CursorPos X="3" Y="61"/>
         <TopLine Value="44"/>
-        <EditorIndex Value="7"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit55>
       <Unit56>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\packages\fcl-base\src\inc\contnrs.pp"/>
         <UnitName Value="contnrs"/>
         <CursorPos X="1" Y="1261"/>
         <TopLine Value="1244"/>
-        <EditorIndex Value="8"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit56>
       <Unit57>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\rtl\objpas\classes\classesh.inc"/>
@@ -443,16 +436,144 @@
         <TopLine Value="519"/>
         <UsageCount Value="10"/>
       </Unit57>
+      <Unit58>
+        <Filename Value="..\..\..\src\AdLCLOGLWindow.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="AdLCLOGLWindow"/>
+        <CursorPos X="33" Y="224"/>
+        <TopLine Value="201"/>
+        <EditorIndex Value="7"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit58>
+      <Unit59>
+        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\components\opengl\openglcontext.pas"/>
+        <UnitName Value="OpenGLContext"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit59>
+      <Unit60>
+        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
+        <UnitName Value="AdStdWindow"/>
+        <CursorPos X="11" Y="26"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit60>
+      <Unit61>
+        <Filename Value="..\..\..\src\AdLCLOGLComponentWindow.pas"/>
+        <UnitName Value="AdLCLOGLComponentWindow"/>
+        <CursorPos X="19" Y="122"/>
+        <TopLine Value="122"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit61>
+      <Unit62>
+        <Filename Value="..\..\..\src\AdComponentWindow.pas"/>
+        <UnitName Value="AdComponentWindow"/>
+        <CursorPos X="24" Y="26"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit62>
     </Units>
-    <JumpHistory Count="2" HistoryIndex="1">
+    <JumpHistory Count="23" HistoryIndex="22">
       <Position1>
-        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
-        <Caret Line="65" Column="30" TopLine="42"/>
+        <Filename Value="Main.pas"/>
+        <Caret Line="11" Column="42" TopLine="1"/>
       </Position1>
       <Position2>
-        <Filename Value="..\..\..\src\AdFontList.pas"/>
-        <Caret Line="23" Column="9" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
+        <Caret Line="26" Column="11" TopLine="1"/>
       </Position2>
+      <Position3>
+        <Filename Value="Main.pas"/>
+        <Caret Line="78" Column="1" TopLine="62"/>
+      </Position3>
+      <Position4>
+        <Filename Value="Main.pas"/>
+        <Caret Line="80" Column="1" TopLine="64"/>
+      </Position4>
+      <Position5>
+        <Filename Value="Main.pas"/>
+        <Caret Line="81" Column="1" TopLine="65"/>
+      </Position5>
+      <Position6>
+        <Filename Value="Main.pas"/>
+        <Caret Line="82" Column="1" TopLine="66"/>
+      </Position6>
+      <Position7>
+        <Filename Value="Main.pas"/>
+        <Caret Line="83" Column="1" TopLine="67"/>
+      </Position7>
+      <Position8>
+        <Filename Value="Main.pas"/>
+        <Caret Line="85" Column="1" TopLine="69"/>
+      </Position8>
+      <Position9>
+        <Filename Value="Main.pas"/>
+        <Caret Line="87" Column="1" TopLine="71"/>
+      </Position9>
+      <Position10>
+        <Filename Value="Main.pas"/>
+        <Caret Line="88" Column="1" TopLine="72"/>
+      </Position10>
+      <Position11>
+        <Filename Value="Main.pas"/>
+        <Caret Line="89" Column="1" TopLine="73"/>
+      </Position11>
+      <Position12>
+        <Filename Value="Main.pas"/>
+        <Caret Line="90" Column="1" TopLine="73"/>
+      </Position12>
+      <Position13>
+        <Filename Value="Main.pas"/>
+        <Caret Line="92" Column="1" TopLine="73"/>
+      </Position13>
+      <Position14>
+        <Filename Value="Main.pas"/>
+        <Caret Line="93" Column="1" TopLine="73"/>
+      </Position14>
+      <Position15>
+        <Filename Value="Main.pas"/>
+        <Caret Line="95" Column="1" TopLine="73"/>
+      </Position15>
+      <Position16>
+        <Filename Value="Main.pas"/>
+        <Caret Line="97" Column="1" TopLine="73"/>
+      </Position16>
+      <Position17>
+        <Filename Value="Main.pas"/>
+        <Caret Line="94" Column="7" TopLine="73"/>
+      </Position17>
+      <Position18>
+        <Filename Value="Main.pas"/>
+        <Caret Line="97" Column="1" TopLine="73"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="515" Column="1" TopLine="499"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="516" Column="1" TopLine="500"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\..\..\src\AdLCLOGLComponentWindow.pas"/>
+        <Caret Line="151" Column="1" TopLine="135"/>
+      </Position21>
+      <Position22>
+        <Filename Value="Main.pas"/>
+        <Caret Line="10" Column="26" TopLine="1"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="38" Column="15" TopLine="13"/>
+      </Position23>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -476,6 +597,12 @@
     </Other>
   </CompilerOptions>
   <Debugging>
+    <BreakPoints Count="1">
+      <Item1>
+        <Source Value="Main.pas"/>
+        <Line Value="97"/>
+      </Item1>
+    </BreakPoints>
     <Exceptions Count="2">
       <Item1>
         <Name Value="ECodetoolError"/>

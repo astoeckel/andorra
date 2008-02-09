@@ -7,7 +7,7 @@ unit AdVCLComponentWindow;
 interface
 
 uses
-  SysUtils, Types, Classes, Forms, Controls, TypInfo,
+  SysUtils, Classes, Types, Forms, Controls, TypInfo,
   AdEvents, AdWindowFramework;
 
 type
@@ -244,7 +244,7 @@ begin
       else
         Control := nil;
     end;
-  end;
+  end;   
 end;
 
 procedure TAdVCLComponentWindow.Terminate;
