@@ -90,11 +90,15 @@ type
 
   TAdTextSet = array of TAdTextSetChar;
 
-
   { Types used for storing data in streams }
 
   TAdVeryShortString = string[4];
 
+  { Triangle and polygon types }
+  TAdPolygon = array of TAdPoint;
+
+  TAdTriangle = array[0..2] of TAdPoint;
+  TAdTriangles = array of TAdTriangle;
 
   { Misc types}
 

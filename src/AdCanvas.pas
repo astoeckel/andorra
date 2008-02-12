@@ -22,7 +22,7 @@ unit AdCanvas;
 interface
 
 uses
-  Classes, AdClasses, AdTypes, AdContainers, AdList, AdFont, Math;
+  Classes, AdClasses, AdTypes, AdContainers, AdList, AdFont, AdPolygonUtils, Math;
 
 type
   {A set of three colors used to define the colors of a quad-object.}
@@ -398,6 +398,25 @@ type
       property Points:TAdLinkedList read FPoints;
   end;
 
+  TAdCanvasPolygonObject = class(TAdCanvasObject)
+    private
+      FMesh:TAd2dMesh;
+      FPolygon : TAdPolygon;
+      procedure GenerateTextureCoords(var vertices:TAdVertexArray);
+    protected
+      procedure SetMatrix(AValue:TAdMatrix);override;
+    public
+      constructor Create(AAppl:TAd2dApplication);
+      destructor Destroy;override;
+
+      procedure Draw;override;
+      function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState;override;
+      procedure Update(AItem:TAdCanvasObject);override;
+      procedure Generate;override;
+
+      property Polygon : TAdPolygon read FPolygon write FPolygon;
+  end;
+
   {This is the main canvas class.}
   TAdCanvas = class
     private
@@ -483,6 +502,8 @@ type
       procedure DrawColoredQuad(aquad:TAdCanvasColorQuad);
       {Draws a simple quad using the color specified in "Brush". @seealso(TAdCanvasQuad) @seealso(TAdBrush)}
       procedure DrawQuad(aquad:TAdCanvasQuad);
+
+      procedure Polygon(apolygon:TAdPolygon);
 
       {Specifies, wether the view/projection matrix should be reseted to the 2D mode when drawing.}
       property DrawIn2d:boolean read FDrawIn2d write FDrawIn2d;
@@ -1269,6 +1290,18 @@ begin
   p.Y := ay;
   p.Color := acolor;
   TAdCanvasPointsObject(FCurrentObject).AddPoint(p);
+end;
+
+procedure TAdCanvas.Polygon(apolygon: TAdPolygon);
+begin
+  PushObject;
+  FCurrentObject := TAdCanvasPolygonObject.Create(FAppl);
+  with FCurrentObject as TAdCanvasPolygonObject do
+  begin
+    Polygon := APolygon;
+  end;
+  
+  PushObject;  
 end;
 
 { TAdCanvasLines }
@@ -2419,6 +2452,145 @@ end;
 procedure TAdCanvasPointsObject.SetMatrix(AValue: TAdMatrix);
 begin
   FMesh.SetMatrix(AValue);
+end;
+
+{ TAdCanvasPolygonObject }
+
+constructor TAdCanvasPolygonObject.Create(AAppl: TAd2dApplication);
+begin
+  inherited Create(AAppl);
+
+  FMesh := Appl.CreateMesh;
+end;
+
+destructor TAdCanvasPolygonObject.Destroy;
+begin
+  FMesh.Free;  
+  inherited;
+end;
+
+function TAdCanvasPolygonObject.CompareTo(
+  AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  result := usDelete;
+  if AItem is TAdCanvasPolygonObject then
+  begin
+    if (Length(Polygon) = Length(TAdCanvasPolygonObject(AItem).Polygon)) and
+       (AItem.Pen.EqualTo(Pen) and AItem.Brush.EqualTo(Brush)) then
+    begin
+      result := usUpdate;
+
+//      if (Polygon, TAdCanvasPolygoObject(AItem).Polygon, SizeOf(Polygon)) then
+//      begin
+        result := usEqual;
+//      end;
+    end;
+  end;
+end;
+
+procedure TAdCanvasPolygonObject.Draw;
+begin
+  FMesh.Draw(Pen.BlendMode, adTriangles);
+end;
+
+procedure TAdCanvasPolygonObject.Generate;
+var
+  Triangles : TAdTriangles;
+  Vertices : TAdVertexArray;
+  i : integer;
+begin
+  Triangulate(FPolygon, Triangles);
+  begin
+    SetLength(Vertices, Length(Triangles) * 3);
+    for i := 0 to High(Triangles) do
+    begin
+      Vertices[i*3+0].Position :=
+        AdVector3(Triangles[i][0].X, Triangles[i][0].Y, 0);
+      Vertices[i*3+1].Position :=
+        AdVector3(Triangles[i][1].X, Triangles[i][1].Y, 0);
+      Vertices[i*3+2].Position :=
+        AdVector3(Triangles[i][2].X, Triangles[i][2].Y, 0);
+    end;
+
+    for i := 0 to High(Vertices) do
+    begin
+      Vertices[i].Normal := AdVector3(0,0,-1);
+      Vertices[i].Texture := AdVector2(0,0);
+      Vertices[i].Color := Brush.Color;
+    end;
+
+    if Brush.Texture <> nil then
+      GenerateTextureCoords(Vertices);
+
+    FMesh.Vertices := Vertices;
+    FMesh.IndexBuffer := nil;
+    FMesh.Texture := Brush.Texture;
+    FMesh.SetMatrix(AdMatrix_Identity);
+    FMesh.PrimitiveCount := Length(Triangles);
+    FMesh.Update;
+  end;
+end;
+
+procedure TAdCanvasPolygonObject.GenerateTextureCoords(
+  var vertices: TAdVertexArray);
+var
+  i,c:integer;
+  r:double;
+  wx,wy,fac:double;
+  mx, my:single;
+  left, top, bottom, right, width, height: single;
+begin
+  for i := 0 to High(vertices) do
+  begin
+    with vertices[i].Position do
+    begin
+      if (x < left) or (i = 0) then left := x;
+      if (y < top) or (i = 0) then top := y;
+      if (x > right) or (i = 0) then right := x;
+      if (y > bottom) or (i = 0) then bottom := y;
+    end;
+  end;
+  width := right - left;
+  height := bottom - top;
+  
+  if FBrush.TexturePosition = tpStatic then
+  begin
+    mx := 0;
+    my := 0;
+  end
+  else
+  begin
+    mx := left;
+    my := top;
+  end;
+  
+  if FBrush.TextureMode = tmStretch then
+  begin
+    for i := 0 to High(Vertices) do
+    begin
+      Vertices[i].Texture.x := (Vertices[i].Position.x - left + mx) / width;
+      Vertices[i].Texture.y := (Vertices[i].Position.y - top + my) / height;
+    end;
+  end else
+  begin
+    for i := 0 to High(Vertices) do
+    begin
+      Vertices[i].Texture.x := (Vertices[i].Position.x - left + mx) / FBrush.Texture.Width;
+      Vertices[i].Texture.y := (Vertices[i].Position.y - top + my) / FBrush.Texture.Height;
+    end;
+  end;
+end;
+
+procedure TAdCanvasPolygonObject.SetMatrix(AValue: TAdMatrix);
+begin
+  inherited;
+  FMesh.SetMatrix(AValue);
+end;
+
+procedure TAdCanvasPolygonObject.Update(AItem: TAdCanvasObject);
+begin
+  FPolygon := TAdCanvasPolygonObject(AItem).Polygon;
+  Generate;  
 end;
 
 end.
