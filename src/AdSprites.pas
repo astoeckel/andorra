@@ -23,8 +23,8 @@ unit AdSprites;
 interface
 
 uses 
-  SysUtils, Classes, AdBitmap, AdTypes, AdDraws, AdClasses,
-  AdParticles, Math, AdList, AdShapes, Graphics, AdBitmapEffects;
+  SysUtils, Classes, Math,
+  AdBitmap, AdTypes, AdDraws, AdClasses, AdParticles, AdList, AdShapes;
 
 type
   {The sprite engines base class.}
@@ -980,19 +980,25 @@ begin
   begin
     if Sprite.Shape <> nil then
     begin
-      result := Shape.CollideWithShape(Sprite.Shape,Point(round(x),round(y)),Point(round(Sprite.X),round(Sprite.Y)));
+      result := Shape.CollideWithShape(Sprite.Shape,
+        AdPoint(round(x),round(y)),
+        AdPoint(round(Sprite.X),round(Sprite.Y)));
     end
     else
     begin
       rect := TAdRectShape.Create(round(Sprite.Width),round(Sprite.Height));
-      result := Shape.CollideWithShape(rect,Point(round(x),round(y)),Point(round(Sprite.X),round(Sprite.Y)));
+      result := Shape.CollideWithShape(rect,
+        AdPoint(round(x),round(y)),
+        AdPoint(round(Sprite.X),round(Sprite.Y)));
       rect.Free;
     end;
   end else
   if Sprite.Shape <> nil then
   begin
     rect := TAdRectShape.Create(round(Width),round(Height));
-    result := rect.CollideWithShape(Sprite.Shape,Point(round(x),round(y)),Point(round(Sprite.X),round(Sprite.Y)));
+    result := rect.CollideWithShape(Sprite.Shape,
+     AdPoint(round(x),round(y)),
+     AdPoint(round(Sprite.X),round(Sprite.Y)));
     rect.Free;
   end else
   begin
@@ -1158,8 +1164,6 @@ end;
 procedure TImageSprite.CreateMask;
 var
   adbmp:TAdBitmap;
-  bmp1:TBitmap;
-  bmp2:TBitmap;
   w,h:integer;
 begin
   if (FPixelCheck) and (FImage <> nil) then
@@ -1169,17 +1173,18 @@ begin
       FShape := TAdBitmapShape.Create(round(Width),round(Height));
       adbmp := TAdBitmap.Create;
 
-      w := round(Width);
-      h := round(Height);
+//      w := round(Width);
+//      h := round(Height);
 
-      adbmp.ReserveMemory(Image.Texture.Texture.BaseWidth,Image.Texture.Texture.BaseHeight);
-      Image.Texture.Texture.SaveToBitmap(adbmp);
-      if (w = Image.Texture.Texture.BaseWidth) and
-         (h = Image.Texture.Texture.BaseHeight) then
-      begin
-        TAdBitmapShape(FShape).Mask.AssignAdBitmap(adbmp);
-      end
-      else
+//      adbmp.ReserveMemory(Image.Texture.Texture.BaseWidth,Image.Texture.Texture.BaseHeight);
+//      Image.Texture.Texture.SaveToBitmap(adbmp);
+//      if (w = Image.Texture.Texture.BaseWidth) and
+//         (h = Image.Texture.Texture.BaseHeight) then
+//      begin
+      Image.Texture.SaveToGraphic(adbmp);
+      TAdBitmapShape(FShape).Mask.AssignBitmap(adbmp);
+//      end
+{      else
       begin
         bmp1 := TBitmap.Create;
         bmp2 := TBitmap.Create;
@@ -1193,7 +1198,7 @@ begin
 
         bmp2.Free;
         bmp1.Free;
-      end;
+      end;}
       adbmp.Free;
     end;
   end;

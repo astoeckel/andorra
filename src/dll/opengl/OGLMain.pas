@@ -240,8 +240,9 @@ begin
   glLoadIdentity;
   glViewPort(0,0,AWidth, AHeight);
   gluOrtho2D(0,AWidth,AHeight,0);
-  
+
   glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity;
 end;
 
 procedure TOGLApplication.Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);

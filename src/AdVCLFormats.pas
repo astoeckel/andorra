@@ -21,7 +21,8 @@ uses
   Graphics, Classes, AdBitmap, AdTypes, AdPersistent;
 
 type
-  TAdVCLFormat = class(TAdGraphicFormat)
+ {@exclude}
+ TAdVCLFormat = class(TAdGraphicFormat)
     public
       class procedure FileExts(strs:TStrings);override;
       class function SupportsObject(AObj:TObject):boolean;override;

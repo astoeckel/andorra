@@ -1,3 +1,19 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+* 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AdVCLComponentWindow.pas
+* Comment: Contains a window framework which uses an existing VCL/LCL control for as surface. Only works under windows.
+}
+
+{Contains a window framework which uses an existing VCL/LCL control for as surface. Only works under windows.}
 unit AdVCLComponentWindow;
 
 {$IFDEF FPC}
@@ -11,6 +27,7 @@ uses
   AdEvents, AdWindowFramework;
 
 type
+  {@exclude}
   TAdVCLComponentWindow = class(TAdHandleWindowFrameWork)
     private
       FBinded:boolean;
@@ -28,16 +45,16 @@ type
       FOldKeyPress : TKeyPressEvent;
       FOldKeyUp : TKeyEvent;
 
-      FSetClick : boolean;
-      FSetDblClick : boolean;
-      FSetMouseMove : boolean;
-      FSetMouseDown : boolean;
-      FSetMouseUp : boolean;
-      FSetMouseWheel : boolean;
+      FClickComp : TControl;
+      FDblClickComp : TControl;
+      FMouseMoveComp : TControl;
+      FMouseDownComp : TControl;
+      FMouseUpComp : TControl;
+      FMouseWheelComp : TControl;
 
-      FSetKeyDown : boolean;
-      FSetKeyUp : boolean;
-      FSetKeyPress : boolean;
+      FKeyDownComp : TControl;
+      FKeyUpComp : TControl;
+      FKeyPressComp : TControl;
 
       FMouseX, FMouseY : integer;
 
@@ -60,6 +77,7 @@ type
       procedure SetTitle(AValue:string);override;
 
       procedure SetupEvents;
+      procedure ResetEvents;
 
       procedure SetCursorVisible(AValue:Boolean);override;
 
@@ -86,7 +104,8 @@ begin
 end;
 
 destructor TAdVCLComponentWindow.Destroy;
-begin  
+begin
+  ResetEvents;
   inherited;
 end;
 
@@ -174,68 +193,68 @@ begin
       for i := 0 to count - 1 do
       begin
         method := GetMethodProp(Control, Properties[i]^.Name);
-        if (Properties[i]^.Name = 'OnClick') and (not FSetClick) then
+        if (Properties[i]^.Name = 'OnClick') and (FClickComp = nil) then
         begin
           FOldClick := TNotifyEvent(method);
           PNotifyEvent(@method.Code)^ := Click; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetClick := true;
+          FClickComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnDblClick') and (not FSetDblClick) then
+        if (Properties[i]^.Name = 'OnDblClick') and (FDblClickComp = nil) then
         begin
           FOldDblClick := TNotifyEvent(method);
           PNotifyEvent(@method.Code)^ := DblClick; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetDblClick := true;
+          FDblClickComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnMouseMove') and (not FSetMouseMove) then
+        if (Properties[i]^.Name = 'OnMouseMove') and (FMouseMoveComp = nil) then
         begin
           FOldMouseMove := TMouseMoveEvent(method);
           PMouseMoveEvent(@method.Code)^ := MouseMove; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetMouseMove := true;
+          FMouseMoveComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnMouseUp') and (not FSetMouseUp) then
+        if (Properties[i]^.Name = 'OnMouseUp') and (FMouseUpComp = nil) then
         begin
           FOldMouseUp := TMouseEvent(method);
           PMouseEvent(@method.Code)^ := MouseUp; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetMouseUp := true;
+          FMouseUpComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnMouseDown') and (not FSetMouseDown) then
+        if (Properties[i]^.Name = 'OnMouseDown') and (FMouseDownComp = nil) then
         begin
           FOldMouseDown := TMouseEvent(method);
           PMouseEvent(@method.Code)^ := MouseDown; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetMouseDown := true;
+          FMouseDownComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnMouseWheel') and (not FSetMouseWheel) then
+        if (Properties[i]^.Name = 'OnMouseWheel') and (FMouseWheelComp = nil) then
         begin
           FOldMouseWheel := TMouseWheelEvent(method);
           PMouseWheelEvent(@method.Code)^ := MouseWheel; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetMouseWheel := true;
+          FMouseWheelComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnKeyDown') and (not FSetKeyDown) then
+        if (Properties[i]^.Name = 'OnKeyDown') and (FKeyDownComp = nil) then
         begin
           FOldKeyDown := TKeyEvent(method);
           PKeyEvent(@method.Code)^ := KeyDown; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetKeyDown := true;
+          FKeyDownComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnKeyUp') and (not FSetKeyUp) then
+        if (Properties[i]^.Name = 'OnKeyUp') and (FKeyUpComp = nil) then
         begin
           FOldKeyUp := TKeyEvent(method);
           PKeyEvent(@method.Code)^ := KeyUp; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetKeyUp := true;
+          FKeyUpComp := Control;
         end else
-        if (Properties[i]^.Name = 'OnKeyPress') and (not FSetKeyPress) then
+        if (Properties[i]^.Name = 'OnKeyPress') and (FKeyPressComp = nil) then
         begin
           FOldKeyPress := TKeyPressEvent(method);
           PKeyPressEvent(@method.Code)^ := KeyPress; method.Data := self;
           SetMethodProp(Control, Properties[i]^.Name, method);
-          FSetKeyPress := true;
+          FKeyPressComp := Control;
         end;
       end;
       
@@ -245,6 +264,31 @@ begin
         Control := nil;
     end;
   end;   
+end;
+
+procedure TAdVCLComponentWindow.ResetEvents;
+begin
+  if FInitialized then
+  begin
+    if FClickComp <> nil then
+      SetMethodProp(FClickComp, 'OnClick', TMethod(FOldClick));
+    if FDblClickComp <> nil then
+      SetMethodProp(FDblClickComp, 'OnDblClick', TMethod(FOldDblClick));
+    if FMouseDownComp <> nil then
+      SetMethodProp(FMouseDownComp, 'OnMouseDown', TMethod(FOldMouseDown));
+    if FMouseUpComp <> nil then
+      SetMethodProp(FMouseUpComp, 'OnMouseUp', TMethod(FOldMouseUp));
+    if FMouseMoveComp <> nil then
+      SetMethodProp(FMouseMoveComp, 'OnMouseMove', TMethod(FOldMouseMove));
+    if FMouseWheelComp <> nil then
+      SetMethodProp(FMouseWheelComp, 'OnMouseWheel', TMethod(FOldMouseWheel));
+    if FKeyDownComp <> nil then
+      SetMethodProp(FKeyDownComp, 'OnKeyDown', TMethod(FOldKeyDown));
+    if FKeyUpComp <> nil then
+      SetMethodProp(FKeyUpComp, 'OnKeyUp', TMethod(FOldKeyUp));
+    if FKeyPressComp <> nil then
+      SetMethodProp(FKeyPressComp, 'OnKeyPress', TMethod(FOldKeyPress));
+  end;
 end;
 
 procedure TAdVCLComponentWindow.Terminate;

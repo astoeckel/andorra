@@ -10,9 +10,10 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdXML.pas
-* Comment: Contains a few functions, which make it easier to work with the JvSimpleXML.pas
+* Comment: Contains a few functions, which make it easier to work with the AdSimpleXML.pas
 }
 
+{ Contains a few functions, which make it easier to work with the AdSimpleXML.pas. Functions will move to AdSimpleXML soon, so don't use this functions provided here.}
 unit AdXML;
 
 {$IFDEF FPC}
@@ -22,11 +23,15 @@ unit AdXML;
 interface
 
 uses
-  Dialogs, AdSimpleXML, Classes, SysUtils;
+  AdSimpleXML, Classes, SysUtils;
 
+{Writes a stream into a string encoding it as hexadecimal values.}
 function WriteStreamToString(AStream:TStream):string;
+{Reads and decodes hexadecimal values from a string and stores them in a stream.}
 procedure ReadStreamFromString(AStream:TStream;AString:string);
+{Writes a stream into a xml node. @param(ElemName specifies the name of the element the string is stored into.)}
 procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
+{Reads a stream writen by @seealso(WriteStream) from a xml node. Please note, that "ReadStream" will first search for an element named "source", which may specify the path to a file which is loaded instead.}
 procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
 
 implementation

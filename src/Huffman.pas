@@ -7,6 +7,7 @@
 {                                                       }
 {*******************************************************}
 
+{ Huffmann compressing unit by Marc Schmitz, used for compressing bitmaps in the Andorra "HAI"-Compressor.}
 unit Huffman;
 
 {$IFDEF FPC}
@@ -17,25 +18,32 @@ interface
 
 uses
   Classes;
-
+  
 type
+  {@exclude}
   THuffmanCode = array of Boolean;
+  {@exclude}
   THuffmanCodes = array[0..255] of THuffmanCode;
 
+  {@exclude}
   TCountings = array[0..255] of Integer;
 
+  {@exclude}
   THuffmanHeader = record
     Size   : Int64;
   end;
 
+  {@exclude}
   PHuffmanNode = ^THuffmanNode;
+  {@exclude}
   THuffmanNode = record
     Count     : Integer;
     N1        : PHuffmanNode;
     N2        : PHuffmanNode;
     Character : Byte;
   end;
-
+  
+  {@exclude}
   THuffmanTree = class
   private
     FInput     : TStream;
@@ -67,6 +75,7 @@ type
     property Codes: THuffmanCodes read FCodes write FCodes;
   end;
 
+  {@exclude}
   THuffmanEncoder = class
   private
     FTree    : THuffmanTree;
@@ -83,6 +92,7 @@ type
     property Output: TStream read FOutput write FOutput;
   end;
 
+  {@exclude}
   THuffmanDecoder = class
   private
     FTree    : THuffmanTree;

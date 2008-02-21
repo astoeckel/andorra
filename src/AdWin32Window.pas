@@ -10,10 +10,10 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdWin32Window.pas
-* Comment: Contains a non-vcl Win32 window.
+* Comment: Contains a non-vcl Win32 window framework.
 }
 
-{Contains a non-vcl Win32 window.}
+{Contains a non-vcl Win32 window framework.}
 unit AdWin32Window;
 
 {$IFDEF FPC}
@@ -28,6 +28,7 @@ uses
 
 
 type
+  {@exclude}
   TAdWin32Window = class(TAdHandleWindowFramework)
     private
       FBinded:boolean;

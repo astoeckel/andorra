@@ -16,8 +16,10 @@
 unit AdShapes;
 
 interface
+
 uses
-  AdClasses, AdTypes, AdBitmap, SysUtils, Types, Graphics, Math, Classes;
+  SysUtils, Math, Classes,
+  AdClasses, AdTypes, AdBitmap;
 
 type
   TAdBinaryMap = class
@@ -27,6 +29,7 @@ type
       FWidth:integer; //Width of the Field in Pixel ("Width" in Byte = FWidth div 8)
       FHeight:integer; //Height of the Field in Pixel
       FSize:integer;
+      FCheckRect:TAdRect;
       function GetLoaded:boolean;
       function GetPixel(x,y:integer):boolean;
       procedure SetPixel(x,y:integer;value:boolean);
@@ -34,9 +37,7 @@ type
     public
       constructor Create;
       destructor Destroy;override;
-      procedure AssignBitmap(ABmp:TBitmap;TransparentColor:TColor);
-      procedure AssignAdBitmap(ABmp:TAdBitmap);
-      procedure AssignToBitmap(ABmp:TBitmap);
+      procedure AssignBitmap(ABmp:TAdBitmap);
       procedure Clear;
 
       procedure SaveToStream(AStream:TStream);
@@ -57,6 +58,7 @@ type
       property Loaded:boolean read GetLoaded;
       property Scanline:Pointer read GetScanline;
       property Size:integer read FSize;
+      property CheckRect:TAdRect read FCheckRect write FCheckRect;
   end;
 
   TAdShape = class
@@ -72,7 +74,7 @@ type
       property Height:integer read FHeight write FHeight;
 
       function CollideWithPoint(AX,AY:integer):boolean;virtual;abstract;
-      function CollideWithShape(AShape:TAdShape;ASelfPos,AShapePos:TPoint):boolean;virtual;abstract;
+      function CollideWithShape(AShape:TAdShape;ASelfPos,AShapePos:TAdPoint):boolean;virtual;abstract;
   end;
 
   TAdRectShape = class(TAdShape)
@@ -80,36 +82,28 @@ type
     public
       function CollideWithPoint(AX, AY: integer): boolean;override;
       function CollideWithShape(AShape: TAdShape; ASelfPos,
-         AShapePos: TPoint): boolean;override;
+         AShapePos: TAdPoint): boolean;override;
   end;
 
   TAdBitmapShape = class(TAdShape)
     private
       FMask:TAdBinaryMap;
-    protected
-
+      FCheckRect:TAdRect;
     public
       constructor Create(AWidth, AHeight: integer);
       destructor Destroy;override;
 
       function CollideWithPoint(AX, AY: integer): boolean;override;
       function CollideWithShape(AShape: TAdShape; ASelfPos,
-         AShapePos: TPoint): boolean;override;
+         AShapePos: TAdPoint): boolean;override;
 
       property Mask:TAdBinaryMap read FMask;
+      property CheckRect:TAdRect read FCheckRect write FCheckRect;
   end;
 
   EAdShapeError = class(Exception);
 
 implementation
-
-function OverlapRect(const Rect1, Rect2: TRect): Boolean;
-begin
-  Result:=(Rect1.Left<Rect2.Right)and
-    (Rect1.Right>Rect2.Left)and
-    (Rect1.Top<Rect2.Bottom)and
-    (Rect1.Bottom>Rect2.Top);
-end;
 
 { TAdBinaryMap }
 
@@ -158,42 +152,6 @@ begin
   GetMem(FField, FSize);
 end;
 
-procedure TAdBinaryMap.AssignToBitmap(ABmp: TBitmap);
-var
-  p1,p2:PByte;
-  x,y:integer;
-
-  function FlipByte(AByte:Byte):byte;
-  var
-    i:integer;
-  begin
-    result := 0;
-    for i := 0 to 7 do
-    begin
-      result := result or (AByte and (1 shl i) shr i) shl (7-i);
-    end;
-  end;
-
-begin
-  if Loaded then
-  begin
-    ABmp.Width := FWidth;
-    ABmp.Height := FHeight;
-    ABmp.PixelFormat := pf1Bit;
-    p1 := Scanline;
-    for y := 0 to FHeight-1 do
-    begin
-      p2 := ABmp.ScanLine[y];
-      for x := 0 to ((FWidth-1) div 8) do
-      begin
-        p2^ := not FlipByte(p1^);
-        inc(p1);
-        inc(p2);
-      end;
-    end;
-  end;
-end;
-
 procedure TAdBinaryMap.Clear;
 begin
   if Loaded then
@@ -205,14 +163,7 @@ begin
   end;
 end;
 
-type
-  TRGB = packed record
-    r,g,b:byte;
-  end;
-
-  PRGB = ^TRGB;
-
-procedure TAdBinaryMap.AssignAdBitmap(ABmp: TAdBitmap);
+procedure TAdBinaryMap.AssignBitmap(ABmp: TAdBitmap);
 var
   p1:PByte;
   p2:PRGBARec;
@@ -230,53 +181,6 @@ begin
     for x := 0 to ABmp.Width - 1 do
     begin
       if (p2^.a = 0) then
-      begin
-        v := v and not (1 shl a);
-      end;
-      inc(p2);
-      a := a + 1;
-      if (a = 8) then
-      begin
-        p1^ := v;
-        inc(p1);
-        a := 0;
-        v := 255;
-      end;
-    end;
-    if a <> 0 then
-    begin
-      for j := 0 to (8-a)-1 do
-        v := v and not (1 shl (a+j));
-      p1^ := v;
-      inc(p1);
-    end;
-  end;
-end;
-
-procedure TAdBinaryMap.AssignBitmap(ABmp: TBitmap; TransparentColor: TColor);
-var
-  p1:PByte;
-  p2:PRGB;
-  a,v,r,g,b:byte;
-  x,y,j:integer;
-begin
-  ReserveMemory(ABmp.Width, ABmp.Height);
-  p1 := Scanline;
-
-  ABmp.PixelFormat := pf24Bit;
-
-  r := GetRValue(TransparentColor);
-  g := GetGValue(TransparentColor);
-  b := GetBValue(TransparentColor);
-
-  for y := 0 to ABmp.Height - 1 do
-  begin
-    p2 := ABmp.ScanLine[y];
-    a := 0;
-    v := 255;
-    for x := 0 to ABmp.Width - 1 do
-    begin
-      if (p2^.r = r) and (p2^.g = g) and (p2.b = b) then
       begin
         v := v and not (1 shl a);
       end;
@@ -424,7 +328,7 @@ begin
 end;
 
 function TAdRectShape.CollideWithShape(AShape: TAdShape; ASelfPos,
-  AShapePos: TPoint): boolean;
+  AShapePos: TAdPoint): boolean;
 begin
   //To prevent endless loops
   if Block then
@@ -433,8 +337,8 @@ begin
   if AShape is TAdRectShape then
   begin
     Result := OverlapRect(
-                Bounds(ASelfPos.X,ASelfPos.Y,Width,Height),
-                Bounds(AShapePos.X,AShapePos.Y,AShape.Width,AShape.Height));
+                AdBounds(ASelfPos.X,ASelfPos.Y,Width,Height),
+                AdBounds(AShapePos.X,AShapePos.Y,AShape.Width,AShape.Height));
   end
   else
   begin
@@ -469,7 +373,7 @@ begin
 end;
 
 function TAdBitmapShape.CollideWithShape(AShape: TAdShape; ASelfPos,
-  AShapePos: TPoint): boolean;
+  AShapePos: TAdPoint): boolean;
 var
   Field:TAdBinaryMap;
 begin

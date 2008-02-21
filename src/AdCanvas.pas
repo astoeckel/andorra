@@ -19,6 +19,10 @@
 {This unit contains classes and types which are used for a hardware accelerated canvas environment}
 unit AdCanvas;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
@@ -2583,7 +2587,6 @@ end;
 
 procedure TAdCanvasPolygonObject.SetMatrix(AValue: TAdMatrix);
 begin
-  inherited;
   FMesh.SetMatrix(AValue);
 end;
 

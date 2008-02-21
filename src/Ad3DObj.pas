@@ -19,6 +19,10 @@
 {This unit contains some 3D-Object classes. Please notice, that those classes are not ready yet. This will be done for version 0.4}
 unit Ad3DObj;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses Classes, AdTypes, AdClasses, AdDraws;
@@ -221,8 +225,8 @@ begin
   AStream.Read(c,SizeOf(c));
   SetLength(Buffer.Vertices,c);
   AStream.Read(Buffer.Vertices[0],SizeOf(TAdVertex)*c);
-  SetLength(Buffer.Indices,c);
-  AStream.Read(Buffer.Indices[0],SizeOf(TAdVertex)*c);
+  SetLength(Buffer.IndexBuffer,c);
+  AStream.Read(Buffer.IndexBuffer[0],SizeOf(TAdVertex)*c);
 end;
 
 procedure TAdMesh.Notify(ASender: TObject; AEvent: TSurfaceEventState);
@@ -267,7 +271,8 @@ end;
 { TAdPlane }
 
 procedure TAdPlane.CreateMesh;
-var vert:TAdVertexArray;
+var
+  vert:TAdVertexArray;
 begin
   SetLength(vert,4);
   vert[0].Position := AdVector3(-Width / 2, Height / 2,0);
@@ -290,7 +295,7 @@ begin
   vert[3].Normal := AdVector3(0,0,-1);
   vert[3].Texture := AdVector2(1,0);
 
-  Buffer.Vertices := Vertices;
+  Buffer.Vertices := vert;
   Buffer.IndexBuffer := nil;
   Buffer.PrimitiveCount := 2;
   Buffer.Update;

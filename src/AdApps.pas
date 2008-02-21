@@ -24,7 +24,7 @@ interface
 {$ENDIF}
 
 uses
-  AdDraws, AdSprites, Controls, SysUtils;
+  AdDraws, AdSprites, AdPerformanceCounter, Controls, SysUtils;
 
 type
   {A application class for a spriteengine based "Andorra 2D" application}

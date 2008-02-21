@@ -16,6 +16,10 @@
 { Contains a simple function to triangulate a given polygon }
 unit AdPolygonUtils;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
