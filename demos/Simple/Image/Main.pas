@@ -30,6 +30,7 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg : TAdSetup;
+  bmp:TBitmap;
 begin
   ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TAdPerformanceCounter.Create;
@@ -53,6 +54,11 @@ begin
         Texture.LoadGraphicFromFile('icon64.png');
       end;
       AdImageList1.Restore;
+
+      bmp := TBitmap.Create;
+      AdImageList1[0].Texture.SaveToGraphic(bmp);
+      bmp.SaveToFile('C:\test.bmp');
+      bmp.Free;
     end
     else
     begin
