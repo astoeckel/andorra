@@ -15,6 +15,10 @@
 
 unit AdSetupDlg;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses

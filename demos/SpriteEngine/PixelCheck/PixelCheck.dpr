@@ -2,7 +2,8 @@ program PixelCheck;
 
 uses
   Forms,
-  Main in 'Main.pas' {MainFrm};
+  Main in 'Main.pas' {MainFrm},
+  AdShapesNew in '..\..\..\src\AdShapesNew.pas';
 
 {$R *.res}
 

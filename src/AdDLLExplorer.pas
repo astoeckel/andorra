@@ -15,6 +15,10 @@
 {Lets you search for all Andorra 2D Plugin libraries within a specific directory}
 unit AdDLLExplorer;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

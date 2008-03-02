@@ -16,6 +16,10 @@
 {Contains some standard types}
 unit AdTypes;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 type

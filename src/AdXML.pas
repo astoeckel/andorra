@@ -70,7 +70,6 @@ end;
 procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
 var
   ms:TMemoryStream;
-  i:integer;
 begin
   if XMLElem.Properties.Value('source','') <> '' then
   begin

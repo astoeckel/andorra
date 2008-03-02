@@ -19,6 +19,10 @@
 {This unit contains the main bitmap class, which is used to transfer bitmap data between the host and the plugin dlls.}
 unit AdBitmapClass;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
@@ -110,11 +114,14 @@ end;
 
 procedure TAd2dBitmap.ReserveMemory(AWidth, AHeight: integer);
 begin
-  ClearMemory;
-  FSize := AWidth*AHeight*4;
-  FWidth := AWidth;
-  FHeight := AHeight;
-  GetMem(FMemory,FSize);
+  if (FMemory = nil) or (AWidth <> FWidth) or (AHeight <> FHeight) then
+  begin
+    ClearMemory;
+    FSize := AWidth*AHeight*4;
+    FWidth := AWidth;
+    FHeight := AHeight;
+    GetMem(FMemory,FSize);
+  end;
 end;
 
 procedure TAd2dBitmap.ClearMemory;

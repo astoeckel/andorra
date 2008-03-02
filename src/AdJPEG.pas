@@ -54,24 +54,24 @@ end;
 
 function TAdJPEGFormat.Assign(ABitmap: TAdBitmap; AGraphic: TObject): boolean;
 begin
-  //
+  result := false;
 end;
 
 function TAdJPEGFormat.AssignAlphaChannel(ABitmap: TAdBitmap;
   AGraphic: TObject): boolean;
 begin
-  //
+  result := false;
 end;
 
 function TAdJPEGFormat.AssignAlphaChannelTo(ABitmap: TAdBitmap;
   AGraphic: TObject): boolean;
 begin
-  //
+  result := false;
 end;
 
 function TAdJPEGFormat.AssignTo(ABitmap: TAdBitmap; AGraphic: TObject): boolean;
 begin
-  //
+  result := false;
 end;
 
 function TAdJPEGFormat.LoadFromFile(ABitmap: TAdBitmap; AFile: string;

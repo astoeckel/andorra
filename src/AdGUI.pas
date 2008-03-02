@@ -115,8 +115,8 @@ type
       FOnMouseDown:TAdMouseEvent;
       FOnMouseUp:TAdMouseEvent;
       FOnMouseMove:TAdMouseMoveEvent;
-      FOnDblClick:TAdClickEvent;
-      FOnClick:TAdClickEvent;
+      FOnDblClick:TAdNotifyEvent;
+      FOnClick:TAdNotifyEvent;
       FOnKeyPress:TAdKeyPressEvent;
       FOnKeyUp:TAdKeyEvent;
       FOnKeyDown:TAdKeyEvent;
@@ -303,8 +303,8 @@ type
       property Hint:string read FHint write FHint;
       property ShowHint:boolean read FShowHint write FShowHint;
 
-      property OnClick:TAdClickEvent read FOnClick write FOnClick;
-      property OnDblClick:TAdClickEvent read FOnDblClick write FOnDblClick;
+      property OnClick:TAdNotifyEvent read FOnClick write FOnClick;
+      property OnDblClick:TAdNotifyEvent read FOnDblClick write FOnDblClick;
       property OnMouseMove:TAdMouseMoveEvent read FOnMouseMove write FOnMouseMove;
       property OnMouseUp:TAdMouseEvent read FOnMouseUp write FOnMouseUp;
       property OnMouseDown:TAdMouseEvent read FOnMouseDown write FOnMouseDown;
@@ -1461,14 +1461,14 @@ function TAdComponent.DoClick(X, Y: Integer):boolean;
 begin
   result := false;
   if assigned(OnClick) then
-    OnClick(self, X, Y);
+    OnClick(self);
 end;
 
 function TAdComponent.DoDblClick(X, Y: Integer):boolean;
 begin
   result := false;
   if assigned(OnDblClick) then
-    OnDblClick(self, X, Y);
+    OnDblClick(self);
 end;
 
 function TAdComponent.DoKeyDown(key: Word; Shift: TAdShiftState):boolean;

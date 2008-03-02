@@ -174,7 +174,7 @@ end;
 procedure TAdCursorSprite.DoMove(timegap: double);
 begin
   inherited;
-  collision;
+  Collision;
 end;
 
 end.

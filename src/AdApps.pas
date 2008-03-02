@@ -17,11 +17,11 @@ for a  special type of "Andorra 2D" application.
 }
 unit AdApps;
 
-interface
-
 {$IFDEF FPC}
   {$MODE DELPHI}
 {$ENDIF}
+
+interface
 
 uses
   AdDraws, AdSprites, AdPerformanceCounter, Controls, SysUtils;

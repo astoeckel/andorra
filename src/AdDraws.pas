@@ -231,9 +231,11 @@ type
       FAd2DTexture:TAd2DBitmapTexture;
       FCompressorClass:TAdGraphicCompressorClass;
       FBitDepth:byte;
+      FOwnTexture: Boolean;
       function GetInitialized:boolean;
       function GetBitDepth:byte;
       procedure SetBitDepth(AValue:byte);
+      procedure SetAd2dTexture(AValue: TAd2dBitmapTexture);
     protected
       procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
     public
@@ -253,7 +255,7 @@ type
         TransparentColor: Longint = $1FFFFFFF);
       procedure SaveToGraphic(AGraphic:TObject);
 
-      property Texture:TAd2DBitmapTexture read FAd2DTexture;
+      property Texture:TAd2DBitmapTexture read FAd2DTexture write SetAd2dTexture;
       property Initialized:boolean read GetInitialized;
       property Compressor:TAdGraphicCompressorClass read FCompressorClass write FCompressorClass;
       property BitDepth:byte read GetBitDepth write SetBitDepth;
@@ -1029,7 +1031,7 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex],
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex),
       0, 0, 0, bmAlpha);
   end;
 end;
@@ -1042,7 +1044,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmAdd);
+    DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmAdd);
   end;
 end;
 
@@ -1054,7 +1056,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmAlpha);
+    DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmAlpha);
   end;
 end;
 
@@ -1066,7 +1068,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmMask);
+    DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmMask);
   end;
 end;
 
@@ -1078,7 +1080,7 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
      CenterX, CenterY, bmAlpha);
   end;
 end;
@@ -1092,7 +1094,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-      DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+      DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
         CenterX, CenterY, bmAdd);
   end;
 end;
@@ -1106,7 +1108,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), Rects[PatternIndex], Angle,
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
       CenterX,CenterY,bmAlpha);
   end;
 end;
@@ -1120,7 +1122,7 @@ begin
     SetCurrentColor(Alpha);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height),Rects[PatternIndex],Angle,CenterX,CenterY,bmMask);
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height),GetPatternRect(PatternIndex),Angle,CenterX,CenterY,bmMask);
   end;
 end;
 
@@ -1151,7 +1153,7 @@ begin
     SetCurrentColor(255);
     if (PatternIndex < 0) then PatternIndex := 0;
     if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,DestRect,Rects[PatternIndex],0,0,0,bmAlpha);
+    DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmAlpha);
   end;
 end;
 
@@ -1383,7 +1385,10 @@ end;
 
 function TAdImage.GetPatternRect(ANr: Integer):TAdRect;
 begin
-  result := Rects[ANr];
+  if (ANr >= 0) and (ANr < Rects.Count) then
+    result := Rects[ANr]
+  else
+    result := AdRect(0,0,0,0);
 end;
 
 
@@ -1824,7 +1829,8 @@ procedure TAdTexture.Finalize;
 begin
   if Initialized then
   begin
-    FreeAndNil(FAd2DTexture);
+    if FOwnTexture then    
+      FreeAndNil(FAd2DTexture);
   end;
 end;
 
@@ -1988,6 +1994,17 @@ begin
       FreeAndNil(FCache);
     end;
   end;
+end;
+
+procedure TAdTexture.SetAd2dTexture(AValue: TAd2dBitmapTexture);
+begin
+  if (FOwnTexture) and (FAd2dTexture <> nil) then
+    FAd2dTexture.Free;
+
+  FOwnTexture := false;
+  FAd2dTexture := AValue;
+
+  FBitDepth := AValue.BitCount;
 end;
 
 procedure TAdTexture.SetBitDepth(AValue: byte);

@@ -26,7 +26,8 @@ unit AdCanvas;
 interface
 
 uses
-  Classes, AdClasses, AdTypes, AdContainers, AdList, AdFont, AdPolygonUtils, Math;
+  SysUtils, Classes,
+  AdClasses, AdTypes, AdContainers, AdList, AdFont, AdPolygonUtils, Math;
 
 type
   {A set of three colors used to define the colors of a quad-object.}
@@ -2484,10 +2485,12 @@ begin
     begin
       result := usUpdate;
 
-//      if (Polygon, TAdCanvasPolygoObject(AItem).Polygon, SizeOf(Polygon)) then
-//      begin
+      if CompareMem(
+        @Polygon[0], @TAdCanvasPolygonObject(AItem).Polygon[0],
+        SizeOf(Polygon) * SizeOf(TAdPoint)) then
+      begin
         result := usEqual;
-//      end;
+      end;
     end;
   end;
 end;
@@ -2538,20 +2541,19 @@ end;
 procedure TAdCanvasPolygonObject.GenerateTextureCoords(
   var vertices: TAdVertexArray);
 var
-  i,c:integer;
-  r:double;
-  wx,wy,fac:double;
+  i:integer;
   mx, my:single;
   left, top, bottom, right, width, height: single;
 begin
+  left := 0; top := 0; bottom := 0; right := 0;
   for i := 0 to High(vertices) do
   begin
     with vertices[i].Position do
     begin
-      if (x < left) or (i = 0) then left := x;
-      if (y < top) or (i = 0) then top := y;
-      if (x > right) or (i = 0) then right := x;
-      if (y > bottom) or (i = 0) then bottom := y;
+      if (i = 0) or (x < left) then left := x;
+      if (i = 0) or (y < top) then top := y;
+      if (i = 0) or (x > right) then right := x;
+      if (i = 0) or (y > bottom) then bottom := y;
     end;
   end;
   width := right - left;

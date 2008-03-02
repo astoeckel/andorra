@@ -4,8 +4,8 @@ object MainFrm: TMainFrm
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
   Caption = 'Sprites and Pixel Check'
-  ClientHeight = 568
-  ClientWidth = 638
+  ClientHeight = 126
+  ClientWidth = 235
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

@@ -107,7 +107,7 @@ type
 
       function GetShowCloseButton:boolean;
       procedure SetShowCloseButton(AValue:boolean);
-      procedure CloseBtnClick(Sender:TObject; X, Y:integer);
+      procedure CloseBtnClick(Sender:TObject);
     public
       {Creates an instance of TAdForm.}
       constructor Create(AParent:TAdComponent);override;
@@ -686,7 +686,7 @@ begin
   end;
 end;
 
-procedure TAdForm.CloseBtnClick(Sender: TObject; X, Y:integer);
+procedure TAdForm.CloseBtnClick(Sender: TObject);
 begin
   Close;
 end;
@@ -898,30 +898,9 @@ end;
 function TAdCheckBox.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
   X, Y: Integer):boolean;
 begin
-  inherited DoMouseDown(Button,Shift,X,Y);
   result := true;
   FState := bsDown;
-end;
 
-function TAdCheckBox.DoMouseEnter:boolean;
-begin
-  inherited DoMouseEnter;
-  result := true;
-  FState := bsHover;
-end;
-
-function TAdCheckBox.DoMouseLeave:boolean;
-begin
-  inherited DoMouseLeave;
-  result := true;
-  FState := bsNormal;
-end;
-
-function TAdCheckBox.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
-  X, Y: Integer):boolean;
-begin
-  inherited DoMouseUp(Button,Shift,X,Y);
-  result := true;
   if GroupIndex = 0 then
   begin
     Checked := not Checked;
@@ -930,7 +909,31 @@ begin
   begin
     Checked := true;
   end;
+
+
+  inherited DoMouseDown(Button,Shift,X,Y);
+end;
+
+function TAdCheckBox.DoMouseEnter:boolean;
+begin
+  result := true;
   FState := bsHover;
+  inherited DoMouseEnter;
+end;
+
+function TAdCheckBox.DoMouseLeave:boolean;
+begin
+  result := true;
+  FState := bsNormal;
+  inherited DoMouseLeave;
+end;
+
+function TAdCheckBox.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState;
+  X, Y: Integer):boolean;
+begin
+  result := true;
+  FState := bsHover;
+  inherited DoMouseUp(Button,Shift,X,Y);
 end;
 
 procedure TAdCheckBox.LoadSkinItem;

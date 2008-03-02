@@ -19,6 +19,10 @@
 {This unit contains various bitmap effects, which may be assigned to a TAd2dBitmap.}
 unit AdBitmapEffects;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

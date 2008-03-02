@@ -16,6 +16,10 @@
 {Contains a replacement for TPersistent from Classes}
 unit AdPersistent;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

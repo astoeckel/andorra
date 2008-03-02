@@ -20,6 +20,10 @@ unit AdRAWFontData;
 
 interface
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
   Classes, AdTypes, AdClasses, AdFont, AdFontGenerator, AdBitmap;
 
