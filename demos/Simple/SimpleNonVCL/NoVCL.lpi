@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="4"/>
+      <ActiveEditorIndexAtStart Value="1"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value=""/>
@@ -43,7 +43,7 @@
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="26" Y="10"/>
+        <CursorPos X="43" Y="11"/>
         <TopLine Value="1"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
@@ -87,8 +87,8 @@
       <Unit7>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
         <UnitName Value="AdDraws"/>
-        <CursorPos X="15" Y="38"/>
-        <TopLine Value="13"/>
+        <CursorPos X="1" Y="590"/>
+        <TopLine Value="574"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="19"/>
         <Loaded Value="True"/>
@@ -456,7 +456,7 @@
       <Unit60>
         <Filename Value="..\..\..\src\AdStdWindow.pas"/>
         <UnitName Value="AdStdWindow"/>
-        <CursorPos X="11" Y="26"/>
+        <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
         <EditorIndex Value="5"/>
         <UsageCount Value="10"/>
@@ -474,106 +474,114 @@
       <Unit62>
         <Filename Value="..\..\..\src\AdComponentWindow.pas"/>
         <UnitName Value="AdComponentWindow"/>
-        <CursorPos X="24" Y="26"/>
-        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="4"/>
         <EditorIndex Value="3"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit62>
     </Units>
-    <JumpHistory Count="23" HistoryIndex="22">
+    <JumpHistory Count="25" HistoryIndex="24">
       <Position1>
         <Filename Value="Main.pas"/>
-        <Caret Line="11" Column="42" TopLine="1"/>
+        <Caret Line="10" Column="27" TopLine="1"/>
       </Position1>
       <Position2>
-        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
-        <Caret Line="26" Column="11" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="38" Column="15" TopLine="13"/>
       </Position2>
       <Position3>
         <Filename Value="Main.pas"/>
         <Caret Line="78" Column="1" TopLine="62"/>
       </Position3>
       <Position4>
-        <Filename Value="Main.pas"/>
-        <Caret Line="80" Column="1" TopLine="64"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="597" Column="1" TopLine="593"/>
       </Position4>
       <Position5>
-        <Filename Value="Main.pas"/>
-        <Caret Line="81" Column="1" TopLine="65"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="599" Column="1" TopLine="583"/>
       </Position5>
       <Position6>
-        <Filename Value="Main.pas"/>
-        <Caret Line="82" Column="1" TopLine="66"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="600" Column="1" TopLine="584"/>
       </Position6>
       <Position7>
-        <Filename Value="Main.pas"/>
-        <Caret Line="83" Column="1" TopLine="67"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="604" Column="1" TopLine="588"/>
       </Position7>
       <Position8>
-        <Filename Value="Main.pas"/>
-        <Caret Line="85" Column="1" TopLine="69"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="606" Column="1" TopLine="590"/>
       </Position8>
       <Position9>
-        <Filename Value="Main.pas"/>
-        <Caret Line="87" Column="1" TopLine="71"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="609" Column="1" TopLine="593"/>
       </Position9>
       <Position10>
-        <Filename Value="Main.pas"/>
-        <Caret Line="88" Column="1" TopLine="72"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="611" Column="1" TopLine="595"/>
       </Position10>
       <Position11>
-        <Filename Value="Main.pas"/>
-        <Caret Line="89" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="574" Column="1" TopLine="558"/>
       </Position11>
       <Position12>
-        <Filename Value="Main.pas"/>
-        <Caret Line="90" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="575" Column="1" TopLine="559"/>
       </Position12>
       <Position13>
-        <Filename Value="Main.pas"/>
-        <Caret Line="92" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="576" Column="1" TopLine="560"/>
       </Position13>
       <Position14>
-        <Filename Value="Main.pas"/>
-        <Caret Line="93" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="578" Column="1" TopLine="562"/>
       </Position14>
       <Position15>
-        <Filename Value="Main.pas"/>
-        <Caret Line="95" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="579" Column="1" TopLine="563"/>
       </Position15>
       <Position16>
-        <Filename Value="Main.pas"/>
-        <Caret Line="97" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="580" Column="1" TopLine="564"/>
       </Position16>
       <Position17>
-        <Filename Value="Main.pas"/>
-        <Caret Line="94" Column="7" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="581" Column="1" TopLine="565"/>
       </Position17>
       <Position18>
-        <Filename Value="Main.pas"/>
-        <Caret Line="97" Column="1" TopLine="73"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="582" Column="1" TopLine="566"/>
       </Position18>
       <Position19>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="515" Column="1" TopLine="499"/>
+        <Caret Line="584" Column="1" TopLine="568"/>
       </Position19>
       <Position20>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="516" Column="1" TopLine="500"/>
+        <Caret Line="578" Column="1" TopLine="562"/>
       </Position20>
       <Position21>
-        <Filename Value="..\..\..\src\AdLCLOGLComponentWindow.pas"/>
-        <Caret Line="151" Column="1" TopLine="135"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="579" Column="1" TopLine="563"/>
       </Position21>
       <Position22>
-        <Filename Value="Main.pas"/>
-        <Caret Line="10" Column="26" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="580" Column="1" TopLine="564"/>
       </Position22>
       <Position23>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="38" Column="15" TopLine="13"/>
+        <Caret Line="581" Column="1" TopLine="565"/>
       </Position23>
+      <Position24>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <Caret Line="582" Column="1" TopLine="566"/>
+      </Position24>
+      <Position25>
+        <Filename Value="Main.pas"/>
+        <Caret Line="11" Column="43" TopLine="1"/>
+      </Position25>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -597,12 +605,6 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="1">
-      <Item1>
-        <Source Value="Main.pas"/>
-        <Line Value="97"/>
-      </Item1>
-    </BreakPoints>
     <Exceptions Count="2">
       <Item1>
         <Name Value="ECodetoolError"/>

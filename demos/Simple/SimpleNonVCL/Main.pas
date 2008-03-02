@@ -7,15 +7,13 @@ unit Main;
 interface
 
 uses
-  AdClasses, AdEvents, AdDraws, AdDevIL,
+  AdClasses, AdEvents, AdDraws, AdGLFWWindow,
   AdGUI, AdComponents, AdGUIConnector, AdStdWindow;
 
 type
   TAdAppl = class
     private
       AdDraw:TAdDraw;
-      AdGUI:TAdGUI;
-      AdGUIConnector:TAdGUIConnector;
     public
       MouseX, MouseY : integer;
       procedure Idle(Sender:TObject; var Done:boolean);
@@ -32,10 +30,13 @@ procedure TAdAppl.Idle(Sender: TObject; var Done: boolean);
 begin
   if AdDraw.CanDraw then
   begin
-    AdDraw.ClearSurface($FF00FF);
+    AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
 
-    AdGUI.Update(1);
+    with AdDraw.Canvas do
+    begin
+      TextOut(MouseX, MouseY, 'Andorra 2D ['+AdDraw.DllName+','+AdDraw.Window.ClassName+']');
+    end;
 
     AdDraw.EndScene;
     AdDraw.Flip;
@@ -82,22 +83,7 @@ begin
     AdDraw.Window.Events.OnKeyDown := KeyDown;
     AdDraw.Window.Title := 'Andorra 2D';
 
-    AdDraw.TextureFilter := atLinear;
-
-    AdGUI := TAdGUI.Create(AdDraw);
-    AdGUI.Cursors.LoadFromFile('cursors.xml');
-    AdGUI.Skin.LoadFromFile('sunna.axs');
-    AdGUI.LoadFromFile('test.axg');
-
-    AdGUIConnector := TAdGUIConnector.Create(AdGUI);
-    AdGUIConnector.ConnectEventHandlers(AdDraw.Window);
-
-    AdDraw.Window.CursorVisible := false;
-
     AdDraw.Run;
-
-    AdGUIConnector.Free;
-    AdGUI.Free;
   end;
   AdDraw.Free;
 end;

@@ -3,9 +3,8 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs,
-  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter;
+  Dialogs, SysUtils, Forms,
+  AdDraws, AdClasses, AdTypes, AdPNG, AdSetupDlg, AdPerformanceCounter;
 
 type
   TForm1 = class(TForm)
@@ -17,8 +16,7 @@ type
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
 
-    procedure Idle(Sender:TObject;var Done:boolean);
-    { Public-Deklarationen }
+    procedure Idle(Sender: TObject; var Done: boolean);
   end;
 
 var
@@ -48,6 +46,8 @@ begin
     if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
+
+      AdDraw.TextureFilter := atLinear;
     end
     else
     begin
@@ -74,8 +74,10 @@ begin
   if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    AdDraw.ClearSurface(clBlack);
+    AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
+
+    //Your code here
 
     AdDraw.EndScene;
     AdDraw.Flip;
