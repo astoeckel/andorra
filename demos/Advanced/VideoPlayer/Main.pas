@@ -2,9 +2,13 @@ unit Main;
 
 interface
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 uses
-  SysUtils, Dialogs, AdStdWindow, AdSetupDlg, 
-  AdDraws, AdClasses, AdTypes, AdPNG, AdPerformanceCounter, AdVideo,
+  SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG, AdSetupDlg,{$ELSE}AdDevIL, {$ENDIF}
+  AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
   AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector;
 
 type
@@ -94,19 +98,25 @@ begin
 end;
 
 procedure TAdAppl.Run;
+{$IFNDEF FPC}
 var
   AdSetup: TAdSetup;
+{$ENDIF}
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(nil);
 
+  {$IFNDEF FPC}
   AdSetup := TAdSetup.Create(nil);
   AdSetup.Title := 'Andorra 2D Video Player';
   AdSetup.Image := 'logo1.png';
   AdSetup.AdDraw := AdDraw;
+  {$ELSE}
+  AdDraw.DllName := 'AndorraOGLLaz.dll';
+  {$ENDIF}
 
-  if AdSetup.Execute then
+  if {$IFNDEF FPC}AdSetup.Execute{$ELSE} true{$ENDIF} then
   begin
     if AdDraw.Initialize then
     begin
@@ -144,7 +154,6 @@ begin
       ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
                   'mode or another video adapter.');
   end;
-
   AdGUIConnector.Free;
   AdGUI.Free;
   AdVideo.Free;
