@@ -7,7 +7,7 @@ unit Main;
 interface
 
 uses
-  AdClasses, AdEvents, AdDraws, AdGLFWWindow,
+  AdClasses, AdEvents, AdDraws,
   AdGUI, AdComponents, AdGUIConnector, AdStdWindow;
 
 type
