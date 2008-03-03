@@ -25,6 +25,10 @@ unit AdDraws;
 
 interface
 
+{'$DEFINDE DO_NOT_INCLUDE_STD_FORMATS}
+{'$DEFINDE DO_NOT_INCLUDE_STD_WINDOWMGR}
+
+
 uses
 
   SysUtils, Classes,

@@ -33,7 +33,6 @@ type
       FProportional: boolean;
       FStretch: boolean;
       FCenter: boolean;
-      FOldWidth, FOldHeight: integer;
     protected
       function DestinationRect(ADestRect: TAdRect):TAdRect;
       property Image: TAdImage read FImage;
@@ -152,13 +151,10 @@ end;
 
 procedure TAdCustomVideoPlayer.Draw(ASurface: TAdDraw; ADestRect: TAdRect);
 begin
-  if (not Texture.Loaded) or (not GetOpened) then exit;
+  if not HasFrame then exit;
   
-  if (FImage.Width <> FOldWidth) or (FImage.Height <> FOldHeight) then
+  if (Info.Width <> FImage.Width) or (Info.Height <> FImage.Height) then
     FImage.Restore;
-
-  FOldWidth := Info.Width;
-  FOldHeight := Info.Height;
 
   FImage.StretchDraw(ASurface, DestinationRect(ADestRect), 0);
 end;

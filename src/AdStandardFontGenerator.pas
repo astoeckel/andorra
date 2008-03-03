@@ -179,7 +179,8 @@ begin
     else
     begin
       //Blur alpha channel
-      {adeffect := TAdBitmap.Create;
+      {$IFNDEF FPC}
+      adeffect := TAdBitmap.Create;
       adeffect.Assign(alpha);
 
       blur := TAdBitmapBlur.Create;
@@ -203,8 +204,9 @@ begin
             p1^.a := (p2^.r + p2^.g + p2^.b) div 3;
           inc(p1); inc(p2); inc(p3);
         end;
-      end;              
-      adeffect.Free;  }
+      end;
+      adeffect.Free;
+      {$ENDIF}
     end;
 
     with params do

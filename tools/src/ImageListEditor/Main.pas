@@ -493,7 +493,7 @@ begin
           Done := true;
         end;
 
-        Draw(AdDraw1,(AdDraw1.Parent.Width - Width) div 2 + OffsetX,(AdDraw1.Parent.Height - Height) div 2 + OffsetY,round(pattern));
+        Draw(AdDraw1,(AdDraw1.Window.ClientWidth - Width) div 2 + OffsetX,(AdDraw1.Window.ClientHeight - Height) div 2 + OffsetY,round(pattern));
       end;
     end;
 

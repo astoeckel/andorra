@@ -1164,7 +1164,6 @@ end;
 procedure TImageSprite.CreateMask;
 var
   adbmp:TAdBitmap;
-  w,h:integer;
 begin
   if (FPixelCheck) and (FImage <> nil) then
   begin

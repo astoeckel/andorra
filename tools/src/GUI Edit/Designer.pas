@@ -5,8 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls, AdSkin, AdGUI, AdPNG,
-  ExtCtrls, AdGUIConnector, Menus, ClipBrd, JvSimpleXML, ImgList, XMLEdit,
-  AdPerformanceCounter, AdTypes, AdPersistent;
+  ExtCtrls, AdGUIConnector, Menus, ClipBrd, AdSimpleXML, ImgList, XMLEdit,
+  AdPerformanceCounter, AdTypes, AdPersistent, AdEvents;
 
 type
   TDesignerDlg = class(TForm)
@@ -232,7 +232,7 @@ end;
 procedure TDesignerDlg.Paste;
 var
   cref:TAdComponentClass;
-  XML:TJvSimpleXML;
+  XML:TAdSimpleXML;
   ms:TMemoryStream;
 begin
   if (AdGUI.FocusedComponent <> nil) and (Clipboard.HasFormat(CF_ADCOMPONENT))then
@@ -240,7 +240,7 @@ begin
     ms := TMemoryStream.Create;
     CopyStreamFromClipboard(CF_ADCOMPONENT, ms);
     ms.Position := 0;
-    XML := TJvSimpleXML.Create(nil);
+    XML := TAdSimpleXML.Create;
     XML.LoadFromStream(ms);
     cref := TAdComponentClass(AdGetClass(XML.Root.Name));
     if cref <> nil then
@@ -291,7 +291,7 @@ begin
     AdGUI.DesignMode := true;
 
     AdConnector := TAdGUIConnector.Create(AdGUI);
-    AdConnector.ConnectEventHandlers(self);
+    AdConnector.ConnectEventHandlers(AdDraw1.Window);
 
     if Assigned(OnChangeList) then
       OnChangeList(self);
@@ -377,8 +377,8 @@ var
 begin
   if (not AdConnector.Connected) and (AddComp = nil) then
   begin
-    AdConnector.ConnectEventHandlers(self);
-    AdGUI.MouseUp(mbLeft,[ssLeft],X,Y);
+    AdConnector.ConnectEventHandlers(AdDraw1.Window);
+    AdGUI.MouseUp(abLeft,[asLeft],X,Y);
     b := false;
     Idle(nil,b);
   end;
@@ -434,7 +434,7 @@ begin
 
     AddComp := nil;
     FirstPoint := false;
-    AdConnector.ConnectEventHandlers(self);
+    AdConnector.ConnectEventHandlers(AdDraw1.Window);
     Cursor := crDefault;
 
     if Assigned(OnChangeList) then

@@ -108,6 +108,7 @@ type
       FInfo: TAdVideoInfo;
       FTime: TAdVideoPosition;
       FStreamEnd: boolean;
+      FHasFrame: boolean;
 
       procedure VideoDecoderThreadTerminate(Sender: TObject);
     protected
@@ -126,6 +127,7 @@ type
       property Time: TAdVideoPosition read FTime write FTime;
       property Decoder: TAdVideoDecoder read FDecoder write FDecoder;
       property StreamEnd: boolean read FStreamEnd write FStreamEnd;
+      property HasFrame: boolean read FHasFrame;
     public
       constructor Create(AParent: TAd2dApplication);
       destructor Destroy;override;
@@ -225,6 +227,7 @@ end;
 
 procedure TAdCustomVideoTexture.ClearData;
 begin
+  FHasFrame := false;
   if (GetOpened) then
   begin
     ResetData;
@@ -284,6 +287,8 @@ begin
           FTexture.LoadFromBitmap(adbmp, aparams);
 
           adbmp.Free;
+          
+          FHasFrame := true;
         end;
       finally
         buf.CriticalSection.Leave;
@@ -305,6 +310,7 @@ begin
     FDecoderThread.InvalidateBuffers;
   end;
   FStreamEnd := false;
+  FHasFrame := false;
 end;
 
 function TAdCustomVideoTexture.SearchDecoder: boolean;

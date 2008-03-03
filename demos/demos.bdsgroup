@@ -24,7 +24,8 @@
       <Projects Name="SimpleText.exe">Simple\SimpleText\SimpleText.bdsproj</Projects>
       <Projects Name="TextDemo.exe">Simple\TextDemo\TextDemo.bdsproj</Projects>
       <Projects Name="Spiral.exe">Simple\Spiral\Spiral.bdsproj</Projects>
-      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe</Projects>
+      <Projects Name="VideoPlayer.exe">Advanced\VideoPlayer\VideoPlayer.bdsproj</Projects>
+      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe VideoPlayer.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>
