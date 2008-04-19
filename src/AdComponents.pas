@@ -26,7 +26,7 @@ unit AdComponents;
 interface
 
 uses
-  AdSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap,
+  AdSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap, AdList,
   Classes, Graphics, SysUtils, AdCanvas, AdFont, AdEvents;
 
 type
@@ -510,6 +510,93 @@ type
       property FontColor;
   end;
 
+  TAdOrientation = (orHorizontal, orVertical);
+
+  TAdTrackControl = class(TAdComponent)
+    private
+      FOX, FOY, FMX, FMY, FOPos: integer;
+      FMax, FMin, FPosition: integer;
+      FTrackerPos: integer;
+      FSkinItem: TAdSkinItem;
+      FTrackItem: TAdSkinItem;
+      FSkinState: integer;
+      FTrackerState: integer;
+      FSmooth: boolean;
+      FOrientation: TAdOrientation;
+
+      FOnChange: TAdNotifyEvent;
+
+      function TrackerPos:TAdRect;
+      procedure CalcPosition;
+      procedure SetPosition(AValue:integer);
+      procedure SetMax(AValue:integer);
+      procedure SetMin(AValue:integer);
+      procedure SetOrientation(AValue:TAdOrientation);
+    protected
+      procedure DoDraw;override;
+
+      function DoMouseEnter:boolean;override;
+      function DoMouseLeave:boolean;override;
+      function DoMouseDown(Button:TAdMouseButton; Shift:TAdShiftState; X, Y: integer):boolean;override;
+      function DoMouseUp(Button:TAdMouseButton; Shift:TAdShiftState; X, Y: integer):boolean;override;
+      function DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;override;
+      function DoMouseWheel(Shift: TAdShiftState; WheelDelta: integer; X, Y: integer):boolean;override;
+      function DoResize:boolean;override;
+    public
+      constructor Create(AParent:TAdComponent);override;
+
+      procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
+      function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
+    published
+      property Max: integer read FMax write SetMax;
+      property Min: integer read FMin write SetMin;
+      property Position: integer read FPosition write SetPosition;
+      property Smooth: boolean read FSmooth write FSmooth;
+      property Orientation: TAdOrientation read FOrientation write SetOrientation;
+
+      property OnChange: TAdNotifyEvent read FOnChange write FOnChange;
+  end;
+
+  TAdTrackBar = class(TAdTrackControl)
+    protected
+      procedure LoadSkinItem; override;
+  end;
+
+  TAdScrollBar = class(TAdTrackControl)
+    protected
+      procedure LoadSkinItem; override;
+  end;
+
+  TAdListBox = class(TAdComponent)
+    private
+      FSkinItem : TAdSkinItem;
+      FVertScrollBar: TAdScrollbar;
+      FHorzScrollBar: TAdScrollbar;
+      FStrings: TStrings;
+      FItemIndex: integer;
+
+      FDisplayList: TAdCanvasDisplayList;
+
+      FUpdating: boolean;
+
+      procedure CreateScrollBars;
+      procedure StringsChange(Sender: TObject);
+      procedure UpdateView;
+    protected
+      procedure LoadSkinItem; override;
+
+      procedure DoDraw;override;
+      function DoResize:boolean;override;
+    public
+      constructor Create(AParent: TAdComponent);override;
+      destructor Destroy;override;
+    published
+      property FontName;
+      property FontColor;
+      property Items: TStrings read FStrings write FStrings;
+      property ItemIndex: integer read FItemIndex write FItemIndex;
+  end;
+
 implementation
 
 const               
@@ -731,8 +818,8 @@ begin
     SetFocused;
     BringToFront;
 
-    MousePreview := true;
-    LockEvents := true;
+    if FMovable then
+      Draging := true;
   end;
 end;
 
@@ -755,8 +842,7 @@ begin
   inherited DoMouseUp(Button,Shift,X,Y);
   result := true;
   FDown := false;
-  MousePreview := false;
-  LockEvents := false;
+  Draging := false;
 end;
 
 function TAdForm.DoResize:boolean;
@@ -2146,8 +2232,485 @@ begin
   GetStateNr;
 end;
 
+{ TAdTrackbar }
+
+constructor TAdTrackControl.Create(AParent: TAdComponent);
+begin
+  inherited;
+
+  FMin := 0;
+  FMax := 100;
+  FSmooth := true;
+  Position := 0;
+
+  AcceptChildComponents := false;
+end;
+
+procedure TAdTrackControl.DoDraw;
+var
+  sih,siw:integer;
+  r:TAdRect;
+begin
+  inherited;
+
+  sih := FSkinItem.BaseHeight;
+  siw := FSkinItem.BaseWidth;
+
+  r := BoundsRect;
+
+  case FOrientation of
+    orHorizontal:
+    begin
+      FSkinItem.Draw(FSkinState, AdBounds(
+        r.Left, r.Top+(Height-sih) div 2, Width, sih), Alpha);
+
+      FTrackItem.Draw(FTrackerState, TrackerPos, Alpha);
+    end;
+    orVertical:
+    begin
+      FSkinItem.Draw(FSkinState, AdBounds(
+        r.Left + (Width-siw) div 2, r.Top, siw, Height), Alpha);
+
+      FTrackItem.Draw(FTrackerState, TrackerPos, Alpha);
+    end;
+  end;
+end;
+
+function TAdTrackControl.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
+  X, Y: integer): boolean;
+begin
+  result := inherited DoMouseDown(Button, Shift, X, Y);
+
+  if (Button = abLeft) and InRect(X, Y, TrackerPos) then
+  begin
+    FTrackerState := 2;  
+    FOX := X; FOY := Y;
+    FMX := 0; FMY := 0;
+    FOPos := FTrackerPos;
+    Draging := true;
+  end;
+end;
+
+function TAdTrackControl.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
+  Y: integer): boolean;
+begin
+  result := inherited DoMouseUp(Button, Shift, X, Y);
+
+  FTrackerState := 1;
+
+  SetFocused;
+end;
+
+function TAdTrackControl.DoMouseWheel(Shift: TAdShiftState; WheelDelta, X,
+  Y: integer): boolean;
+begin
+  result := inherited DoMouseWheel(Shift, WheelDelta, X, Y);
+
+  Position := Position - WheelDelta div 120;
+end;
+
+function TAdTrackControl.DoResize: boolean;
+begin
+  result := inherited DoResize;
+  SetPosition(FPosition);
+end;
+
+function TAdTrackControl.DoMouseEnter:boolean;
+begin
+  result := inherited DoMouseEnter;
+  FSkinState := 1;
+  FTrackerState := 1;
+end;
+
+function TAdTrackControl.DoMouseLeave:boolean;
+begin
+  result := inherited DoMouseLeave;
+  FSkinState := 0;
+  FTrackerState := 0;
+end;
+
+function TAdTrackControl.DoMouseMove(Shift: TAdShiftState; X, Y: Integer): boolean;
+begin
+  result := inherited DoMouseMove(Shift, X, Y);
+  if (asLeft in Shift) and Draging then
+  begin
+    FMX := FMX + (X-FOX);
+    FMY := FMY + (Y-FOY);
+
+    case FOrientation of
+      orHorizontal: FTrackerPos := FOPos + FMX;
+      orVertical: FTrackerPos := FOPos + FMY;
+    end;
+
+    if FTrackerPos < 0 then
+      FTrackerPos := 0;
+    if (FTrackerPos > Width - FTrackItem.BaseWidth) and (FOrientation = orHorizontal) then
+      FTrackerPos := Width - FTrackItem.BaseWidth;
+    if (FTrackerPos > Height - FTrackItem.BaseHeight) and (FOrientation = orVertical) then
+      FTrackerPos := Height - FTrackItem.BaseHeight;
+
+    CalcPosition;
+
+    if not Smooth then
+      SetPosition(FPosition)
+    else
+      if Assigned(FOnChange) then
+        FOnChange(Self);
+
+
+    FOX := X;
+    FOY := Y;
+  end;
+end;
+
+procedure TAdTrackControl.CalcPosition;
+begin
+  case FOrientation of
+    orHorizontal: FPosition :=
+      round((FTrackerPos / (Width - FTrackItem.BaseWidth))   * (FMax - FMin) + FMin);
+    orVertical:   FPosition :=
+      round((FTrackerPos / (Height - FTrackItem.BaseHeight)) * (FMax - FMin) + FMin);
+  end;
+end;
+
+procedure TAdTrackControl.SetMax(AValue: integer);
+begin
+  FMax := AValue;
+  if AValue < FMin then
+    FMax := FMin;
+
+  SetPosition(FPosition);
+end;
+
+procedure TAdTrackControl.SetMin(AValue: integer);
+begin
+  FMin := AValue;
+  if AValue > FMax then
+    FMin := FMax;
+
+  SetPosition(FPosition);
+end;
+
+procedure TAdTrackControl.SetOrientation(AValue: TAdOrientation);
+var
+  tmp: integer;
+begin
+  if AValue <> FOrientation then
+  begin
+    tmp := Width;
+    Width := Height;
+    Height := tmp;
+
+    FOrientation := AValue;
+    LoadSkinItem;
+  end;
+end;
+
+procedure TAdTrackControl.SetPosition(AValue: integer);
+begin
+  if (FPosition <> AValue) and Assigned(FOnChange) then
+    FOnChange(self);
+
+  FPosition := AValue;
+
+  if FPosition < FMin then
+    FPosition := FMin;
+  if FPosition > FMax then
+    FPosition := FMax;
+
+  if FMax <> FMin then
+  begin
+    case FOrientation of
+      orHorizontal: FTrackerPos :=
+        round((Width - FTrackItem.BaseWidth) / (FMax - FMin) * (FPosition - FMin));
+      orVertical: FTrackerPos :=
+      round((Height - FTrackItem.BaseHeight) / (FMax - FMin) * (FPosition - FMin));
+    end;
+  end else
+    FTrackerPos := 0;
+end;
+
+function TAdTrackControl.TrackerPos: TAdRect;
+begin
+  case FOrientation of
+    orHorizontal: result := AdBounds(
+      BoundsRect.Left+FTrackerPos,
+      BoundsRect.Top+(Height-FTrackItem.BaseHeight) div 2,
+      FTrackItem.BaseWidth,
+      FTrackItem.BaseHeight);
+      
+    orVertical: result := AdBounds(
+      BoundsRect.Left+(Width-FTrackItem.BaseWidth) div 2,
+      BoundsRect.Top+FTrackerPos,
+      FTrackItem.BaseWidth,
+      FTrackItem.BaseHeight);
+  end;
+end;
+
+procedure TAdTrackControl.LoadFromXML(aroot: TAdSimpleXMLElem);
+begin
+  inherited;
+  with aroot.Properties do
+  begin
+    FMin := IntValue('min',0);
+    FMax := IntValue('max',100);
+    FSmooth := BoolValue('smooth',true);
+    FPosition := IntValue('position',0);
+    FOrientation := TAdOrientation(IntValue('orientation',0));
+
+    LoadSkinItem;
+    SetPosition(FPosition);
+  end;
+end;
+
+function TAdTrackControl.SaveToXML(aroot: TAdSimpleXMLElems): TAdSimpleXMLElem;
+begin
+  result := inherited SaveToXML(aroot);
+
+  with result.Properties do
+  begin
+    Add('min', FMin);
+    Add('max', FMax);
+    Add('position', FPosition);
+    Add('orientation', Ord(FOrientation));
+    Add('smooth', FSmooth);    
+  end;
+end;
+
+{ TAdTrackBar }
+
+procedure TAdTrackBar.LoadSkinItem;
+begin
+  case FOrientation of
+    orHorizontal:
+    begin
+      FSkinItem := Skin.ItemNamed['trackbar_horz'];
+      FTrackItem := Skin.ItemNamed['trackbar_horz_handle'];
+      MinWidth := FTrackItem.BaseWidth*2;
+      MinHeight := FTrackItem.BaseHeight;
+    end;
+    orVertical:
+    begin
+      FSkinItem := Skin.ItemNamed['trackbar_vert'];
+      FTrackItem := Skin.ItemNamed['trackbar_vert_handle'];
+      MinWidth := FTrackItem.BaseWidth;
+      MinHeight := FTrackItem.BaseHeight*2;
+    end;
+  end;
+end;
+
+{ TAdScrollBar }
+
+procedure TAdScrollBar.LoadSkinItem;
+begin
+  case FOrientation of
+    orHorizontal:
+    begin
+      FSkinItem := Skin.ItemNamed['scrollbar_horz'];
+      FTrackItem := Skin.ItemNamed['scrollbar_horz_handle'];
+      MinWidth := FTrackItem.BaseWidth;
+      MinHeight := FSkinItem.BaseHeight;
+    end;
+    orVertical:
+    begin
+      FSkinItem := Skin.ItemNamed['scrollbar_vert'];
+      FTrackItem := Skin.ItemNamed['scrollbar_vert_handle'];
+      MinWidth := FSkinItem.BaseWidth;
+      MinHeight := FTrackItem.BaseHeight;
+    end;
+  end;
+end;
+
+{ TAdGridBox }
+
+constructor TAdListBox.Create(AParent: TAdComponent);
+begin
+  inherited Create(AParent);
+
+  AcceptChildComponents := false;
+
+  FStrings := TStringList.Create;
+  TStringList(FStrings).OnChange := StringsChange;
+end;
+
+procedure TAdListBox.CreateScrollBars;
+begin
+  if FHorzScrollbar = nil then
+  begin
+    AcceptChildComponents := true;
+
+    FHorzScrollBar := TAdScrollbar.Create(self);
+    FHorzScrollBar.SubComponent := true;
+    FHorzScrollBar.Orientation := orHorizontal;
+    FHorzScrollBar.Height := FHorzScrollbar.MinHeight;
+    FHorzScrollBar.Visible := false;
+
+    FVertScrollBar := TAdScrollbar.Create(self);
+    FVertScrollBar.SubComponent := true;
+    FVertScrollBar.Orientation := orVertical;
+    FVertScrollBar.Width := FVertScrollbar.MinWidth;
+    FVertScrollBar.Visible := false;
+
+    AcceptChildComponents := false;
+  end;
+end;
+
+destructor TAdListBox.Destroy;
+begin
+  FStrings.Free;
+
+  if FDisplayList <> nil then
+  begin
+    FDisplayList.Free;
+    FDisplayList := nil;
+  end;
+
+  inherited;
+end;
+
+procedure TAdListBox.DoDraw;
+var
+  r: TAdRect;
+  viewmat, projmat: TAdMatrix;
+begin
+  r := ClientRect;
+  if FSkinItem <> nil then
+  begin
+    FSkinItem.Draw(0, r, Alpha);
+  end;
+
+  if FDisplayList <> nil then
+  begin
+    viewmat := AdDraw.ViewMatrix;
+    projmat := AdDraw.ProjectionMatrix;
+
+    AdDraw.Setup2DScene(r.Right - r.Left, r.Bottom - r.Top);
+
+    AdDraw.Viewport := r;
+
+    FDisplayList.Draw;
+
+    AdDraw.Viewport := AdDraw.DisplayRect;
+
+    AdDraw.ViewMatrix := viewmat;
+    AdDraw.ProjectionMatrix := projmat;
+  end;
+
+  inherited;
+end;
+
+function TAdListBox.DoResize: boolean;
+var
+  r: TAdRect;
+  w, h: integer;
+begin
+  CreateScrollbars;
+  
+  result := inherited DoResize;
+
+  if FVertScrollbar.Visible then  
+    SpacerRight := FVertScrollbar.Width
+  else
+    SpacerRight := 0;
+
+  if FHorzScrollbar.Visible then
+    SpacerBottom := FHorzScrollbar.Height
+  else
+    SpacerBottom := 0;
+
+  r := BoundsRect;
+  w := r.Right - r.Left;
+  h := r.Bottom - r.Top;
+
+  FVertScrollbar.X := w - FVertScrollbar.Width;
+  FVertScrollbar.Y := 0;
+  FVertScrollbar.Height := h - SpacerBottom;
+  FVertScrollbar.OnChange := StringsChange;
+
+  FHorzScrollbar.X := 0;
+  FHorzScrollbar.Y := h - FHorzscrollbar.Height;
+  FHorzScrollbar.Width := w - SpacerRight;
+  FHorzScrollbar.OnChange := StringsChange;
+
+  UpdateView;
+end;
+
+procedure TAdListBox.LoadSkinItem;
+begin
+  FSkinItem := Skin.ItemNamed['listbox_frame'];
+
+  MinWidth := 100;
+  MinHeight := 100;
+end;
+
+procedure TAdListBox.StringsChange(Sender: TObject);
+begin
+  UpdateView;
+  if FItemIndex > FStrings.Count-1 then
+    FItemIndex := -1;
+end;
+
+procedure TAdListBox.UpdateView;
+var
+  i : integer;
+  py : integer;
+  ch : integer;
+  r : TAdRect;
+  overflow: boolean;
+begin
+  if FDisplayList <> nil then
+  begin
+    FDisplayList.Free;
+    FDisplayList := nil;
+  end;
+
+  FVertScrollbar.Max := FStrings.Count;
+
+  with AdDraw.Canvas do
+  begin
+    py := 0;
+    r := GetClientRect;
+    ch := r.Bottom - r.Top;
+    overflow := false;
+
+    for i := FVertScrollbar.Position to FStrings.Count - 1 do
+    begin
+      TextOut(0, 0 + py, FStrings[i]);
+
+      py := py + Font.TextHeight(FStrings[i]);
+      if py > ch then
+      begin
+        overflow := true;
+        break;
+      end;
+    end;
+
+    if overflow then
+    begin
+      if not FVertScrollbar.Visible then
+      begin
+        FVertScrollBar.Visible := true;
+        DoResize;
+       end;
+    end else
+    begin
+      if (FVertScrollBar.Position = 0) and (FVertScrollbar.Visible) then
+      begin
+        FVertScrollBar.Visible := false;
+        DoResize;
+      end;
+    end;
+
+
+    FDisplayList := ReturnDisplayList;
+  end;
+end;
+
 initialization
+  RegisterComponent(TAdListBox,'Standard');
   RegisterComponent(TAdProgressBar,'Standard');
+  RegisterComponent(TAdTrackBar,'Standard');
+  RegisterComponent(TAdScrollBar,'Standard');
   RegisterComponent(TAdButton,'Standard');
   RegisterComponent(TAdEdit,'Standard');
   RegisterComponent(TAdCheckbox,'Standard');

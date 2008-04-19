@@ -245,7 +245,7 @@ object FontEditDlg: TFontEditDlg
     TabOrder = 3
   end
   object ColorDialog1: TColorDialog
-    Left = 16
+    Left = 8
     Top = 264
   end
 end

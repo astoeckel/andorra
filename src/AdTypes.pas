@@ -2,9 +2,9 @@
 * This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
-* 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
-* You also should have recieved a copy of this license with this file. 
+* blic License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file.
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Pu
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
@@ -72,6 +72,24 @@ type
 
   {A standard 3x3 matrix.}
   TAdMatrix = array[0..3] of array[0..3] of single;
+
+  {Andorras vertex format}
+  TAdVertex = record
+    {The position of the vertex}
+    Position:TAdVector3;
+    {The color. If you change the alpha channels value to a value less than 255, the vertex will be transparent.}
+    Color:TAndorraColor;
+    {A normal vector stores information about how light is reflected}
+    Normal:TAdVector3;
+    {Contains the position of the texture. Normaly each value lies between 0 and 1. If a value is bigger/smaller the texture will be wrapped}
+    Texture:TAdVector2;
+  end;
+
+  {An array of the vertex}
+  TAdVertexArray = array of TAdVertex;
+
+  {Represtents an index buffer}
+  TAdIndexArray = array of Word;
 
   {--- Replacement of TPoint and TRect ---}
     
@@ -161,23 +179,24 @@ function AdBoundsEx(X,Y,Width,Height:double):TAdRectEx;
 procedure AdOffsetRect(var Rect:TAdRect; X, Y:LongInt);
 
 {Returns a TAdRect.}
-function AdRect(X1,Y1,X2,Y2:LongInt):TAdRect;overload;
+function AdRect(X1,Y1,X2,Y2:LongInt):TAdRect;overload;inline;
 {Returns a TAdRect by rounding the coordinates given}
-function AdRect(X1,Y1,X2,Y2:double):TAdRect;overload;
+function AdRect(X1,Y1,X2,Y2:double):TAdRect;overload;inline;
 
 {Returns a TAdRectEx}
-function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;
+function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;inline;
 
 {Returns a TAdPoint}
-function AdPoint(X,Y:LongInt):TAdPoint;overload;
+function AdPoint(X,Y:LongInt):TAdPoint;overload;inline;
 {Returns a TAdPoint by rounding the coordinates given}
-function AdPoint(X,Y:double):TAdPoint;overload;
+function AdPoint(X,Y:double):TAdPoint;overload;inline;
 
 {Returns true when the two rects have the same coordinates.}
-function CompareRects(Rect1,Rect2:TAdRect):boolean;
+function CompareRects(const Rect1,Rect2:TAdRect):boolean;
 {Returns true, when the two rects overlap themselves.}
 function OverlapRect(const Rect1, Rect2: TAdRect): boolean;
-
+{Returns true, if the point lies within the rect}
+function InRect(const X, Y: integer; const Rect: TAdRect): boolean;
 
 {Retruns a vector with three components.}
 function AdVector3(AX,AY,AZ:double):TAdVector3;
@@ -324,13 +343,21 @@ begin
     (Rect1.Bottom>Rect2.Top);
 end;
 
-function CompareRects(Rect1,Rect2:TAdRect):boolean;
+function CompareRects(const Rect1,Rect2:TAdRect):boolean;
 begin
   result := (Rect1.Left = Rect2.Left) and
             (Rect1.Right = Rect2.Right) and
             (Rect1.Top = Rect2.Top) and
             (Rect1.Bottom = Rect2.Bottom);
 end;
+
+function InRect(const X, Y: integer; const Rect:TAdRect):boolean;
+begin
+  result := (
+     (Y >= Rect.Top)  and (Y <= Rect.Bottom) and
+     (X >= Rect.Left) and (X <= Rect.Right));
+end;
+ 
 
 function AdVector3(AX,AY,AZ:double):TAdVector3;
 begin

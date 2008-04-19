@@ -50,8 +50,9 @@ Version 0.3.5 (Releases: BETA|STABLE)
 Version 0.4 (Releases: BETA|STABLE)
 Plugin sie
 - Add Render State system
-- Add point sprites
+- Add point sprites [DONE]
 - Add antialiasing
+- Textures as rendertarget
 Application side:
 - Rewrite particle systems
 - Load 3D objects [50%]
@@ -62,7 +63,6 @@ Project Beta State
 
 Version 0.5
 Plugin side:
-- Textures as rendertarget
 - Shader
 
 Version 0.6

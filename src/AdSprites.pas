@@ -227,7 +227,7 @@ type
   {The spriteengine itsself.}
   TSpriteEngine = class(TSprite)
     private
-      FSurface:TAdDraw;
+      FSurface:TAdRenderingSurface;
       FDeadList:TAdList;
       FCollisionCount:integer;
       FCollisionSprite:TSprite;
@@ -235,8 +235,7 @@ type
       FCollisionRect:TAdRect;
     protected
       FSurfaceRect:TAdRect;
-      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);virtual;
-      procedure SetSurface(AValue:TAdDraw);virtual;
+      procedure SetSurface(AValue:TAdRenderingSurface);virtual;
     public
       //The count of sprites which collide to the collision sprite.
       property CollisionCount:integer read FCollisionCount write FCollisionCount;
@@ -258,7 +257,7 @@ type
       property SurfaceRect:TAdRect read FSurfaceRect;
     published
       //The parent addraw surface.
-      property Surface:TAdDraw read FSurface write SetSurface;
+      property Surface:TAdRenderingSurface read FSurface write SetSurface;
   end;
 
   {A sprite which draws sprites.}
@@ -371,7 +370,7 @@ type
   end;
 
   {A sprite which contains a light source.}
-  TLightSprite = class(TSprite)
+  (*TLightSprite = class(TSprite)
     private
       FRange:double;
       FFalloff:double;
@@ -398,7 +397,7 @@ type
       property Color:LongWord read FColor write SetColor;
       {Link back to the TAdLight}
       property Light:TAdLight read FLight;
-  end;
+  end;*)
 
   {A sprite wrapping around the particle system}
   TParticleSprite = class(TSprite)
@@ -612,6 +611,8 @@ var i:integer;
 begin
   if Visible then
   begin
+    FEngine.Surface.Activate;
+
     for i := 0 to FList.Count - 1 do
     begin
       if (not FVisibilityTest) or (OverlapRect(FEngine.SurfaceRect,FList[i].BoundsRect)) then
@@ -1035,25 +1036,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TSpriteEngine.Notify(Sender: TObject; AEvent: TSurfaceEventState);
-begin
-  if AEvent = seInitialize then
-  begin
-    FSurfaceRect := FSurface.DisplayRect;
-  end;
-end;
-
-procedure TSpriteEngine.SetSurface(AValue: TAdDraw);
+procedure TSpriteEngine.SetSurface(AValue: TAdRenderingSurface);
 begin
   if (AValue <> nil) and (AValue <> FSurface) then
   begin
-    if FSurface <> nil then
-    begin
-      FSurface.UnRegisterNotifyEvent(Notify);
-    end;
     FSurface := AValue;
     FSurfaceRect := AValue.DisplayRect;
-    FSurface.RegisterNotifyEvent(Notify);
   end;
 end;
 
@@ -1337,7 +1325,7 @@ end;
 
 { TLightSprite }
 
-constructor TLightSprite.Create(AParent: TSprite);
+(*constructor TLightSprite.Create(AParent: TSprite);
 begin
   inherited Create(AParent);
   FLight := TAdLight.Create(FEngine.Surface);
@@ -1387,14 +1375,14 @@ procedure TLightSprite.SetRange(AValue: double);
 begin
   FRange := AValue;
   FLight.Range := AValue;
-end;
+end;*)
 
 { TParticleSprite }
 
 constructor TParticleSprite.Create(AParent: TSprite);
 begin
   inherited;
-  FPartSys := TAdParticleSystem.Create(Engine.Surface);
+  FPartSys := TAdParticleSystem.Create(Engine.Surface.Parent);
   EmissionCount := 0;
   FWait := 0;
   FAutoDeath := true;

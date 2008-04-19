@@ -54,11 +54,6 @@ begin
         Texture.LoadGraphicFromFile('icon64.png');
       end;
       AdImageList1.Restore;
-
-      bmp := TBitmap.Create;
-      AdImageList1[0].Texture.SaveToGraphic(bmp);
-      bmp.SaveToFile('C:\test.bmp');
-      bmp.Free;
     end
     else
     begin
@@ -86,7 +81,7 @@ begin
   if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
+    Caption := 'FPS: '+inttostr(AdPerCounter.FPS);
 
     AdDraw.ClearSurface(clSilver);
     AdDraw.BeginScene;

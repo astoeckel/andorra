@@ -80,11 +80,15 @@ begin
         //Read fileinfo
         fileinfo(info);
 
-        //Read abilities
-        @fileabilities := GetProcAddress(ahandle, 'Andorra2DLibraryAbilities');
-        fileabilities(abilities);
+        //The library must be compatible
+        if info.LibVersion = LibraryVersion then
+        begin
+          //Read abilities
+          @fileabilities := GetProcAddress(ahandle, 'Andorra2DLibraryAbilities');
+          fileabilities(abilities);
 
-        CallBack(searchrec.Name,info,abilities);
+          CallBack(searchrec.Name,info,abilities);
+        end;
       end;
 
     finally

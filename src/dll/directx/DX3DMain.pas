@@ -24,12 +24,15 @@ type
       FLastTexture:TAd2DTexture;
       FCurrentLights:integer;
       FPresent:TD3DPresentParameters;
+      FOwnRenderTarget: IDirect3dSurface9;
+      FSetToOwnRenderTarget: boolean;
+      FWnd: TAdWindowFramework;
     protected
       function GetFreeLight:integer;
       procedure ReleaseLight(alight:integer);
       procedure SetOptions(AValue:TAdOptions);override;
-      procedure SetAmbientLight(AValue:TAndorraColor);override;
       procedure SetViewPort(AValue:TAdRect);override;
+      procedure ResetRenderTarget;
     public
       Direct3D9:IDirect3D9;
       Direct3DDevice9:IDirect3DDevice9;
@@ -39,13 +42,14 @@ type
       destructor Destroy;reintroduce;
       function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
-      //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
+      function CreateRenderTargetTexture:TAd2dRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
-      //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
       function Initialize(AWnd:TAdWindowFramework; AOptions:TAdOptions;
         ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
 
+      procedure SetRenderTarget(ATarget:TAd2dRenderTargetTexture);override;
+      
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
@@ -110,6 +114,21 @@ type
       procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
   end;
 
+
+  TDXRenderTargetTexture = class(TAd2dRenderTargetTexture)
+    private
+      FParent:TDXApplication;
+    protected
+      function GetLoaded:boolean;override;
+    public
+      constructor Create(AParent:TDXApplication);
+      destructor Destroy;override;
+
+      procedure SetSize(AWidth, AHeight: integer; ABitCount: Byte);override;
+      procedure FlushMemory;override;
+      procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
+  end;
+
 //Our Vertex and the definition of the flexible vertex format (FVF)
 type TD3DLVertex = record
   position: TD3DXVector3;
@@ -144,6 +163,11 @@ begin
   result := TDXMesh.Create(self);
 end;
 
+function TDXApplication.CreateRenderTargetTexture: TAd2dRenderTargetTexture;
+begin
+  result := TDXRenderTargetTexture.Create(self);
+end;
+
 function TDXApplication.CreateBitmapTexture: TAd2DBitmapTexture;
 begin
   result := TDXBitmapTexture.Create(self);
@@ -154,10 +178,6 @@ begin
   result := TDXLight.Create(self);
 end;
 
-{function TDXApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
-begin
-
-end;    }
 
 function TDXApplication.Initialize(AWnd: TAdWindowFramework; AOptions: TAdOptions;
   ADisplay: TAdDisplay):boolean;
@@ -177,6 +197,7 @@ begin
   result := false;
   if Direct3D9 <> nil then
   begin
+    FWnd := AWnd;
     FOptions := AOptions;
 
     WriteLog(ltNone,'Try to initialize Andorra Direct3D 9 Plugin.');
@@ -295,8 +316,8 @@ begin
       result := true;
     end;
 
-    FWidth := ADisplay.Width;
-    FHeight := ADisplay.Height;
+    FWidth := FWnd.ClientWidth;
+    FHeight := FWnd.ClientHeight;
 
     //Set lighting
     SetOptions(FOptions);
@@ -335,6 +356,8 @@ begin
       WriteLog(ltWarning,'Alphablending is disabled');
     end;
 
+    FSetToOwnRenderTarget := true;
+
     WriteLog(ltInfo,'Initialization complete.');
     result := true;
   end
@@ -353,6 +376,17 @@ begin
   end;
 end;
 
+procedure TDXApplication.ResetRenderTarget;
+begin
+  if (not FSetToOwnRenderTarget) and (FOwnRenderTarget <> nil) then
+  begin
+    Direct3dDevice9.SetRenderTarget(0, FOwnRenderTarget);
+    FSetToOwnRenderTarget := true;
+    FWidth := FWnd.ClientWidth;
+    FHeight := FWnd.ClientHeight;
+  end;
+end;
+
 procedure TDXApplication.Finalize;
 begin
   Direct3d9 := nil;
@@ -360,19 +394,34 @@ begin
   WriteLog(ltInfo,'Finalization Complete.');
 end;
 
-procedure TDXApplication.SetAmbientLight(AValue: TAndorraColor);
-begin
-  inherited;
-  Direct3DDevice9.SetRenderState(D3DRS_AMBIENT, D3DColor_ARGB(AValue.a,AValue.r,AValue.g,AValue.b));
-end;
-
 procedure TDXApplication.SetOptions(AValue: TAdOptions);
 begin
   FOptions := AValue;
   if Direct3DDevice9 <> nil then
   begin
-    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
+//    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
     Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
+  end;
+end;
+
+procedure TDXApplication.SetRenderTarget(ATarget: TAd2dRenderTargetTexture);
+var
+  tex_surf: IDirect3DSurface9;
+begin
+  if ATarget <> nil then
+  begin
+   if FSetToOwnRenderTarget then
+      Direct3DDevice9.GetRenderTarget(0, FOwnRenderTarget);
+
+    FSetToOwnRenderTarget := false;
+    IDirect3DTexture9(ATarget.Texture).GetSurfaceLevel(0, tex_surf);
+    Direct3DDevice9.SetRenderTarget(0, tex_surf);
+
+    FWidth := ATarget.BaseWidth;
+    FHeight := ATarget.BaseHeight;
+  end else
+  begin
+    ResetRenderTarget;
   end;
 end;
 
@@ -389,7 +438,7 @@ begin
     D3DXMatrixLookAtRH( matView, pos, dir, up);
     Direct3dDevice9.SetTransform(D3DTS_VIEW, matView);
 
-    D3DXMatrixOrthoRH( matProj, Awidth, Aheight, 0,100);
+    D3DXMatrixOrthoRH( matProj, Awidth, Aheight, -100, 100);
     Direct3dDevice9.SetTransform(D3DTS_PROJECTION, matProj);
   end;
 end;
@@ -438,13 +487,6 @@ begin
     Pos('tadhandlewindowframework',lowercase(AClassId)) > 0;
 end;
 
-{procedure TDXApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
-begin
-  inherited;
-
-end;}
-
-
 procedure TDXApplication.BeginScene;
 begin
   if Direct3DDevice9 <> nil then
@@ -472,6 +514,7 @@ begin
       FCurrentLights := 0;   
     end;
     Direct3DDevice9.EndScene;
+    ResetRenderTarget;
   end;
 end;
 
@@ -548,6 +591,12 @@ begin
   inherited Destroy;
 end;
 
+function FloatToCardinal(AValue: single): Cardinal; inline;
+begin
+  result := PCardinal(@AValue)^;
+end;
+
+
 procedure TDXMesh.Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);
 var Mode:TD3DPrimitiveType;
 begin
@@ -571,7 +620,7 @@ begin
       begin
         Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
         Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
-      end;
+      end;      
 
       Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), FMatrix);
       if (FTexture <> nil) and (FTexture.Loaded) then
@@ -600,8 +649,20 @@ begin
         adLineStrips: Mode := D3DPT_LINESTRIP;
         adTriangleFan: Mode := D3DPT_TRIANGLEFAN;
         adPoints: Mode := D3DPT_POINTLIST;
+        adPointSprites: Mode := D3DPT_POINTLIST;
       else
         Mode := D3DPT_TRIANGLESTRIP;
+      end;
+
+      if ADrawMode = adPointSprites then
+      begin
+        Direct3DDevice9.SetRenderState( D3DRS_POINTSPRITEENABLE, 1);
+        Direct3DDevice9.SetRenderState( D3DRS_POINTSCALEENABLE, 0);
+
+        if Texture <> nil then
+        begin
+          Direct3DDevice9.SetRenderState( D3DRS_POINTSIZE, FloatToCardinal(Texture.Width));
+        end;
       end;
 
       if UseIndexBuffer then
@@ -612,6 +673,12 @@ begin
       else
       begin
         Direct3DDevice9.DrawPrimitive(Mode, 0, FPrimitiveCount);
+      end;
+
+      if ADrawMode = adPointSprites then
+      begin
+        Direct3DDevice9.SetRenderState( D3DRS_POINTSPRITEENABLE, 0);
+        Direct3DDevice9.SetRenderState( D3DRS_POINTSCALEENABLE, 0);
       end;
     end;
   end;
@@ -874,11 +941,12 @@ begin
 end;
 
 procedure TDXBitmapTexture.SaveToBitmap(ABmp: TAd2dBitmap);
-var x,y:integer;
-    cur16:PWord;
-    cur32:PLongWord;
-    ptr32:PRGBARec;
-    d3dlr:TD3DLocked_Rect;
+var
+  x,y:integer;
+  cur16:PWord;
+  cur32:PLongWord;
+  ptr32:PRGBARec;
+  d3dlr:TD3DLocked_Rect;
 begin
   if Loaded then
   begin
@@ -994,6 +1062,144 @@ begin
     Attenuation2 := 0;
   end;
   FParent.Direct3DDevice9.SetLight(FLight,Settings);
+end;
+
+{ TDXRenderTargetTexture }
+
+constructor TDXRenderTargetTexture.Create(AParent: TDXApplication);
+begin
+  inherited Create;
+  FEditable := false;
+  FParent := AParent;
+end;
+
+destructor TDXRenderTargetTexture.Destroy;
+begin
+  FlushMemory;  
+  inherited;
+end;
+
+procedure TDXRenderTargetTexture.FlushMemory;
+begin
+  if FTexture <> nil then
+  begin
+    IDirect3DTexture9(FTexture)._Release;
+  end;
+  FWidth := 0;
+  FHeight := 0;
+  FBitCount := 0;
+  FTexture := nil;
+end;
+
+function TDXRenderTargetTexture.GetLoaded: boolean;
+begin
+  result := FTexture <> nil;
+end;
+
+procedure TDXRenderTargetTexture.SaveToBitmap(ABmp: TAd2dBitmap);
+var
+  x,y:integer;
+  cur16:PWord;
+  cur32:PLongWord;
+  ptr32:PRGBARec;
+  d3dlr: TD3DLocked_Rect;
+
+  tar_surface: IDirect3DSurface9;
+  src_surface: IDirect3DSurface9;
+  src_desc: TD3DSurfaceDesc;
+begin
+  if Loaded then
+  begin
+    IDirect3DTexture9(FTexture).GetSurfaceLevel(0, src_surface);
+    src_surface.GetDesc(src_desc);
+
+    FParent.Direct3DDevice9.CreateOffScreenPlainSurface(
+      src_desc.Width, src_desc.Height, src_desc.Format,
+      D3DPOOL_SYSTEMMEM, tar_surface, nil);
+
+    FParent.Direct3DDevice9.GetRenderTargetData(src_surface, tar_surface);
+
+    tar_surface.LockRect(d3dlr, nil, D3DLOCK_READONLY);
+
+    if FBitCount = 32 then
+    begin
+      Cur32 := d3dlr.pBits;
+      ptr32 := ABmp.Scanline;
+      for y := 0 to FBaseHeight-1 do
+      begin
+        for x := 0 to FWidth-1 do
+        begin
+          if x < ABmp.Width then
+          begin
+            ptr32^.a := Cur32^ shr 24;
+            ptr32^.b := Cur32^ shr 16;
+            ptr32^.g := Cur32^ shr 8;
+            ptr32^.r := Cur32^;
+            inc(ptr32);
+          end;
+          inc(Cur32);
+        end;
+      end;
+    end;
+
+    if FBitCount = 16 then
+    begin
+      Cur16 := d3dlr.pBits;
+      ptr32 := ABmp.Scanline;
+      for y := 0 to FBaseHeight-1 do
+      begin
+        for x := 0 to FWidth-1 do
+        begin
+          if x < ABmp.Width then
+          begin
+            ptr32^.a := ($000F and (Cur16^ shr 12))*16;
+            ptr32^.b := ($000F and (Cur16^ shr 8))*16;
+            ptr32^.g := ($000F and (Cur16^ shr 4))*16;
+            ptr32^.r := ($000F and Cur16^)*16;
+            inc(ptr32);
+          end;
+          inc(Cur16);
+        end;
+      end;
+    end;
+
+    tar_surface.UnlockRect;
+    tar_surface := nil;    
+  end;
+end;
+
+procedure TDXRenderTargetTexture.SetSize(AWidth, AHeight: integer; ABitCount: Byte);
+var
+  w, h: integer;
+  afmt:TD3DFORMAT;
+begin
+  w := 1 shl ceil(log2(AWidth));
+  h := 1 shl ceil(log2(AHeight));
+
+  if (not Loaded) or (w <> FWidth) or (h <> FHeight) or (ABitCount <> FBitCount) then
+  begin
+    FlushMemory;
+
+    case ABitCount of
+      16: AFMT := D3DFMT_R5G6B5;
+      24: AFMT := D3DFMT_R8G8B8;
+      32: AFMT := D3DFMT_A8R8G8B8;
+    else
+      AFMT := D3DFMT_R8G8B8;
+    end;
+
+    D3DXCreateTexture(
+      FParent.Direct3DDevice9, w, h, 1,
+      D3DUSAGE_RENDERTARGET,
+      AFMT, D3DPOOL_DEFAULT, IDirect3dTexture9(FTexture));
+
+    FWidth := w;
+    FHeight := h;
+    FBitCount := ABitCount;
+  end;
+
+  FBaseWidth := AWidth;
+  FBaseHeight := AHeight;
 end;
 
 end.

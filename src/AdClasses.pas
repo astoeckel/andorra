@@ -23,33 +23,15 @@ uses
   AdWindowFramework, AdTypes, AdBitmapClass;
 
 type   
-  {Andorras vertex format}
-  TAdVertex = record
-    {The position of the vertex}
-    Position:TAdVector3;
-    {The color. If you change the alpha channels value to a value less than 255, the vertex will be transparent.}
-    Color:TAndorraColor;
-    {A normal vector stores information about how light is reflected}
-    Normal:TAdVector3;
-    {Contains the position of the texture. Normaly each value lies between 0 and 1. If a value is bigger/smaller the texture will be wrapped}
-    Texture:TAdVector2;
-  end;
-
-  {An array of the vertex}
-  TAdVertexArray = array of TAdVertex;
-
-  {Represtents an index buffer}
-  TAdIndexArray = array of Word;
-
   {Contains information about how the scene is displayed.}
   TAdOption = (
     doFullscreen, {<The scene will be displayed in the fullscreen mode}
     doVSync, {<The scene will be displayed using V-Sync. The frame rate is linked to the vertical frequncy of the screen}
     doHardware, {< The scene will be displayed using hardware acceleration.}
-    doZBuffer, {< The Z-Buffer will be activated.}
-    doAntialias,{< Antialias will be enabled when drawing the scene.}
-    doLights, {< Lights will be enabled when drawing the scene.}
-    doMipmaps {<Mipmaps will be enabled when drawing the scne.});
+    doAntialias, {< Antialias will be enabled when drawing the scene.}
+    doZBuffer {< The scene will contain a Z-Buffer}
+  );
+
 
   {Declares a set of TAdDrawMode. See above to learn what all these settings mean.}
   TAdOptions = set of TAdOption;
@@ -90,6 +72,7 @@ type
   TAd2DBlendMode = (
     bmAlpha,//< Normal mode
     bmAdd,//< Additive blending
+    bmSub,//< Substractive blending
     bmMask//< The mesh apears black
   );
 
@@ -100,7 +83,8 @@ type
     adLineStrips,//<The vertices are drawn as a line strip
     adTriangles,//<The vertices are drawn as a list of triangles
     adTriangleStrips,//<The vertices are drawn as a triangle strip
-    adTriangleFan//<The vertices are drawn as a triangle fan
+    adTriangleFan,//<The vertices are drawn as a triangle fan
+    adPointSprites //< The vertices are drawn as point sprites
   );
 
   TAd2DTextureFilter = (
@@ -111,9 +95,10 @@ type
   
   {An abstract class which represents a light in Andorra's engine. }
   TAd2DLight = class;
-  {An class which represents a texture in Andorra's engine. }
-  TAd2DTexture = class;  
-  //TAdRenderTargetTexture = class;  
+  {A class which represents a texture in Andorra's engine. }
+  TAd2DTexture = class;
+  {A class which represents a render target texture}
+  TAd2DRenderTargetTexture = class;
   {An abstract class which represents a bitmap texture in Andorra's engine. }
   TAd2DBitmapTexture = class;
   {An abstract class which represents a mesh (a set of vertices)  in Andorra's engine. }
@@ -162,17 +147,14 @@ type
   TAd2DApplication = class
     private
       FLogProc:TAdLogProc;
-      FAmbientLight: TAndorraColor;
     protected
       FOptions:TAdOptions;
       FWidth:integer;
       FHeight:integer;
       FMaxLightCount:integer;
-      FAmbientColor:TAndorraColor;
       FViewPort:TAdRect;
       procedure SetOptions(AValue:TAdOptions);virtual;
       procedure WriteLog(Typ:TAdLogTyp;Text:PChar);
-      procedure SetAmbientLight(AValue:TAndorraColor);virtual;
       procedure SetViewPort(AValue:TAdRect);virtual;
     public
       {Creates and returns a TAd2DLight}
@@ -180,11 +162,11 @@ type
       {Creates and returns a TAd2DBitmapTexture}
       function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
       {Creates and returns a TAd2dRenderTargetTexture}
-      //function CreateRenderTargetTexture:TAdRenderTargetTexture;virtual;abstract;
+      function CreateRenderTargetTexture:TAd2dRenderTargetTexture;virtual;abstract;
       {Creates and returns a TAd2DMesh}
       function CreateMesh:TAd2DMesh;virtual;abstract;
 
-      //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);virtual;abstract;
+      procedure SetRenderTarget(ATarget:TAd2dRenderTargetTexture);virtual;abstract;
 
       {Sets the procedure which will recive a new log entry.}
       procedure SetLogProc(ALogProc:TAdLogProc);
@@ -216,16 +198,14 @@ type
       {Returns whether the given windowframework is supported.}
       function SupportsWindowFramework(AClassId:ShortString):boolean;virtual;abstract;
 
-      {Returns the width of the engines surface}
+      {Returns the width of the active surface}
       property Width:integer read FWidth;
-      {Returns the height of the engines surface}
+      {Returns the height of the active surface}
       property Height:integer read FHeight;
       {Returns the options set. You can also set new options.}
       property Options:TAdOptions read FOptions write SetOptions;
       {Returns the number of max lights}
       property MaxLights:integer read FMaxLightCount;
-      {Read and write the AmbientLightColor. This will only work, if doLights is included in "options".}
-      property AmbientLightColor:TAndorraColor read FAmbientLight write SetAmbientLight;
       {The rectangle where the output is made}
       property Viewport:TAdRect read FViewPort write SetViewPort;
   end;
@@ -342,18 +322,27 @@ type
       procedure SaveToBitmap(ABmp:TAd2dBitmap);virtual;abstract;
     end;
 
+  TAd2DRenderTargetTexture = class(TAd2dTexture)
+    public
+      procedure SetSize(AWidth, AHeight: integer; ABitCount: Byte);virtual;abstract;
+      procedure FlushMemory;virtual;abstract;
+      procedure SaveToBitmap(ABmp:TAd2dBitmap);virtual;abstract;
+  end;
+
 
   //Used to import the CreateApplication function form the DLL.
   TAdCreateApplicationProc = function:TAd2DApplication;stdcall;
 
+const
+{$IFDEF FPC}
+  LibraryVersion = 'VER 0.4.0 FPC';
+{$ELSE}
+  LibraryVersion = 'VER 0.4.0';
+{$ENDIF}
+
 implementation
 
 { TAdApplication }
-
-procedure TAd2DApplication.SetAmbientLight(AValue: TAndorraColor);
-begin
-  FAmbientColor := AValue;
-end;
 
 procedure TAd2DApplication.SetLogProc(ALogProc: TAdLogProc);
 begin

@@ -50,6 +50,16 @@ type
       property Radius:Single read FRadius write FRadius;
   end;
 
+  TAdLFilter = class(TAdBitmapEffect)
+    private
+      FLuminanceFactor: double;
+    public
+      constructor Create;
+      
+      procedure AssignEffect(Dest: TAd2dBitmap);override;
+      property LuminanceFactor: double read FLuminanceFactor write FLuminanceFactor;
+  end;
+
 
 implementation
 
@@ -89,7 +99,7 @@ begin
   ARadius := MatrixRadius;
 end;
 
-{Copied from a blur prozedure written by Phantom1 (http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html)}
+{Copied from a blur procedure written by Phantom1 (http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html)}
 procedure TAdBitmapBlur.AssignEffect(Dest: TAd2dBitmap);
 var
   Matrix:TAdBlurMatrix;
@@ -162,6 +172,35 @@ begin
       Inc(BmpRGB);
     end;
   end;
+end;
+
+{ TAdLFilter }
+
+procedure TAdLFilter.AssignEffect(Dest: TAd2dBitmap);
+var
+  x, y: integer;
+  pixelptr: PRGBARec;
+begin
+  pixelptr := Dest.ScanLine;
+
+  for y := 0 to Dest.Height - 1 do
+  begin
+    for x := 0 to Dest.Width - 1 do
+    begin
+      pixelptr^.r := Cut(Round(pixelptr^.r * FLuminanceFactor));
+      pixelptr^.g := Cut(Round(pixelptr^.g * FLuminanceFactor));
+      pixelptr^.b := Cut(Round(pixelptr^.b * FLuminanceFactor));
+
+      Inc(PixelPtr);
+    end;
+  end;
+end;
+
+constructor TAdLFilter.Create;
+begin
+  inherited;
+
+  FLuminanceFactor := 1;
 end;
 
 end.

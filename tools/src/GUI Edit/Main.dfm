@@ -33,6 +33,7 @@ object MainDlg: TMainDlg
     Height = 57
     Align = alClient
     TabOrder = 0
+    ExplicitTop = -8
   end
   object MainMenu1: TMainMenu
     Images = ImageList2

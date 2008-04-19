@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
-  AdDraws, AdClasses, AdParticles, AdPng, AdSetupDlg, AdPerformanceCounter;
+  AdDraws, AdClasses, AdTypes, AdParticles, AdPng, AdSetupDlg, AdPerformanceCounter,
+  AdCanvas;
 
 type
   TForm1 = class(TForm)
@@ -17,6 +18,8 @@ type
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     PartSys:TAdParticleSystem;
+    Pos: double;
+    DefPart: TAdBillboardParticle;
     AdImageList:TAdImageList;
     MouseX,MouseY:integer;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -37,6 +40,8 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg:TAdSetup;
 begin
+  ReportMemoryLeaksOnShutdown := true;
+
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
@@ -45,7 +50,6 @@ begin
   AdSetupDlg.Image := 'logo1.png';
   AdSetupDlg.AdDraw := AdDraw;
   AdSetupDlg.Form := self;
-  AdSetupDlg.Sections := [dlgResolution, dlgPlugin];
 
   if AdSetupDlg.Execute then
   begin
@@ -56,11 +60,12 @@ begin
       AdImageList := TAdImageList.Create(AdDraw);
       with AdImageList.Add('particle') do
       begin
-        Texture.LoadGraphicFromFile(path+'part2.png',true,clNone);
+        Texture.LoadGraphicFromFile(path+'part2.png', true, clNone);
         Restore;
       end;
       PartSys := TAdParticleSystem.Create(AdDraw);
       PartSys.Texture := AdImageList.Items[0].Texture;
+      PartSys.LoadFromFile('part.xml');
     end
     else
     begin
@@ -73,10 +78,13 @@ begin
   begin
     halt;
   end;
+
+  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  defpart.Free;
   PartSys.Free;
   AdImageList.Free;
   AdPerCounter.Free;
@@ -88,24 +96,42 @@ procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   MouseX := X;
   MouseY := Y;
+  PartSys.Emit(1, MouseX, MouseY);
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+const
+  pps = 1;
 begin
   if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
+    Caption := 'FPS:'+inttostr(AdPerCounter.FPS) + ' C:'+inttostr(PartSys.Items.Count);
 
-    AdDraw.ClearSurface(clBlack);
+    Pos := Pos + AdPerCounter.TimeGap;
+    if Pos > pps then
+    begin
+      //PartSys.Emit(Round(Pos / pps), MouseX, MouseY);
+      Pos := Pos - pps * Round(Pos / pps);
+    end;
+
+    AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
-    PartSys.CreateParticles(1,TAdParticle,MouseX,MouseY);
-    PartSys.Move(AdPerCounter.TimeGap / 1000);
-    PartSys.Draw(0, 0);
-    PartSys.Dead;
-    AdDraw.EndScene;
-    AdDraw.Flip;
 
+    PartSys.Move(AdPerCounter.TimeGap / 1000);
+
+    PartSys.BlendMode := bmAdd;
+    PartSys.Draw(AdDraw, 0, 0);
+
+    with AdDraw.Canvas do
+    begin
+      Pen.Color := Ad_ARGB(255, 255, 0, 0);
+      Brush.Style := abClear;
+      Rectangle(PartSys.BoundsRect);
+    end;
+
+    AdDraw.EndScene;
+    AdDraw.Flip;  
   end;
   Done := false;
 end;

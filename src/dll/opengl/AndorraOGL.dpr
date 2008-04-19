@@ -41,7 +41,7 @@ begin
     LibTitle := 'Andorra OpenGL Plugin';
     LibAuthor := '(c) by Andreas Stöckel 2007';
     LibDescription := 'This plugin wraps around the OpenGL graphicssystem.';
-    LibVersion := '0.2 ALPHA';
+    LibVersion := LibraryVersion;
     LibImage := 'ogl.png';
   end;
 end;

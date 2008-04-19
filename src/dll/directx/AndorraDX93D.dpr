@@ -38,7 +38,7 @@ begin
     LibTitle := 'Andorra DirectX9 Plugin';
     LibAuthor := '(c) by Andreas Stöckel 2007';
     LibDescription := 'This plugin wraps around Direct3D 9.';
-    LibVersion := '0.2 ALPHA';
+    LibVersion := LibraryVersion;
     LibImage := 'dx93d.png';
   end;
 end;

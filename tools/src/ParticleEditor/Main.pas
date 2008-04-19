@@ -15,173 +15,168 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdParticles, AdClasses, ExtCtrls, StdCtrls, Menus, XPMan,
-  ComCtrls, ExtDlgs, Math, AdPerformanceCounter, AdTypes, AdVCLFormats, AdBitmap,
-  Buttons;
+  Dialogs, ExtCtrls, StdCtrls, Menus, XPMan,
+  ComCtrls, ExtDlgs, Math,
+  Buttons, ImgList, ToolWin, Tabs, JvInspector, TypInfo, PartParam,
+  AdPerformanceCounter, AdTypes, AdVCLFormats, AdBitmap, AdPersistent, AdCanvas,
+  AdDraws, AdParticles, AdClasses;
 
 type
-  TForm1 = class(TForm)
-    Timer1: TTimer;
-    Panel1: TPanel;
-    Panel2: TPanel;
+  TMainFrm = class(TForm)
     MainMenu1: TMainMenu;
-    Datei1: TMenuItem;
-    Close1: TMenuItem;
-    Images1: TMenuItem;
-    Loadnewimagefile1: TMenuItem;
-    PageControl1: TPageControl;
-    TabSheet1: TTabSheet;
-    TabSheet2: TTabSheet;
-    GroupBox1: TGroupBox;
-    Edit1: TEdit;
-    GroupBox2: TGroupBox;
-    Button1: TButton;
-    Image1: TImage;
-    Image2: TImage;
-    XPManifest1: TXPManifest;
-    CheckBox2: TCheckBox;
-    Label5: TLabel;
-    ComboBox1: TComboBox;
-    Environment1: TMenuItem;
-    Backgroundcolor1: TMenuItem;
-    ColorDialog1: TColorDialog;
-    OpenPictureDialog1: TOpenPictureDialog;
-    GroupBox3: TGroupBox;
-    Label6: TLabel;
-    Edit6: TEdit;
-    Label7: TLabel;
-    Label8: TLabel;
-    Edit7: TEdit;
-    Label9: TLabel;
-    Button5: TButton;
-    GroupBox4: TGroupBox;
-    Edit8: TEdit;
-    Label11: TLabel;
-    GroupBox5: TGroupBox;
-    Label16: TLabel;
-    Label19: TLabel;
-    Edit11: TEdit;
-    Edit9: TEdit;
-    Edit10: TEdit;
-    Edit12: TEdit;
-    Label18: TLabel;
-    Label15: TLabel;
-    Label17: TLabel;
-    Label12: TLabel;
-    Label14: TLabel;
-    Label13: TLabel;
-    Label20: TLabel;
-    Label21: TLabel;
-    Edit13: TEdit;
-    Label22: TLabel;
-    Edit14: TEdit;
-    Label23: TLabel;
-    Edit15: TEdit;
-    Label24: TLabel;
-    Edit16: TEdit;
-    Label25: TLabel;
-    GroupBox6: TGroupBox;
-    ScrollBar1: TScrollBar;
-    ScrollBar2: TScrollBar;
-    Label26: TLabel;
-    Label27: TLabel;
-    Label28: TLabel;
-    Label29: TLabel;
-    ScrollBar3: TScrollBar;
-    Label30: TLabel;
-    Label31: TLabel;
-    Label32: TLabel;
-    ScrollBar4: TScrollBar;
-    Label33: TLabel;
-    PaintBox1: TPaintBox;
-    RadioButton1: TRadioButton;
-    Label10: TLabel;
-    Edit17: TEdit;
-    RadioButton2: TRadioButton;
-    Label34: TLabel;
-    Edit18: TEdit;
-    Label35: TLabel;
-    Label36: TLabel;
+    File1: TMenuItem;
+    New1: TMenuItem;
     N1: TMenuItem;
-    LoadFile1: TMenuItem;
+    Open1: TMenuItem;
     N2: TMenuItem;
     Save1: TMenuItem;
     Saveas1: TMenuItem;
-    SaveDialog1: TSaveDialog;
-    OpenDialog1: TOpenDialog;
+    N3: TMenuItem;
+    Close1: TMenuItem;
+    View1: TMenuItem;
+    Setbackgroundcolor1: TMenuItem;
+    Image1: TMenuItem;
+    Loadparticleimage1: TMenuItem;
+    ToolBar1: TToolBar;
+    ImageList1: TImageList;
+    ToolButton1: TToolButton;
+    ToolButton2: TToolButton;
+    ToolButton3: TToolButton;
+    ToolButton4: TToolButton;
+    Surface: TPanel;
+    Panel2: TPanel;
+    Splitter1: TSplitter;
+    XPManifest1: TXPManifest;
+    N5: TMenuItem;
+    Grid1: TMenuItem;
+    GroupBox1: TGroupBox;
+    Label1: TLabel;
+    cmb_classes: TComboBox;
     StatusBar1: TStatusBar;
-    Label37: TLabel;
-    ListBox1: TListBox;
-    SpeedButton1: TSpeedButton;
-    SpeedButton2: TSpeedButton;
-    SpeedButton3: TSpeedButton;
-    SpeedButton4: TSpeedButton;
-    Button2: TButton;
+    PageControl1: TPageControl;
+    tbs_Particle: TTabSheet;
+    tbs_Colors: TTabSheet;
+    tbs_Editor: TTabSheet;
+    GroupBox2: TGroupBox;
+    Button1: TButton;
+    GroupBox3: TGroupBox;
+    rb_emittime: TRadioButton;
+    Label3: TLabel;
+    edt_emittime: TEdit;
+    edt_emitcount: TEdit;
+    Label4: TLabel;
+    rb_emitcount: TRadioButton;
+    Panel1: TPanel;
+    img_part: TImage;
+    OpenPictureDialog1: TOpenPictureDialog;
+    Panel3: TPanel;
+    GroupBox4: TGroupBox;
+    pntb_pre: TPaintBox;
+    GroupBox5: TGroupBox;
+    lb_colors: TListBox;
+    btn_delete: TButton;
+    GroupBox6: TGroupBox;
+    pnl_r: TPanel;
+    pnl_g: TPanel;
+    pnl_b: TPanel;
+    Label5: TLabel;
+    Label6: TLabel;
+    Label7: TLabel;
+    pnl_a: TPanel;
+    Label8: TLabel;
+    trbr_r: TTrackBar;
+    trbr_g: TTrackBar;
+    trbr_b: TTrackBar;
+    trbr_a: TTrackBar;
+    pntb_a: TPaintBox;
+    btn_add: TButton;
+    Timer1: TTimer;
+    OpenDialog1: TOpenDialog;
+    SaveDialog1: TSaveDialog;
+    Label2: TLabel;
+    Particleorign1: TMenuItem;
+    Boundsrect1: TMenuItem;
+    ColorDialog1: TColorDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-    procedure CheckBox2Click(Sender: TObject);
-    procedure Backgroundcolor1Click(Sender: TObject);
+    procedure edt_emitcountChange(Sender: TObject);
+    procedure SurfaceResize(Sender: TObject);
     procedure Button1Click(Sender: TObject);
-    procedure Panel1MouseDown(Sender: TObject; Button: TMouseButton;
+    procedure cmb_classesChange(Sender: TObject);
+    procedure SurfaceMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure Edit6Change(Sender: TObject);
-    procedure Button5Click(Sender: TObject);
-    procedure Edit7Change(Sender: TObject);
-    procedure Edit8Change(Sender: TObject);
-    procedure Edit9Change(Sender: TObject);
-    procedure Edit11Change(Sender: TObject);
-    procedure Edit13Change(Sender: TObject);
-    procedure ScrollBar2Change(Sender: TObject);
-    procedure FormPaint(Sender: TObject);
-    procedure ScrollBar3Change(Sender: TObject);
-    procedure ComboBox1Change(Sender: TObject);
-    procedure Close1Click(Sender: TObject);
-    procedure Edit17Change(Sender: TObject);
-    procedure Edit18Change(Sender: TObject);
-    procedure Edit1Change(Sender: TObject);
-    procedure Saveas1Click(Sender: TObject);
-    procedure Save1Click(Sender: TObject);
-    procedure LoadFile1Click(Sender: TObject);
-    procedure Button6Click(Sender: TObject);
-    procedure Panel1Resize(Sender: TObject);
-    procedure SpeedButton3Click(Sender: TObject);
-    procedure ListBox1DrawItem(Control: TWinControl; Index: Integer;
+    procedure SurfaceMouseMove(Sender: TObject; Shift: TShiftState; X,
+      Y: Integer);
+    procedure trbr_rChange(Sender: TObject);
+    procedure lb_colorsClick(Sender: TObject);
+    procedure lb_colorsDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
-    procedure ListBox1DblClick(Sender: TObject);
-    procedure ColorDialog1Show(Sender: TObject);
-    procedure ColorDialog1Close(Sender: TObject);
-    procedure SpeedButton4Click(Sender: TObject);
-    procedure SpeedButton1Click(Sender: TObject);
-    procedure SpeedButton2Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
-  private
-    { Private-Deklarationen }
-  public
+    procedure pntb_prePaint(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
+    procedure btn_deleteClick(Sender: TObject);
+    procedure btn_addClick(Sender: TObject);
+    procedure ToolButton1Click(Sender: TObject);
+    procedure ToolButton3Click(Sender: TObject);
+    procedure ToolButton2Click(Sender: TObject);
+    procedure Saveas1Click(Sender: TObject);
+    procedure Close1Click(Sender: TObject);
+    procedure Boundsrect1Click(Sender: TObject);
+    procedure Setbackgroundcolor1Click(Sender: TObject);
+    private
+      FMX, FMY: integer;
+      JvInspector: TJvInspector;
+      JvPainter: TJvInspectorBorlandPainter;
+    public
+      AdDraw: TAdDraw;
+      AdPartSys: TAdParticleSystem;
+      AdPerformanceCounter: TAdPerformanceCounter;
+      AdDefaultPart: TAdParticle;
+      Gap: double;
+      EmissionTime: double;
+      EmissionCount: integer;
 
-    AdDraw1:TAdDraw;
-    AdImg1:TAdImage;
+      Updating: boolean;
 
-    PerCount:TAdPerformanceCounter;
-    PartSys:TAdParticleSystem;
+      CenterX, CenterY: integer;
+      EmitterX, EmitterY: integer;
 
-    pc,pc2:double;
-    interval:boolean;
-    changing:boolean;
+      SelectedColor: PAndorraColor;
+      SelectedColorIndex: integer;
 
-    mx,my:integer;
-    BackgroundColor:TColor;
+      CurrentFileName: string;
+      Saved: boolean;
 
-    CurrentFileName:string;
-    procedure ApplicationIdle(Sender:TObject; var Done:boolean);
-    procedure Render;
-    procedure DrawColorPreview;
-    procedure UpdateControls;
-    procedure DrawAnglePreview;
+      function CheckSaved: boolean;
+      function Save: boolean;
+      function SaveAs: boolean;
+      procedure Load;
+
+      procedure InitInspector;
+      procedure InitAndorra;
+      procedure LoadImage;
+      procedure New;
+      procedure Emit;
+      procedure Idle(Sender: TObject; var Done: boolean);
+      procedure FillClassCmb;
+      procedure SetDefaultPart;
+      procedure DrawGrid;
+      procedure DrawBoundsRect;
+      procedure DrawEmitter;
+      procedure DrawAlphaPreview;
+      procedure DrawColorband;
+      procedure UpdateColorListbox;
+      procedure UpdateSaved(Sender: TObject; Item: TJvCustomInspectorItem);
+      procedure UpdateStatusbar;
+  end;
+
+  TJvInspectorParticleParameter = class(TJvInspectorClassItem)
+  protected
+    procedure Edit; override;
+    procedure SetFlags(const Value: TInspectorItemFlags); override;
   end;
 
 var
-  Form1: TForm1;
+  MainFrm: TMainFrm;
 
 const
   path = 'particles\';
@@ -190,608 +185,587 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.ApplicationIdle(Sender: TObject; var Done: boolean);
-begin
-  Render;
-  done := false;
-end;      
+{ TMainFrm }
 
-procedure TForm1.Backgroundcolor1Click(Sender: TObject);
+procedure TMainFrm.Button1Click(Sender: TObject);
 begin
-  if ColorDialog1.Execute then
-  begin
-    BackgroundColor := ColorDialog1.Color;
-  end;
-end;
-
-procedure TForm1.Button1Click(Sender: TObject);
-var bmp:TBitmap;
-    adbmp:TAdBitmap;
-begin
-  if OpenPictureDialog1.FileName = '' then
-  begin
-    if not DirectoryExists(path) then
-    begin
-      OpenPictureDialog1.InitialDir := ExtractFilePath(ParamStr(0));
-    end
-    else
-    begin
-      OpenPictureDialog1.InitialDir := ExtractFilePath(ParamStr(0))+path;
-    end;
-  end;
   if OpenPictureDialog1.Execute then
   begin
-    bmp := TBitmap.Create;
-    bmp.LoadFromFile(OpenPictureDialog1.FileName);
-    if AdImg1 <> nil then AdImg1.Free;
-    AdImg1 := TAdImage.Create(AdDraw1);
-    adbmp := TAdBitmap.Create;
-    adbmp.Assign(bmp);
-    adbmp.AssignAlphaChannel(bmp);
-    AdImg1.Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
-    adbmp.Free;
-
-    AdImg1.Restore;
-    PartSys.Texture := AdImg1.Texture;
-    Image2.Picture.Bitmap.Assign(bmp);
-
-    bmp.Free;
+    img_part.Picture.LoadFromFile(OpenPictureDialog1.FileName);
+    LoadImage;
   end;
 end;
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TMainFrm.btn_addClick(Sender: TObject);
+begin
+  Saved := false;
+  AdPartSys.Colors.Add(Ad_ARGB(255, 255, 255, 255));
+  UpdateColorListBox;
+  UpdateStatusbar;
+end;
+
+procedure TMainFrm.Boundsrect1Click(Sender: TObject);
+begin
+  TMenuItem(Sender).Checked := not TMenuItem(Sender).Checked;
+end;
+
+procedure TMainFrm.btn_deleteClick(Sender: TObject);
+begin
+  if AdPartSys.Colors.Count > 2 then
+  begin
+    if lb_colors.ItemIndex > -1 then
+    begin
+      AdPartSys.Colors.Delete(lb_colors.ItemIndex);
+      UpdateColorListbox;
+    end;
+    lb_colorsClick(nil);
+    Saved := false;
+    UpdateStatusbar;
+  end;
+end;
+
+procedure TMainFrm.cmb_classesChange(Sender: TObject);
+begin
+  if not Updating then  
+    SetDefaultPart;
+end;
+
+procedure TMainFrm.DrawAlphaPreview;
 var
-  s:string;
-  v:integer;
-  col:TAndorraColor;
+  i, x, y, r, g, b: integer;
 begin
-  if ListBox1.ItemIndex > -1 then
+  i := 0;
+  for y := 0 to pntb_a.ClientHeight - 1 do
   begin
-    s := InputBox('Alpha value','Enter a value between 0 and 255','');
-    if s <> '' then
+    for x := 0 to pntb_a.ClientWidth - 1 do
     begin
-      v := StrToIntDef(s, -1);
-      if (v >= 0) and (v <= 255) then
+      if x mod 5 = 0 then i := i + 1;
+      if (i mod 2 = 0) xor (trunc(y / 5) * 5 mod 2 = 0) then
       begin
-        col := PartSys.DefaultParticle.Colors[ListBox1.ItemIndex];
-        col.a := v;
-        PartSys.DefaultParticle.Colors[ListBox1.ItemIndex] := col;
-        UpdateControls;
-      end;
-    end;
-  end;
-end;
-
-procedure TForm1.Button5Click(Sender: TObject);
-begin
-  PartSys.Items.Clear;
-end;
-
-procedure TForm1.Button6Click(Sender: TObject);
-begin
-  UpdateControls;
-end;
-
-procedure TForm1.CheckBox2Click(Sender: TObject);
-begin
-  PartSys.DefaultParticle.DrawMask := CheckBox2.Checked;
-end;
-
-procedure TForm1.Close1Click(Sender: TObject);
-begin
-  Close;
-end;
-
-procedure TForm1.ColorDialog1Close(Sender: TObject);
-begin
-  PerCount.Resume;
-end;
-
-procedure TForm1.ColorDialog1Show(Sender: TObject);
-begin
-  PerCount.Pause;
-end;
-
-procedure TForm1.ComboBox1Change(Sender: TObject);
-begin
-  if changing then exit;
-  case Combobox1.ItemIndex of
-    0:PartSys.DefaultParticle.BlendMode := bmAlpha;
-    1:PartSys.DefaultParticle.BlendMode := bmAdd;
-    2:PartSys.DefaultParticle.BlendMode := bmMask;
-  end;
-end;
-
-procedure TForm1.DrawAnglePreview;
-var p1x,p1y,p2x,p2y:integer;
-    abmp:TBitmap;
-begin
-  abmp := TBitmap.Create;
-  abmp.Width := 100;
-  abmp.Height := 100;
-  abmp.Transparent := true;
-  abmp.TransparentColor := clWhite;
-  with abmp.Canvas do
-  begin
-    Brush.Color := clWhite;
-    Pen.Color := Brush.Color;
-    Rectangle(0,0,100,100);
-    Pen.Color := clBlack;
-    Brush.Color := rgb(235,235,255);
-    Ellipse(0,0,100,100);
-    Pen.Color := clGray;
-    Brush.Color := clSkyBlue;
-    with PartSys.DefaultParticle do
-    begin
-      p1x := round(cos((CreationAngle+CreationAngleOpen / 2)*PI/180)*50)+50;
-      p1y := round(sin((CreationAngle+CreationAngleOpen / 2)*PI/180)*50)+50;
-      p2x := round(cos((CreationAngle-CreationAngleOpen / 2)*PI/180)*50)+50;
-      p2y := round(sin((CreationAngle-CreationAngleOpen / 2)*PI/180)*50)+50;
-      Pie(0,0,100,100,p1x,p1y,p2x,p2y);
-      Pen.Color := clSkyBlue;
-      Brush.Color := clSkyBlue;
-      Ellipse(40,40,60,60);
-      Brush.Color := clBlue;
-      Pen.Color := clGray;
-      Pie(40,40,60,60,p1x,p1y,p2x,p2y);
-
-      Pen.Color := clRed;
-      MoveTo(50,50);
-      LineTo(round(50+Force.X/10),round(50+Force.Y/10));
-    end;
-  end;
-  PaintBox1.Canvas.Draw(0,0,abmp);
-  abmp.Free;
-end;
-
-procedure TForm1.DrawColorPreview;
-var x,y,i:integer;
-    acol:TColor;
-    acol2:TAndorraColor;
-    a:double;
-begin
-  with Image1.Picture.Bitmap.Canvas do
-  begin
-    i := 0;
-    for x := 0 to Image1.Width div 4 do
-    begin
-      for y := 0 to Image1.Height div 4 do
+        r := 128; g := 128; b := 128;
+      end
+      else
       begin
-        i := i + 1;
-        if i mod 2 = 0 then
-          Brush.Color := clSilver
-        else
-          Brush.Color := clGray;
-
-        Pen.Color := Brush.Color;
-
-        Rectangle(x*4,y*4,(x+1)*4,(y+1)*4);
+        r := 0; g := 0; b := 0;
       end;
-      i := i + 1;
-    end;
 
-    //Then draw the colors
-    for x := 0 to Image1.Width do
-    begin
-      for y := 0 to Image1.Height do
-      begin
-        acol2 := PartSys.DefaultParticle.Colors.GetColor(Image1.Width,x);
-        a := acol2.a / 255;
-        acol := RGB(round(GetRValue(Pixels[x,y])*(1-a)+acol2.r*a),
-                    round(GetGValue(Pixels[x,y])*(1-a)+acol2.g*a),
-                    round(GetBValue(Pixels[x,y])*(1-a)+acol2.b*a));
-        Pixels[x,y] := acol;
-      end;
+      r := round(r * (1 - trbr_a.Position / 255) + trbr_r.Position * (trbr_a.Position / 255));
+      g := round(g * (1 - trbr_a.Position / 255) + trbr_g.Position * (trbr_a.Position / 255));
+      b := round(b * (1 - trbr_a.Position / 255) + trbr_b.Position * (trbr_a.Position / 255));
+      pntb_a.Canvas.Pixels[x, y] := RGB(r, g, b);
     end;
   end;
 end;
 
-procedure TForm1.Edit11Change(Sender: TObject);
-begin
-  if changing then exit;
-  PartSys.DefaultParticle.RotStart := StrToFloatDef(Edit11.Text,0);
-  PartSys.DefaultParticle.RotEnd   := StrToFloatDef(Edit12.Text,0);
-end;
-
-procedure TForm1.Edit13Change(Sender: TObject);
-begin
-  if changing then exit;
-  PartSys.DefaultParticle.SpeedXStart := StrToFloatDef(Edit13.Text,100);
-  PartSys.DefaultParticle.SpeedXEnd := StrToFloatDef(Edit14.Text,100);
-  PartSys.DefaultParticle.SpeedYStart := StrToFloatDef(Edit15.Text,100);
-  PartSys.DefaultParticle.SpeedYEnd := StrToFloatDef(Edit16.Text,100);
-end;
-
-procedure TForm1.Edit17Change(Sender: TObject);
-begin
-  if changing then exit;
-  RadioButton2.Checked := true;
-  pc := StrToIntDef(Edit17.Text,100);
-  interval := false;
-end;
-
-procedure TForm1.Edit18Change(Sender: TObject);
-begin
-  if changing then exit;
-  PartSys.DefaultParticle.SpeedVariation := StrToIntDef(Edit18.Text,0);
-end;
-
-procedure TForm1.Edit1Change(Sender: TObject);
-begin
-  if changing then exit;
-  PartSys.DefaultParticle.Name:= Edit1.Text;
-end;
-
-procedure TForm1.Edit6Change(Sender: TObject);
-begin
-  if changing then exit;
-  PartSys.DefaultParticle.LifeTime := StrToFloatDef(Edit6.Text,1);
-end;
-
-procedure TForm1.Edit7Change(Sender: TObject);
-begin
-  if changing then exit;
-  PartSys.DefaultParticle.LifeTimeVariation := StrToIntDef(Edit7.Text,0);
-end;
-
-procedure TForm1.Edit8Change(Sender: TObject);
-begin
-  if changing then exit;
-  RadioButton1.Checked := true;
-  pc := StrToFloatDef(Edit8.Text,1);
-  if pc < 0.1 then pc := 0.1;
-  interval := true;
-end;
-
-procedure TForm1.Edit9Change(Sender: TObject);
-begin
-  if changing then exit;  
-  PartSys.DefaultParticle.SizeStart := StrToFloatDef(Edit9.Text,1);
-  PartSys.DefaultParticle.SizeEnd   := StrToFloatDef(Edit10.Text,1);
-end;
-
-procedure TForm1.FormCreate(Sender: TObject);
-var bmp:TBitmap;
-    adbmp:TAdBitmap;
-begin
-  ReportMemoryLeaksOnShutdown := true;
-  
-  Randomize;
-
-  //Initialize Andorra 2D
-  AdDraw1 := TAdDraw.Create(Panel1);
-  AdDraw1.DllName := 'AndorraOGL.dll';
-
-
-  if AdDraw1.Initialize then
-  begin
-    AdDraw1.TextureFilter := atLinear;
-
-    //Load the texture
-    bmp := TBitmap.Create;
-    bmp.Assign(Image2.Picture.Bitmap);
-    adbmp := TAdBitmap.Create;
-    AdImg1 := TAdImage.Create(AdDraw1);
-    adbmp.Assign(bmp);
-    adbmp.AssignAlphaChannel(bmp);
-    AdImg1.Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
-    AdImg1.Color := clWhite;
-    AdImg1.Restore;
-    adbmp.Free;
-    bmp.Free;
-
-    Application.OnIdle := ApplicationIdle;
-
-    PerCount := TAdPerformanceCounter.Create;
-
-    PartSys := TAdParticleSystem.Create(AdDraw1);
-    PartSys.Texture := AdImg1.Texture;
-
-    Image1.Picture.Bitmap.Width := Image1.Width;
-    Image1.Picture.Bitmap.Height := Image1.Height;
-    UpdateControls;
-
-    mx := Panel1.Width div 2;
-    my := Panel1.Height div 2;
-    BackgroundColor := ColorToRGB(clBtnFace);
-
-    pc := 1;
-    pc2 := 0;
-    interval := true;
-  end
-  else
-  begin
-    ShowMessage('Error while initializing Andorra 2D.');
-    halt;
-  end;
-end;
-
-procedure TForm1.FormDestroy(Sender: TObject);
-begin
-  //Free everything
-  PartSys.Free;
-  PerCount.Free;
-  AdImg1.Free;
-  AdDraw1.Free;
-end;
-
-procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
-begin
-  if ssLeft in Shift then
-  begin
-    mx := x;
-    my := y;
-  end;
-end;
-
-procedure TForm1.FormPaint(Sender: TObject);
-begin
-  DrawAnglePreview;
-end;
-
-procedure TForm1.ListBox1DblClick(Sender: TObject);
+procedure TMainFrm.DrawBoundsRect;
 var
-  a:byte;
-  col:TAndorraColor;
+  r: TAdRect;
 begin
-  if ListBox1.ItemIndex > -1 then
+  with AdDraw.Canvas do
   begin
-    if ColorDialog1.Execute then
+    Pen.Color := AD_ARGB(128, 255, 0, 0);
+    Brush.Style := abClear;
+    r := AdPartSys.BoundsRect;
+    AdOffsetRect(r, CenterX, CenterY);
+    Rectangle(r);
+    Release;
+  end;
+end;
+
+procedure TMainFrm.DrawColorband;
+var
+  i, x, y, r, g, b: integer;
+  c: TAndorraColor;
+begin
+  i := 0;
+  for y := 0 to pntb_pre.ClientHeight - 1 do
+  begin
+    for x := 0 to pntb_pre.ClientWidth - 1 do
     begin
-      a := PartSys.DefaultParticle.Colors[ListBox1.ItemIndex].a;
-      col := ColorToAdColor(ColorDialog1.Color);
-      col.a := a;
-      PartSys.DefaultParticle.Colors[ListBox1.ItemIndex] := col;
-      UpdateControls;
+      if x mod 5 = 0 then i := i + 1;
+      if (i mod 2 = 0) xor (trunc(y / 5) * 5 mod 2 = 0) then
+      begin
+        r := 128; g := 128; b := 128;
+      end
+      else
+      begin
+        r := 0; g := 0; b := 0;
+      end;
+
+      c := AdPartSys.Colors.GetColor(pntb_pre.ClientWidth, x);
+
+      r := round(r * (1 - c.a / 255) + c.r * c.a / 255);
+      g := round(g * (1 - c.a / 255) + c.g * c.a / 255);
+      b := round(b * (1 - c.a / 255) + c.b * c.a / 255);
+      pntb_pre.Canvas.Pixels[x, y] := RGB(r, g, b);
     end;
   end;
 end;
 
-procedure TForm1.ListBox1DrawItem(Control: TWinControl; Index: Integer;
+procedure TMainFrm.DrawEmitter;
+begin
+  with AdDraw.Canvas do
+  begin
+    Pen.Color := AD_ARGB(128, 0, 255, 0);
+    Brush.Style := abClear;
+    Circle(EmitterX + CenterX, EmitterY + CenterY, 5); 
+    Release;
+  end;
+end;
+
+procedure TMainFrm.DrawGrid;
+begin
+  with AdDraw.Canvas do
+  begin
+    Pen.Color := AD_ARGB(128, 0, 0, 255);
+    Brush.Style := abClear;
+    Line(CenterX, 0, CenterX, Surface.ClientHeight);
+    Line(0, CenterY, Surface.ClientWidth, CenterY);
+    Release;
+  end;
+end;
+
+procedure TMainFrm.edt_emitcountChange(Sender: TObject);
+begin
+  EmissionTime := StrToFloatDef(edt_emittime.Text, 10);
+  EmissionCount := StrToIntDef(edt_emitcount.Text, 100);
+end;
+
+procedure TMainFrm.Emit;
+begin
+  if rb_emittime.Checked then
+  begin
+    Gap := Gap + AdPerformanceCounter.TimeGap;
+    if Gap > EmissionTime then
+    begin
+      AdPartSys.Emit(Round(Gap / EmissionTime), EmitterX, EmitterY);
+      Gap := Gap - EmissionTime * Round(Gap / EmissionTime);
+    end;    
+  end else
+  begin
+    if AdPartSys.Items.Count = 0 then
+    begin
+      AdPartSys.Emit(EmissionCount, EmitterX, EmitterY);
+    end;
+  end;  
+end;
+
+procedure TMainFrm.FillClassCmb;
+begin
+  cmb_classes.Clear;
+  cmb_classes.Items.Assign(RegisteredParticleClasses);
+  cmb_classes.ItemIndex := 0;
+end;
+
+procedure TMainFrm.FormCreate(Sender: TObject);
+begin
+  InitAndorra;
+  InitInspector;
+  New;
+
+  EmissionTime := 10;
+  EmissionCount := 100;
+end;
+
+procedure TMainFrm.FormDestroy(Sender: TObject);
+begin
+  if AdDefaultPart <> nil then
+    AdDefaultPart.Free;
+
+  AdPartSys.Free;
+  AdPerformanceCounter.Free;
+  AdDraw.Free;
+end;
+
+procedure TMainFrm.Idle(Sender: TObject; var Done: boolean);
+begin
+  if AdDraw.CanDraw then
+  begin
+    AdPerformanceCounter.Calculate;
+    Emit;
+
+    AdDraw.ClearSurface(ColorDialog1.Color);
+    AdDraw.BeginScene;
+
+    if Grid1.Checked then
+      DrawGrid;
+
+    AdPartSys.Move(AdPerformanceCounter.TimeGap / 1000);
+
+    AdPartSys.BlendMode := bmAdd;
+    AdPartSys.Draw(AdDraw, CenterX, CenterY);
+
+    if Boundsrect1.Checked then
+      DrawBoundsRect;
+
+    if Particleorign1.Checked then
+      DrawEmitter;
+
+    with AdDraw.Canvas do
+    begin
+      Pen.Color := ColorToAdColor(not ColorDialog1.Color);
+      TextOut(0, 0,  'FPS: '+inttostr(AdPerformanceCounter.FPS));
+      TextOut(0, 16, 'Particle System FPS: '+inttostr(AdPartSys.FPS));
+      Release;
+    end;
+
+    AdDraw.EndScene;
+
+    AdDraw.Flip;
+
+    Done := false;
+  end;
+end;
+
+procedure TMainFrm.InitAndorra;
+begin
+  AdDraw := TAdDraw.Create(Surface);
+  try
+    AdDraw.DllName := 'AndorraOGL.dll';
+    if not AdDraw.Initialize then
+    begin
+      ShowMessage('Error while initializing Andorra 2D');
+      Halt;
+    end else
+    begin
+      AdPartSys := TAdParticleSystem.Create(AdDraw);
+      AdPerformanceCounter := TAdPerformanceCounter.Create;
+
+      Application.OnIdle := Idle;
+    end;
+  except
+    ShowMessage('Error while initializing Andorra 2D');
+    Halt;
+  end;
+end;
+
+procedure TMainFrm.InitInspector;
+begin
+  JvInspector := TJvInspector.Create(self);
+  JvInspector.Parent := tbs_Particle;
+  JvInspector.Align := alClient;
+  JvPainter := TJvInspectorBorlandPainter.Create(self);
+  JvInspector.Painter := JvPainter;
+  JvInspector.OnItemValueChanged := UpdateSaved;
+end;
+
+procedure TMainFrm.lb_colorsClick(Sender: TObject);
+begin
+  if lb_colors.ItemIndex <> -1 then
+  begin
+    Updating := true;
+
+    trbr_r.Position := AdPartSys.Colors[lb_colors.ItemIndex].r;
+    trbr_g.Position := AdPartSys.Colors[lb_colors.ItemIndex].g;
+    trbr_b.Position := AdPartSys.Colors[lb_colors.ItemIndex].b;
+    trbr_a.Position := AdPartSys.Colors[lb_colors.ItemIndex].a;
+
+    SelectedColor := TList(AdPartSys.Colors).Items[lb_colors.ItemIndex];
+
+    Updating := false;
+  end else
+    SelectedColor := nil;
+
+  btn_delete.Enabled := SelectedColor <> nil;
+
+  SelectedColorIndex := lb_colors.ItemIndex;
+  lb_colors.Repaint;
+end;
+
+procedure TMainFrm.lb_colorsDrawItem(Control: TWinControl; Index: Integer;
   Rect: TRect; State: TOwnerDrawState);
 begin
-  with ListBox1.Canvas do
+  with lb_colors.Canvas do
   begin
-    if odSelected in State then
+    if (odSelected in State) or (odFocused in State) or (SelectedColorIndex = Index) then
       Brush.Color := clHighlight
     else
-      Brush.Color := clWindow;
+      Brush.Color := clWhite;
 
     FillRect(Rect);
-    Brush.Color := AdColorToColor(PartSys.DefaultParticle.Colors[Index]);
     Pen.Color := clBlack;
-    Rectangle(Rect.Left + 3, Rect.Top + 3, Rect.Left + 19, Rect.Bottom - 3);
+    Brush.Color := AdColorToColor(AdPartSys.Colors[Index]);
+    Rectangle(Rect.Left, Rect.Top + 3, Rect.Left + 20, Rect.Bottom - 3);
+
     Brush.Style := bsClear;
-    TextOut(Rect.Left + 21, Rect.Top, ListBox1.Items[Index]);
-  end;
+    TextOut(Rect.Left + 25, Rect.Top, lb_colors.Items[Index]);
+  end; 
 end;
 
-procedure TForm1.LoadFile1Click(Sender: TObject);
+procedure TMainFrm.LoadImage;
 begin
-  if OpenDialog1.Execute then
+  if img_part.Picture.Graphic <> nil then
   begin
-    PartSys.DefaultParticle.LoadFromFile(OpenDialog1.FileName);
-    CurrentFileName := ChangeFileExt(OpenDialog1.FileName,'.apf');
-    Save1.Enabled := true;
-    Caption := 'Particle Editor ['+CurrentFileName+']';
-    UpdateControls;
+    TAdTexture(AdPartSys.Texture).LoadFromGraphic(img_part.Picture.Graphic);
   end;
 end;
 
-procedure TForm1.Panel1MouseDown(Sender: TObject; Button: TMouseButton;
+procedure TMainFrm.New;
+begin
+  //Renew particle system
+  AdPartSys.Free;
+  AdPartSys := TAdParticleSystem.Create(AdDraw);
+
+  LoadImage;
+  FillClassCmb;
+  SetDefaultPart;
+  UpdateColorListbox;
+
+  Saved := true;
+  UpdateStatusbar;
+end;
+
+procedure TMainFrm.pntb_prePaint(Sender: TObject);
+begin
+  DrawColorband;
+end;
+
+procedure TMainFrm.Setbackgroundcolor1Click(Sender: TObject);
+begin
+  ColorDialog1.Execute;
+end;
+
+procedure TMainFrm.SetDefaultPart;
+var
+  tmp: TAdParticle;
+begin
+  AdPartSys.Free;
+
+  AdPartSys := TAdParticleSystem.Create(AdDraw);
+  LoadImage;
+
+  tmp := TAdParticleClass(
+    AdGetClass(cmb_classes.Items[cmb_classes.ItemIndex])).Create(AdPartSys);
+  AdPartSys.DefaultParticle := tmp;
+  JvInspector.InspectObject := tmp;
+
+  tmp.Assign(AdDefaultPart);
+
+  if AdDefaultPart <> nil then
+    AdDefaultPart.Free;
+
+  AdDefaultPart := tmp;
+
+  SelectedColorIndex := -1;
+  SelectedColor := nil;
+  UpdateColorListbox;
+  Timer1.Enabled := true;
+end;
+
+procedure TMainFrm.SurfaceMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
+  FMX := X;
+  FMY := Y;
+end;
+
+procedure TMainFrm.SurfaceMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if ssRight in Shift then
+  begin
+    CenterX := CenterX + (X - FMX);
+    CenterY := CenterY + (Y - FMY);
+  end else
   if ssLeft in Shift then
   begin
-    mx := x;
-    my := y;
+    EmitterX := EmitterX + (X - FMX);
+    EmitterY := EmitterY + (Y - FMY);
+  end;
+
+  FMX := X;
+  FMY := Y;
+end;
+
+procedure TMainFrm.SurfaceResize(Sender: TObject);
+begin
+  CenterX := Surface.ClientWidth div 2;
+  CenterY := Surface.ClientHeight div 2;
+
+  AdDraw.Setup2DScene(Surface.ClientWidth, Surface.ClientHeight);
+end;
+
+procedure TMainFrm.Timer1Timer(Sender: TObject);
+begin
+  Timer1.Enabled := false;
+  DrawColorband;
+  DrawAlphaPreview;
+end;
+
+procedure TMainFrm.ToolButton1Click(Sender: TObject);
+begin
+  if CheckSaved then
+  begin
+    New;
   end;
 end;
 
-procedure TForm1.Panel1Resize(Sender: TObject);
+procedure TMainFrm.ToolButton2Click(Sender: TObject);
 begin
-  if AdDraw1.Initialized then
-  begin
-    AdDraw1.Setup2DScene;
-  end;
+  Load;
 end;
 
-procedure TForm1.Render;
+procedure TMainFrm.ToolButton3Click(Sender: TObject);
 begin
-  PerCount.Calculate;
-  StatusBar1.SimpleText := 'FPS: '+inttostr(PerCount.FPS)+' Particle Count: '+inttostr(PartSys.Items.Count);
+  Save;
+end;
 
-  AdDraw1.BeginScene;
-  AdDraw1.ClearSurface(BackgroundColor);
+procedure TMainFrm.trbr_rChange(Sender: TObject);
+begin
+  pnl_r.Color := RGB(trbr_r.Position, 0, 0);
+  pnl_g.Color := RGB(0, trbr_g.Position, 0);
+  pnl_b.Color := RGB(0, 0, trbr_b.Position);
 
-  if interval then
+  Timer1.Enabled := true;
+
+  if not Updating then
   begin
-    if PerCount.TimeGap < pc then
+    Saved := false;
+    UpdateStatusbar;
+    
+    if SelectedColor <> nil then
     begin
-      pc2 := pc2 + PerCount.TimeGap / pc;
-    end
-    else
-    begin
-      pc2 := PerCount.TimeGap / pc;
+      SelectedColor^ :=
+        Ad_ARGB(trbr_a.Position, trbr_r.Position, trbr_g.Position, trbr_b.Position); 
+      UpdateColorListbox;
     end;
-    if pc2 >= 1 then
-    begin
-      PartSys.CreateParticles(round(pc2),TAdParticle,mx,my);
-      pc2 := 0;
-    end;
-  end
-  else
-  begin
-    if PartSys.Items.Count = 0 then
-    begin
-      PartSys.CreateParticles(round(pc),TAdParticle,mx,my);
-    end;
-  end;
-
-  PartSys.Move(PerCount.TimeGap/1000);
-  PartSys.Draw(0,0);
-  PartSys.Dead;
-  AdDraw1.EndScene;
-  AdDraw1.Flip;
-end;
-
-procedure TForm1.Save1Click(Sender: TObject);
-begin
-  if CurrentFileName <> '' then
-  begin
-    PartSys.DefaultParticle.SaveToFile(CurrentFileName);
   end;
 end;
 
-procedure TForm1.Saveas1Click(Sender: TObject);
+procedure TMainFrm.UpdateColorListbox;
+var
+  i: integer;
 begin
+  lb_colors.Items.BeginUpdate;
+  lb_colors.Items.Clear;
+  for i := 0 to AdPartSys.Colors.Count - 1 do
+  begin
+    lb_colors.Items.Add(
+      'R: ' + IntToStr(AdPartSys.Colors[i].r) + ' ' +
+      'G: ' + IntToStr(AdPartSys.Colors[i].g) + ' ' +
+      'B: ' + IntToStr(AdPartSys.Colors[i].b) + ' ' +
+      'A: ' + IntToStr(AdPartSys.Colors[i].a));
+  end;
+  lb_colors.Items.EndUpdate;
+end;
+
+procedure TMainFrm.UpdateSaved(Sender: TObject;  Item: TJvCustomInspectorItem);
+begin
+  Saved := false;
+  UpdateStatusbar;
+end;
+
+procedure TMainFrm.UpdateStatusbar;
+begin
+  Statusbar1.SimpleText := CurrentFilename;
+  if not Saved then
+    Statusbar1.SimpleText := Statusbar1.SimpleText + ' [*]';
+end;
+
+function TMainFrm.Save: boolean;
+begin
+  if CurrentFilename <> '' then
+  begin
+    AdPartSys.SaveToFile(CurrentFilename);
+    result := true;
+    Saved := true;
+  end else
+  begin
+    result := SaveAs;
+  end;
+
+  UpdateStatusbar;
+end;
+
+function TMainFrm.SaveAs: boolean;
+begin
+  result := false;
   if SaveDialog1.Execute then
   begin
-    PartSys.DefaultParticle.SaveToFile(ChangeFileExt(SaveDialog1.FileName,'.apf'));
-    CurrentFileName := ChangeFileExt(SaveDialog1.FileName,'.apf');
-    Save1.Enabled := true;
-    Caption := 'Particle Editor ['+CurrentFileName+']';
+    CurrentFilename := ChangeFileExt(SaveDialog1.FileName, '.axp');
+    AdPartSys.SaveToFile(CurrentFilename);
+    Saved := true;
+    result := true;
   end;
+
+  UpdateStatusbar;
 end;
 
-procedure TForm1.ScrollBar2Change(Sender: TObject);
+procedure TMainFrm.Saveas1Click(Sender: TObject);
 begin
-  if changing then exit;
-  with PartSys.DefaultParticle do
-  begin
-    CreationAngle := Scrollbar2.Position;
-    CreationAngleOpen  := Scrollbar1.Position;
-  end;
-  Label27.Caption := 'Angle: '+inttostr(Scrollbar2.Position)+'°';
-  Label26.Caption := 'Open: '+inttostr(Scrollbar1.Position)+'°';
-  DrawAnglePreview;
+  SaveAs;
 end;
 
-procedure TForm1.ScrollBar3Change(Sender: TObject);
-begin
-  if changing then exit;
-  with PartSys.DefaultParticle.Force do
-  begin
-    X := cos(ScrollBar3.Position * PI / 180)*ScrollBar4.Position;
-    Y := sin(ScrollBar3.Position * PI / 180)*ScrollBar4.Position;
-    Label31.Caption := inttostr(Scrollbar3.Position)+'°';
-    Label32.Caption := inttostr(Scrollbar4.Position)+' px/s';
-  end;
-end;
-
-procedure TForm1.SpeedButton1Click(Sender: TObject);
+function TMainFrm.CheckSaved: boolean;
 var
-  tmp:TAndorraColor;
+  btn: integer;
 begin
-  if (ListBox1.ItemIndex > 0) then
+  if not Saved then
   begin
-    with PartSys.DefaultParticle.Colors do
-    begin
-      tmp := Items[ListBox1.ItemIndex - 1];
-      Items[ListBox1.ItemIndex - 1] := Items[ListBox1.ItemIndex];
-      Items[ListBox1.ItemIndex] := tmp;
-    end;
-    UpdateControls;
+    result := false;
+
+    btn := Application.MessageBox(
+      'Do you want to save your current project?', 'Question', MB_YESNOCANCEL);
+
+    if btn = ID_YES then
+      result := Save
+    else if btn = ID_NO then
+      result := true;
+  end else
+    result := true;
+end;
+
+procedure TMainFrm.Close1Click(Sender: TObject);
+begin
+  if CheckSaved then
+    Close;
+end;
+
+procedure TMainFrm.Load;
+begin
+  if CheckSaved and OpenDialog1.Execute then
+  begin
+    New;
+    AdPartSys.LoadFromFile(OpenDialog1.FileName);
+    CurrentFilename := OpenDialog1.FileName;
+
+    UpdateColorListbox;
+    DrawColorband;
+
+    Updating := true;
+    cmb_classes.ItemIndex := cmb_classes.Items.IndexOf(AdPartSys.DefaultParticle.ClassName);
+    Updating := false;
+
+    JvInspector.InspectObject := AdPartSys.DefaultParticle;
+
+    Saved := true;
   end;
 end;
 
-procedure TForm1.SpeedButton2Click(Sender: TObject);
+{ TJvInspectorParticleParameter }
+
+procedure TJvInspectorParticleParameter.Edit;
 var
-  tmp:TAndorraColor;
+  edt: TParamEdt;
 begin
-  if (ListBox1.ItemIndex > -1) and (ListBox1.ItemIndex < ListBox1.Items.Count - 1) then
-  begin
-    with PartSys.DefaultParticle.Colors do
-    begin
-      tmp := Items[ListBox1.ItemIndex + 1];
-      Items[ListBox1.ItemIndex + 1] := Items[ListBox1.ItemIndex];
-      Items[ListBox1.ItemIndex] := tmp;
-    end;
-    UpdateControls;
-  end;
+  edt := TParamEdt.Create(nil);
+  edt.Edit(TAdParticleParameter(
+    GetObjectProp(TJvInspector(Inspector).InspectObject, Data.Name)));
+  edt.Free;
 end;
 
-procedure TForm1.SpeedButton3Click(Sender: TObject);
+procedure TJvInspectorParticleParameter.SetFlags(const Value: TInspectorItemFlags);
+var
+  NewValue: TInspectorItemFlags;
 begin
-  if ColorDialog1.Execute then
-  begin
-    PartSys.DefaultParticle.Colors.Add(ColorToAdColor(ColorDialog1.Color));
-    UpdateControls;
-  end;
+  NewValue := Value + [iifEditButton, iifEditFixed];
+  inherited SetFlags(NewValue);
 end;
 
-procedure TForm1.SpeedButton4Click(Sender: TObject);
-begin
-  if ListBox1.ItemIndex > -1 then
-  begin
-    PartSys.DefaultParticle.Colors.Delete(ListBox1.ItemIndex);
-    UpdateControls;
-  end;
-end;
+initialization
+  TJvCustomInspectorData.ItemRegister.Add(
+    TJvInspectorTypeInfoRegItem.Create(
+      TJvInspectorParticleParameter, TypeInfo(TAdParticleParameter)));
 
-procedure TForm1.UpdateControls;
-var i:integer;
-    nx,ny,l:double;
-    w:integer;
-begin
-  changing := true;
-  with PartSys.DefaultParticle do
-  begin
-    DrawColorPreview;
-    CheckBox2.Checked := DrawMask;
-
-    ListBox1.Clear;
-    for i := 0 to Colors.Count-1 do
-    begin
-      ListBox1.Items.Add(
-        'r:'+inttostr(Colors[i].r)+
-        ' g:'+inttostr(Colors[i].g)+
-        ' b:'+inttostr(Colors[i].b)+
-        ' a:'+inttostr(Colors[i].a));
-    end;
-
-    Edit1.Text := Name;
-    Edit6.Text := FormatFloat('0.00',LifeTime);
-    Edit7.Text := Inttostr(LifeTimeVariation);
-    Edit9.Text := FormatFloat('0.00',SizeStart);
-    Edit10.Text := FormatFloat('0.00',SizeEnd);
-    Edit11.Text := FormatFloat('0',RotStart);
-    Edit12.Text := FormatFloat('0',RotEnd);
-    Edit13.Text := FormatFloat('0',SpeedXStart);
-    Edit14.Text := FormatFloat('0',SpeedXEnd);
-    Edit15.Text := FormatFloat('0',SpeedYStart);
-    Edit16.Text := FormatFloat('0',SpeedYEnd);
-    Edit18.Text := Inttostr(SpeedVariation);
-    ScrollBar2.Position := CreationAngle;
-    ScrollBar1.Position := CreationAngleOpen;
-
-    case blendmode of
-      bmAlpha: Combobox1.ItemIndex := 0;
-      bmAdd: Combobox1.ItemIndex := 1;
-      bmMask: Combobox1.ItemIndex := 2;
-    end;
-
-    l := sqrt(sqr(Force.X)+sqr(Force.Y));
-    if l > 0 then
-    begin
-      nx := Force.X;
-      ny := Force.Y;
-      w := round(radtodeg(arccos(nx/l)));
-      if ny < 0 then
-      begin
-        w := 360 - w;
-      end;
-      Scrollbar3.Position := w;
-    end
-    else
-    begin
-      ScrollBar3.Position := 0;
-    end;
-    ScrollBar4.Position := round(l);
-    DrawAnglePreview;
-  end;
-  changing := false;
-end;
 
 end.

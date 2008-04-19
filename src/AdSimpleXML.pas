@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.3 2008/02/09 16:33:42 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.4 2008/04/19 10:06:31 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -256,6 +256,8 @@ type
     function Add(const Name: string; const Value: Int64): TAdSimpleXMLElemClassic; overload;
     function Add(const Name: string; const Value: Boolean): TAdSimpleXMLElemClassic; overload;
     function Add(const Name: string; const Value: TStream): TAdSimpleXMLElemClassic; overload;
+    function Add(const Name: string; const Value: Extended): TAdSimpleXMLElemClassic; overload;
+
     function Add(Value: TAdSimpleXMLElem): TAdSimpleXMLElem; overload;
     function AddFirst(Value: TAdSimpleXMLElem): TAdSimpleXMLElem; overload;
     function AddFirst(const Name: string): TAdSimpleXMLElemClassic; overload;
@@ -273,6 +275,7 @@ type
     function Value(const Name: string; Default: string = ''): string;
     function IntValue(const Name: string; Default: Int64 = -1): Int64;
     function BoolValue(const Name: string; Default: Boolean = True): Boolean;
+    function FloatValue(const Name: string; Default: Extended = -1): Extended;
     procedure BinaryValue(const Name: string; const Stream: TStream);
     function LoadFromStream(const Stream: TStream; AParent: TAdSimpleXML = nil): string;
     procedure SaveToStream(const Stream: TStream; const Level: string = ''; AParent: TAdSimpleXML = nil);
@@ -1370,8 +1373,11 @@ begin
 end;
 
 function TAdSimpleXMLElem.GetFloatValue: Extended;
+var
+  Settings: TFormatSettings;
 begin
-  if not TryStrToFloat(Value, Result) then
+  GetLocaleFormatSettings(1033, Settings);
+  if not TryStrToFloat(Value, Result, Settings) then
     Result := 0.0;
 end;
 
@@ -1479,6 +1485,15 @@ begin
   if Value <> nil then
     AddChild(Value);
   Result := Value;
+end;
+
+function TAdSimpleXMLElems.Add(const Name: string;
+  const Value: Extended): TAdSimpleXMLElemClassic;
+var
+  Settings: TFormatSettings; 
+begin
+  GetLocaleFormatSettings(1033, Settings);
+  Result := Add(Name, FloatToStr(Value, Settings));
 end;
 
 function TAdSimpleXMLElems.Add(const Name: string;
@@ -1713,6 +1728,18 @@ begin
     Result := Default
   else
     Result := Elem.IntValue;
+end;
+
+function TAdSimpleXMLElems.FloatValue(const Name: string;
+  Default: Extended): Extended;
+var
+  Elem: TAdSimpleXMLElem;
+begin
+  Elem := GetItemNamed(Name);
+  if Elem = nil then
+    Result := Default
+  else
+    Result := Elem.FloatValue;
 end;
 
 function TAdSimpleXMLElems.LoadFromStream(const Stream: TStream; AParent: TAdSimpleXML): string;

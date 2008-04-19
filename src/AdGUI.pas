@@ -28,11 +28,9 @@ interface
 uses
   SysUtils, Classes,
   AdEvents, AdSimpleXML, AdDraws, AdSkin, AdClasses, AdTypes,
-  AdXML, AdList, AdCanvas, AdFont, AdFontList, AdPersistent;
+  AdXML, AdList, AdCanvas, AdFont, AdFontList, AdPersistent;         
 
-
-type
-
+type                                                                
   TAdDownRgn = (drNone,drMiddle,drLeftTop,drLeftBottom,drRightTop,drRightBottom);
 
   TAdComponent = class;
@@ -110,6 +108,8 @@ type
       FMouseOverTime:single;
       FMouseDownIn:TAdDownRgn;
       FDraging:boolean;
+      FLimitDrag:boolean;
+      FDragRegion:TAdRect;
       FOX,FOY:integer;
 
       FOnMouseDown:TAdMouseEvent;
@@ -146,8 +146,6 @@ type
 
       FAcceptChildComponents:boolean;
 
-      FLockEvents:boolean;
-
       procedure SetSkin(Value:TAdSkin);
       procedure SetAdDraw(Value:TAdDraw);
       procedure SetDesignMode(Value:boolean);
@@ -163,8 +161,13 @@ type
       procedure SetGrid(Value:boolean);
       procedure SetWidth(Value:integer);
       procedure SetHeight(Value:integer);
-      procedure SetLockEvents(Value:boolean);
     protected
+      function CanReciveMouseEvent(X, Y: integer): boolean;
+      function CanReciveKeyEvent: boolean;
+      function ChildDraging:TAdComponent;
+      function ChildMouseOver:TAdComponent;
+      function BaseParent:TAdComponent;
+
       function GetBoundsRect:TAdRect;
       function GetClientRect:TAdRect;
       procedure DoDraw;virtual;
@@ -175,6 +178,8 @@ type
       
       procedure LoadSkinItem;virtual;
       procedure SetCurrentCursor(Value:string);virtual;
+
+      function CheckCollision(AX, AY: integer): boolean;virtual;
 
       function DoResize:boolean;virtual;
       function DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;virtual;
@@ -216,7 +221,10 @@ type
 
       property MouseX:integer read FMouseX;
       property MouseY:integer read FMouseY;
+
       property Draging:boolean read FDraging write FDraging;
+      property LimitDrag:boolean read FLimitDrag write FLimitDrag;
+      property DragRegion:TAdRect read FDragRegion write FDragRegion;
 
       property MinWidth:integer read FMinWidth write FMinWidth;
       property MaxWidth:integer read FMaxWidth write FMaxWidth;
@@ -225,8 +233,6 @@ type
 
       property AcceptChildComponents:boolean read FAcceptChildComponents write FAcceptChildComponents;
 
-      property LockEvents:boolean read FLockEvents write SetLockEvents;
-
     public
       procedure Draw;
       procedure Move(TimeGap:double);
@@ -234,8 +240,8 @@ type
       procedure AddComponent(AComponent:TAdComponent);virtual;
       procedure Clear;
 
-      function DblClick(X,Y:integer) : boolean;
       function Click(X,Y:integer) : boolean;
+      function DblClick(X,Y:integer) : boolean;
       function MouseMove(Shift: TAdShiftState; X, Y: Integer) : boolean;
       function MouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X, Y: Integer) : boolean;
       function MouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X, Y: Integer) : boolean;
@@ -433,14 +439,6 @@ procedure RegisterComponent(AClass:TClass;ACard:string);
 begin
   RegisteredComponents.Add(AClass.ClassName+'='+ACard);
   AdRegisterClass(TAdPersistentClass(AClass));
-end;
-
-function InRect(x,y:integer;rect:TAdRect):boolean;
-begin
-  result := (x >= rect.Left) and
-            (y >= rect.Top) and
-            (x <= rect.Right) and
-            (y <= rect.Bottom);
 end;
 
 { TAdComponents }
@@ -704,7 +702,7 @@ procedure TAdComponent.Draw;
 var
   i:integer;
 begin
-  if FVisible or FDesignMode then
+  if FVisible or (FDesignMode and (not Subcomponent)) then
   begin
     DoDraw;
     for i := 0 to Components.Count - 1 do
@@ -924,15 +922,6 @@ begin
   end;
 end;
 
-procedure TAdComponent.SetLockEvents(Value: boolean);
-begin
-  if Parent <> nil then
-  begin
-    Parent.LockEvents := Value;
-    FLockEvents := Value;
-  end;
-end;
-
 function TAdComponent.GetFocusedComponent: TAdComponent;
 var
   i:integer;
@@ -1012,6 +1001,17 @@ end;
 procedure TAdComponent.LoadSkinItem;
 begin
   //
+end;
+
+function TAdComponent.BaseParent: TAdComponent;
+begin
+  if FParent <> nil then
+  begin
+    result := FParent.BaseParent;
+  end else
+  begin
+    result := self;
+  end;
 end;
 
 procedure TAdComponent.BringToFront;
@@ -1106,50 +1106,15 @@ begin
   DoResize;
 end;
 
-{Event-Handling}
-
 procedure TAdComponent.Clear;
 var
   i:integer;
 begin
-  for i := 0 to Components.Count - 1 do
+  for i := Components.Count - 1 downto 0 do
   begin
     Components[i].Free;
   end;
   Components.Clear;
-end;
-
-function TAdComponent.Click(X, Y: integer):boolean;
-var
-  clicked:boolean;
-  i:integer;
-begin
-  result := false;
-  if (visible or (designmode and (not SubComponent))) and (InRect(x,y,boundsrect)) then
-  begin
-    clicked := true;
-    for i := Components.Count-1 downto 0 do
-    begin
-      if InRect(x,y,Components[i].BoundsRect) then
-      begin
-        clicked := false;
-        result := Components[i].Click(X,Y);
-        break;
-      end;
-    end;
-    if (clicked) and ((enabled) or (designmode and (not SubComponent))) then
-    begin
-      if not DesignMode then
-      begin
-        result := DoClick(X, Y);
-      end
-      else
-      begin
-        SetFocused;
-      end;
-    end;
-  end;
-  result := result and (not FLockEvents);
 end;
 
 function TAdComponent.ClientToScreen(p: TAdPoint): TAdPoint;
@@ -1170,343 +1135,290 @@ begin
   end;
 end;
 
-function TAdComponent.DblClick(X, Y: integer):boolean;
+{Event-Handling}
+
+function TAdComponent.Click(X, Y: integer):boolean;
 var
-  clicked:boolean;
-  i:integer;
+  i: integer;
 begin
   result := false;
-  if (visible or (designmode and (not SubComponent))) and (InRect(x,y,boundsrect)) then
+
+  if CanReciveMouseEvent(X, Y) then
   begin
-    clicked := true;
-    for i := Components.Count-1 downto 0 do
+    result := true;
+    
+    for i := Components.Count - 1 downto 0 do
     begin
-      if InRect(x,y,Components[i].BoundsRect) then
-      begin
-        clicked := false;
-        result := Components[i].DblClick(X,Y);
-        break;
-      end;
-    end;
-    if (clicked) and ((enabled) or (designmode and (not SubComponent))) then
-    begin
-      if not DesignMode then
-      begin
-        result := DoDblClick(X, Y);
-      end
-      else
-      begin
-        SetFocused;
-      end;
-    end;
+      if Components[i].Click(X, Y) then exit;
+    end;  
+
+    if not Designmode then
+      result := DoClick(X, Y);
   end;
-  result := result or FLockEvents;
+end;
+
+function TAdComponent.DblClick(X, Y: integer):boolean;
+var
+  i: integer;
+begin
+  result := false;
+
+  if CanReciveMouseEvent(X, Y) then
+  begin
+    result := true;
+    
+    for i := Components.Count - 1 downto 0 do
+    begin
+      if Components[i].DblClick(X, Y) then exit;
+    end;  
+
+    if not Designmode then
+      result := DoDblClick(X, Y);
+  end;
 end;
 
 function TAdComponent.MouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
-var clicked:boolean;
-    i:integer;
+var
+  i: integer;
 begin
   result := false;
-  if (visible or (designmode and (not SubComponent))) and InRect(x,y,boundsrect) then
+
+  if CanReciveMouseEvent(X, Y) then
   begin
-    clicked := true;
-    for i := Components.Count-1 downto 0 do
+    result := true;
+    
+    for i := Components.Count - 1 downto 0 do
     begin
-      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect) or Components[i].MousePreview) then
-      begin
-        clicked := false;
-        result := Components[i].MouseDown(Button,Shift,X,Y);
-        break;
-      end;
-    end;
-    if clicked and enabled then
+      if Components[i].MouseDown(Button, Shift, X, Y) then exit;
+    end;  
+
+    if Designmode then
     begin
-      if not DesignMode then
+      MouseDownIn := GetDownRgn(X, Y);
+      FDraging := true;
+      if FParent <> nil then
       begin
-        result := DoMouseDown(Button,Shift,X,Y);
-      end
-      else
-      begin
-        if not Subcomponent then
-        begin
-          MouseDownIn := GetDownRgn(X-BoundsRect.Left,Y-BoundsRect.Top);
-          FDraging := true;
-        end;
+        FLimitDrag := true;
+        FDragRegion := FParent.BoundsRect;
       end;
-    end;
+    end else
+      result := DoMouseDown(Button, Shift, X, Y);
   end;
-  result := result or FLockEvents;
 end;
 
 function TAdComponent.MouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
-var clicked:boolean;
-    overcomp:TAdComponent;
-    i:integer;
-    om:boolean;
+var
+  i: integer;
+  overcomp: TAdComponent;
 begin
   result := false;
-  om := FMouseOver;
-  overcomp := nil;
-  FMouseOver := false;
-  DesignSize(X,Y);
 
-  if (visible or (designmode and (not SubComponent))) and ((InRect(x,y,boundsrect)) or FMousePreview) then
+  if ((CanReciveMouseEvent(X, Y) or FMousePreview) or
+     (FDraging and not FLimitDrag)) and not
+     (FDraging and FLimitDrag and not InRect(X, Y, FDragRegion)) or
+     (FDraging and FLimitDrag and InRect(X, Y, FDragRegion)) then
   begin
-    clicked := true;
-    FMouseX := X;
-    FMouseY := Y;
-    for i := Components.Count-1 downto 0 do
+    result := true;
+
+    if FMousePreview then
+      result := DoMouseMove(Shift, X, Y);
+
+    if (ChildDraging <> nil) and not FDraging then
     begin
-      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect) or Components[i].MousePreview) then
+      ChildDraging.MouseMove(Shift, X, Y)
+    end else
+    begin
+      if not FDraging then
       begin
-        result := Components[i].MouseMove(Shift,X,Y);
-        clicked := false;
-        FMouseOver := false;
-        overcomp := Components[i];
-        if overcomp.FDraging or (not DesignMode) then
+        for i := Components.Count - 1 downto 0 do
         begin
-          break;
-        end;
-      end
-      else
-      begin
-        if not Components[i].Subcomponent then
-        begin
-          Components[i].DesignSize(X,Y);
+          if Components[i].MouseMove(Shift, X, Y) then exit;
         end;
       end;
-    end;
 
-    if (FMousePreview) and enabled then
-    begin
-      DoMouseMove(Shift,X,Y);
-    end;
-
-    if (clicked) and enabled then
-    begin
-      if not DesignMode then
+      if (not Designmode) and CanReciveMouseEvent(X, Y) then
       begin
+        if not FMouseOver then
+        begin
+          overcomp := BaseParent.ChildMouseOver;
+          if overcomp <> nil then
+          begin
+            overcomp.DoMouseLeave;
+            overcomp.MouseOver := false;
+          end;
+            
+          DoMouseEnter;
+        end;
         FMouseOver := true;
-        result := DoMouseMove(Shift,X,Y);
-        for i := 0 to Components.Count-1 do
-        begin
-          if (Components[i] <> overcomp) then
-          begin
-            Components[i].FMouseOver := false;
-            Components[i].CheckMouseEnter(true);
-          end;
-        end;
       end;
-    end
-    else
-    begin
-      if enabled and (not DesignMode) then
-      begin
-        for i := 0 to Components.Count-1 do
-        begin
-          if (Components[i] <> overcomp) then
-          begin
-            Components[i].MouseOver := false;
-            Components[i].CheckMouseEnter(true);
-          end;
-        end;
-      end;
+
+      if (FDraging) and (Designmode) then
+        DesignSize(X, Y)
+      else
+        if not FMousePreview then result := DoMouseMove(Shift, X, Y);
     end;
   end;
-  CheckMouseEnter(om);
-  result := result or FLockEvents;
 end;
 
 function TAdComponent.MouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
-var clicked:boolean;
-    i:integer;
-    overcomp:TAdComponent;
+var
+  i: integer;
 begin
   result := false;
-  overcomp := nil;
-  if (visible or (designmode and (not SubComponent))) and InRect(x,y,boundsrect) then
+
+  if (ChildDraging <> nil) and (not FDraging) then
   begin
-    clicked := true;
-    for i := Components.Count-1 downto 0 do
+    ChildDraging.MouseUp(Button, Shift, X, Y);
+  end else
+  begin
+    if CanReciveMouseEvent(X, Y) or FDraging then
     begin
-      if (Components[i].Visible or DesignMode) and (InRect(x,y,Components[i].BoundsRect) or Components[i].MousePreview) then
+      result := true;
+
+      if not FDraging then
       begin
-        clicked := false;
-        overcomp := Components[i];
-        if Components[i].FDraging or (not DesignMode) then
+        for i := Components.Count - 1 downto 0 do
         begin
-          break;
+          if Components[i].MouseUp(Button, Shift, X, Y) then exit;
         end;
-      end
+      end;
+
+      if not DesignMode then
+        result := DoMouseUp(Button, Shift, X, Y)
       else
-      begin
-        if (designmode and (not SubComponent)) then
-        begin
-          Components[i].MouseDownIn := drNone;
-        end;
-      end;
-    end;
-    if clicked then
-    begin
-      if (not DesignMode) and Enabled then
-      begin
-        result := DoMouseUp(Button, Shift, X, Y);
-      end;
-    end
-    else
-    begin
-      if overcomp <> nil then
-      begin
-        result := overcomp.MouseUp(Button, Shift, X, Y);
-        overcomp.FDraging := false;
-      end;
+        SetFocused;
     end;
   end;
-  if (designmode and (not SubComponent)) then
-  begin
-    MouseDownIn := drNone;
-    FDraging := false;
-  end;
-  result := result or FLockEvents;
+
+  FDraging := false;
+  FLimitDrag := false;
 end;
 
 function TAdComponent.MouseWheel(Shift: TAdShiftState; WheelDelta: Integer;
   X, Y: integer):boolean;
-var clicked:boolean;
-    i:integer;
+var
+  i: integer;
 begin
   result := false;
-
-  if (visible or (designmode and (not SubComponent))) and (InRect(X,Y,boundsrect)) then
+  //Every component that is focused receives the mouse wheel event
+  if CanReciveKeyEvent or FMousePreview then
   begin
-    clicked := true;
-    for i := Components.Count-1 downto 0 do
-    begin
-      if (Components[i].Visible or DesignMode) and InRect(X,Y,Components[i].BoundsRect) then
-      begin
-        clicked := false;
-        result := Components[i].MouseWheel(Shift,WheelDelta,X,Y);
-        break;
-      end;
-    end;
-    if (clicked) and (enabled) then
-    begin
-      if not DesignMode then
-      begin
-        result := DoMouseWheel(Shift,WheelDelta,X,Y);
-      end;
-    end;
+    if not FDesignmode then
+      result := DoMouseWheel(Shift, WheelDelta, X, Y);
   end;
-  result := result or FLockEvents;
+
+  for i := 0 to Components.Count - 1 do
+  begin
+    result := Components[i].MouseWheel(Shift, WheelDelta, X, Y) or result;
+  end;
 end;
 
 function TAdComponent.KeyDown(Key: Word; Shift: TAdShiftState):boolean;
-var i:integer;
+var
+  i: integer;
 begin
   result := false;
-  if (visible or (designmode and (not SubComponent))) and (Focused or FKeyPreview) and enabled then
+  if CanReciveKeyEvent or FKeyPreview then
   begin
-    if not DesignMode then result := DoKeyDown(Key,Shift);
-  end
-  else
-  begin
-    for i := 0 to Components.Count-1 do
-    begin
-      result := Components[i].KeyDown(Key,Shift);
-    end;
+    if not FDesignmode then
+      result := DoKeyDown(Key, Shift);
   end;
-  result := result or FLockEvents;
+
+  for i := 0 to Components.Count - 1 do
+  begin
+    result := result or Components[i].KeyDown(Key, Shift);
+  end;
 end;
 
 function TAdComponent.KeyPress(Key: Char):boolean;
-var i:integer;
+var
+  i: integer;
 begin
   result := false;
-  if (visible or (designmode and (not SubComponent))) and (Focused or FKeyPreview) and enabled then
+  if CanReciveKeyEvent or FKeyPreview then
   begin
-    if not DesignMode then result := DoKeyPress(Key);
-  end
-  else
-  begin
-    for i := 0 to Components.Count-1 do
-    begin
-      result := Components[i].KeyPress(Key);
-    end;
+    if not FDesignmode then
+      result := DoKeyPress(Key);
   end;
-  result := result or FLockEvents;
+
+  for i := 0 to Components.Count - 1 do
+  begin
+    result := result or Components[i].KeyPress(Key);
+  end;
 end;
 
 function TAdComponent.KeyUp(Key: Word; Shift: TAdShiftState):boolean;
-var i:integer;
+var
+  i: integer;
 begin
   result := false;
-  if (visible or (designmode and (not SubComponent))) and (Focused or FKeyPreview) and enabled then
+  if CanReciveKeyEvent or FKeyPreview then
   begin
-    if not DesignMode then result := DoKeyUp(Key,Shift);
-  end
-  else
-  begin
-    for i := 0 to Components.Count-1 do
-    begin
-      result := Components[i].KeyUp(Key,Shift);
-    end;
+    if not FDesignmode then
+      result := DoKeyUp(Key, Shift);
   end;
-  result := result or FLockEvents;
-end;
+
+  for i := 0 to Components.Count - 1 do
+  begin
+    result := result or Components[i].KeyUp(Key, Shift);
+  end;
+end;   
 
 function TAdComponent.DoClick(X, Y: Integer):boolean;
 begin
-  result := false;
+  result := true;
   if assigned(OnClick) then
     OnClick(self);
 end;
 
 function TAdComponent.DoDblClick(X, Y: Integer):boolean;
 begin
-  result := false;
+  result := true;
   if assigned(OnDblClick) then
     OnDblClick(self);
 end;
 
 function TAdComponent.DoKeyDown(key: Word; Shift: TAdShiftState):boolean;
 begin
-  result := false;
-  if assigned(OnKeyDown) then OnKeyDown(Self,Key,Shift);
+  result := true;
+  if Assigned(OnKeyDown) then OnKeyDown(Self,Key,Shift);
 end;
 
 function TAdComponent.DoKeyPress(key: Char):boolean;
 begin
-  result := false;
-  if assigned(OnKeyPress) then OnKeyPress(Self,Key);
+  result := true;
+  if Assigned(OnKeyPress) then OnKeyPress(Self,Key);
 end;
 
 function TAdComponent.DoKeyUp(key: Word; Shift: TAdShiftState):boolean;
 begin
-  result := false;
-  if assigned(OnKeyUp) then OnKeyUp(Self,Key,Shift);
+  result := true;
+  if Assigned(OnKeyUp) then OnKeyUp(Self,Key,Shift);
 end;
 
 function TAdComponent.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
   X, Y: Integer):boolean;
 begin
-  result := false;
-  if assigned(OnMouseDown) then OnMouseDown(Self,Button,Shift,X,Y);
+  result := true;
+  if Assigned(OnMouseDown) then OnMouseDown(Self,Button,Shift,X,Y);
 end;
 
 function TAdComponent.DoMouseEnter:boolean;
 begin
-  result := false;
-  if enabled and assigned(OnMouseEnter) then OnMouseEnter(self);
+  result := true;
+  if Assigned(OnMouseEnter) then
+    OnMouseEnter(self);
+    
   CurrentCursor := Cursor;
 end;
 
 function TAdComponent.DoMouseLeave:boolean;
 begin
-  result := false;
-  if enabled and assigned(OnMouseLeave) then OnMouseLeave(self);
+  result := true;
+  if Assigned(OnMouseLeave) then
+    OnMouseLeave(self);
   if (FShowedHint) and (FHintWnd <> nil) then
   begin
     FHintWnd.Hide;
@@ -1516,46 +1428,86 @@ end;
 
 function TAdComponent.DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 begin
-  result := false;
-  if assigned(OnMouseMove) then
+  result := true;
+  if Assigned(OnMouseMove) then
     OnMouseMove(Self, Shift, X, Y);
 end;
 
 function TAdComponent.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
-  result := false;
-  if assigned(OnMouseUp) then
+  result := true;
+  if Assigned(OnMouseUp) then
     OnMouseUp(Self, Button, Shift, X, Y);
 end;
 
 function TAdComponent.DoMouseWheel(Shift: TAdShiftState; WheelDelta: Integer;
   X, Y: Integer):boolean;
 begin
-  result := false;
-  if assigned(OnMouseWheel) then
+  result := true;
+  if Assigned(OnMouseWheel) then
     OnMouseWheel(Self, Shift, Wheeldelta, X, Y);
 end;
 
 function TAdComponent.DoResize:boolean;
 begin
-  result := false;
+  result := true;
 end;
 
 function TAdComponent.GetDownRgn(AX, AY: integer): TAdDownRgn;
-var w,h:integer;
+var w,h,bx,by:integer;
 begin
   result := drNone;
   w := round(Width);
   h := round(Height);
-  if InRect(AX,AY,AdRect(0,0,w,h)) then
+
+  FOX := AX;
+  FOY := AY;
+
+  bx := AX - BoundsRect.Left;
+  by := AY - BoundsRect.Top;
+
+  if InRect(bx,by,AdRect(0,0,w,h)) then
   begin
     result := drMiddle;
-    if InRect(AX,AY,AdRect(0,0,4,4)) then result := drLeftTop;
-    if InRect(AX,AY,AdRect(w-4,0,w,4)) then result := drRightTop;
-    if InRect(AX,AY,AdRect(0,h-4,4,h)) then result := drLeftBottom;
-    if InRect(AX,AY,AdRect(w-4,h-4,w,h)) then result := drRightBottom;
+    if InRect(bx,by,AdRect(0,0,4,4)) then result := drLeftTop;
+    if InRect(bx,by,AdRect(w-4,0,w,4)) then result := drRightTop;
+    if InRect(bx,by,AdRect(0,h-4,4,h)) then result := drLeftBottom;
+    if InRect(bx,by,AdRect(w-4,h-4,w,h)) then result := drRightBottom;
   end;
+end;
+
+function TAdComponent.CanReciveKeyEvent: boolean;
+begin
+  //a component can recive a mouse event
+  //if it is visible
+  //      or in the designmode
+  //but not if it is in the designmode and a subcomponent
+  //and only if it has the focus and it is enabled
+
+  result :=
+    ((Visible or Designmode) and (not
+    (Designmode and Subcomponent))) and
+    Focused and Enabled;
+end;
+
+function TAdComponent.CanReciveMouseEvent(X, Y: integer): boolean;
+begin
+  //a component can recive a mouse event
+  //if it is visible
+  //      or in the designmode
+  //but not if it is in the designmode and a subcomponent
+  //and only if the mouse is over the component
+
+  result :=
+    ((Visible or DesignMode) and (not
+    (Designmode and Subcomponent))) and
+    (CheckCollision(X, Y));
+end;
+
+function TAdComponent.CheckCollision(AX, AY: integer): boolean;
+begin
+  result := InRect(AX, AY, GetBoundsRect);
 end;
 
 procedure TAdComponent.CheckMouseEnter(oldvalue: boolean);
@@ -1569,6 +1521,44 @@ begin
     if (not oldvalue) and (FMouseOver) then
     begin
       DoMouseEnter;
+    end;
+  end;
+end;
+
+function TAdComponent.ChildDraging: TAdComponent;
+var
+  i: integer;
+begin
+  if FDraging then  
+  begin
+    result := self
+  end
+  else
+  begin
+    result := nil;
+    for i := 0 to Components.Count - 1 do
+    begin
+      result := Components[i].ChildDraging;
+      if result <> nil then exit;
+    end;
+  end;
+end;
+
+function TAdComponent.ChildMouseOver: TAdComponent;
+var
+  i: Integer;
+begin
+  if FMouseOver then
+  begin
+    result := self;
+  end
+  else
+  begin
+    result := nil;
+    for i := 0 to Components.Count - 1 do
+    begin
+      result := Components[i].ChildMouseOver;
+      if result <> nil then exit;      
     end;
   end;
 end;
@@ -1941,9 +1931,10 @@ end;
 function TAdGUI.DoMouseMove(Shift: TAdShiftState; X, Y: Integer):boolean;
 begin
   inherited DoMouseMove(Shift,X,Y);
+  result := false;
+
   FMouseX := X;
   FMouseY := Y;
-  result := false;
 end;
 
 procedure TAdGUI.LoadFromXML(aroot: TAdSimpleXMLElem);
@@ -2148,6 +2139,7 @@ end;
 
 initialization
   RegisteredComponents := TStringList.Create;
+
   RegisterComponent(TAdComponent,'');
   RegisterComponent(TAdGUI,'');
 

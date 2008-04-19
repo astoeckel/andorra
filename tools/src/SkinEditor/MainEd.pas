@@ -892,7 +892,7 @@ procedure TMainDlg.Panel10Resize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    AdDraw1.Setup2DScene;
+    AdDraw1.Setup2DScene(Panel10.ClientWidth, Panel10.ClientHeight);
   end;
 end;
 

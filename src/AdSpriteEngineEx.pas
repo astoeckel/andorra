@@ -40,8 +40,8 @@ type
       function Base:TAdRect;
       procedure RotatePoint(cx, cy:integer; var p:TAdPoint);
     protected
-      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);override;
-      procedure SetSurface(AValue:TAdDraw);override;
+//      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);override;
+      procedure SetSurface(AValue:TAdRenderingSurface);override;
     public
       procedure Draw;
 
@@ -76,18 +76,19 @@ var
 begin
   CalcSurfaceRect;
 
-  oldvp := Surface.AdAppl.Viewport;
-  Surface.AdAppl.GetScene(viewmat, projmat);
-  Surface.AdAppl.Viewport := Base;
+  oldvp := Surface.Viewport;
+  projmat := Surface.ProjectionMatrix;
+  viewmat := Surface.ViewMatrix;
 
   w := Base.Right - Base.Left;
   h := Base.Bottom - Base.Top;
-  Surface.AdAppl.Setup3DScene(w,h,AdVector3(w/2,h/2,-FZDistanze),AdVector3(w/2,h/2,0),AdVector3(sin(FRotation),sin(FRotation-pi/2),0));
+  Surface.Setup3DScene(w,h,AdVector3(w/2,h/2,-FZDistanze),AdVector3(w/2,h/2,0),AdVector3(sin(FRotation),sin(FRotation-pi/2),0));
 
   inherited;
 
-  Surface.AdAppl.SetupManualScene(viewmat, projmat);
-  Surface.AdAppl.Viewport := oldvp;
+  Surface.Viewport := oldvp;
+  Surface.ViewMatrix := viewmat;
+  Surface.ProjectionMatrix := projmat;      
 end;
 
 function TSpriteEngineEx.Base: TAdRect;
@@ -219,19 +220,13 @@ begin
   FChanged := true;
 end;
 
-procedure TSpriteEngineEx.SetSurface(AValue: TAdDraw);
+procedure TSpriteEngineEx.SetSurface(AValue: TAdRenderingSurface);
 begin
   inherited;
   if AValue <> nil then
   begin
     CalcZDistance;
   end;
-end;
-
-procedure TSpriteEngineEx.Notify(Sender: TObject; AEvent: TSurfaceEventState);
-begin
-  inherited;
-  CalcZDistance;
 end;
 
 procedure TSpriteEngineEx.SetViewPort(AValue: TAdRect);

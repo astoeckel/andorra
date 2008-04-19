@@ -25,27 +25,32 @@ uses
   SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses;
 
 //This is the class which loads the plugin DLL
-type TAdDllLoader = class
-  private
-    DllHandle:THandle;
-  public
-    //The function which creates the application from the DLL
-    CreateApplication:TAdCreateApplicationProc;
-    //Contains information about the loaded library
-    LibInfo:TAd2DLibInfo;
-    //Contains information about the abilities of the plugin
-    LibAbilities:TAd2DLibAbilities;
-    //Loads the library
-    procedure LoadLibrary(afile:string);
-    //Unloads the library
-    procedure UnLoadLibrary;
-    //Returns whether the library is loaded
-    function LibraryLoaded:boolean;
-    //Creates an instance of TAndorraDLLLoader
-    constructor Create;
-    //Destroys the instance of TAndorraDLLLoader
-    destructor Destroy;override;
-end;
+type
+  EAdDllLoaderException = class(Exception);
+  EAdDllIncompatible = class(EAdDllLoaderException);
+
+  TAdDllLoader = class
+    private
+      DllHandle:THandle;
+    public
+      //The function which creates the application from the DLL
+      CreateApplication:TAdCreateApplicationProc;
+      //Contains information about the loaded library
+      LibInfo:TAd2DLibInfo;
+      //Contains information about the abilities of the plugin
+      LibAbilities:TAd2DLibAbilities;
+      //Loads the library
+      procedure LoadLibrary(afile:string);
+      //Unloads the library
+      procedure UnLoadLibrary;
+      //Returns whether the library is loaded
+      function LibraryLoaded:boolean;
+      //Creates an instance of TAndorraDLLLoader
+      constructor Create;
+      //Destroys the instance of TAndorraDLLLoader
+      destructor Destroy;override;
+  end;
+  
 
 implementation
 
@@ -67,8 +72,8 @@ end;
 
 procedure TAdDllLoader.LoadLibrary(afile: string);
 var
-  InfoProc:TAndorra2DLibraryInformation;
-  AbilitiesProc:TAndorra2DLibraryAbilities;
+  InfoProc: TAndorra2DLibraryInformation;
+  AbilitiesProc: TAndorra2DLibraryAbilities;
 begin
   if fileExists(afile) then
   begin
@@ -92,6 +97,14 @@ begin
       //Get abilities
       @AbilitiesProc := GetProcAddress(DllHandle, 'Andorra2DLibraryAbilities');
       AbilitiesProc(LibAbilities);
+
+      if LibInfo.LibVersion <> LibraryVersion then
+      begin
+        UnLoadLibrary;
+        raise EAdDllIncompatible.Create('The version of the library (' +
+          AFile + ', ' + LibInfo.LibVersion + ') is incompatible to the current version ' +
+          LibraryVersion);
+      end;
     end;
   end;
 end;

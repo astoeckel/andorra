@@ -9,7 +9,7 @@ interface
 uses
   SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG, AdSetupDlg,{$ELSE}AdDevIL, {$ENDIF}
   AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
-  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector;
+  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents;
 
 type
   TAdAppl = class
@@ -19,6 +19,7 @@ type
     AdVideo:TAdVideoPlayer;
     AdGUI: TAdGUI;
     AdGUIConnector: TAdGUIConnector;
+
     procedure Idle(Sender:TObject;var Done:boolean);
     procedure OpenClick(Sender: TObject);
     procedure CloseClick(Sender: TObject);
@@ -44,7 +45,7 @@ begin
     AdDraw.BeginScene;
 
     AdVideo.Move(AdPerCounter.TimeGap / 1000);
-    AdVideo.Draw(AdDraw, AdRect(0,0,AdDraw.Display.Width,AdDraw.Display.Height));
+    AdVideo.Draw(AdDraw, AdRect(0,0,AdDraw.Window.ClientWidth,AdDraw.Window.ClientHeight));
 
     with AdDraw.Canvas do
     begin

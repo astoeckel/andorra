@@ -8,7 +8,7 @@ interface
 
 uses
   AdClasses, AdEvents, AdDraws,
-  AdGUI, AdComponents, AdGUIConnector, AdStdWindow;
+  AdGUI, AdComponents, AdGUIConnector, AdWin32Window;
 
 type
   TAdAppl = class
@@ -75,7 +75,7 @@ begin
   AdDraw.Display.Width := 800;
   AdDraw.Display.Height := 600;
   AdDraw.Display.BitCount := 32;
-  AdDraw.Options := AdDraw.Options + [doMipmaps];
+  AdDraw.Options := AdDraw.Options + [doFullscreen];
   if AdDraw.Initialize then
   begin
     AdDraw.Window.Events.OnIdle := Idle;

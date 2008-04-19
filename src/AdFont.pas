@@ -660,6 +660,8 @@ var
 begin
   if (TypeSetter.Changed) or (AText <> FLastText) then
   begin
+    TypeSetter.CharSizes := FCharSizes;
+    TypeSetter.CharPatterns := FCharPatterns;
     TypeSetter.GenerateLine(0, 0, AText, ATextSet);
     FLastText := AText;
     FLastWidth := TypeSetter.TextWidth;

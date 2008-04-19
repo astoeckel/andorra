@@ -40,7 +40,6 @@ type
     procedure Delete1Click(Sender: TObject);
     procedure Paste1Click(Sender: TObject);
     procedure Copy1Click(Sender: TObject);
-    procedure FormClick(Sender: TObject);
     procedure Cut1Click(Sender: TObject);
     procedure Export1Click(Sender: TObject);
     procedure EditXML1Click(Sender: TObject);
@@ -263,14 +262,6 @@ begin
   Paste;
 end;
 
-procedure TDesignerDlg.FormClick(Sender: TObject);
-begin
-  if assigned(OnFocus) and (AdGUI.FocusedComponent <> nil) then
-  begin
-    OnFocus(self);
-  end;
-end;
-
 procedure TDesignerDlg.FormCreate(Sender: TObject);
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
@@ -350,7 +341,7 @@ var
 begin
   if (not FirstPoint) and (AddComp <> nil) then
   begin
-    AdGUI.Click(X,Y);
+    AdGUI.MouseUp(abLeft, [], X,Y);
     FirstPoint := true;
     AddRect.Left := (X div AdGUI.GridX) * AdGUI.GridX;
     AddRect.Top := (Y div AdGUI.GridY) * AdGUI.GridY;
@@ -396,6 +387,11 @@ var
   p1,p2:TAdPoint;
   comp,add:TAdComponent;
 begin
+  if Assigned(OnFocus) and (AdGUI.FocusedComponent <> nil) then
+  begin
+    OnFocus(self);
+  end;
+
   if (FirstPoint) and (AddComp <> nil) then
   begin
     if AddRect.Left < AddRect.Right then
@@ -446,7 +442,7 @@ procedure TDesignerDlg.FormResize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    AdDraw1.Setup2DScene;
+    AdDraw1.Setup2DScene(ClientWidth, ClientHeight);
   end;
 end;
 

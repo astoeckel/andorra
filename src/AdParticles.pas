@@ -10,11 +10,10 @@
 * Project: Andorra 2D
 * Authors:  Andreas Stoeckel
 * File: AdParticles.pas
-* Comment: This unit contains the particle engine
+* Comment: Contains particle system classes and types.
 }
 
-{ Contains the particle system engine }
-
+{ Contains particle system classes and types. }     
 unit AdParticles;
 
 {$IFDEF FPC}
@@ -23,14 +22,44 @@ unit AdParticles;
 
 interface
 
-uses SysUtils, AdTypes, Classes, AdDraws, AdClasses, AdList;
+uses
+  SysUtils, Classes, SyncObjs, Math,
+  AdDraws, AdPersistent, AdClasses, AdTypes, AdColorList, AdList, AdSimpleXML;
 
 type
 
-  //The main particle class
+  { The main, abstract particle class. TAdParticle has methods to save and
+    load settings from/to XML via RTTI and gives chlidren class the ability to
+    create vertex/index data for drawing. Do not use TAdParticle directly.}
   TAdParticle = class;
 
-  //A list managing the particles. Deleted Particles are automaticly freed.
+  { A particle system is a emiter for a certain particle class. TAdParticleSystem
+    takes care of creating/emiting and destroying particles. It is also able to
+    load and store settings from/in XML. }
+  TAdParticleSystem = class;
+
+  { TAdParticleData is internally used by TAdParticleCalculationThread,
+    TAdParticle and TAdParticleSystem to exchange vertex/index data between
+    them. TAdParticleData also contains some additional data which describes
+    how far data creation has processed. }
+  TAdParticleData = record
+    Vertices: TAdVertexArray; //< Contains the vertices of the particle system.
+    Indices: TAdIndexArray; //< Contains the indices of the particle system. If the index buffer is not used, the field may be nil.
+    PrimitiveCount: integer; //< Stores how many primitives should be rendered.
+    VertPos: integer; //< The current vertex-array index
+    IndPos: integer; //< The current index-array index
+    MinX, //< The minimum X-Coordinate of a particle
+    MinY, //< The minimum Y-Coordinate of a particle
+    MaxX, //< The maximum X-Coordinate of a particle
+    MaxY: double; //< The maximum Y-Coordinate of a particle
+  end;
+
+  { Pointer on TAdParticle data. Used to prevent the compiler magic to create
+    a copy of TAdParticleData when exchanging between the modules. }
+  PAdParticleData = ^TAdParticleData;
+
+  { A list managing the particles. Particles are automaticly freed when they
+    are deleted from the list. }
   TAdParticleList = class(TAdList)
     private
     	function GetItem(AIndex:integer):TAdParticle;
@@ -38,216 +67,310 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
-      //The "items" property of a list.
+      { Provides access on the particle list. Remember that this method is not
+        thread safe. Particle data should only be changed, when the particle
+        processing thread is currently waiting. }
   	  property Items[AIndex:integer]:TAdParticle read GetItem write SetItem;default;
-      //Add a particle
+
+      { Adds a particle to the list. Remember that the list "owns" the
+        particle, what means that it will automatically be freed when removing
+        it from the list. This method is not thread safe. Remember not to add
+        particles when the particle processing thread is not waiting. }
       procedure Add(AItem:TAdParticle);
-      //Returns a particle
-      function Find(AName:string):TAdParticle;
   end;
 
-  //A Vector
-  TAdVector = record
-    X:double;//< The X value
-    Y:double;//< The Y value
-  end;
-
-  //A list containing TAndorraColors and returning
-  TAdColorList = class(TAdList)
+  { The main, abstract particle class. TAdParticle has methods to save and
+    load settings from/to XML via RTTI and gives chlidren class the ability to
+    create vertex/index data for drawing. Do not use TAdParticle directly.}
+  TAdParticle = class(TAdPersistent)
     private
-    	function GetItem(AIndex:integer):TAndorraColor;
-    	procedure SetItem(AIndex:integer;AItem:TAndorraColor);
+      FParticleSystem: TAdParticleSystem;
+      FDeaded: boolean;
     protected
-      procedure Notify(Ptr: Pointer; Action: TListNotification);override;
+      property ParticleSystem: TAdParticleSystem read FParticleSystem;
     public
-      //The "items" property of a list
-    	property Items[AIndex:integer]:TAndorraColor read GetItem write SetItem;default;
-      //Returns a mixed color value
-      function GetColor(Max,Pos:double):TAndorraColor;
-      //Add a color
-      procedure Add(AColor:TAndorraColor);
-      //Save the color list to the stream
-      procedure SaveToStream(AStream:TStream);
-      //Load the color list from a stream
-      procedure LoadFromStream(AStream:TStream);
+      { Returns the amount of vertices that is needed for one particle. }
+      class function VerticesPerParticle: integer;virtual;abstract;
+
+      { Returns the amount of indices that is needed for one particle. }
+      class function IndicesPerParticle: integer;virtual;abstract;
+
+      { Returns the mode the particle system should be drawn in. }
+      class function DrawMode: TAd2DDrawMode;virtual;abstract;
+
+      { Creates an instance of TAdParticle. }
+      constructor Create(ASystem: TAdParticleSystem);virtual;
+
+      { Calling this procedure will mark the particle as "dead". The particle
+        system will remove it as soon as possible. }
+      procedure Dead;virtual;
+
+      { Initializes the particle. }
+      procedure SetupMovement(AX, AY: integer);virtual;abstract;
+
+      { Copys the properties from the given particle. }
+      procedure Assign(APart: TAdParticle);virtual;abstract;
+
+      { Calculates the position of the particle. This step is done within the
+        particle calculation thread. }
+      procedure Move(ATimeGap: double);virtual;abstract;
+
+      { Stores the vertex/index data in AData. This step is done within the
+        particle calculation thread.}
+      procedure StoreData(AData: PAdParticleData);virtual;abstract;
+
+      procedure StoreMinMax(AData: PAdParticleData);virtual;abstract;
+
+      { Returns whether the particle is marked as dead. }
+      property Deaded: boolean read FDeaded;
+
+      { Saves the particle data to a new xml node. }
+      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
+
+      { Loads the particle data from the given xml node. }
+      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);virtual;
+
+      procedure SaveToStream(AStream: TStream);
+      procedure LoadFromStream(AStream: TStream);
+
+      procedure SaveToFile(AFile: string);
+      procedure LoadFromFile(AFile: string);
   end;
 
-  //A class of a particle
   TAdParticleClass = class of TAdParticle;
 
-  //Manages all particles in a system.
+  {$M+}
+  TAdParticleParameter = class
+    private
+      FStart, FStop, FVariation: double;
+    public
+      procedure LoadFromXML(AName: string; ARoot: TAdSimpleXMLElem);
+      procedure SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
+
+      procedure Assign(AParam: TAdParticleParameter);
+    published
+      property Start: double read FStart write FStart;
+      property Stop: double read FStop write FStop;
+      property Variation: double read FVariation write FVariation;
+  end;
+  {$M-}
+
+  TAdStdParticle = class(TAdParticle)
+    strict private
+      FPosition: TAdVector3;
+      FVelocity: TAdVector3;
+      FLivedTime: double;
+
+      FMaxLifeTime: double;
+      FLifeTimeVariation: double;
+
+      FXVelocity: TAdParticleParameter;
+      FYVelocity: TAdParticleParameter;
+      FZVelocity: TAdParticleParameter;
+
+      FCreationAngle: integer;
+      FCreationAngleRange: integer;
+    protected
+      property LivedTime: double read FLivedTime write FLivedTime;
+      property Position: TAdVector3 read FPosition write FPosition;
+      property Velocity: TAdVector3 read FVelocity write FVelocity;
+
+      function CalcValue(MaxTime, TimePos, StartPos, EndPos: double): double; inline;
+      procedure ApplyVariation(var AVal: double; AVar: double);
+      procedure ApplyVelVariation(var AVel: TAdParticleParameter);
+    public
+      constructor Create(ASystem: TAdParticleSystem);override; //<@exclude
+      destructor Destroy;override; //<@exclude
+
+      class function VerticesPerParticle: integer;override; //<@exclude
+      class function IndicesPerParticle: integer;override; //<@exclude
+      class function DrawMode: TAd2DDrawMode;override; //<@exclude
+
+      procedure SetupMovement(AX, AY: integer);override; //<@exclude
+      procedure Assign(APart: TAdParticle);override; //<@exclude
+
+      procedure Move(ATimeGap: double);override; //<@exclude
+      procedure StoreData(AData: PAdParticleData);override; //<@exclude
+      procedure StoreMinMax(AData: PAdParticleData);override; //@<exclude
+
+      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;override; //<@exclude
+      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);override; //<@exclude
+    published
+      {Describes how fast the particle should move on the X-Axis. Unit: Pixel per second}
+      property XVelocity: TAdParticleParameter read FXVelocity write FXVelocity;
+      {Describes how fast the particle should move on the Y-Axis. Unit: Pixel per second}
+      property YVelocity: TAdParticleParameter read FYVelocity write FYVelocity;
+      {Describes how fast the particle should move on the Z-Axis. Unit: Pixel per second}
+      property ZVelocity: TAdParticleParameter read FZVelocity write FZVelocity;
+
+      {Describes how long the particle should live. Unit: seconds}
+      property LifeTime: double read FMaxLifeTime write FMaxLifeTime;
+      {Use this value to variate the life time. Unit: percent. Range: 0-100}
+      property LifeTimeVariation: double read FLifeTimeVariation write FLifeTimeVariation;
+
+      {The angle the particles should be emitted from. Unit: degrees. Range: 0-360}
+      property CreationAngle: integer read FCreationAngle write FCreationAngle;
+      {Relative to the angle given in "CreationAngle", this value sets the range
+       particles are emitted from. Unit: degrees. Range: 0-360}
+      property CreationAngleRange: integer read FCreationAngleRange write FCreationAngleRange;
+  end;
+
+  TAdBillboardParticle = class(TAdStdParticle)
+    private
+      FCalculatedSize: double;
+      FCalculatedAngle: double;
+      
+      FSize: TAdParticleParameter;
+      FAngle: TAdParticleParameter;
+
+      function RotatePoint(ACenter: TAdVector3; AR, AAngle: double): TAdVector3;
+    public
+      constructor Create(ASystem: TAdParticleSystem);override;
+      destructor Destroy;override;
+
+      class function VerticesPerParticle: integer;override; //<@exclude
+      class function IndicesPerParticle: integer;override; //<@exclude
+      class function DrawMode: TAd2DDrawMode;override; //<@exclude
+
+      procedure SetupMovement(AX, AY: integer);override; //<@exclude
+      procedure Assign(APart: TAdParticle);override; //<@exclude
+
+      procedure Move(ATimeGap: double);override; //<@exclude
+      procedure StoreData(AData: PAdParticleData);override; //<@exclude
+
+      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;override; //<@exclude
+      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);override; //<@exclude
+    published
+      property Size: TAdParticleParameter read FSize write FSize;
+      property Angle: TAdParticleParameter read FAngle write FAngle;
+  end;
+
+  TAdParticleCalculationThread = class(TThread)
+    private
+      FHasData: boolean;
+      FStartedCalculation: boolean;
+
+      FTimeGap: double;
+
+      FData: TAdParticleData;
+
+      FParticleList: TAdParticleList;
+      FParticleClass: TAdParticleClass;
+
+      FHighPerformance: boolean;
+      procedure SetParticleClass(AClass: TAdParticleClass);
+    protected
+      procedure ResizeData(AEffectSize: integer);
+      procedure ResetData;
+      procedure Execute;override;
+    public
+      constructor Create(AParticleList: TAdParticleList; AEffectSize: integer = 100);
+
+      function HasData: boolean;
+      function GetData: PAdParticleData;
+
+      procedure Move(ATimeGap: double);
+
+      property HighPerformance: boolean read FHighPerformance write FHighPerformance;
+      property ParticleClass: TAdParticleClass read FParticleClass write SetParticleClass;
+  end;
+
+  TAdXMLColorList = class(TAdColorList)
+    public
+      procedure SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
+      procedure LoadFromXML(AName: string; ARoot: TAdSimpleXMLElem);
+  end;
+
   TAdParticleSystem = class
     private
-      FTexture:TAdTexture;
-      FImages:TAdImageList;
-      FDraw:TAdDraw;
-      FParticles:TAdParticleList;
-      FDefault:TAdParticle;
-      procedure SetTexture(AValue:TAdTexture);
-      function GetBoundsRect:TAdRect;
-    protected
-    public
-      //Creates the particle system
-      constructor Create(ADraw:TAdDraw);
-      //Destroys the particle system
-      destructor Destroy;override;
-      //Creates an amount of particles of the specified particle class. The new particles get the settings stored in the "Default" particle.
-      procedure CreateParticles(ACount:integer;AClass:TAdParticleClass;OffsetX,OffsetY:integer);virtual;
-      //Draws the system at a specified position
-      procedure Draw(X,Y:double);
+      FParent: TAdDraw;
+      FMesh: TAd2dMesh;
 
-      //Moves all assigned particles
-      procedure Move(TimeGap:double);     
-      //Kills all particles which want to be freed
-      procedure Dead;
-      //Creates a new image in the systems imagelist with a specific color.
-      procedure CreateImage(AColor:TAndorraColor);
-      //Returns an image with a specific color or "nil" if the image isn't found.
-      function GetImage(AColor:TAndorraColor):TAdImage;
-      //Specifies the texture of all particles
-      property Texture:TAdTexture read FTexture write SetTexture;
-      //The parent sourface
-      property Parent:TAdDraw read FDraw write FDraw;
-      //All particles in the system
-      property Items:TAdParticleList read FParticles;
-      //A link to the system's image list.
-      property Images:TAdImageList read FImages;
-      //The relative rect of all particles
-      property BoundsRect:TAdRect read GetBoundsRect;
-      //A particle which settings are automaticly copied when creating new particles
-      property DefaultParticle:TAdParticle read FDefault;
+      FParticleCalcThread: TAdParticleCalculationThread;
+      FParticleList: TAdParticleList;
+
+      FDefaultParticle: TAdParticle;
+      FOwnDefaultParticle: boolean;
+
+      FTexture: TAdCustomTexture;
+      FOwnTexture: boolean;
+
+      FHighPerformance: boolean;
+
+      FBlendMode: TAd2dBlendMode;
+      FColors: TAdColorList;
+
+      FTimeGap: double;
+      FTime: double;
+      FTmpFPS: integer;
+      FPartSysFPS: integer;
+
+      FAddParticles: TList;
+      FAddParticleIndex: integer;
+
+      FMinX, FMinY, FMaxX, FMaxY: double;
+
+      procedure SetHighPerformance(AValue: boolean);
+      procedure SetTexture(AValue: TAdCustomTexture);
+      procedure SetDefaultParticle(AValue: TAdParticle);
+      function GetInitialized: boolean;
+      function GetBoundsRect: TAdRect;
+    protected
+      procedure DeleteDeaded;
+      procedure Notify(ASender:TObject; AEvent:TSurfaceEventState);
+    public
+      constructor Create(AParent: TAdDraw);
+      destructor Destroy; override;
+
+      procedure Initialize;
+      procedure Finalize;
+
+      procedure Emit(ACount, AX, AY: integer);
+
+      procedure Draw(ADest: TAdSurface; AX, AY: integer);
+      procedure Move(ATimeGap: double);
+
+      procedure SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
+      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);
+
+      procedure SaveToStream(AStream: TStream);
+      procedure LoadFromStream(AStream: TStream);
+
+      procedure SaveToFile(AFile: string);
+      procedure LoadFromFile(AFile: string);
+
+      property Texture: TAdCustomTexture read FTexture write SetTexture;
+      property Parent: TAdDraw read FParent;
+      property Initialized: boolean read GetInitialized;
+      property Items: TAdParticleList read FParticleList;
+      property HighPerformance: boolean read FHighPerformance write SetHighPerformance;
+      property Colors: TAdColorList read FColors write FColors;
+      property DefaultParticle: TAdParticle read FDefaultParticle write SetDefaultParticle;
+      property BlendMode: TAd2dBlendMode read FBlendMode write FBlendMode;
+      property FPS: integer read FPartSysFPS;
+      property BoundsRect: TAdRect read GetBoundsRect;
   end;
 
-  //One particle
-  TAdParticle = class
-    private
-      FX,FY:double;
-      FDir:TAdVector;
-      FForce:TAdVector;
-      FLifeTime:double;
-      FLifedTime:double;
-      FLifeTimeVariation:integer;
-      FSpeedVariation:integer;
-      FColors:TAdColorList;
-      FDeaded:boolean;
-      FSystem:TAdParticleSystem;
-      FLastImage:TAdImage;
-      FDrawMask:boolean;
-      FColor:TAndorraColor;
-      FSizeStart,FSizeEnd:double;
-      FRotStart,FRotEnd:double;
-      FSpeedXStart,FSpeedXEnd:double;
-      FSpeedYStart,FSpeedYEnd:double;
-      FCrAngle, FCrAngleOpen:integer;
-      FBlendMode:TAd2DBlendMode;
-      FSpeedVar:double;
-      FName:ShortString;
-      function GetBoundsRect:TAdRect;
-      function GetValue(StartPos,EndPos,Max,Pos:double):double;
-    protected
-      function GetImage:TAdImage;virtual;
-    public
-      //Creates an instance of the particle
-      constructor Create(ASystem:TAdParticleSystem);
-      //Destroys the instance of this particle
-      destructor Destroy;override;
-      
-      //Called by the particle system, contains all steps to move a particle
-      procedure DoMove(TimeGap:double);virtual;
-      //Called by the particle system, draws the particle
-      procedure DoDraw(AX,AY:double);virtual;
-      //Called by the particle system, is called before DoDraw is called. Used to draw a background mask.
-      procedure DoPreDraw(AX,AY:double);virtual;
-      //Called by the particle engine when changing the texture
-      procedure Reset;
+{ Registers a new particle class, which can then be used in the editor and loaded
+  from XML }
+procedure RegisterParticleClass(AClass: TAdParticleClass);
 
-      //Shows the system that this particle has to be freed.
-      procedure Dead;virtual;
-      
-      //Copies the settings of another particle to this particle.
-      procedure Assign(AParticle:TAdParticle);
-      
-      //Called by the particle system, setups the movement (the direction) of the particle.
-      procedure SetupMovement;virtual;
-      
-      //Saves the particle's settings to a stream
-      procedure SaveToStream(AStream:TStream);
-      //Loads the particle's settings from a stream
-      procedure LoadFromStream(AStream:TStream);
-      //Saves the particle settings to a file
-      procedure SaveToFile(AFile:string);
-      //Loads the particle settings from a file
-      procedure LoadFromFile(AFile:string);
-      
-      //Specifies whether the backgroundmask should be drawn by the DoPreDraw function.
-      property DrawMask:boolean read FDrawMask write FDrawMask;
-      //The image of the particle
-      property Image:TAdImage read GetImage;
-      //The parent particle system.
-      property Parent:TAdParticleSystem read FSystem;
-      //Specifies whether the particle wants to be killed.
-      property Deaded:boolean read FDeaded;
-      //The direction vector of the particle
-      property Dir:TAdVector read FDir write FDir;
-      //The relative rectangle of the particle system
-      property BoundsRect:TAdRect read GetBoundsRect;
-      //The lifetime of a particle
-      property LifeTime:double read FLifeTime write FLifeTime;
-      //The variation of the lifetime in percent.
-      property LifeTimeVariation:integer read FLifeTimeVariation write FLifeTimeVariation;
-      //The colors the particle has.
-      property Colors:TAdColorList read FColors write FColors;
-      //The start size of a particle in %/100.
-      property SizeStart:double read FSizeStart write FSizeStart;
-      //The end size of a particle in %/100.
-      property SizeEnd:double read FSizeEnd write FSizeEnd;
-      //The start rotation angle of the particle in degrees.
-      property RotStart:double read FRotStart write FRotStart;
-      //The end rotation angle of the particle in degrees.
-      property RotEnd:double read FRotEnd write FRotEnd;
-      //The start x-speed of the particle
-      property SpeedXStart:double read FSpeedXStart write FSpeedXStart;
-      //The start y-speed of the particle
-      property SpeedYStart:double read FSpeedYStart write FSpeedYStart;
-      //The end x-speed of the particle
-      property SpeedXEnd:double read FSpeedXEnd write FSpeedXEnd;
-      //The end y-speed of the particle
-      property SpeedYEnd:double read FSpeedYEnd write FSpeedYEnd;
-      //The speed's varition in percent.
-      property SpeedVariation:integer read FSpeedVariation write FSpeedVariation;
-      //The angle the particle can fly in in degrees from 0-360
-      property CreationAngle:integer read FCrAngle write FCrAngle;
-      //The angle defining the space the particle can fly in
-      property CreationAngleOpen:integer read FCrAngleOpen write FCrAngleOpen;
-      //A vector of a force which influences the movement of the particle
-      property Force:TAdVector read FForce write FForce;
-      //The blendmode the particle is drawn in
-      property BlendMode:TAd2DBlendMode read FBlendMode write FBlendmode;
-      //The name of the particle.
-      property Name:ShortString read FName write FName;
-  end;
+var
+  RegisteredParticleClasses: TStringList;
 
 implementation
+
+procedure RegisterParticleClass(AClass: TAdParticleClass);
+begin
+  RegisteredParticleClasses.Add(AClass.ClassName);
+  AdRegisterClass(AClass);
+end;
 
 { TAdParticleList }
 
 procedure TAdParticleList.Add(AItem: TAdParticle);
 begin
   inherited Add(AItem);
-end;
-
-function TAdParticleList.Find(AName: string): TAdParticle;
-var i:integer;
-begin
-  result := nil;
-  for i := 0 to Count - 1 do
-  begin
-    if Items[i].Name = AName then
-    begin
-      result := Items[i];
-      break;
-    end;
-  end;
 end;
 
 function TAdParticleList.GetItem(AIndex:integer):TAdParticle;
@@ -269,228 +392,105 @@ begin
   inherited Items[AIndex] := AItem;
 end;
 
-{ TAdColorList }
+{ TAdParticleCalculationThread }
 
-type pAndorraColor = ^TAndorraColor;
-
-procedure TAdColorList.Add(AColor: TAndorraColor);
-var temp:pAndorraColor;
+constructor TAdParticleCalculationThread.Create(AParticleList: TAdParticleList;
+  AEffectSize: integer);
 begin
-  new(temp);
-  temp^ := AColor;
-  inherited Add(temp);
+  inherited Create(false);
+
+  FParticleList := AParticleList;
+  FParticleClass := nil;
+
+  ResizeData(AEffectSize);
+
+  FStartedCalculation := true;
 end;
 
-function TAdColorList.GetColor(Max, Pos: double): TAndorraColor;
-  function ColorBetween(C1, C2 : TAndorraColor; blend:Double):TAndorraColor;
-  begin
-     result.r := Round(C1.r + (C2.r-C1.r)*blend);
-     result.g := Round(C1.g + (C2.g-C1.g)*blend);
-     result.b := Round(C1.b + (C2.b-C1.b)*blend);
-     result.a := Round(C1.a + (C2.a-C1.a)*blend);
-  end;
-
-var v1,v2:integer;
-    v:single;
+procedure TAdParticleCalculationThread.Execute;
+var
+  i: integer;
 begin
-  if pos > max then
+  while not Terminated do
   begin
-    result := Items[count-1];
-  end
-  else
-  begin
-    if count > 0 then
+    if not HighPerformance then
     begin
-      if (count > 1) and (pos > 0) then
-      begin
-        v := 1/(max/((count-1)*pos));
-        if v > (count-1) then
+      while (not FStartedCalculation) and (not Terminated) do
+        Sleep(1);
+    end else
+      while (not FStartedCalculation) and (not Terminated) do;
+
+    if not Terminated then
+    begin
+      ResetData;
+
+      try
+        ResizeData(FParticleList.Count);
+        for i := 0 to FParticleList.Count - 1 do
         begin
-          v := (count-1)
+          FParticleList[i].Move(FTimeGap);
+          FParticleList[i].StoreMinMax(@FData);
+          FParticleList[i].StoreData(@FData);
         end;
-        if trunc(v) <> v then
-        begin
-          v1 := trunc(v);
-          v2 := v1+1;
-          result := ColorBetween(Items[v1],Items[v2],v-trunc(v));
-        end
-        else
-        begin
-          result := Items[round(v)];
-        end;
-      end
-      else
-      begin
-        result := Items[0];
+      finally
+        FHasData := true;
+        FStartedCalculation := false;
       end;
     end;
   end;
 end;
 
-function TAdColorList.GetItem(AIndex:integer):TAndorraColor;
+function TAdParticleCalculationThread.GetData: PAdParticleData;
 begin
-  result := TAndorraColor(inherited Items[AIndex]^);
+  result := @FData;
+  FHasData := false;
 end;
 
-procedure TAdColorList.LoadFromStream(AStream: TStream);
-var c,i:integer;
-    tmp:TAndorraColor;
+function TAdParticleCalculationThread.HasData: boolean;
 begin
-  Clear;
-  AStream.Read(c,sizeof(c));
-  for i := 0 to c-1 do
+  result := FHasData;
+end;
+
+procedure TAdParticleCalculationThread.Move(ATimeGap: double);
+begin
+  if not FStartedCalculation then
   begin
-    AStream.Read(tmp,SizeOf(tmp));
-    Add(tmp);
+    FTimeGap := ATimeGap;
+    FStartedCalculation := true;
   end;
 end;
 
-procedure TAdColorList.SaveToStream(AStream: TStream);
-var i:integer;
-    tmp:TAndorraColor;
+procedure TAdParticleCalculationThread.ResetData;
 begin
-  i := Count;
-  AStream.Write(i,sizeof(i));
-  for i := 0 to Count - 1 do
-  begin
-    tmp := Items[i];
-    AStream.Write(tmp,SizeOf(TAndorraColor))
-  end;
+  FData.PrimitiveCount := 0;
+  FData.VertPos := 0;
+  FData.IndPos := 0;
+
+  FHasData := false;
 end;
 
-procedure TAdColorList.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TAdParticleCalculationThread.ResizeData(AEffectSize: integer);
 begin
-  if ( Action = lnDeleted ) then
+  if (FParticleClass <> nil) and
+     (AEffectSize * FParticleClass.VerticesPerParticle > Length(FData.Vertices)) then
   begin
-    Dispose(PAndorraColor(Ptr));
-  end;
-  Inherited;
-end;        
+    SetLength(FData.Vertices, AEffectSize * FParticleClass.VerticesPerParticle * 2);
 
-procedure TAdColorList.SetItem(AIndex:integer;AItem:TAndorraColor);
-begin
-  PAndorraColor(inherited Items[AIndex])^ := AItem;
-end;
-
-
-{ TAdParticleSystem }
-
-constructor TAdParticleSystem.Create(ADraw: TAdDraw);
-begin
-  inherited Create;
-  FDraw := ADraw;
-  FImages := TAdImageList.Create(FDraw);
-  FParticles := TAdParticleList.Create;
-  FDefault := TAdParticle.Create(nil);
-end;
-
-procedure TAdParticleSystem.CreateImage(AColor: TAndorraColor);
-begin
-  if FTexture <> nil then
-  begin
-    with FImages.Add(AdColorToString(AColor)) do
-    begin
-      Texture := FTexture;
-      Color := RGB(AColor.r,AColor.g,AColor.b);
-      Restore;
-    end;
-  end;
-end;
-
-procedure TAdParticleSystem.CreateParticles(ACount: integer;
-  AClass: TAdParticleClass;OffsetX,OffsetY:integer);
-var
-  i: Integer;
-  apart:TAdParticle;
-begin
-  for i := 0 to ACount - 1 do
-  begin
-    apart := AClass.Create(self);
-    FParticles.Add(apart);
-    apart.FX := OffsetX;
-    apart.FY := OffsetY;
-    apart.Assign(FDefault);
-    apart.SetupMovement;
-  end;
-end;
-
-procedure TAdParticleSystem.Dead;
-var i:integer;
-begin
-  i := 0;
-  while i < FParticles.Count do
-  begin
-    if not FParticles[i].Deaded then
-    begin
-      i := i + 1;
-    end
+    if FParticleClass.IndicesPerParticle <> 0 then    
+      SetLength(FData.Indices, AEffectSize * FParticleClass.IndicesPerParticle * 2)
     else
-    begin
-      FParticles.Delete(i);
-    end;
+      FData.Indices := nil;
   end;
 end;
 
-destructor TAdParticleSystem.Destroy;
+procedure TAdParticleCalculationThread.SetParticleClass(
+  AClass: TAdParticleClass);
 begin
-  FImages.Free;
-  FParticles.Free;
-  FDefault.Free;
-  inherited Destroy;
-end;
-
-procedure TAdParticleSystem.Draw(X, Y: double);
-var i:integer;
-begin
-  for i := 0 to FParticles.Count - 1 do
+  if AClass <> FParticleClass then
   begin
-    FParticles[i].DoPreDraw(X,Y);
+    FParticleClass := AClass;
+    ResizeData(FParticleList.Count);
   end;
-  for i := 0 to FParticles.Count - 1 do
-  begin
-    FParticles[i].DoDraw(X,Y);
-  end;
-end;
-
-function TAdParticleSystem.GetBoundsRect: TAdRect;
-var i:integer;
-begin
-  for i := 0 to FParticles.Count - 1 do
-  begin
-    if (FParticles[i].GetBoundsRect.Left < result.Left) or (i = 0) then
-      result.Left := FParticles[i].GetBoundsRect.Left;
-    if (FParticles[i].GetBoundsRect.Right > result.Right) or (i = 0) then
-      result.Right := FParticles[i].GetBoundsRect.Right;
-    if (FParticles[i].GetBoundsRect.Bottom > result.Bottom) or (i = 0) then
-      result.Bottom := FParticles[i].GetBoundsRect.Bottom;
-    if (FParticles[i].GetBoundsRect.Top < result.Top) or (i = 0) then
-      result.Top := FParticles[i].GetBoundsRect.Top;
-  end;
-end;
-
-function TAdParticleSystem.GetImage(AColor: TAndorraColor): TAdImage;
-begin
-  result := FImages.Find(AdColorToString(AColor));
-end;
-
-procedure TAdParticleSystem.Move(TimeGap: double);
-var i:integer;
-begin
-  for i := 0 to FParticles.Count - 1 do
-  begin
-    FParticles[i].DoMove(TimeGap);
-  end;
-end;
-
-procedure TAdParticleSystem.SetTexture(AValue: TAdTexture);
-var
-  i:integer;
-begin
-  for i := 0 to Items.Count - 1 do
-    Items[i].Reset;
-
-  FImages.Clear;
-  FTexture := AValue;
 end;
 
 { TAdParticle }
@@ -498,42 +498,8 @@ end;
 constructor TAdParticle.Create(ASystem: TAdParticleSystem);
 begin
   inherited Create;
-  FSystem := ASystem;
-  FColors := TAdColorList.Create;
-  FColors.Add(Ad_ARGB(255,255,255,255));
-  FColors.Add(Ad_ARGB(0,255,255,255));
-  FLifeTime := 1;
-  FLifeTimeVariation := 0;
-  FDrawMask := true;
-  FSizeStart := 1;
-  FSizeEnd := 1;
-  FRotStart := 0;
-  FRotEnd := 0;
-  FSpeedXStart := 100;
-  FSpeedYStart := 100;
-  FSpeedXEnd := 100;
-  FSpeedYEnd := 100;
-  FCrAngle := 0;
-  FCrAngleOpen := 360;
-  FForce.X := 0;
-  FForce.Y := 0;
-  FBlendMode := bmAdd;
-end;
 
-destructor TAdParticle.Destroy;
-begin
-  FColors.Free;
-  inherited;
-end;
-
-procedure TAdParticle.Assign(AParticle: TAdParticle);
-var ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  AParticle.SaveToStream(ms);
-  ms.Position := 0;
-  LoadFromStream(ms);
-  ms.Free;
+  FParticleSystem := ASystem;
 end;
 
 procedure TAdParticle.Dead;
@@ -541,203 +507,834 @@ begin
   FDeaded := true;
 end;
 
-function MoveRect(ARect:TAdRect;X,Y:double):TAdRect;
+procedure TAdParticle.LoadFromXML(ARoot: TAdSimpleXMLElem);
 begin
-  result := AdRect(Round(ARect.Left+X),Round(ARect.Top+Y),
-                   Round(ARect.Right+X),Round(ARect.Bottom+Y));
+  //Nothing to do now
 end;
 
-procedure TAdParticle.DoDraw(AX, AY: double);
-var aimg:TAdImage;
-    arect:TAdRect;
-    w,h:integer;
+function TAdParticle.SaveToXML(ARoot: TAdSimpleXMLElems): TAdSimpleXMLElem;
 begin
-  if (not FDeaded) and (BlendMode <> bmMask) then
-  begin
-    aimg := Image;
-    if aimg <> nil then
-    begin
-      arect := MoveRect(GetBoundsRect,AX,AY);
-      w := arect.Right-arect.Left;
-      h := arect.Bottom-arect.Top;
-      if BlendMode = bmAdd then
-      begin
-        aimg.DrawRotateAdd(FSystem.Parent,arect.Left,arect.Top,w,h,0,0.5,0.5,
-                           round(GetValue(FRotStart,FRotEnd,LifeTime,FLifedTime)),
-                           cut(fcolor.a));
-      end;
-      if BlendMode = bmAlpha then
-      begin
-        aimg.DrawRotateAlpha(FSystem.Parent,arect.Left,arect.Top,w,h,0,0.5,0.5,
-                           round(GetValue(FRotStart,FRotEnd,LifeTime,FLifedTime)),
-                           cut(fcolor.a));
-      end;
-    end;
-  end;
+  //Add new node and return it
+  result := ARoot.Add(ClassName);
 end;
 
-procedure TAdParticle.DoPreDraw(AX, AY: double);
-var aimg:TAdImage;
-    arect:TAdRect;
-    w,h:integer;
-begin
-  if (FDrawMask or (BlendMode = bmMask)) and not FDeaded then
-  begin
-    aimg := Image;
-    if aimg <> nil then
-    begin
-      arect := MoveRect(GetBoundsRect,AX,AY);
-      w := arect.Right-arect.Left;
-      h := arect.Bottom-arect.Top;
-      aimg.DrawRotateMask(FSystem.Parent,arect.Left,arect.Top,w,h,0,0.5,0.5,
-                          round(GetValue(FRotStart,FRotEnd,LifeTime,FLifedTime)),
-                          cut(fcolor.a));
-    end;
-  end;
-end;
-
-
-procedure TAdParticle.DoMove(TimeGap: double);
-var sx,sy:double;
-begin
-  FLifedTime := FLifedTime + 1 * Timegap;
-  if FLifedTime > FLifeTime then Dead;
-
-  sx := GetValue(FSpeedXStart,FSpeedXEnd,LifeTime,FLifedTime) * Timegap;
-  sy := GetValue(FSpeedYStart,FSpeedYEnd,LifeTime,FLifedTime) * Timegap;
-  if FSpeedVariation = 0 then
-  begin
-    FX := FX+FDir.X * sx +(FForce.X*FLifedTime) * Timegap;
-    FY := FY+FDir.Y * sy +(FForce.Y*FLifedTime) * Timegap;
-  end
-  else
-  begin
-    FX := FX+FDir.X * sx * FSpeedVar +(FForce.X*FLifedTime) * Timegap;
-    FY := FY+FDir.Y * sy * FSpeedVar +(FForce.Y*FLifedTime) * Timegap;
-  end;
-end;
-
-function TAdParticle.GetBoundsRect: TAdRect;
-var s:double;
-begin
-  s := GetValue(SizeStart,SizeEnd,LifeTime,FLifedTime);
-  result := AdRect(round(FX-(Parent.Texture.Texture.BaseWidth)*s / 2),
-                   round(FY-(Parent.Texture.Texture.BaseHeight)*s / 2),
-                   round(FX+(Parent.Texture.Texture.BaseWidth)*s / 2),
-                   round(FY+(Parent.Texture.Texture.BaseHeight)*s / 2));
-end;
-
-function TAdParticle.GetImage: TAdImage;
-var acolor:TAndorraColor;
-begin
-  acolor := FColors.GetColor(FLifeTime,FLifedTime);
-  if (not CompareColors(acolor,fcolor)) or (FLastImage = nil) then
-  begin
-    fcolor := acolor;
-    result := FSystem.GetImage(acolor);
-    if result = nil then
-    begin
-      FSystem.CreateImage(acolor);
-      result := FSystem.GetImage(AColor);
-    end;
-    FLastImage := result;
-  end
-  else
-  begin
-    result := FLastImage;
-  end;
-end;
-
-procedure TAdParticle.Reset;
-begin
-  FLastImage := nil;
-end;
-
-function TAdParticle.GetValue(StartPos, EndPos, Max, Pos: double): double;
-begin
-  result := ((EndPos-StartPos)/Max)* Pos + StartPos;
-end;
-
-procedure TAdParticle.LoadFromFile(AFile: string);
-var ms:TMemoryStream;
-begin
-  ms := TMemoryStream.Create;
-  ms.LoadFromFile(AFile);
-  ms.Position := 0;
-  LoadFromStream(ms);
-  ms.Free;
-end;
-
-procedure TAdParticle.LoadFromStream(AStream: TStream);
-begin
-  FColors.LoadFromStream(AStream);
-  AStream.Read(FLifeTime,SizeOf(FLifeTime));
-  AStream.Read(FLifeTimeVariation,SizeOf(FLifeTimeVariation));
-  AStream.Read(FDrawMask,SizeOf(FDrawMask));
-  AStream.Read(FSizeStart,SizeOf(FSizeStart));
-  AStream.Read(FSizeEnd,SizeOf(FSizeEnd));
-  AStream.Read(FRotStart,SizeOf(FRotStart));
-  AStream.Read(FRotEnd,SizeOf(FRotEnd));
-  AStream.Read(FSpeedXStart,SizeOf(FSpeedXStart));
-  AStream.Read(FSpeedYStart,SizeOf(FSpeedYStart));
-  AStream.Read(FSpeedXEnd,SizeOf(FSpeedXEnd));
-  AStream.Read(FSpeedYEnd,SizeOf(FSpeedYEnd));
-  AStream.Read(FCrAngle,SizeOf(FCrAngle));
-  AStream.Read(FCrAngleOpen,SizeOf(FCrAngleOpen));
-  AStream.Read(FForce,SizeOf(FForce));
-  AStream.Read(FBlendMode,SizeOf(FBlendmode));
-  AStream.Read(FSpeedVariation,SizeOf(FSpeedVariation));
-  AStream.Read(FName,255);
-end;
 
 procedure TAdParticle.SaveToFile(AFile: string);
-var ms:TMemoryStream;
+var
+  xml: TAdSimpleXML;
 begin
-  ms := TMemoryStream.Create;
-  SaveToStream(ms);
-  ms.SaveToFile(AFile);
-  ms.Free;
+  xml := TAdSimpleXML.Create;
+  SaveToXML(xml.Root.Items);
+  xml.SaveToFile(AFile);
+  xml.Free;
 end;
 
 procedure TAdParticle.SaveToStream(AStream: TStream);
+var
+  xml: TAdSimpleXML;
 begin
-  FColors.SaveToStream(AStream);
-  AStream.Write(FLifeTime,SizeOf(FLifeTime));
-  AStream.Write(FLifeTimeVariation,SizeOf(FLifeTimeVariation));
-  AStream.Write(FDrawMask,SizeOf(FDrawMask));
-  AStream.Write(FSizeStart,SizeOf(FSizeStart));
-  AStream.Write(FSizeEnd,SizeOf(FSizeEnd));
-  AStream.Write(FRotStart,SizeOf(FRotStart));
-  AStream.Write(FRotEnd,SizeOf(FRotEnd));
-  AStream.Write(FSpeedXStart,SizeOf(FSpeedXStart));
-  AStream.Write(FSpeedYStart,SizeOf(FSpeedYStart));
-  AStream.Write(FSpeedXEnd,SizeOf(FSpeedXEnd));
-  AStream.Write(FSpeedYEnd,SizeOf(FSpeedYEnd));
-  AStream.Write(FCrAngle,SizeOf(FCrAngle));
-  AStream.Write(FCrAngleOpen,SizeOf(FCrAngleOpen));
-  AStream.Write(FForce,SizeOf(FForce));
-  AStream.Write(FBlendMode,SizeOf(FBlendmode));
-  AStream.Write(FSpeedVariation,SizeOf(FSpeedVariation));
-  AStream.Write(FName,255);
+  xml := TAdSimpleXML.Create;
+  SaveToXML(xml.Root.Items);
+  xml.SaveToStream(AStream);
+  xml.Free;
 end;
 
-procedure TAdParticle.SetupMovement;
-var alpha,max,min : double;
+procedure TAdParticle.LoadFromFile(AFile: string);
+var
+  xml: TAdSimpleXML;
 begin
-  with FDir do
-  begin
-    max := (CreationAngle+CreationAngleOpen / 2) * PI / 180;
-    min := (CreationAngle-CreationAngleOpen / 2) * PI / 180;
-    Alpha := Random * (max-min)+min;
-    X := cos(Alpha);
-    Y := sin(Alpha);
-  end;
-  if FLifeTimeVariation <> 0 then
-  begin
-    FLifeTime := FLifeTime + random(round(FLifeTime*FLifeTimeVariation))/100 - FLifeTime*FLifeTimeVariation/100;
-  end;
-  if FSpeedVariation > 100 then FSpeedVariation := 100;  
-  FSpeedVar := ((100-random(FSpeedVariation))/100);
+  xml := TAdSimpleXML.Create;
+  xml.LoadFromFile(AFile);
+  LoadFromXML(xml.Root);
+  xml.Free;
 end;
+
+procedure TAdParticle.LoadFromStream(AStream: TStream);
+var
+  xml: TAdSimpleXML;
+begin
+  xml := TAdSimpleXML.Create;
+  xml.LoadFromStream(AStream);
+  LoadFromXML(xml.Root);
+  xml.Free;
+end;
+
+{ TAdParticleSystem }
+
+constructor TAdParticleSystem.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+
+  FParent := AParent;
+  FParent.RegisterNotifyEvent(Notify);
+
+  FOwnTexture := true;
+  FTexture := TAdTexture.Create(FParent);
+
+  FParticleList := TAdParticleList.Create;
+  FAddParticles := TList.Create;
+
+  FDefaultParticle := TAdStdParticle.Create(self);
+  FOwnDefaultParticle := true;
+
+  FParticleCalcThread := TAdParticleCalculationThread.Create(FParticleList);
+  FParticleCalcThread.ParticleClass := TAdParticleClass(FDefaultParticle.ClassType);
+
+  FColors := TAdXMLColorList.Create;
+  FColors.Add(Ad_ARGB(255, 255, 255, 255));
+  FColors.Add(Ad_ARGB(0  , 255, 255, 255));
+
+  FBlendMode := bmAdd;
+
+  Initialize;
+
+  HighPerformance := false;
+end;
+
+procedure TAdParticleSystem.DeleteDeaded;
+var
+  i: integer;
+begin
+  i := 0;
+  
+  while i < FParticleList.Count do
+  begin
+    if FParticleList[i].Deaded then
+    begin
+      FParticleList.Delete(i);
+    end else
+    begin
+      i := i + 1;
+    end;
+  end;
+end;
+
+destructor TAdParticleSystem.Destroy;
+begin
+  FParticleCalcThread.Free;
+
+  FParent.UnRegisterNotifyEvent(Notify);
+  FParticleList.Free;
+
+  Finalize;
+
+  FAddParticles.Free;
+
+  if (FOwnTexture) then
+    FTexture.Free;
+
+  if (FOwnDefaultParticle) then
+    FDefaultParticle.Free;  
+
+  FColors.Free;
+  
+  inherited;
+end;
+
+procedure TAdParticleSystem.Draw(ADest: TAdSurface; AX, AY: integer);
+begin
+  if Initialized then
+  begin
+    ADest.Activate;
+
+    FMesh.SetMatrix(AdMatrix_Translate(AX, AY, 0));
+
+    FMesh.Draw(FBlendMode, FDefaultParticle.DrawMode);
+  end;
+end;
+
+procedure TAdParticleSystem.Emit(ACount, AX, AY: integer);
+var
+  i: integer;
+  part: TAdParticle;
+begin
+  if FDefaultParticle <> nil then
+  begin
+    for i := 0 to ACount - 1 do
+    begin
+      part := TAdParticleClass(FDefaultParticle.ClassType).Create(self);
+      part.Assign(FDefaultParticle);
+      part.SetupMovement(AX, AY);
+
+      if FAddParticleIndex >= FAddParticles.Count then
+        FAddParticles.Add(part)
+      else
+        FAddParticles.Items[FAddParticleIndex] := part;
+
+      FAddParticleIndex := FAddParticleIndex + 1;
+    end;
+  end;
+end;
+
+procedure TAdParticleSystem.Finalize;
+var
+  i: integer;
+begin
+  if Initialized then
+  begin
+    FMesh.Free;
+    FMesh := nil;
+
+    for i := 0 to FAddParticleIndex - 1 do
+      TAdParticle(FAddParticles[i]).Free;
+
+    FAddParticles.Clear;
+    FAddParticleIndex := 0;
+
+    FPartSysFPS := 0;
+    FTime := 0;
+    FTmpFPS := 0;
+  end;
+end;
+
+function TAdParticleSystem.GetBoundsRect: TAdRect;
+begin
+  result := AdRect(FMinX, FMinY, FMaxX, FMaxY);
+end;
+
+function TAdParticleSystem.GetInitialized: boolean;
+begin
+  result := FMesh <> nil;
+end;
+
+procedure TAdParticleSystem.Initialize;
+begin
+  Finalize;
+
+  FMesh := FParent.AdAppl.CreateMesh;
+  FTimeGap := 0;
+end;
+
+procedure TAdParticleSystem.Move(ATimeGap: double);
+var
+  PData: PAdParticleData;
+  i: integer;
+begin
+  if Initialized then
+  begin
+    FTimeGap := FTimeGap + ATimeGap;
+
+    //Wait for the calculation thread to end its calculations.
+    if FParticleCalcThread.HasData then
+    begin
+      //Pick up data
+      PData := FParticleCalcThread.GetData;
+
+      //If some data has been created (PrimitiveCount > 0), store it in the mesh
+      //structure of the graphic plugin and prepare for rendering.
+      if PData^.PrimitiveCount > 0 then
+      begin
+        FMesh.Vertices := PData^.Vertices;
+        FMesh.IndexBuffer := PData^.Indices;
+        FMesh.PrimitiveCount := PData^.PrimitiveCount;
+
+        FMesh.Texture := FTexture.Texture;
+        FMesh.SetMatrix(AdMatrix_Identity);
+
+        FMesh.Update;
+      end;
+
+      FParticleCalcThread.ParticleClass := TAdParticleClass(FDefaultParticle.ClassType);
+
+      //Delete all particles that are marked as "dead". This is only possible now
+      //because the calculation thread is waiting for us to call the "Move"
+      //function.
+      DeleteDeaded;
+
+      //Add new particles. This is only possible now, because the calculation thread
+      //is waiting for us to call the "Move" function
+      for i := 0 to FAddParticleIndex - 1 do
+        FParticleList.Add(FAddParticles[i]);
+
+      FAddParticleIndex := 0;
+
+      //Copy min-max data
+      FMinX := PData^.MinX;
+      FMinY := PData^.MinY;
+      FMaxX := PData^.MaxX;
+      FMaxY := PData^.MaxY;
+
+      //Tell the calculation thread to go on with its calculations
+      FParticleCalcThread.Move(FTimeGap);
+
+      //Calculate particle system fps
+      FTmpFPS := FTmpFPS + 1;
+      FTime := FTime + FTimeGap;
+      if FTime > 1 then
+      begin
+        FPartSysFPS := FTmpFPS;
+        FTime := 0;
+        FTmpFPS := 0;
+      end;
+      FTimeGap := 0;
+
+    end;
+  end;
+end;
+
+procedure TAdParticleSystem.Notify(ASender: TObject;
+  AEvent: TSurfaceEventState);
+begin
+  case AEvent of
+    seInitialize: Initialize;
+    seFinalize: Finalize;
+  end;
+end;
+
+procedure TAdParticleSystem.SetDefaultParticle(AValue: TAdParticle);
+begin
+  if FOwnDefaultParticle then
+  begin
+    FDefaultParticle.Free;
+    FOwnDefaultParticle := false;
+  end;
+
+  FDefaultParticle := AValue;
+end;
+
+procedure TAdParticleSystem.SetHighPerformance(AValue: boolean);
+begin
+  FHighPerformance := AValue;
+  FParticleCalcThread.HighPerformance := FHighPerformance;
+end;
+
+procedure TAdParticleSystem.SetTexture(AValue: TAdCustomTexture);
+begin
+  if (FOwnTexture) and (FMesh <> nil) then
+  begin
+    FTexture.Free;
+    FOwnTexture := false;
+  end;
+
+  FTexture := AValue;
+end;
+
+procedure TAdParticleSystem.LoadFromFile(AFile: string);
+var
+  xml: TAdSimpleXML;
+begin
+  xml := TAdSimpleXML.Create;
+  xml.LoadFromFile(AFile);
+  LoadFromXML(xml.Root);
+  xml.Free;
+end;
+
+procedure TAdParticleSystem.LoadFromStream(AStream: TStream);
+var
+  xml: TAdSimpleXML;
+begin
+  xml := TAdSimpleXML.Create;
+  xml.LoadFromStream(AStream);
+  LoadFromXML(xml.Root);
+  xml.Free;
+end;
+
+procedure TAdParticleSystem.SaveToFile(AFile: string);
+var
+  xml: TAdSimpleXML;
+begin
+  xml := TAdSimpleXML.Create;
+  SaveToXML('system', xml.Root);
+  xml.SaveToFile(AFile);
+  xml.Free;
+end;
+
+procedure TAdParticleSystem.SaveToStream(AStream: TStream);
+var
+  xml: TAdSimpleXML;
+begin
+  xml := TAdSimpleXML.Create;
+  SaveToXML('system', xml.Root);
+  xml.SaveToStream(AStream);
+  xml.Free;
+end;
+
+procedure TAdParticleSystem.LoadFromXML(ARoot: TAdSimpleXMLElem);
+var
+  Node, PartNode: TAdSimpleXMLElem;
+  classname: string;
+  cref: TAdParticleClass;
+begin
+  Node := ARoot;
+  if Node <> nil then
+  begin
+    classname := Node.Items.Value('particleclass', '');
+    if classname <> '' then
+    begin
+      cref := TAdParticleClass(AdGetClass(classname));
+      if cref <> nil then
+      begin
+        DefaultParticle := cref.Create(self);
+        FOwnDefaultParticle := true;
+
+        PartNode := Node.Items.ItemNamed[classname];
+        if PartNode <> nil then
+        begin
+          DefaultParticle.LoadFromXML(PartNode);
+        end;
+      end;
+    end;
+
+    TAdXMLColorList(FColors).LoadFromXML('colors', Node);
+  end;
+end;
+
+procedure TAdParticleSystem.SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
+var
+  Node: TAdSimpleXMLElem;
+begin
+  Node := ARoot.Items.Add(AName);
+  Node.Items.Add('particleclass', FDefaultParticle.ClassName);
+  FDefaultParticle.SaveToXML(Node.Items);
+  TAdXMLColorList(FColors).SaveToXML('colors', Node);
+end;
+
+{ TAdStdParticle }
+
+constructor TAdStdParticle.Create(ASystem: TAdParticleSystem);
+begin
+  inherited;
+
+  FXVelocity := TAdParticleParameter.Create;
+  FYVelocity := TAdParticleParameter.Create;
+  FZVelocity := TAdParticleParameter.Create;
+
+  FXVelocity.Start := 100;
+  FXVelocity.Stop := 100;
+  FXVelocity.Variation := 0;
+
+  FYVelocity.Start := 100;
+  FYVelocity.Stop := 100;
+  FYVelocity.Variation := 0;
+
+  FZVelocity.Start := 0;
+  FZVelocity.Stop := 0;
+  FZVelocity.Variation := 0;
+
+  FMaxLifeTime := 1;
+  FLivedTime := 0;
+  FLifeTimeVariation := 0;
+
+  FCreationAngleRange := 360;
+  FCreationAngle := 0;
+end;
+
+destructor TAdStdParticle.Destroy;
+begin
+  FXVelocity.Free;
+  FYVelocity.Free;
+  FZVelocity.Free;
+
+  inherited;
+end;
+
+function TAdStdParticle.SaveToXML(ARoot: TAdSimpleXMLElems): TAdSimpleXMLElem;
+begin
+  result := inherited SaveToXML(ARoot);
+
+  with result do
+  begin
+    Items.Add('lifetime', LifeTime);
+    Items.Add('creationangle', CreationAngle);
+    Items.Add('creationanglerange', CreationAngleRange);
+  end;
+
+  XVelocity.SaveToXML('xvelocity', result);
+  YVelocity.SaveToXML('yvelocity', result);
+  ZVelocity.SaveToXML('zvelocity', result);
+end;
+
+procedure TAdStdParticle.LoadFromXML(ARoot: TAdSimpleXMLElem);
+begin
+  inherited;
+
+  LifeTime := ARoot.Items.FloatValue('lifetime', 1);
+  CreationAngle := ARoot.Items.IntValue('creationangle', 0);
+  CreationAngleRange := ARoot.Items.IntValue('creationanglerange', 360);
+
+  XVelocity.LoadFromXML('xvelocity', ARoot);
+  YVelocity.LoadFromXML('yvelocity', ARoot);
+  ZVelocity.LoadFromXML('zvelocity', ARoot);
+end;
+
+procedure TAdStdParticle.Assign(APart: TAdParticle);
+var
+  stdpart: TAdStdParticle;
+begin
+  if APart is TAdStdParticle then
+  begin
+    stdpart := TAdStdParticle(APart);
+
+    FMaxLifeTime := stdpart.LifeTime;
+    FLifeTimeVariation := stdpart.LifeTimeVariation;
+
+    FXVelocity.Assign(stdpart.XVelocity);
+    FYVelocity.Assign(stdpart.YVelocity);
+    FZVelocity.Assign(stdpart.ZVelocity);
+
+    FCreationAngle := stdpart.CreationAngle;
+    FCreationAngleRange := stdpart.CreationAngleRange;
+  end;
+end;
+
+procedure TAdStdParticle.ApplyVariation(var AVal: double; AVar: double);
+var
+  vari: double;
+begin
+  vari := (2*random * AVar - AVar ) / 200;
+
+  AVal := AVal + AVal * vari;
+end;
+
+procedure TAdStdParticle.ApplyVelVariation(var AVel: TAdParticleParameter);
+var
+  vari: double;
+begin
+  vari := (random(round(AVel.Variation)) - AVel.Variation) / 100;
+
+  AVel.Start := AVel.Start + AVel.Start * vari;
+  AVel.Stop := AVel.Stop + AVel.Stop * vari;
+end;
+
+
+function TAdStdParticle.CalcValue(MaxTime, TimePos, StartPos, EndPos: double): double;
+begin
+  //How it works:
+  //f(t) = m * t + b
+  //m = (stoppos - startpos) / maxtime
+  //b = startpos
+  //==> f(t) = ((stoppos - startpos) / maxtime) * t + startpos
+  
+  result := ((EndPos - StartPos) / MaxTime) * TimePos + StartPos;
+end;
+
+class function TAdStdParticle.DrawMode: TAd2DDrawMode;
+begin
+  result := adPointSprites;
+end;
+
+class function TAdStdParticle.IndicesPerParticle: integer;
+begin
+  result := 0;
+end;
+
+class function TAdStdParticle.VerticesPerParticle: integer;
+begin
+  result := 1;
+end;
+
+procedure TAdStdParticle.Move(ATimeGap: double);
+begin
+  FPosition.X := FPosition.X + FVelocity.X * ATimeGap *
+    CalcValue(FMaxLifeTime, FLivedTime, FXVelocity.Start, FXVelocity.Stop);
+
+  FPosition.Y := FPosition.Y + FVelocity.Y * ATimeGap *
+    CalcValue(FMaxLifeTime, FLivedTime, FYVelocity.Start, FYVelocity.Stop);
+
+  FPosition.Z := FPosition.Z + FVelocity.Z * ATimeGap *
+    CalcValue(FMaxLifeTime, FLivedTime, FZVelocity.Start, FZVelocity.Stop);
+
+  FLivedTime := FLivedTime + ATimeGap;
+  if FLivedTime > FMaxLifeTime then
+    Dead;  
+end;
+
+procedure TAdStdParticle.SetupMovement(AX, AY: integer);
+var
+  max, min: double;
+  angle: double;
+begin
+  //Set start position
+  FPosition.X := AX;
+  FPosition.Y := AY;
+  FPosition.Z := 0;
+
+  //Calculate the particle angle creation constraints
+  max := (FCreationAngle + FCreationAngleRange / 2);
+  min := (FCreationAngle - FCreationAngleRange / 2);
+  angle := random * (max - min) + min;
+  angle := angle * PI / 180;
+
+  ApplyVelVariation(FXVelocity);
+  ApplyVelVariation(FYVelocity);
+  ApplyVelVariation(FZVelocity);
+
+  ApplyVariation(FMaxLifeTime, FLifeTimeVariation);
+
+  //Calculate particle base movement vector
+  FVelocity := AdVector3(cos(angle), sin(angle), 0);
+end;
+
+procedure TAdStdParticle.StoreData(AData: PAdParticleData);
+begin
+  //Create one vertex with position data
+  with AData^.Vertices[AData^.VertPos] do
+  begin
+    Position := AdVector3(FPosition.X, FPosition.Y, FPosition.Z);
+    Texture := AdVector2(0, 0);
+    Normal := AdVector3(0, 0, -1);
+    Color := FParticleSystem.Colors.GetColor(FMaxLifeTime, FLivedTime);
+  end;
+
+  AData^.VertPos := AData^.VertPos + 1;
+  AData^.PrimitiveCount := AData^.PrimitiveCount + 1;
+end;
+
+procedure TAdStdParticle.StoreMinMax(AData: PAdParticleData);
+begin
+  //Store min/max positions
+  if (FPosition.X > AData^.MaxX) or (AData^.PrimitiveCount = 0) then
+    AData^.MaxX := FPosition.X;
+  if (FPosition.X < AData^.MinX) or (AData^.PrimitiveCount = 0) then
+    AData^.MinX := FPosition.X;
+  if (FPosition.Y > AData^.MaxY) or (AData^.PrimitiveCount = 0) then
+    AData^.MaxY := FPosition.Y;
+  if (FPosition.Y < AData^.MinY) or (AData^.PrimitiveCount = 0) then
+    AData^.MinY := FPosition.Y;
+end;
+
+{ TAdBillboardParticle }
+
+procedure TAdBillboardParticle.Assign(APart: TAdParticle);
+var
+  bbpart: TAdBillboardParticle;
+begin
+  inherited;
+  if APart is TAdBillboardParticle then
+  begin
+    bbpart := TAdBillboardParticle(APart);
+
+    FSize.Assign(bbpart.Size);
+    FAngle.Assign(bbpart.Angle);
+  end;
+end;
+
+constructor TAdBillboardParticle.Create(ASystem: TAdParticleSystem);
+begin
+  inherited;
+
+  FSize := TAdParticleParameter.Create;
+  FAngle := TAdParticleParameter.Create;
+
+  FSize.Start := 1;
+  FSize.Stop := 1;
+  FSize.Variation := 0;
+
+  FAngle.Start := 0;
+  FAngle.Stop := 0;
+  FAngle.Variation := 0;
+end;
+
+destructor TAdBillboardParticle.Destroy;
+begin
+  FSize.Free;
+  FAngle.Free;
+  inherited;
+end;
+
+class function TAdBillboardParticle.DrawMode: TAd2DDrawMode;
+begin
+  result := adTriangles;
+end;
+
+class function TAdBillboardParticle.IndicesPerParticle: integer;
+begin
+  result := 6;
+end;
+
+procedure TAdBillboardParticle.LoadFromXML(ARoot: TAdSimpleXMLElem);
+begin
+  inherited;
+
+  FSize.LoadFromXML('size', ARoot);
+  FAngle.LoadFromXML('angle', ARoot);
+end;
+
+function TAdBillboardParticle.SaveToXML(
+  ARoot: TAdSimpleXMLElems): TAdSimpleXMLElem;
+begin
+  result := inherited SaveToXML(ARoot);
+
+  FSize.SaveToXML('size', result);
+  FAngle.SaveToXML('angle', result);
+end;
+
+procedure TAdBillboardParticle.Move(ATimeGap: double);
+begin
+  inherited;
+
+  FCalculatedSize := CalcValue(LifeTime, LivedTime, FSize.Start, FSize.Stop);
+  FCalculatedAngle := CalcValue(LifeTime, LivedTime, FAngle.Start, FAngle.Stop);
+end;
+
+function TAdBillboardParticle.RotatePoint(ACenter: TAdVector3; AR,
+   AAngle: double): TAdVector3;
+begin
+  result.x := ACenter.x + cos(AAngle) * AR;
+  result.y := ACenter.y + sin(AAngle) * AR;
+  result.z := ACenter.z;
+end;
+
+procedure TAdBillboardParticle.SetupMovement(AX, AY: integer);
+begin
+  inherited;
+
+  ApplyVelVariation(FSize);
+  ApplyVelVariation(FAngle);
+end;
+
+procedure TAdBillboardParticle.StoreData(AData: PAdParticleData);
+var
+  i: integer;
+  w, h, r: double;
+begin
+  //Calculate particle size
+  w := FParticleSystem.Texture.Texture.Width * 0.5 * FCalculatedSize;
+  h := FParticleSystem.Texture.Texture.Height * 0.5 * FCalculatedSize;
+
+  //Draw rotated if necessary
+  if IsZero(FCalculatedAngle, 0.001) then
+  begin
+    with Position do
+    begin
+      AData^.Vertices[AData^.VertPos + 0].Position :=
+        AdVector3(X - w, Y - h, Z);
+      AData^.Vertices[AData^.VertPos + 1].Position :=
+        AdVector3(X + w, Y - h, Z);
+      AData^.Vertices[AData^.VertPos + 2].Position :=
+        AdVector3(X - w, Y + h, Z);
+      AData^.Vertices[AData^.VertPos + 3].Position :=
+        AdVector3(X + w, Y + h, Z);
+    end;
+  end else
+  begin
+    //Calculate the rotation radius
+    r := sqrt(sqr(w) + sqr(h));
+
+    AData^.Vertices[AData^.VertPos + 0].Position :=
+      RotatePoint(Position, r , 5 * PI / 4 + FCalculatedAngle);
+    AData^.Vertices[AData^.VertPos + 1].Position :=
+      RotatePoint(Position, r, 7 * PI / 4 + FCalculatedAngle);
+    AData^.Vertices[AData^.VertPos + 2].Position :=
+      RotatePoint(Position, r, 3 * PI / 4 + FCalculatedAngle);
+    AData^.Vertices[AData^.VertPos + 3].Position :=
+      RotatePoint(Position, r , 1 * PI / 4 + FCalculatedAngle);
+  end;
+
+  //Set texture coordinates
+  AData^.Vertices[AData^.VertPos + 0].Texture :=
+    AdVector2(0, 0);
+  AData^.Vertices[AData^.VertPos + 1].Texture :=
+    AdVector2(1, 0);
+  AData^.Vertices[AData^.VertPos + 2].Texture :=
+    AdVector2(0, 1);
+  AData^.Vertices[AData^.VertPos + 3].Texture :=
+    AdVector2(1, 1);
+
+  //Set color and normal
+  for i := AData^.VertPos to AData^.VertPos + 3 do
+  begin
+    with AData^.Vertices[i] do
+    begin
+      Color := FParticleSystem.Colors.GetColor(LifeTime, LivedTime);
+      Normal := AdVector3(0, 0, -1);
+    end;
+  end;
+
+  //Set indices for the first triangle
+  AData^.Indices[AData^.IndPos + 0] := AData^.VertPos + 0;
+  AData^.Indices[AData^.IndPos + 1] := AData^.VertPos + 1;
+  AData^.Indices[AData^.IndPos + 2] := AData^.VertPos + 2;
+
+  //Set indices for the second triangle
+  AData^.Indices[AData^.IndPos + 3] := AData^.VertPos + 1;
+  AData^.Indices[AData^.IndPos + 4] := AData^.VertPos + 3;
+  AData^.Indices[AData^.IndPos + 5] := AData^.VertPos + 2;
+
+  AData^.VertPos := AData^.VertPos + 4;
+  AData^.IndPos := AData^.IndPos + 6;
+  AData^.PrimitiveCount := AData^.PrimitiveCount + 2;
+end;
+
+class function TAdBillboardParticle.VerticesPerParticle: integer;
+begin
+  result := 4;
+end;
+
+{ TAdColorXMLList }
+
+procedure TAdXMLColorList.LoadFromXML(AName: string; ARoot: TAdSimpleXMLElem);
+var
+  i: integer;
+  Node: TAdSimpleXMLElem;
+begin
+  Clear;
+
+  Node := ARoot.Items.ItemNamed[AName];
+  if Node <> nil then
+  begin
+    for i := 0 to Node.Items.Count - 1 do
+    begin
+      if Node.Items[i].Name = 'color' then
+      begin
+        Add(StringToAdColor(Node.Items[i].Value));
+      end;
+    end;
+  end;
+end;
+
+procedure TAdXMLColorList.SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
+var
+  i: integer;
+  Node: TAdSimpleXMLElem;
+begin
+  Node := ARoot.Items.Add(AName);
+
+  for i := 0 to Count - 1 do
+  begin
+    Node.Items.Add('color', AdColorToString(Items[i]));
+  end;
+end;
+
+{ TAdParticleParameter }
+
+procedure TAdParticleParameter.Assign(AParam: TAdParticleParameter);
+begin
+  FStart := AParam.Start;
+  FStop := AParam.Stop;
+  FVariation := AParam.Variation;
+end;
+
+procedure TAdParticleParameter.LoadFromXML(AName: string;
+  ARoot: TAdSimpleXMLElem);
+var
+  elem: TAdSimpleXMLElem;
+begin
+  elem := ARoot.Items.ItemNamed[AName];
+  if elem <> nil then
+  begin
+    FStart := elem.Items.FloatValue('start', 0);
+    FStop := elem.Items.FloatValue('stop', 0);
+    FVariation := elem.Items.FloatValue('variation', 0);
+  end;
+end;
+
+procedure TAdParticleParameter.SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
+begin
+  with ARoot.Items.Add(AName) do
+  begin
+    Items.Add('start', FStart);
+    Items.Add('stop', FStop);
+    Items.Add('variation', FVariation);
+  end;
+end;
+
+initialization
+  RegisteredParticleClasses := TStringList.Create;
+  RegisterParticleClass(TAdStdParticle);
+  RegisterParticleClass(TAdBillboardParticle);
+
+finalization
+  RegisteredParticleClasses.Free;
 
 end.

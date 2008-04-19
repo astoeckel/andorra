@@ -13,7 +13,6 @@ object DesignerDlg: TDesignerDlg
   Font.Style = []
   OldCreateOrder = False
   ScreenSnap = True
-  OnClick = FormClick
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown

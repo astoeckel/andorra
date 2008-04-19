@@ -26,8 +26,8 @@ unit AdCanvas;
 interface
 
 uses
-  SysUtils, Classes,
-  AdClasses, AdTypes, AdContainers, AdList, AdFont, AdPolygonUtils, Math;
+  SysUtils, Classes, Math,
+  AdEvents, AdClasses, AdTypes, AdContainers, AdList, AdFont, AdPolygonUtils;
 
 type
   {A set of three colors used to define the colors of a quad-object.}
@@ -439,6 +439,10 @@ type
       FFont:TAdFont;
       FDisplayLists:TAdLinkedList;
 
+      FOnRelease:TAdNotifyEvent;
+      FOnBeginFrame:TAdNotifyEvent;
+      FOnEndFrame:TAdNotifyEvent;
+
       procedure DeleteUnusedLists;
       procedure DeleteUnusedItems;
       procedure PushObject;
@@ -518,6 +522,10 @@ type
       property Brush:TAdBrush read FBrush write FBrush;
       {Set the "Font" property to the font you would like to use with "TextOut".}
       property Font:TAdFont read FFont write FFont;
+
+      property OnRelease:TAdNotifyEvent read FOnRelease write FOnRelease;
+      property OnBeginFrame:TAdNotifyEvent read FOnBeginFrame write FOnBeginFrame;
+      property OnEndFrame:TAdNotifyEvent read FOnEndFrame write FOnEndFrame;
   end;
 
 implementation
@@ -959,6 +967,9 @@ begin
   if FCurrentDisplayList <> nil then
   begin
     DeleteUnusedItems;
+
+    if Assigned(FOnRelease) then
+      FOnRelease(self);
 
     FCurrentDisplayList.Draw;
 

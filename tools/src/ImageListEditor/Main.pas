@@ -7,7 +7,7 @@ uses
   Dialogs, ImgList, ComCtrls, Menus, ToolWin, ExtCtrls, XPMan, StdCtrls,
   ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdPNG, AdJPEG, 
   AdCanvas, AdBitmap, AdVCLFormats, AdSimpleCompressors, AdTypes, AdPerformanceCounter,
-  Progress, AdPersistent;
+  Progress, AdPersistent, AdTGA;
 
 type
   TMainDlg = class(TForm)
@@ -427,7 +427,7 @@ begin
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw1 := TAdDraw.Create(Panel1);
-  AdDraw1.DllName := 'AndorraOGL.dll';
+  AdDraw1.DllName := 'AndorraDX93D.dll';
   if AdDraw1.Initialize then
   begin
     Application.OnIdle := Idle;
@@ -728,7 +728,7 @@ procedure TMainDlg.Panel1Resize(Sender: TObject);
 begin
   if AdDraw1.Initialized then
   begin
-    AdDraw1.Setup2DScene;
+    AdDraw1.Setup2DScene(Panel1.ClientWidth, Panel1.ClientHeight);
   end;
 end;
 

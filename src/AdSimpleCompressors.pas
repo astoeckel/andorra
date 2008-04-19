@@ -198,7 +198,7 @@ end;
 
 class function TAdBitmapFormat.SupportsObject(AGraphic: TObject): boolean;
 begin
-  result := AGraphic is TAdBitmap;  
+  result := AGraphic is TAdBitmap;
 end;
 
 initialization

@@ -134,6 +134,9 @@ begin
   FSize := 0;
   FWidth := 0;
   FHeight := 0;
+  FCurrentPixelPointer := nil;
+  FLastX := 0;
+  FLastY := 0;
 end;
 
 function TAd2dBitmap.ScanLine: Pointer;

@@ -48,18 +48,22 @@ type
       FWnd: TAdWindowFramework;
       FWindowType:TOGLWindowType;
       FLastTexture:TAd2dTexture;
+
+      FRenderingToFBO: boolean;
     protected
-      procedure SetAmbientLight(AValue:TAndorraColor);override;
       procedure SetOptions(AValue:TAdOptions);override;
       procedure SetViewPort(AValue:TAdRect);override;
+      procedure ResetRenderTarget;
     public
       function CreateLight:TAd2DLight;override;
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
-      //function CreateRenderTargetTexture:TAdRenderTargetTexture;override;
+      function CreateRenderTargetTexture:TAd2dRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
-      //procedure SetRenderTarget(ATarget:TAdRenderTargetTexture);override;
+
       function Initialize(AWnd:TAdWindowFramework; AOptions:TAdOptions; ADisplay:TAdDisplay):boolean;override;
       procedure Finalize;override;
+
+      procedure SetRenderTarget(ATarget:TAd2dRenderTargetTexture);override;
 
       procedure Setup2DScene(AWidth,AHeight:integer);override;
       procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
@@ -103,11 +107,29 @@ type
     protected
       function GetLoaded:boolean;override;
     public
-      constructor Create(AParent:TOGLApplication);
+      constructor Create;
       destructor Destroy;override;
       procedure FlushTexture;override;
       procedure LoadFromBitmap(ABmp:TAd2dBitmap; AParams:TAd2dBitmapTextureParameters);override;
       procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
+  end;
+
+  TOGLRenderTargetTexture = class(TAd2dRenderTargetTexture)
+    private
+      FFBO: GLuint;
+      FDepthBuf: GLuint;
+    protected
+      procedure CheckFBO;
+      function GetLoaded:boolean;override;
+    public
+      constructor Create;
+      destructor Destroy;override;
+
+      procedure SetSize(AWidth, AHeight: integer; ABitCount: Byte);override;
+      procedure FlushMemory;override;
+      procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
+
+      property FBO: GLuint read FFBO; 
   end;
   
   TOGLLight = class(TAd2DLight)
@@ -131,7 +153,7 @@ end;
 
 function TOGLApplication.CreateBitmapTexture: TAd2DBitmapTexture;
 begin
-  result := TOGLBitmapTexture.Create(self);
+  result := TOGLBitmapTexture.Create;
 end;
 
 function TOGLApplication.CreateLight: TAd2DLight;
@@ -139,10 +161,10 @@ begin
   result := TOGLLight.Create(self);
 end;
 
-{function TOGLApplication.CreateRenderTargetTexture: TAdRenderTargetTexture;
+function TOGLApplication.CreateRenderTargetTexture: TAd2dRenderTargetTexture;
 begin
-
-end;    }
+  result := TOGLRenderTargetTexture.Create;
+end;
 
 function TOGLApplication.Initialize(AWnd: TAdWindowFramework; AOptions: TAdOptions;
   ADisplay: TAdDisplay):boolean;
@@ -153,6 +175,8 @@ begin
   WriteLog(ltNone,'Try to init Andorra OpenGL Plugin.');
   if InitOpenGL then
   begin
+    ReadExtensions;
+
     FOptions := AOptions;
 
     FWnd := AWnd;
@@ -165,8 +189,8 @@ begin
       FDC := GetDC(FHandle);
       FRC := CreateRenderingContext(FDC,[opDoubleBuffered],32,24,0,0,0,0);
 
-      FHeight := ADisplay.Height;
-      FWidth := ADisplay.Width;
+      FWidth := FWnd.ClientWidth;
+      FHeight := FWnd.ClientHeight;
 
       ActivateRenderingContext(FDC,FRC);
     end else{$ENDIF}
@@ -187,10 +211,25 @@ begin
     //Repeat the texture if it wraps over the edges
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+
+    FRenderingToFBO := false;
   end
   else
   begin
     WriteLog(ltFatalError,'Error while initializing OpenGL');
+  end;
+end;
+
+procedure TOGLApplication.ResetRenderTarget;
+begin
+  if FRenderingToFBO then
+  begin
+    FRenderingToFBO := false;
+    glPopAttrib;
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+    FWidth := FWnd.ClientWidth;
+    FHeight := FWnd.ClientHeight;
   end;
 end;
 
@@ -209,37 +248,44 @@ end;
 
 procedure TOGLApplication.SetOptions(AValue: TAdOptions);
 begin
-  if doLights in AValue then
+{  if doLights in AValue then
   begin
     glEnable(GL_LIGHTING);
   end
   else
   begin
     glDisable(GL_LIGHTING);
-  end;  
+  end; }
 end;
 
-procedure TOGLApplication.SetAmbientLight(AValue: TAndorraColor);
-var
-  col:array[0..3] of Single;
+procedure TOGLApplication.SetRenderTarget(ATarget: TAd2dRenderTargetTexture);
 begin
-  inherited;
+  if FRenderingToFBO then
+    ResetRenderTarget;
 
-  col[0] := AValue.r / 255;
-  col[1] := AValue.g / 255;
-  col[2] := AValue.b / 255;
-  col[3] := 1;
+  if ATarget <> nil then
+  begin
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, TOGLRenderTargetTexture(ATarget).FBO);
+    glPushAttrib(GL_VIEWPORT_BIT);
+    FRenderingToFBO := true;
 
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, @col[0]);
+    FWidth := ATarget.BaseWidth;
+    FHeight := ATarget.BaseHeight;
+  end;
 end;
 
 procedure TOGLApplication.Setup2DScene(AWidth, AHeight: integer);
 begin
+  glViewport(0,0,AWidth,AHeight);
+
   glMatrixMode(GL_PROJECTION);
 
   glLoadIdentity;
-  glViewPort(0,0,AWidth, AHeight);
-  gluOrtho2D(0,AWidth,AHeight,0);
+  if FRenderingToFBO then
+    glOrtho(0,AWidth,0,AHeight,0,100)
+  else
+    glOrtho(0,AWidth,AHeight,0,0,100);
+
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity;
@@ -249,17 +295,27 @@ procedure TOGLApplication.Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdV
 begin
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity;
-  gluPerspective( 45, AWidth / AHeight, 1, abs(apos.z) * 2);
+  if FRenderingToFBO then
+    gluPerspective( 45, -AWidth / AHeight, 1, abs(apos.z) * 2)
+  else
+    gluPerspective( 45, AWidth / AHeight, 1, abs(apos.z) * 2);
+
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity;
-  gluLookAt(APos.x, APos.y, APos.z, ADir.x, ADir.y, ADir.z, AUp.x, AUp.y, AUp.z);
+  if FRenderingToFBO then
+    gluLookAt(APos.x, APos.y, APos.z, ADir.x, ADir.y, ADir.z, -AUp.x, -AUp.y, -AUp.z)
+  else
+    gluLookAt(APos.x, APos.y, APos.z, ADir.x, ADir.y, ADir.z, AUp.x, AUp.y, AUp.z);
 end;
 
 procedure TOGLApplication.SetupManualScene(AMatView, AMatProj:TAdMatrix);
 begin
   glMatrixMode(GL_PROJECTION);
+  glLoadIdentity;
   glLoadMatrixf(@AMatProj);
+
   glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity;
   glLoadMatrixf(@AMatView);
 end;
 
@@ -290,19 +346,13 @@ begin
   glGetFloatv(GL_MODELVIEW_MATRIX, @AMatView);
 end;
 
-{procedure TOGLApplication.SetRenderTarget(ATarget: TAdRenderTargetTexture);
-begin
-  inherited;
-
-end;}
-
 procedure TOGLApplication.BeginScene;
 begin
 end;
 
 procedure TOGLApplication.EndScene;
 begin
-  //Ends the scene and turns all lights off.
+  ResetRenderTarget;
 end;
 
 procedure TOGLApplication.Flip;
@@ -366,7 +416,7 @@ begin
       end;
 
       case ADrawMode of
-        adTriangleStrips: mode := GL_TRIANGLE_STRIP;
+        adTriangleStrips: mode := GL_TRIANGLE_STRIP; 
         adTriangles: mode := GL_TRIANGLES;
         adLines: mode := GL_LINES;
         adLineStrips: mode := GL_LINE_STRIP;
@@ -502,7 +552,7 @@ end;
 
 { TOGLBitmapTexture }
 
-constructor TOGLBitmapTexture.Create(AParent: TOGLApplication);
+constructor TOGLBitmapTexture.Create;
 begin
   inherited Create;
   FTexture := nil;
@@ -571,15 +621,22 @@ var
   pnt32:PRGBARec;
   cur16:PWord;
   cur32:PLongWord;
+  newtex: boolean;
 begin
-  FlushTexture;
-
-  new(PCardinal(FTexture));
-  glGenTextures(1,FTexture);
-  glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
-
   w := 1 shl ceil(log2(ABmp.Width));
   h := 1 shl ceil(log2(ABmp.Height));
+
+  if (w <> FWidth) or (h <> FHeight) or
+     (AParams.BitDepth <> FBitCount) or (not Loaded) then
+  begin
+    FlushTexture;
+    new(PCardinal(FTexture));
+    glGenTextures(1,FTexture);
+    newtex := true;
+  end else
+    newtex := false;
+
+  glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
 
   FWidth := w;
   FHeight := h;
@@ -591,21 +648,38 @@ begin
   try
     if AParams.BitDepth = 32 then
     begin
-      cur32 := PLongWord(mem);
-      pnt32 := ABmp.ScanLine;
-      for y := 0 to ABmp.Height - 1 do
+      if newtex or AParams.UseMipMaps then
       begin
-        Move(pnt32^, cur32^, ABmp.Width * 4);
-        inc(pnt32, ABmp.Width);
-        inc(cur32, w);
+        cur32 := PLongWord(mem);
+        pnt32 := ABmp.ScanLine;
+        for y := 0 to ABmp.Height - 1 do
+        begin
+          Move(pnt32^, cur32^, ABmp.Width * 4);
+          inc(pnt32, ABmp.Width);
+          inc(cur32, w);
+        end;
       end;
 
-      glTexImage2D(	GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, mem);
-
       if AParams.UseMipMaps then
+      begin
         gluBuild2DMipmaps(GL_TEXTURE_2D, 4, w, h, GL_BGRA, GL_UNSIGNED_BYTE, mem)
+      end
       else
-        glTexImage2D(	GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, mem);
+      begin
+        if newtex then
+        begin
+          glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA,
+            w, h,
+            0, GL_BGRA, GL_UNSIGNED_BYTE, mem);
+        end else
+        begin
+          glTexSubImage2D(
+            GL_TEXTURE_2D, 0,
+            0, 0, BaseWidth, BaseHeight,
+            GL_BGRA, GL_UNSIGNED_BYTE, ABmp.ScanLine)
+        end;
+      end;
     end
     else
     begin
@@ -627,6 +701,7 @@ begin
       glTexImage2D(	GL_TEXTURE_2D, 0, GL_RGBA16, w, h, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, mem);
     end;
 
+    //Set texture filters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GetFilter(AParams.MinFilter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GetFilter(AParams.MagFilter));
 
@@ -696,6 +771,143 @@ end;
 procedure TOGLLight.Restore;
 begin
   //Pushs all settings made (position, color, etc.) into the graphic system.
+end;
+
+{ TOGLRenderTargetTexture }
+
+procedure TOGLRenderTargetTexture.CheckFBO;
+var
+  error: GlEnum;
+begin
+  error := glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+  case error of
+    GL_FRAMEBUFFER_COMPLETE_EXT:
+      Exit;
+    GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+      raise Exception.Create('Incomplete attachment');
+    GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+      raise Exception.Create('Missing attachment');
+    GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+      raise Exception.Create('Incomplete dimensions');
+    GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+      raise Exception.Create('Incomplete formats');
+    GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+      raise Exception.Create('Incomplete draw buffer');
+    GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+      raise Exception.Create('Incomplete read buffer');
+    GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+      raise Exception.Create('Framebufferobjects unsupported');
+  end;
+end;
+
+constructor TOGLRenderTargetTexture.Create;
+begin
+  inherited Create;
+
+  FEditable := false;
+end;
+
+destructor TOGLRenderTargetTexture.Destroy;
+begin
+  FlushMemory;  
+  inherited;
+end;
+
+procedure TOGLRenderTargetTexture.FlushMemory;
+begin
+  if Loaded then
+  begin
+    glDeleteFramebuffersEXT(1, @FFBO);
+    glDeleteRenderbuffersEXT(1, @FDepthBuf);
+    glDeleteTextures(1, FTexture);
+    
+    Dispose(PCardinal(FTexture));
+    FTexture := nil;
+  end;
+end;
+
+function TOGLRenderTargetTexture.GetLoaded: boolean;
+begin
+  result := FTexture <> nil;
+end;
+
+procedure TOGLRenderTargetTexture.SaveToBitmap(ABmp: TAd2dBitmap);
+var
+  mem, cur1, cur2: PLongWord;
+  x,y:integer;
+begin
+  if Loaded then
+  begin
+    glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
+
+    GetMem(mem, FWidth*FHeight*4);
+    try
+      glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, mem);
+
+      cur1 := mem;
+      cur2 := ABmp.Scanline;
+      for y := 0 to FBaseHeight-1 do
+      begin
+        for x := 0 to FWidth-1 do
+        begin
+          if x < ABmp.Width then
+          begin
+            cur2^ := cur1^;
+            inc(cur2);
+          end;
+          inc(cur1);
+        end;
+      end;
+    finally
+      FreeMem(mem,FWidth*FHeight*4);
+    end;
+  end;
+end;
+
+procedure TOGLRenderTargetTexture.SetSize(AWidth, AHeight: integer;
+  ABitCount: Byte);
+var
+  w, h: integer;
+begin
+  w := 1 shl ceil(log2(AWidth));
+  h := 1 shl ceil(log2(AHeight));
+  if (not Loaded) or (w <> FWidth) or (h <> FHeight) or (ABitCount <> FBitCount) then
+  begin
+    FlushMemory;
+
+    //Create texture, framebuffer and renderbuffer
+    New(PCardinal(FTexture));
+    glGenFramebuffersEXT(1, @FFBO);
+    glGenRenderbuffersEXT(1, @FDepthBuf);
+    glGenTextures(1, FTexture);
+
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, FFBO);
+    glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
+
+    //Set Texture Data
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,  w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    //Connect buffers to framebuffer
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+      GL_TEXTURE_2D, PCardinal(FTexture)^, 0);
+
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, FDepthBuf);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, w, h);
+
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
+      GL_RENDERBUFFER_EXT, FDepthBuf);
+
+    CheckFBO;
+
+    FWidth := w;
+    FHeight := h;
+    FBitCount := ABitCount;
+  end;
+
+  FBaseWidth := AWidth;
+  FBaseHeight := AHeight;
 end;
 
 end.

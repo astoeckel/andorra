@@ -5,7 +5,7 @@ interface
 uses
   Windows, Dialogs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, AdTypes, AdCanvas,
-  AdSetupDlg, AdPng, AdPerformanceCounter;
+  AdSetupDlg, AdPng, AdPerformanceCounter, AdBitmap, AdBitmapEffects;
 
 type
   TForm1 = class(TForm)
@@ -71,17 +71,20 @@ begin
     AdDraw.ClearSurface(0);
 
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
+
+    AdSpriteEngine.Surface := AdDraw;
     AdSpriteEngine.Draw;
+
     AdSpriteEngine.Dead;
 
-    AdDraw.Options := AdDraw.Options - [doLights];
+//    AdDraw.Options := AdDraw.Options - [doLights];
     with AdDraw.Canvas do
     begin
       Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
       Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
       Release;
     end;
-    AdDraw.Options := AdDraw.Options + [doLights];
+//    AdDraw.Options := AdDraw.Options + [doLights];
 
     AdDraw.EndScene;
     AdDraw.Flip;
@@ -107,11 +110,11 @@ begin
 
   if AdSetupDlg.Execute then
   begin
-    AdDraw.Options := AdDraw.Options + [doLights, doMipMaps];
+//    AdDraw.Options := AdDraw.Options + [doLights, doMipMaps];
     AdDraw.TextureFilter := atAnisotropic;
     if AdDraw.Initialize then
     begin
-      AdDraw.AmbientColor := RGB(96,96,96);
+//      AdDraw.AmbientColor := RGB(96,96,96);
       AdPictureCollection := TAdImageList.Create(AdDraw);
       AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
 
@@ -254,12 +257,12 @@ begin
   level := TStringList.Create;
   level.LoadFromFile(path+'level2.txt');
 
-  with TBackgroundSprite.Create(AdSpriteEngine) do
+  {with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
     Image := AdPictureCollection.Find('stars');
     z := -1;
     Depth := 10;
-  end;
+  end;    }
 
   for ay := 0 to level.Count - 1 do
   begin
@@ -388,9 +391,7 @@ begin
 end;
 
 procedure TBall.DoDraw;
-var
-  old:TColor;
-begin 
+begin
   with Engine.Surface.Canvas do
   begin
     Brush.BlendMode := bmAdd;
@@ -406,10 +407,10 @@ begin
     Brush.BlendMode := bmAlpha;
   end;
   Image.Color := Color;
-  old := Engine.Surface.AmbientColor;
-  Engine.Surface.AmbientColor := RGB(255,255,255);
+//  old := Engine.Surface.AmbientColor;
+//  Engine.Surface.AmbientColor := RGB(255,255,255);
   inherited DoDraw;
-  Engine.Surface.AmbientColor := old;
+//  Engine.Surface.AmbientColor := old;
 end;
 
 procedure TBall.DoMove(TimeGap: double);
