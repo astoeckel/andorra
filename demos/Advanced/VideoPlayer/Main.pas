@@ -7,9 +7,9 @@ interface
 {$ENDIF}
 
 uses
-  SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG, AdSetupDlg,{$ELSE}AdDevIL, {$ENDIF}
+  SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
   AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
-  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents;
+  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents, AdJPEG;
 
 type
   TAdAppl = class
@@ -45,6 +45,7 @@ begin
     AdDraw.BeginScene;
 
     AdVideo.Move(AdPerCounter.TimeGap / 1000);
+    AdVideo.Image.Filter := atLinear;
     AdVideo.Draw(AdDraw, AdRect(0,0,AdDraw.Window.ClientWidth,AdDraw.Window.ClientHeight));
 
     with AdDraw.Canvas do
@@ -99,25 +100,14 @@ begin
 end;
 
 procedure TAdAppl.Run;
-{$IFNDEF FPC}
-var
-  AdSetup: TAdSetup;
-{$ENDIF}
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(nil);
 
-  {$IFNDEF FPC}
-  AdSetup := TAdSetup.Create(nil);
-  AdSetup.Title := 'Andorra 2D Video Player';
-  AdSetup.Image := 'logo1.png';
-  AdSetup.AdDraw := AdDraw;
-  {$ELSE}
-  AdDraw.DllName := 'AndorraOGLLaz.dll';
-  {$ENDIF}
+  AdDraw.DllName := 'AndorraDX93D.dll';
 
-  if {$IFNDEF FPC}AdSetup.Execute{$ELSE} true{$ENDIF} then
+  if true then
   begin
     if AdDraw.Initialize then
     begin
@@ -145,8 +135,6 @@ begin
 
       AdGUIConnector := TAdGUIConnector.Create(AdGUI);
       AdGUIConnector.ConnectEventHandlers(AdDraw.Window);
-
-      AdDraw.TextureFilter := atLinear;
 
       AdVideo := TAdVideoPlayer.Create(AdDraw);
 
