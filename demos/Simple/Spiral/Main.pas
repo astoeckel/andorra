@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, StdCtrls, AdSetupDlg, AdPng, AdCanvas,
+  Dialogs, AdDraws, AdClasses, StdCtrls, AdSetupNew, AdPng, AdCanvas,
   AdPerformanceCounter, AdTypes;
 
 type
@@ -41,10 +41,8 @@ begin
 
   AdDraw1 := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw1);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw1;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
@@ -103,6 +101,7 @@ begin
       Pen.Width := 16;
       Pen.TextureMode := tmTile;
       Pen.TexturePosition := tpDynamic;
+      Pen.BlendMode := bmAdd;
 
       for i := start to start + 360 do
       begin

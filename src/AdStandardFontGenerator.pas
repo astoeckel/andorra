@@ -62,7 +62,6 @@ var
   shadow:boolean;
   adbmp,adeffect:TAdBitmap;
   alphacolor:longint;
-  params:TAd2dBitmapTextureParameters;
   blur:TAdBitmapBlur;
   p1,p2:PRGBARec;
   p3:PRGBRec;
@@ -209,15 +208,7 @@ begin
       {$ENDIF}
     end;
 
-    with params do
-    begin
-      BitDepth := 32;
-      UseMipmaps := false;
-      MinFilter := atPoint;
-      MagFilter := atPoint;
-      MipFilter := atPoint;
-    end;
-    ATexture.LoadFromBitmap(adbmp, params);
+    ATexture.LoadFromBitmap(adbmp, ad32Bit);
 
     adbmp.Free;
 

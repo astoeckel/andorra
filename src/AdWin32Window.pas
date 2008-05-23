@@ -24,7 +24,7 @@ interface
 
 
 uses
-  Messages, Windows, AdEvents, AdWindowFramework;
+  Messages, Windows, AdTypes, AdEvents, AdWindowFramework;
 
 
 type
@@ -167,7 +167,7 @@ begin
     begin
       if AProps.Mode = dmFullscreen then
       begin
-        if not ChangeResolution(AProps.Width, AProps.Height, AProps.BitDepth) then
+        if not ChangeResolution(AProps.Width, AProps.Height, ord(AProps.BitDepth)) then
         begin
           result := false;
           exit;

@@ -26,29 +26,26 @@ uses
 
 type
   {A callback procedure for TAdDllExplorer}
-  TAdDLLExplorerCallBack = procedure (DllFileName:string;DllInfo:TAd2DLibInfo;DllAbilities:TAd2DLibAbilities) of object;
+  TAdDLLExplorerCallBack = procedure (DllFileName:string; DllInfo:TAd2DLibInfo) of object;
 
-  {A class, which lets you search for all Andorra 2D Plugin libraries within a specific directory.}
+  {A class, which lets you search for all Andorra 2D Plugin libraries within a
+   specific directory.}
   TAdDLLExplorer = class
     private
       FStrings:TStrings;
-      procedure StringsCallback(DllFileName:string;DllInfo:TAd2DLibInfo;DllAbilities:TAd2DLibAbilities);
+      procedure StringsCallback(DllFileName:string;DllInfo:TAd2DLibInfo);
     public
-      {Returns all plugins in the StringList "Plugins" within the specific directory. Extension must include the trailing point. E.g. ".so" or ".dll"}
+      {Returns all plugins in the StringList "Plugins" within the specific
+       directory. Extension must include the trailing point. E.g. ".so" or ".dll"}
       procedure GetPlugins(Plugins:TStrings; Dir, Extension:string);overload;
-      {Handles out all plugins via a callback within the specific directory. Extension must include the trailing point. E.g. ".so" or ".dll"}
+      {Handles out all plugins via a callback within the specific directory.
+       Extension must include the trailing point. E.g. ".so" or ".dll"}
       procedure GetPlugins(CallBack:TAdDllExplorerCallBack; Dir, Extension:String);overload;
   end;
 
 implementation
 
 { TAdDLLExplorer }
-
-procedure TAdDLLExplorer.GetPlugins(Plugins: TStrings; Dir, Extension: string);
-begin
-  FStrings := Plugins;
-  GetPlugins(StringsCallback, Dir, Extension);
-end;
 
 procedure TAdDLLExplorer.GetPlugins(CallBack: TAdDllExplorerCallBack; Dir,
   Extension: String);
@@ -57,9 +54,7 @@ var
   res:integer;
   ahandle:THandle;
   fileinfo:TAndorra2DLibraryInformation;
-  fileabilities:TAndorra2DLibraryAbilities;
   info:TAd2DLibInfo;
-  abilities:TAd2DLibAbilities;
 begin
   res := FindFirst(dir+'*'+Extension,faAnyFile, searchrec);
   ahandle := 0;
@@ -83,11 +78,8 @@ begin
         //The library must be compatible
         if info.LibVersion = LibraryVersion then
         begin
-          //Read abilities
-          @fileabilities := GetProcAddress(ahandle, 'Andorra2DLibraryAbilities');
-          fileabilities(abilities);
-
-          CallBack(searchrec.Name,info,abilities);
+          //Call callback and pass name and informations
+          CallBack(searchrec.Name, info);
         end;
       end;
 
@@ -99,8 +91,14 @@ begin
   FindClose(searchrec.FindHandle);
 end;
 
+procedure TAdDLLExplorer.GetPlugins(Plugins: TStrings; Dir, Extension: string);
+begin
+  FStrings := Plugins;
+  GetPlugins(StringsCallback, Dir, Extension);
+end;
+
 procedure TAdDLLExplorer.StringsCallback(DllFileName: string;
-  DllInfo: TAd2DLibInfo; DllAbilities:TAd2DLibAbilities);
+  DllInfo: TAd2DLibInfo);
 begin
   FStrings.Add(DllInfo.LibTitle+'='+DllFileName);
 end;

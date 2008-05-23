@@ -26,6 +26,8 @@ uses
   AdTypes, AdClasses, AdDraws, AdVideoTexture;
 
 type
+  {The base video player class. TAdCustomVideoPlayer adds the ability of drawing
+   the video to TAdVideoTexture. Reading from files or streams is not supported.}
   TAdCustomVideoPlayer = class(TAdVideoTexture)
     private
       FParent: TAdDraw;
@@ -35,7 +37,6 @@ type
       FCenter: boolean;
     protected
       function DestinationRect(ADestRect: TAdRect):TAdRect;
-      property Image: TAdImage read FImage;
     public
       constructor Create(AParent: TAdDraw);
       destructor Destroy;override;
@@ -44,9 +45,13 @@ type
 
       property Proportional: boolean read FProportional write FProportional;
       property Stretch: boolean read FStretch write FStretch;
-      property Center: boolean read FCenter write FCenter;    
+      property Center: boolean read FCenter write FCenter;
+      property Image: TAdImage read FImage;
   end;
 
+  {Use this class to display video in your application, if you load your video
+   data from a stream or a video file. TAdVideo player adds the support of
+   loading video data from files or streams to TAdCustomVideoPlayer.}
   TAdVideoPlayer = class(TAdCustomVideoPlayer)
     private
       FStream: TStream;

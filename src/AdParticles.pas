@@ -24,7 +24,7 @@ interface
 
 uses
   SysUtils, Classes, SyncObjs, Math,
-  AdDraws, AdPersistent, AdClasses, AdTypes, AdColorList, AdList, AdSimpleXML;
+  AdMath, AdDraws, AdPersistent, AdClasses, AdTypes, AdColorList, AdList, AdSimpleXML;
 
 type
 
@@ -41,17 +41,18 @@ type
   { TAdParticleData is internally used by TAdParticleCalculationThread,
     TAdParticle and TAdParticleSystem to exchange vertex/index data between
     them. TAdParticleData also contains some additional data which describes
-    how far data creation has processed. }
+    how far data creation has processed or the bounding rectangle of the
+    particle system.}
   TAdParticleData = record
     Vertices: TAdVertexArray; //< Contains the vertices of the particle system.
     Indices: TAdIndexArray; //< Contains the indices of the particle system. If the index buffer is not used, the field may be nil.
     PrimitiveCount: integer; //< Stores how many primitives should be rendered.
     VertPos: integer; //< The current vertex-array index
     IndPos: integer; //< The current index-array index
-    MinX, //< The minimum X-Coordinate of a particle
-    MinY, //< The minimum Y-Coordinate of a particle
-    MaxX, //< The maximum X-Coordinate of a particle
-    MaxY: double; //< The maximum Y-Coordinate of a particle
+    MinX: double; //< The minimum X-Coordinate of the particle system.
+    MinY: double; //< The minimum Y-Coordinate of the particle system.
+    MaxX: double; //< The maximum X-Coordinate of the particle system.
+    MaxY: double; //< The maximum Y-Coordinate of the particle system.
   end;
 
   { Pointer on TAdParticle data. Used to prevent the compiler magic to create
@@ -156,7 +157,7 @@ type
   {$M-}
 
   TAdStdParticle = class(TAdParticle)
-    strict private
+    private
       FPosition: TAdVector3;
       FVelocity: TAdVector3;
       FLivedTime: double;
@@ -317,7 +318,7 @@ type
       function GetBoundsRect: TAdRect;
     protected
       procedure DeleteDeaded;
-      procedure Notify(ASender:TObject; AEvent:TSurfaceEventState);
+      procedure Notify(ASender:TObject; AEvent:TAdSurfaceEventState);
     public
       constructor Create(AParent: TAdDraw);
       destructor Destroy; override;
@@ -637,7 +638,7 @@ begin
   begin
     ADest.Activate;
 
-    FMesh.SetMatrix(AdMatrix_Translate(AX, AY, 0));
+    FMesh.Matrix := AdMatrix_Translate(AX, AY, 0);
 
     FMesh.Draw(FBlendMode, FDefaultParticle.DrawMode);
   end;
@@ -725,11 +726,11 @@ begin
       if PData^.PrimitiveCount > 0 then
       begin
         FMesh.Vertices := PData^.Vertices;
-        FMesh.IndexBuffer := PData^.Indices;
+        FMesh.Indices := PData^.Indices;
         FMesh.PrimitiveCount := PData^.PrimitiveCount;
 
         FMesh.Texture := FTexture.Texture;
-        FMesh.SetMatrix(AdMatrix_Identity);
+        FMesh.Matrix := AdMatrix_Identity;
 
         FMesh.Update;
       end;
@@ -773,7 +774,7 @@ begin
 end;
 
 procedure TAdParticleSystem.Notify(ASender: TObject;
-  AEvent: TSurfaceEventState);
+  AEvent: TAdSurfaceEventState);
 begin
   case AEvent of
     seInitialize: Initialize;

@@ -76,19 +76,23 @@ var
 begin
   CalcSurfaceRect;
 
-  oldvp := Surface.Viewport;
-  projmat := Surface.ProjectionMatrix;
-  viewmat := Surface.ViewMatrix;
+  oldvp := Surface.Scene.Viewport;
+  projmat := Surface.Scene.ProjectionMatrix;
+  viewmat := Surface.Scene.ViewMatrix;
 
   w := Base.Right - Base.Left;
   h := Base.Bottom - Base.Top;
-  Surface.Setup3DScene(w,h,AdVector3(w/2,h/2,-FZDistanze),AdVector3(w/2,h/2,0),AdVector3(sin(FRotation),sin(FRotation-pi/2),0));
+  Surface.Scene.Setup3DScene(
+    w, h,
+    AdVector3(w/2,h/2,-FZDistanze),
+    AdVector3(w/2,h/2,0),
+    AdVector3(sin(FRotation),sin(FRotation-pi/2),0));
 
   inherited;
 
-  Surface.Viewport := oldvp;
-  Surface.ViewMatrix := viewmat;
-  Surface.ProjectionMatrix := projmat;      
+  Surface.Scene.Viewport := oldvp;
+  Surface.Scene.ViewMatrix := viewmat;
+  Surface.Scene.ProjectionMatrix := projmat;      
 end;
 
 function TSpriteEngineEx.Base: TAdRect;

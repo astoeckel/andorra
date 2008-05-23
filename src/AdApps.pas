@@ -29,7 +29,7 @@ uses
 type
   {A application class for a spriteengine based "Andorra 2D" application}
   TAdSpriteApp = class
-  strict private
+  private
     FDraw: TAdDraw;
     FPerformanceCounter: TAdPerformanceCounter;
     FImageList: TAdImageList;

@@ -21,9 +21,7 @@ interface
 uses
   {$IFDEF FPC}
     {$IFDEF WIN32}
-      {$MESSAGE HINT 'Due to a bug in the free pascal compiler the unit AdVCLComponent will not work correctly. Currently using AdLCLOGLComponentWindow instead.'}
-      //AdVCLComponent;
-      AdLCLOGLComponentWindow;
+      AdVCLComponentWindow;
     {$ELSE}
       AdLCLOGLComponentWindow;
     {$ENDIF}    

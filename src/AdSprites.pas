@@ -252,6 +252,8 @@ type
       destructor Destroy;override;
       //Kills all sprites which want to be dead.
       procedure Dead;override;
+      {Calls the DoMove function of the instance and all child's move function.}
+      procedure Move(TimeGap: double);
 
       //The size of the surface.
       property SurfaceRect:TAdRect read FSurfaceRect;
@@ -615,7 +617,7 @@ begin
 
     for i := 0 to FList.Count - 1 do
     begin
-      if (not FVisibilityTest) or (OverlapRect(FEngine.SurfaceRect,FList[i].BoundsRect)) then
+      if (not FVisibilityTest) or (OverlapRect(FEngine.SurfaceRect, FList[i].BoundsRect)) then
       begin
         FList[i].Draw;
       end;
@@ -1036,6 +1038,12 @@ begin
   inherited Destroy;
 end;
 
+procedure TSpriteEngine.Move(TimeGap: double);
+begin
+  FSurfaceRect := Surface.DisplayRect;
+  inherited;
+end;
+
 procedure TSpriteEngine.SetSurface(AValue: TAdRenderingSurface);
 begin
   if (AValue <> nil) and (AValue <> FSurface) then
@@ -1397,7 +1405,7 @@ end;
 
 procedure TParticleSprite.DoDraw;
 begin
-  FPartSys.Draw(WorldX,WorldY);
+  FPartSys.Draw(FEngine.Surface, round(WorldX), round(WorldY));
 end;
 
 procedure TParticleSprite.DoMove(TimeGap: double);
@@ -1415,12 +1423,11 @@ begin
   begin
     Dead;
   end;
-  FPartSys.Dead;
 end;
 
 procedure TParticleSprite.Emit(ACount: integer);
 begin
-  FPartSys.CreateParticles(ACount,TAdParticle,round(FEmissionX),round(FEmissionY));
+  FPartSys.Emit(ACount, round(FEmissionX), round(FEmissionY));
 end;
 
 function TParticleSprite.GetBoundsRect: TAdRect;

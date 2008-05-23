@@ -25,7 +25,7 @@ interface
 uses
   {$IFDEF FPC}Interfaces, {$ENDIF}
   Classes, Controls, Windows, Forms,
-  AdEvents, AdTypes, AdWindowFramework;
+  AdEvents, AdTypes, AdWindowFramework, AdVCLComponentEventConnector;
 
 type
   {@exclude}
@@ -34,38 +34,13 @@ type
       FForm:TForm;
       FBinded:boolean;
       FInitialized:boolean;
+      FConnector: TAdVCLComponentEventConnector;
 
       FIdle : TIdleEvent;
 
       function ChangeResolution(width, height, bitdepth : LongWord):boolean;
-      function ConvertShift(Shift: TShiftState):TAdShiftState;
-      function ConvertButton(Button : TMouseButton):TAdMouseButton;
 
-      procedure SetupEvents;
-
-      {Event handle methods}
-
-      procedure Idle(Sender:TObject; var Done:boolean);
-      procedure Paint(Sender:TObject);
-      procedure Resize(Sender:TObject);
-      procedure Activate(Sender:TObject);
-      procedure Deactivate(Sender:TObject);
-      procedure Close(Sender: TObject; var Action: TCloseAction);
-
-      procedure Click(Sender: TObject);
-      procedure DblClick(Sender: TObject);
-      procedure MouseDown(Sender: TObject; Button: TMouseButton;
-        Shift: TShiftState; X, Y: integer);
-      procedure MouseUp(Sender: TObject; Button: TMouseButton;
-        Shift: TShiftState; X, Y: integer);
-      procedure MouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-      procedure MouseWheel(Sender: TObject; Shift: TShiftState;
-        WheelDelta: integer; MousePos:TPoint; var Handled:boolean);
-
-      procedure KeyDown(Sender: TObject; var Key: Word; Shift:TShiftState);
-      procedure KeyUp(Sender: TObject; var Key: Word; Shift:TShiftState);
-      procedure KeyPress(Sender: TObject; var Key: Char);
-      
+      procedure Idle(Sender: TObject; var Done: boolean);
     protected
       procedure SetTitle(AValue:string);override;
 
@@ -73,6 +48,9 @@ type
       function GetClientHeight:integer;override;
 
       procedure SetCursorVisible(AValue:Boolean);override;
+
+      procedure SetupEvents;
+      procedure ResetEvents;
     public
       constructor Create;override;
       destructor Destroy;override;
@@ -95,6 +73,7 @@ end;
 
 destructor TAdVCLWindow.Destroy;
 begin
+  ResetEvents;
   if FForm <> nil then
     FForm.Free;
   inherited;
@@ -160,18 +139,18 @@ begin
     FForm.BorderIcons := [biSystemMenu];
     FForm.Caption := Title;
 
-    if AProps.Mode = dmWindowed then
+    if (AProps.Mode = dmWindowed) or (AProps.Mode = dmDefault) then
     begin
       FForm.BorderStyle := bsSingle;
-      FForm.Width := AProps.Width;
-      FForm.Height := AProps.Height;
+      FForm.ClientWidth := AProps.Width;
+      FForm.ClientHeight := AProps.Height;
       FForm.Position := poScreenCenter;
     end else
     if (AProps.Mode = dmScreenRes) or (AProps.Mode = dmFullscreen) then
     begin
       if AProps.Mode = dmFullScreen then
       begin
-        if not ChangeResolution(AProps.Width, AProps.Height, AProps.BitDepth) then
+        if not ChangeResolution(AProps.Width, AProps.Height, ord(AProps.BitDepth)) then
         begin
           result := false;
           exit;
@@ -229,167 +208,32 @@ begin
   Application.Title := AValue;
 end;
 
-procedure TAdVCLWindow.SetupEvents;
-begin
-  //Store old event handlers
-  FIdle := Application.OnIdle;
-
-  //Set new event handlers
-  Application.OnIdle := Idle;
-
-  FForm.OnPaint := Paint;
-  FForm.OnResize := Resize;
-  FForm.OnDeactivate := Deactivate;
-  FForm.OnActivate := Activate;
-
-  FForm.OnClick := Click;
-  FForm.OnDblClick := DblClick;
-  FForm.OnClose := Close;
-  FForm.OnMouseMove := MouseMove;
-  FForm.OnMouseDown := MouseDown;
-  FForm.OnMouseUp := MouseUp;
-  FForm.OnMouseWheel := MouseWheel;
-
-  FForm.OnKeyDown := KeyDown;
-  FForm.OnKeyPress := KeyPress;
-  FForm.OnKeyUp := KeyUp;
-end;
-
-function TAdVCLWindow.ConvertButton(Button: TMouseButton): TAdMouseButton;
-begin
-  result := TAdMouseButton(ord(Button));
-end;
-
-function TAdVCLWindow.ConvertShift(Shift: TShiftState): TAdShiftState;
-begin
-  result := [];
-  if ssShift in Shift then result := result + [asShift];
-  if ssCtrl in Shift then result := result + [asCtrl];
-  if ssAlt in Shift then result := result + [asAlt];
-  if ssDouble in Shift then result := result + [asDouble];
-  if ssLeft in Shift then result := result + [asLeft];
-  if ssRight in Shift then result := result + [asRight];
-  if ssMiddle in Shift then result := result + [asMiddle];
-end;
-
-{TAdVCLWindow Event handlers}
-
 procedure TAdVCLWindow.Idle(Sender: TObject; var Done: boolean);
 begin
   if Assigned(Events.OnIdle) then
-    Events.OnIdle(Self, Done);
-  if Assigned(FIdle) then
-    FIdle(Self, Done);
-end;
+    Events.OnIdle(self, done);
+end;          
 
-procedure TAdVCLWindow.Deactivate(Sender: TObject);
+procedure TAdVCLWindow.ResetEvents;
 begin
-  if Assigned(Events.OnDeactivate) then
-    Events.OnDeactivate(self);
-end;
-
-procedure TAdVCLWindow.Activate(Sender: TObject);
-begin
-  if Assigned(Events.OnActivate) then
-    Events.OnActivate(self);
-end;
-
-procedure TAdVCLWindow.Click(Sender: TObject);
-var
-  p:TPoint;
-begin
-  GetCursorPos(p);
-  p := FForm.ScreenToClient(p);
-  if Assigned(Events.OnClick) then
-    Events.OnClick(self, p.X, p.Y);
-end;
-
-procedure TAdVCLWindow.DblClick(Sender: TObject);
-var
-  p:TPoint;
-begin
-  GetCursorPos(p);
-  p := FForm.ScreenToClient(p);
-  if Assigned(Events.OnClick) then
-    Events.OnDblClick(self, p.X, p.Y);
-end;
-
-procedure TAdVCLWindow.Close(Sender: TObject; var Action: TCloseAction);
-var
-  canclose:boolean;
-begin
-  if Assigned(Events.OnClose) then
+  if FConnector <> nil then
   begin
-    canclose := false;
-    Events.OnClose(self, canclose);
-    if canclose then
-      Action := caFree
-    else
-      Action := caNone;
+    FConnector.Free;
+    FConnector := nil;
   end;
 end;
 
-procedure TAdVCLWindow.KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TAdVCLWindow.SetupEvents;
 begin
-  if Assigned(Events.OnKeyDown) then
-    Events.OnKeyDown(self, Key, ConvertShift(Shift));
-end;
+  ResetEvents;
 
-procedure TAdVCLWindow.KeyPress(Sender: TObject; var Key: Char);
-begin
-  if Assigned(Events.OnKeyPress) then
-    Events.OnKeyPress(self, Key);
-end;
+  FConnector := TAdVCLComponentEventConnector.Create(FForm, self);
 
-procedure TAdVCLWindow.KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if Assigned(Events.OnKeyUp) then
-    Events.OnKeyUp(self, Key, ConvertShift(Shift));
-end;
+  //Store old event handler
+  FIdle := Application.OnIdle;
 
-procedure TAdVCLWindow.MouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  if Assigned(Events.OnMouseDown) then
-    Events.OnMouseDown(self, ConvertButton(Button), ConvertShift(Shift), X, Y);
-end;
-
-procedure TAdVCLWindow.MouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: integer);
-begin
-  if Assigned(Events.OnMouseMove) then
-    Events.OnMouseMove(self, ConvertShift(Shift), X, Y);
-end;
-
-procedure TAdVCLWindow.MouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  if Assigned(Events.OnMouseUp) then
-    Events.OnMouseUp(self, ConvertButton(Button), ConvertShift(Shift), X, Y);
-end;
-
-procedure TAdVCLWindow.MouseWheel(Sender: TObject; Shift: TShiftState;
-  WheelDelta: integer; MousePos:TPoint; var Handled:boolean);
-begin
-  Handled := false;
-  if Assigned(Events.OnMouseWheel) then
-  begin
-    Handled := true;
-    Events.OnMouseWheel(self, ConvertShift(Shift), WheelDelta, MousePos.X,
-      MousePos.Y);
-  end;
-end;
-
-procedure TAdVCLWindow.Paint(Sender: TObject);
-begin
-  if Assigned(Events.OnPaint) then
-    Events.OnPaint(self);
-end;
-
-procedure TAdVCLWindow.Resize(Sender: TObject);
-begin
-  if Assigned(Events.OnResize) then
-    Events.OnResize(self);
+  //Set new event handler
+  Application.OnIdle := Idle;
 end;
 
 initialization

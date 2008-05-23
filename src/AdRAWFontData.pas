@@ -75,7 +75,6 @@ procedure TAdRAWFontData.Generate(AData: Pointer; ASize: Cardinal;
 var
   ms:TMemoryStream;
   bmp:TAdBitmap;
-  params:TAd2dBitmapTextureParameters;
 begin
   ms := TMemoryStream.Create;
 
@@ -88,15 +87,7 @@ begin
   bmp := TAdBitmap.Create;
   bmp.LoadFromStream(ms);
 
-  with params do
-  begin
-    BitDepth := 32;
-    UseMipmaps := true;
-    MinFilter := atPoint;
-    MagFilter := atPoint;
-    MipFilter := atPoint;
-  end;
-  ATexture.LoadFromBitmap(bmp, params);
+  ATexture.LoadFromBitmap(bmp, ad32Bit);
 
   bmp.Free;
 

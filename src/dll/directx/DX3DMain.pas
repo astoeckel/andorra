@@ -27,10 +27,16 @@ type
       FOwnRenderTarget: IDirect3dSurface9;
       FSetToOwnRenderTarget: boolean;
       FWnd: TAdWindowFramework;
+
+      FFullscreen: boolean;
+      FResolution: TAd2dResolution;
+      FAntialias: boolean;
+      FVSync: boolean;
+      FTextures: boolean;
+      FMipmaps: boolean;
     protected
       function GetFreeLight:integer;
       procedure ReleaseLight(alight:integer);
-      procedure SetOptions(AValue:TAdOptions);override;
       procedure SetViewPort(AValue:TAdRect);override;
       procedure ResetRenderTarget;
     public
@@ -44,20 +50,30 @@ type
       function CreateBitmapTexture:TAd2DBitmapTexture;override;
       function CreateRenderTargetTexture:TAd2dRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
-      function Initialize(AWnd:TAdWindowFramework; AOptions:TAdOptions;
-        ADisplay:TAdDisplay):boolean;override;
+      function CreatePixelCounter:TAd2dPixelCounter;override;
+      function Initialize(AWnd:TAdWindowFramework):boolean;override;
       procedure Finalize;override;
 
       procedure SetRenderTarget(ATarget:TAd2dRenderTargetTexture);override;
+      procedure SetProperties(ACount: integer; APProps: PAd2dPropertyValue);override;
+      procedure SetOptions(AOptions: TAd2dOptions);override;
+      procedure SetStencilOptions(AReference, AMask: Word;
+        AFunction: TAd2dStencilFunction);override;
+      procedure SetStencilEvent(AEvent: TAd2dStencilEvent;
+        AOperation: TAd2dStencilOperation);override;
+
       
-      procedure Setup2DScene(AWidth,AHeight:integer);override;
-      procedure Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);override;
+      procedure Setup2DScene(AWidth, AHeight:integer;
+        ANearZ, AFarZ: double);override;
+      procedure Setup3DScene(AWidth, AHeight:integer;
+        APos, ADir, AUp:TAdVector3; ANearZ, AFarZ: double);override;
       procedure SetupManualScene(AMatView, AMatProj:TAdMatrix);override;
       procedure GetScene(out AMatView:TAdMatrix; out AMatProj:TAdMatrix);override;
 
       function SupportsWindowFramework(AClassId:ShortString):boolean;override;
 
-      procedure ClearSurface(AColor: TAndorraColor);override;
+      procedure ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
+        AColor: TAndorraColor; AZValue: integer; AStencilValue: integer); override;
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
@@ -80,15 +96,13 @@ type
       FVertexBuffer:IDirect3DVertexBuffer9;
       FIndexBuffer:IDirect3DIndexBuffer9;
       FParent:TDXApplication;
-      FMatrix:TD3DMatrix;
       procedure FreeBuffers;
     protected
       procedure SetVertices(AVertices:TAdVertexArray);override;
-      procedure SetIndex(AIndex:TAdIndexArray);override;
+      procedure SetIndices(AIndex:TAdIndexArray);override;
       procedure SetTexture(ATexture:TAd2DTexture);override;
       function GetLoaded:boolean;override;
     public
-      procedure SetMatrix(AMatrix:TAdMatrix);override;
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
       procedure Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);override;
@@ -98,11 +112,7 @@ type
   TDXBitmapTexture = class(TAd2DBitmapTexture)
     private
       FParent:TDXApplication;
-      FMagFilter:byte;
-      FMinFilter:byte;
-      FMipFilter:byte;
-      function GetFilter(AFilter:TAd2dTextureFilter):byte;
-      procedure SetFilters(AParams:TAd2dBitmapTextureParameters);
+      FHasMipmap: boolean;
     protected
       function GetLoaded:boolean;override;
     public
@@ -110,10 +120,9 @@ type
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
       procedure FlushTexture;override;
-      procedure LoadFromBitmap(ABmp:TAd2dBitmap;AParams:TAd2dBitmapTextureParameters);override;
+      procedure LoadFromBitmap(ABmp:TAd2dBitmap; ABitDepth: TAdBitDepth);override;
       procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
   end;
-
 
   TDXRenderTargetTexture = class(TAd2dRenderTargetTexture)
     private
@@ -124,9 +133,21 @@ type
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
 
-      procedure SetSize(AWidth, AHeight: integer; ABitCount: Byte);override;
+      procedure SetSize(AWidth, AHeight: integer; ABitDepth: TAdBitDepth);override;
       procedure FlushMemory;override;
       procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
+  end;
+
+  TDXPixelCounter = class(TAd2dPixelCounter)
+    private
+      FParent: TDXApplication;
+      Direct3DQuery: IDirect3DQuery9;
+    public
+      constructor Create(AParent: TDXApplication);
+      destructor Destroy;override;
+      
+      procedure StartCount;override;
+      function StopCount: cardinal;override;
   end;
 
 //Our Vertex and the definition of the flexible vertex format (FVF)
@@ -149,6 +170,13 @@ begin
   inherited;
   //Create Direct 3D Interface
   Direct3D9 := Direct3DCreate9( D3D_SDK_VERSION );
+
+  //Make some presets
+  FFullscreen := false;
+  FAntialias := false;
+  FVSync := false;
+  FMipmaps := false;
+  FTextures := true;
 end;
 
 destructor TDXApplication.Destroy;
@@ -161,6 +189,11 @@ end;
 function TDXApplication.CreateMesh: TAd2DMesh;
 begin
   result := TDXMesh.Create(self);
+end;
+
+function TDXApplication.CreatePixelCounter: TAd2dPixelCounter;
+begin
+  result := TDXPixelCounter.Create(self);
 end;
 
 function TDXApplication.CreateRenderTargetTexture: TAd2dRenderTargetTexture;
@@ -176,11 +209,9 @@ end;
 function TDXApplication.CreateLight: TAd2DLight;
 begin
   result := TDXLight.Create(self);
-end;
+end;   
 
-
-function TDXApplication.Initialize(AWnd: TAdWindowFramework; AOptions: TAdOptions;
-  ADisplay: TAdDisplay):boolean;
+function TDXApplication.Initialize(AWnd: TAdWindowFramework):boolean;
 var
   d3dpp : TD3DPresent_Parameters;
   d3ddm : TD3DDisplayMode;
@@ -198,22 +229,12 @@ begin
   if Direct3D9 <> nil then
   begin
     FWnd := AWnd;
-    FOptions := AOptions;
 
-    WriteLog(ltNone,'Try to initialize Andorra Direct3D 9 Plugin.');
-
-    if (doHardware in AOptions) then
-    begin
-      dtype := D3DDEVTYPE_HAL;
-    end
-    else
-    begin
-      dtype := D3DDEVTYPE_REF;
-    end;
+    dtype := D3DDEVTYPE_HAL;
 
     if Failed(Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, dtype, D3DCaps9)) then
     begin
-      WriteLog(ltFatalError,'No connection to the default device.');
+      //WriteLog(ltFatalError,'No connection to the default device.');
     end;
     hw := D3DCaps9.DevCaps and D3DDEVCAPS_HWTRANSFORMANDLIGHT <> 0;
     if hw then
@@ -223,39 +244,39 @@ begin
     else
     begin
       vp := D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-      WriteLog(ltWarning,'The current device does not support "HARDWARE TRANSFORM AND LIGHT".');
+      //WriteLog(ltWarning,'The current device does not support "HARDWARE TRANSFORM AND LIGHT".');
     end;
 
     Fillchar(d3dpp, sizeof(d3dpp),0);
     with d3dpp do
     begin
-      Windowed := not (doFullscreen in AOptions);
+      Windowed := not FFullscreen;
       SwapEffect := D3DSWAPEFFECT_DISCARD;
-      if not (doVSync in AOptions) then
+      if not FVSync then
       begin
         PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
       end;
       if not Windowed then
       begin
-        BackBufferWidth := ADisplay.Width;
-        BackBufferHeight := ADisplay.Height;
-        if ADisplay.Freq > 0 then
+        BackBufferWidth := FResolution.Width;
+        BackBufferHeight := FResolution.Height;
+        if FResolution.Freq > 0 then
         begin
-          Fullscreen_RefreshRateInHz := ADisplay.Freq;
+          Fullscreen_RefreshRateInHz := FResolution.Freq;
         end;
-        case ADisplay.BitCount of
-          16: afmt := D3DFMT_X1R5G5B5;
-          32: afmt := D3DFMT_X8R8G8B8;
+        case FResolution.BitDepth of
+          ad16Bit: afmt := D3DFMT_X1R5G5B5;
+          ad32Bit: afmt := D3DFMT_X8R8G8B8;
         else
           afmt := D3DFMT_X8R8G8B8;
         end;
         if failed(Direct3D9.CheckDeviceType(D3DADAPTER_DEFAULT, dtype, afmt, afmt, false)) then
         begin
-          WriteLog(ltWarning,'The current device settings may be unsupportet.');
-          WriteLog(ltInfo,'Try to use other modes.');
-          case ADisplay.BitCount of
-            16: afmt := D3DFMT_R5G6B5;
-            32: afmt := D3DFMT_A8R8G8B8;
+          //WriteLog(ltWarning,'The current device settings may be unsupportet.');
+          //WriteLog(ltInfo,'Try to use other modes.');
+          case FResolution.BitDepth of
+            ad16Bit: afmt := D3DFMT_R5G6B5;
+            ad32Bit: afmt := D3DFMT_A8R8G8B8;
           else
             afmt := D3DFMT_A8R8G8B8;
           end;
@@ -265,25 +286,22 @@ begin
       begin
         if Failed(Direct3D9.GetAdapterDisplayMode(D3DADAPTER_DEFAULT, d3ddm)) then
         begin
-          WriteLog(ltWarning,'Can not access current display settings. Try to run in fullscreen mode.');
+          //WriteLog(ltWarning,'Can not access current display settings. Try to run in fullscreen mode.');
           exit;
         end;
         afmt := d3ddm.Format;
       end;
       if failed(Direct3D9.CheckDeviceType(D3DADAPTER_DEFAULT, dtype, afmt, afmt, false)) then
       begin
-        WriteLog(ltFatalError,'The current device settings are unsupportet. Try another adapter mode.');
+        //WriteLog(ltFatalError,'The current device settings are unsupportet. Try another adapter mode.');
         exit;
       end;
       BackBufferFormat := afmt;
 
-      if doZBuffer in Options then
-      begin
-        EnableAutoDepthStencil := true;
-        AutoDepthStencilFormat := D3DFMT_D16;
-      end;
+      EnableAutoDepthStencil := true;
+      AutoDepthStencilFormat := D3DFMT_D24S8;
 
-      if doAntialias in Options then
+      if FAntialias then
       begin
         MultisampleType := D3DMULTISAMPLE_NONMASKABLE;
         Direct3D9.CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, dtype, afmt, Windowed, MultisampleType,  @level);
@@ -296,10 +314,10 @@ begin
       (Direct3D9.CheckDeviceFormat(D3DADAPTER_DEFAULT, dtype, afmt, D3DUSAGE_AUTOGENMIPMAP, D3DRTYPE_TEXTURE, afmt) = D3D_OK);
     if not CanAutoGenMipMaps then
     begin
-      WriteLog(ltInfo, 'Device can not create mipmaps. Mipmaps will be disabled.');
+      //WriteLog(ltInfo, 'Device can not create mipmaps. Mipmaps will be disabled.');
     end;
 
-    WriteLog(ltInfo,'Try to initialize the device.');
+    //WriteLog(ltInfo,'Try to initialize the device.');
 
     FPresent := d3dpp;
 
@@ -308,7 +326,7 @@ begin
       TAdHandleWindowFramework(AWnd).Handle, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
     begin
-      WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
+      //WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
       exit;
     end
     else
@@ -320,15 +338,14 @@ begin
     FHeight := FWnd.ClientHeight;
 
     //Set lighting
-    SetOptions(FOptions);
     Direct3DDevice9.SetRenderState(D3DRS_AMBIENT, $00FFFFFF);
 
     //Get the number of lights
     FMaxLightCount := d3dcaps9.MaxActiveLights;
-    WriteLog(ltInfo,PChar('Device supports '+inttostr(MaxLights)+' lights'));
+    Log('AdDirectX93D', lsInfo, PChar('Device supports '+inttostr(MaxLights)+' lights'));
 
 
-    WriteLog(ltInfo,PChar(Inttostr(Direct3DDevice9.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.'));
+    Log('AdDirectX93D', lsInfo, PChar(Inttostr(Direct3DDevice9.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.'));
 
     //Setup Material
     if
@@ -336,34 +353,23 @@ begin
       Failed(Direct3DDevice9.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1)) or
       Failed(Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_COLOR1)) then
     begin
-      WriteLog(ltError,'Can''t set material sources.');
-    end;
-
-    //No culling
-    if Failed(Direct3DDevice9.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE)) then
-    begin
-      WriteLog(ltError,'Can''t turn culling off.');
-      exit;
+      //WriteLog(ltError,'Can''t set material sources.');
     end;
 
     //Enable Texture alphablending
-    if
-      Failed(Direct3DDevice9.SetRenderState(D3DRS_ALPHABLENDENABLE, LongWord(TRUE))) or
-      Failed(Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA)) or
-      Failed(Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA)) or
-      Failed(Direct3DDevice9.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE)) then
-    begin
-      WriteLog(ltWarning,'Alphablending is disabled');
-    end;
+    Direct3DDevice9.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+
+    //Enable texture transformation
+    Direct3DDevice9.SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 
     FSetToOwnRenderTarget := true;
 
-    WriteLog(ltInfo,'Initialization complete.');
+    //WriteLog(ltInfo,'Initialization complete.');
     result := true;
   end
   else
   begin
-    WriteLog(ltFatalError,'Error while connecting to DirectX. Check out whether you have the right DirectX Version (9c) installed.');
+    //WriteLog(ltFatalError,'Error while connecting to DirectX. Check out whether you have the right DirectX Version (9c) installed.');
   end;
 end;
 
@@ -391,16 +397,115 @@ procedure TDXApplication.Finalize;
 begin
   Direct3d9 := nil;
   Direct3dDevice9 := nil;
-  WriteLog(ltInfo,'Finalization Complete.');
+  //WriteLog(ltInfo,'Finalization Complete.');
 end;
 
-procedure TDXApplication.SetOptions(AValue: TAdOptions);
+procedure TDXApplication.SetOptions(AOptions: TAd2dOptions);
 begin
-  FOptions := AValue;
-  if Direct3DDevice9 <> nil then
+  //Blending
+  Direct3DDevice9.SetRenderState(D3DRS_ALPHABLENDENABLE, LongWord(aoBlending in AOptions));
+
+  //Alpha-Mask
+  if aoAlphaMask in AOptions then
   begin
-//    Direct3DDevice9.SetRenderState(D3DRS_LIGHTING,LongWord(doLights in AValue));
-    Direct3DDevice9.SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,LongWord(doAntialias in AValue));
+    Direct3DDevice9.SetRenderState(D3DRS_ALPHATESTENABLE, 1);
+    Direct3DDevice9.SetRenderState(D3DRS_ALPHAREF, 0);
+    Direct3DDevice9.SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+  end;
+
+  //Z-Buffer
+  Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, LongWord(aoZBuffer in AOptions));
+  
+  //Light
+  Direct3DDevice9.SetRenderState(D3DRS_LIGHTING, LongWord(aoTextures in AOptions));
+
+  //Culling
+  if not (aoCulling in AOptions) then
+    Direct3DDevice9.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE)
+  else
+    Direct3DDevice9.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
+  //Stencil
+  Direct3DDevice9.SetRenderState(D3DRS_STENCILENABLE, LongWord(aoStencilBuffer in AOptions));
+
+  //Textures
+  FTextures := aoTextures in AOptions;
+
+  //Mipmaps
+  FMipmaps := aoMipmaps in AOptions;
+end;
+
+procedure TDXApplication.SetStencilOptions(AReference, AMask: Word;
+  AFunction: TAd2dStencilFunction);
+var
+  func: TD3DCMPFUNC;
+begin
+  func := 0;
+
+  //Set the comparison function
+  case AFunction of
+    asfNever: func := D3DCMP_NEVER;
+    asfLessThan: func := D3DCMP_LESS;
+    asfLessThanOrEqual: func := D3DCMP_LESSEQUAL;
+    asfEqual: func := D3DCMP_EQUAL;
+    asfGreaterThanOrEqual: func := D3DCMP_GREATEREQUAL;
+    asfGreaterThan: func := D3DCMP_GREATER;
+    asfAlways: func := D3DCMP_ALWAYS;
+  end;
+
+  Direct3DDevice9.SetRenderState(D3DRS_STENCILFUNC, func);
+
+  //Set reference value and mask
+  Direct3DDevice9.SetRenderState(D3DRS_STENCILREF, AReference);
+  Direct3DDevice9.SetRenderState(D3DRS_STENCILMASK, AMask);
+end;
+
+procedure TDXApplication.SetStencilEvent(AEvent: TAd2dStencilEvent;
+  AOperation: TAd2dStencilOperation);
+var
+  op: D3DSTENCILOP;
+  state: D3DRENDERSTATETYPE;
+begin
+  //Initialize values
+  op := 0;
+  state := D3DRS_STENCILFAIL;
+
+  //Set operation
+  case AOperation of
+    asoKeep: op := D3DSTENCILOP_KEEP;
+    asoReplace: op := D3DSTENCILOP_REPLACE;
+    asoIncrement: op := D3DSTENCILOP_INCR;
+    asoDecrase: op := D3DSTENCILOP_DECR;
+    asoZero: op := D3DSTENCILOP_ZERO;
+  end;
+
+  //Set event
+  case AEvent of
+    aseFail: state := D3DRS_STENCILFAIL;
+    aseZFail: state := D3DRS_STENCILZFAIL;
+    asePass: state := D3DRS_STENCILPASS;
+  end;
+
+  //Set render states
+  Direct3DDevice9.SetRenderState(state, op)
+end;
+
+procedure TDXApplication.SetProperties(ACount: integer;
+  APProps: PAd2dPropertyValue);
+var
+  i: integer;
+begin
+  for i := 0 to ACount - 1 do
+  begin
+    if APProps^.PropName = 'fullscreen' then
+      FFullscreen := PBoolean(APProps^.PropValue)^
+    else if APProps^.PropName = 'fullscreen_res' then
+      FResolution := PAd2dResolution(APProps^.PropValue)^
+    else if APProps^.PropName = 'antialias' then
+      FAntialias := PBoolean(APProps^.PropValue)^
+    else if APProps^.PropName = 'vsync' then
+      FVSync := PBoolean(APProps^.PropValue)^;
+    inc(APProps);
   end;
 end;
 
@@ -425,9 +530,11 @@ begin
   end;
 end;
 
-procedure TDXApplication.Setup2DScene(AWidth, AHeight: integer);
-var pos, dir, up : TD3DXVector3;
-    matView, matProj: TD3DXMatrix;
+procedure TDXApplication.Setup2DScene(AWidth, AHeight: integer;
+  ANearZ, AFarZ: double);
+var
+  pos, dir, up : TD3DXVector3;
+  matView, matProj: TD3DXMatrix;
 begin
   if Direct3DDevice9 <> nil then
   begin
@@ -438,20 +545,22 @@ begin
     D3DXMatrixLookAtRH( matView, pos, dir, up);
     Direct3dDevice9.SetTransform(D3DTS_VIEW, matView);
 
-    D3DXMatrixOrthoRH( matProj, Awidth, Aheight, -100, 100);
+    D3DXMatrixOrthoRH( matProj, Awidth, Aheight, ANearZ, AFarZ);
     Direct3dDevice9.SetTransform(D3DTS_PROJECTION, matProj);
   end;
 end;
 
-procedure TDXApplication.Setup3DScene(AWidth,AHeight:integer;APos,ADir,AUp:TAdVector3);
-var matView, matProj: TD3DXMatrix;
+procedure TDXApplication.Setup3DScene(AWidth, AHeight:integer;
+  APos, ADir, AUp:TAdVector3; ANearZ, AFarZ: double);
+var
+  matView, matProj: TD3DXMatrix;
 begin
   if Direct3DDevice9 <> nil then
   begin
     D3DXMatrixLookAtRH( matView, TD3DVector(APos), TD3DVector(ADir), TD3DVector(AUp));
     Direct3dDevice9.SetTransform(D3DTS_VIEW, matView);
 
-    D3DXMatrixPerspectiveFovRH( matProj, D3DX_PI / 4, AWidth / AHeight, 1, abs(apos.z)*2);
+    D3DXMatrixPerspectiveFovRH( matProj, D3DX_PI / 4, AWidth / AHeight, ANearZ, AFarZ);
     Direct3dDevice9.SetTransform(D3DTS_PROJECTION, matProj);
   end;
 end;
@@ -549,20 +658,27 @@ begin
   Direct3DDevice9.GetTransform(D3DTS_VIEW, TD3DMatrix(AMatView));
 end;
 
-procedure TDXApplication.ClearSurface(AColor: TAndorraColor);
+procedure TDXApplication.ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
+  AColor: TAndorraColor; AZValue: integer; AStencilValue: integer);
+var
+  flags: Cardinal;
 begin
   if Direct3DDevice9 <> nil then
   begin
-    if doZBuffer in Options then
-    begin
-      Direct3DDevice9.Clear( 0, nil, D3DCLEAR_TARGET or D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(AColor.a,AColor.r,AColor.g,AColor.b),
-        1.0, 0);
-    end
-    else
-    begin
-      Direct3DDevice9.Clear( 0, nil, D3DCLEAR_TARGET, D3DCOLOR_ARGB(AColor.a,AColor.r,AColor.g,AColor.b),
-        1.0, 0);
-    end;
+    //Set flags for clearing the surface
+    flags := 0;
+
+    if alColorBuffer in ALayers then
+      flags := flags or D3DCLEAR_TARGET;
+    if alStencilBuffer in ALayers then
+      flags := flags or D3DCLEAR_STENCIL;
+    if alZBuffer in ALayers then
+      flags := flags or D3DCLEAR_ZBUFFER;
+
+    //Clear the surface
+    Direct3DDevice9.Clear(
+      1, @ARect, flags, D3DCOLOR_ARGB(AColor.a,AColor.r,AColor.g,AColor.b),
+      AZValue, AStencilValue);
   end;
 end;
 
@@ -574,7 +690,8 @@ begin
   FParent := AParent;
   FIndices := nil;
   FVertices := nil;
-  D3DXMatrixIdentity(FMatrix);
+  FMatrix := AdMatrix_Identity;
+  FTextureMatrix := AdMatrix_Identity;
 end;
 
 destructor TDXMesh.Destroy;
@@ -596,9 +713,10 @@ begin
   result := PCardinal(@AValue)^;
 end;
 
-
 procedure TDXMesh.Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);
-var Mode:TD3DPrimitiveType;
+var
+  Mode:TD3DPrimitiveType;
+
 begin
   if Loaded then
   begin
@@ -620,10 +738,14 @@ begin
       begin
         Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
         Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
-      end;      
+      end;
 
-      Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), FMatrix);
-      if (FTexture <> nil) and (FTexture.Loaded) then
+      if FTexture <> nil then
+        TDXBitmapTexture(FTexture).SetFilter;
+
+      Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), TD3DMatrix(FMatrix));
+      Direct3DDevice9.SetTransform(D3DTS_TEXTURE0, TD3DMatrix(FTextureMatrix));
+      if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
       begin
         if (FTexture <> FLastTexture) then
         begin
@@ -665,7 +787,7 @@ begin
         end;
       end;
 
-      if UseIndexBuffer then
+      if FIndices <> nil then
       begin
         Direct3DDevice9.SetIndices(FIndexBuffer);
         Direct3DDevice9.DrawIndexedPrimitive(Mode, 0, 0, VertexCount, 0, FPrimitiveCount);
@@ -695,18 +817,12 @@ begin
   result := FVertexBuffer <> nil;
 end;
 
-procedure TDXMesh.SetIndex(AIndex: TAdIndexArray);
+procedure TDXMesh.SetIndices(AIndex: TAdIndexArray);
 begin
   if FIndices <> nil then
-  begin
     Finalize(FIndices);
-  end;
-  FIndices := Copy(AIndex);
-end;
 
-procedure TDXMesh.SetMatrix(AMatrix: TAdMatrix);
-begin
-  FMatrix := TD3DMatrix(AMatrix);
+  FIndices := Copy(AIndex);
 end;
 
 procedure TDXMesh.SetTexture(ATexture: TAd2DTexture);
@@ -724,10 +840,11 @@ begin
 end;
 
 procedure TDXMesh.Update;
-var Vertices:array of TD3DLVertex;
-    i:integer;
-    PVertices,PIndices:pointer;
-    lc:integer;
+var
+  Vertices:array of TD3DLVertex;
+  i:integer;
+  PVertices,PIndices:pointer;
+  lc:integer;
 begin
   SetLength(Vertices,length(FVertices));
   for i := 0 to high(FVertices) do
@@ -762,7 +879,7 @@ begin
     Move(Vertices[0], pVertices^, Sizeof(TD3DLVertex)*Vertexcount);
     FVertexBuffer.Unlock;
 
-    if UseIndexBuffer then
+    if FIndices <> nil then
     begin
       //Create Indexbuffer
       lc := FIndicesCount;
@@ -788,6 +905,7 @@ begin
   inherited Create;
   FParent := AParent;
   FTexture := nil;
+  FHasMipMap := false;
 end;
 
 destructor TDXBitmapTexture.Destroy;
@@ -797,10 +915,22 @@ begin
 end;
 
 procedure TDXBitmapTexture.SetFilter;
+var
+  f: Cardinal;
 begin
-  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, FMagFilter);
-  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MINFILTER, FMinFilter);
-  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, FMipFilter);
+  f := D3DTEXF_POINT;
+  case FFilter of
+    atPoint: f := D3DTEXF_POINT;
+    atLinear: f := D3DTEXF_LINEAR;
+    atAnisotropic: f := D3DTEXF_ANISOTROPIC;
+  end;
+
+  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MAGFILTER, f);
+  FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MINFILTER, f);
+  if FHasMipMap then
+    FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, f)
+  else
+    FParent.Direct3DDevice9.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
 end;
 
 procedure TDXBitmapTexture.FlushTexture;
@@ -813,28 +943,9 @@ begin
   FHeight := 0;
   FBaseWidth := 0;
   FBaseHeight := 0;
-  FBitCount := 0;
+  FBitDepth := ad32Bit;
   FTexture := nil;
-end;
-
-function TDXBitmapTexture.GetFilter(AFilter: TAd2dTextureFilter): byte;
-begin
-  result := 1;
-  case AFilter of
-    atPoint: result := D3DTEXF_POINT;
-    atLinear: result := D3DTEXF_LINEAR;
-    atAnisotropic: result := D3DTEXF_ANISOTROPIC;
-  end;
-end;
-
-procedure TDXBitmapTexture.SetFilters(AParams: TAd2dBitmapTextureParameters);
-begin
-  FMagFilter := GetFilter(AParams.MagFilter);
-  FMinFilter := GetFilter(AParams.MinFilter);
-  if not AParams.UseMipMaps then
-    FMipFilter := 0
-  else
-    FMipFilter := GetFilter(AParams.MipFilter);
+  FHasMipMap := false;
 end;
 
 function TDXBitmapTexture.GetLoaded: boolean;
@@ -862,7 +973,7 @@ begin
                         or R8ToR4(r);
 end;
 
-procedure TDXBitmapTexture.LoadFromBitmap(ABmp: TAd2dBitmap; AParams:TAd2dBitmapTextureParameters);
+procedure TDXBitmapTexture.LoadFromBitmap(ABmp: TAd2dBitmap; ABitDepth: TAdBitDepth);
 var afmt:TD3DFORMAT;
     w,h,x,y:integer;
     d3dlr:TD3DLocked_Rect;
@@ -873,40 +984,44 @@ begin
   w := 1 shl ceil(log2(ABmp.Width));
   h := 1 shl ceil(log2(ABmp.Height));
 
-  AParams.UseMipMaps := AParams.UseMipMaps and FParent.CanAutoGenMipmaps;
-
-  if (AParams.BitDepth <> FBitCount) or (w <> FWidth) or (h <> FHeight) or (FTexture = nil) then
+  if (ABitDepth <> FBitDepth) or (w <> FWidth) or (h <> FHeight) or (FTexture = nil) then
   begin
-    case AParams.BitDepth of
-      16: afmt := D3DFMT_A4R4G4B4;
+    case ABitDepth of
+      ad16Bit: afmt := D3DFMT_A4R4G4B4;
+      ad32Bit: afmt := D3DFMT_A8R8G8B8;
     else
       afmt := D3DFMT_A8R8G8B8;
     end;
     FlushTexture;
     with FParent do
     begin
-      if AParams.UseMipMaps then
-        D3DXCreateTexture(Direct3DDevice9,w,h,0, D3DUSAGE_AUTOGENMIPMAP, afmt, D3DPOOL_MANAGED, IDirect3DTexture9(FTexture))
+      if (FParent.FMipmaps) and (FParent.CanAutoGenMipmaps) then
+      begin
+        D3DXCreateTexture(Direct3DDevice9,w,h,0, D3DUSAGE_AUTOGENMIPMAP, afmt, D3DPOOL_MANAGED, IDirect3DTexture9(FTexture));
+        FHasMipMap := true;
+      end
       else
+      begin
+        FHasMipMap := false;
         D3DXCreateTexture(Direct3DDevice9,w,h,0, 0, afmt, D3DPOOL_MANAGED, IDirect3DTexture9(FTexture));
+      end;
     end;
   end;
 
   FHeight := h;
   FWidth := w;
-  FBitCount := AParams.BitDepth;
+  FBitDepth := ABitDepth;
   FBaseWidth := ABmp.Width;
   FBaseHeight := ABmp.Height;
-  SetFilters(AParams);
-  
+
   with IDirect3DTexture9(FTexture) do
   begin
     if Failed(LockRect(0, d3dlr, nil, 0)) then
     begin
-      FParent.WriteLog(ltError, 'Error while locking the texture!');
+      //FParent.WriteLog(ltError, 'Error while locking the texture!');
     end;
 
-    if FBitCount = 16 then
+    if FBitDepth = ad16Bit then
     begin
       cur16 := d3dlr.pBits;
       pnt32 := ABmp.ScanLine;
@@ -922,9 +1037,8 @@ begin
           inc(cur16);
         end;
       end;
-    end;
-
-    if FBitCount = 32 then
+    end else
+    if FBitDepth = ad32Bit then
     begin
       cur32 := d3dlr.pBits;
       pnt32 := ABmp.ScanLine;
@@ -952,7 +1066,7 @@ begin
   begin
     IDirect3DTexture9(FTexture).LockRect(0, d3dlr, nil, 0);
 
-    if FBitCount = 32 then
+    if FBitDepth = ad32Bit then
     begin
       Cur32 := d3dlr.pBits;
       ptr32 := ABmp.Scanline;
@@ -971,9 +1085,8 @@ begin
           inc(Cur32);
         end;
       end;
-    end;
-
-    if FBitCount = 16 then
+    end else
+    if FBitDepth = ad32Bit then
     begin
       Cur16 := d3dlr.pBits;
       ptr32 := ABmp.Scanline;
@@ -1087,7 +1200,7 @@ begin
   end;
   FWidth := 0;
   FHeight := 0;
-  FBitCount := 0;
+  FBitDepth := ad32Bit;
   FTexture := nil;
 end;
 
@@ -1121,7 +1234,7 @@ begin
 
     tar_surface.LockRect(d3dlr, nil, D3DLOCK_READONLY);
 
-    if FBitCount = 32 then
+    if FBitDepth = ad32Bit then
     begin
       Cur32 := d3dlr.pBits;
       ptr32 := ABmp.Scanline;
@@ -1142,7 +1255,7 @@ begin
       end;
     end;
 
-    if FBitCount = 16 then
+    if FBitDepth = ad16Bit then
     begin
       Cur16 := d3dlr.pBits;
       ptr32 := ABmp.Scanline;
@@ -1168,7 +1281,7 @@ begin
   end;
 end;
 
-procedure TDXRenderTargetTexture.SetSize(AWidth, AHeight: integer; ABitCount: Byte);
+procedure TDXRenderTargetTexture.SetSize(AWidth, AHeight: integer; ABitDepth: TAdBitDepth);
 var
   w, h: integer;
   afmt:TD3DFORMAT;
@@ -1176,14 +1289,13 @@ begin
   w := 1 shl ceil(log2(AWidth));
   h := 1 shl ceil(log2(AHeight));
 
-  if (not Loaded) or (w <> FWidth) or (h <> FHeight) or (ABitCount <> FBitCount) then
+  if (not Loaded) or (w <> FWidth) or (h <> FHeight) or (ABitDepth <> FBitDepth) then
   begin
     FlushMemory;
 
-    case ABitCount of
-      16: AFMT := D3DFMT_R5G6B5;
-      24: AFMT := D3DFMT_R8G8B8;
-      32: AFMT := D3DFMT_A8R8G8B8;
+    case ABitDepth of
+      ad16Bit: AFMT := D3DFMT_A4R4G4B4;
+      ad32Bit: AFMT := D3DFMT_A8R8G8B8;
     else
       AFMT := D3DFMT_R8G8B8;
     end;
@@ -1195,11 +1307,40 @@ begin
 
     FWidth := w;
     FHeight := h;
-    FBitCount := ABitCount;
+    FBitDepth := ABitDepth;
   end;
 
   FBaseWidth := AWidth;
   FBaseHeight := AHeight;
+end;
+
+{ TDXPixelCounter }
+
+constructor TDXPixelCounter.Create(AParent: TDXApplication);
+begin
+  inherited Create;
+
+  FParent := AParent;
+  FParent.Direct3DDevice9.CreateQuery(D3DQUERYTYPE_OCCLUSION, Direct3DQuery);
+end;
+
+destructor TDXPixelCounter.Destroy;
+begin
+  Direct3DQuery := nil;
+  inherited;
+end;
+
+procedure TDXPixelCounter.StartCount;
+begin
+  if not (Direct3DQuery.Issue(D3DISSUE_BEGIN) = D3D_OK) then
+    raise Exception.Create('!');
+end;
+
+function TDXPixelCounter.StopCount: cardinal;
+begin
+  Direct3DQuery.Issue(D3DISSUE_END);
+
+  while Direct3DQuery.GetData(@result, SizeOf(DWORD), D3DGETDATA_FLUSH) = S_FALSE do;
 end;
 
 end.

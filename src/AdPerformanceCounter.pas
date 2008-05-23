@@ -93,14 +93,15 @@ begin
   FTempTime := 0;
   FLastTickCount := GetTickCount;
   FInterpolate := true;
-  FInterpolationFactor := 10;
+  FInterpolationFactor := 5;
   FMaximumTimeGap := 50; 
 end;
 
 procedure TAdPerformanceCounter.Calculate;
 var
-  tc,td:Double;
+  tc, td: double;
 begin
+  //Calculate time difference
   tc := GetTickCount;
   td := tc - FLastTickCount;
 
@@ -128,9 +129,7 @@ begin
   end;
 
   if FTimeGap > FMaximumTimeGap then
-  begin
     FTimeGap := FMaximumTimeGap;
-  end;
 
   FLastTickCount := tc;
 

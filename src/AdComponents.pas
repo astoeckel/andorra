@@ -577,8 +577,6 @@ type
 
       FDisplayList: TAdCanvasDisplayList;
 
-      FUpdating: boolean;
-
       procedure CreateScrollBars;
       procedure StringsChange(Sender: TObject);
       procedure UpdateView;
@@ -1223,7 +1221,7 @@ begin
     bmp.TransparentColor := FTransparentColor;
     adbmp := TAdBitmap.Create;
     adbmp.Assign(bmp);
-    FImage.Texture.Texture.LoadFromBitmap(adbmp,FParent.GetTextureParams(32));
+    FImage.Texture.Texture.LoadFromBitmap(adbmp, ad32Bit);
     adbmp.Free;
     bmp.Free;
   end;
@@ -2571,7 +2569,6 @@ end;
 procedure TAdListBox.DoDraw;
 var
   r: TAdRect;
-  viewmat, projmat: TAdMatrix;
 begin
   r := ClientRect;
   if FSkinItem <> nil then
@@ -2581,19 +2578,7 @@ begin
 
   if FDisplayList <> nil then
   begin
-    viewmat := AdDraw.ViewMatrix;
-    projmat := AdDraw.ProjectionMatrix;
-
-    AdDraw.Setup2DScene(r.Right - r.Left, r.Bottom - r.Top);
-
-    AdDraw.Viewport := r;
-
     FDisplayList.Draw;
-
-    AdDraw.Viewport := AdDraw.DisplayRect;
-
-    AdDraw.ViewMatrix := viewmat;
-    AdDraw.ProjectionMatrix := projmat;
   end;
 
   inherited;

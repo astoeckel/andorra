@@ -579,7 +579,7 @@ begin
   end;
 
   FMesh.Vertices := vertices;
-  FMesh.IndexBuffer := indices;
+  FMesh.Indices := indices;
   FMesh.PrimitiveCount := Length(FTextSet) * 2;
   FMesh.Texture := FTexture;
   FMesh.Update;
@@ -683,7 +683,7 @@ end;
 
 procedure TAdFont.Draw;
 begin
-  FMesh.SetMatrix(FMatrix);
+  FMesh.Matrix := FMatrix;
   FMesh.Draw(FBlendMode, adTriangles);
 end;
 

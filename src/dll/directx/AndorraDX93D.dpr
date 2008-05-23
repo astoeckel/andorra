@@ -19,16 +19,23 @@
 library AndorraDX93D;
 
 uses
-  SysUtils, AdClasses,
-  DX3DMain in 'DX3DMain.pas';
-
-{$E .dll}
+  SysUtils,
+  AdClasses,
+  AdShaderClasses,
+  DX3DMain in 'DX3DMain.pas',
+  DX3DShader in 'DX3DShader.pas',
+  DX3DShaderClasses in 'DX3DShaderClasses.pas';
 
 {$R *.res}
 
 function CreateApplication:TAd2DApplication;stdcall;
 begin
   result := TDXApplication.Create;
+end;
+
+function CreateShaderSystem:TAd2dShaderSystem;stdcall;
+begin
+  result := TDXShaderSystem.Create;
 end;
 
 procedure Andorra2DLibraryInformation(var libinfo:TAd2DLibInfo);stdcall;
@@ -43,25 +50,50 @@ begin
   end;
 end;
 
-procedure Andorra2DLibraryAbilities(var libabilities:TAd2DLibAbilities);stdcall;
+procedure Andorra2DApplicationProperties(const ASender: TObject;
+  const AddPropertyProc: TAd2dPropertyProc);stdcall;
+var
+  prop: TAd2dProperty;
 begin
-  with libabilities do
-  begin
-    LibFullscreen := true;
-    LibWindowed := true;
-    LibHardware := true;
-    LibSoftware := false;
-    LibAntialias := true;
-    LibLights := true;
-    Lib3D := true;
-    LibVSync := true;
-  end;
+  //Write properties that have to do with the resolution
+  prop.PropGroup := 'Resolution';
+  prop.PropViewName := '';
+
+  prop.PropName := 'fullscreen';
+  prop.PropType := ptBoolean;
+  AddPropertyProc(ASender, prop);
+
+  prop.PropName := 'fullscreen_res';
+  prop.PropType := ptResolution;
+  AddPropertyProc(ASender, prop);  
+
+  //Write misc properties
+  prop.PropGroup := 'Misc';
+  prop.PropType := ptBoolean;
+
+  prop.PropName := 'vsync';
+  prop.PropViewName := 'Vertical synchronization';
+  AddPropertyProc(ASender, prop);
+
+  prop.PropName := 'antialias';
+  prop.PropViewName := 'Antialias';
+  AddPropertyProc(ASender, prop);
+
+  //Write capabilities
+  prop.PropGroup := '';
+  prop.PropViewName := '';
+  prop.PropType := ptReadOnly;
+
+  prop.PropName := 'shaders';
+  AddPropertyProc(ASender, prop);
 end;
 
 exports
   CreateApplication,
+  CreateShaderSystem,
   Andorra2DLibraryInformation,
-  Andorra2DLibraryAbilities;
+  Andorra2DApplicationProperties;
+
 
 begin
 end.

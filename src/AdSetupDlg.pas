@@ -1,124 +1,802 @@
-{
-* This program is licensed under the Common Public License (CPL) Version 1.0
-* You should have recieved a copy of the license with this file.
-* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
-* 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
-* You also should have recieved a copy of this license with this file. 
-* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
-*
-* Project: Andorra 2D
-* Author:  Andreas Stoeckel
-* File: AdSetupDlg.pas
-* Comment: A class which shows a setup dlg
-}
-
 unit AdSetupDlg;
-
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
 
 interface
 
 uses
-  SysUtils, Forms, StdCtrls, ExtCtrls, Controls, Classes,
-  AdDraws, AdClasses, AdDllExplorer{$IFDEF Win32}, Windows{$ENDIF},
-  IniFiles, XPMan;
+  SysUtils, Forms, Classes, Controls, StdCtrls, ExtCtrls, Messages,
+  IniFiles,
+  {$IFNDEF FPC}XPMan, Windows, {$ENDIF}
+  AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages;
 
+const
+{$IFNDEF FPC}
+  WM_AD_REBUILDCONTROLS = WM_USER + 1;
+{$ELSE}
+  WM_AD_REBUILDCONTROLS = LM_USER + 1;
+{$ENDIF}
 
 type
-  TAbilitiesList = class(TList)
-    private
-    	function GetItem(AIndex:integer):TAd2DLibAbilities;
-    	procedure SetItem(AIndex:integer;AItem:TAd2DLibAbilities);
-    protected
-      procedure Notify(ptr:Pointer; action:TListNotification);override;
-    public
-      procedure Add(Item:TAd2DLibAbilities);
-    	property Items[AIndex:integer]:TAd2DLibAbilities read GetItem write SetItem;default;
-  end;
+  ESetupDlg = class(Exception);
+  ESetupDlgNoPluginsFound = class(ESetupDlg);
 
-  TAdSetupDlgSection = (dlgResolution, dlgAdvancedOptions, dlgPlugin);
+  TAdSetupDlgSection = (
+    dlgResolution,
+    dlgAdvancedOptions,
+    dlgPlugin
+  );
+
   TAdSetupDlgSections = set of TAdSetupDlgSection;
 
-  TAdSetupFrm = class(TForm)
-    Button1: TButton;
-    Button2: TButton;
-    imgContainer: TPanel;
-    GroupBox1: TGroupBox;
-    Label1: TLabel;
-    GroupBox3: TGroupBox;
-    ComboBox1: TComboBox;
-    GroupBox2: TGroupBox;
-    CheckBox1: TCheckBox;
-    ComboBox2: TComboBox;
-    CheckBox3: TCheckBox;
-    CheckBox4: TCheckBox;
-    Image1: TImage;
-    RadioButton1: TRadioButton;
-    RadioButton2: TRadioButton;
-    CheckBox2: TCheckBox;
-    Panel2: TPanel;
-    Panel3: TPanel;
-    Panel1: TPanel;
-    XPManifest1: TXPManifest;
-    procedure ComboBox1Change(Sender: TObject);
-    procedure CheckBox3Click(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
-  private
-    FPluginFiles:TStringList;
-    FPluginAbilities:TAbilitiesList;
-    
-    function GetPlugins:boolean;
-    procedure GetResolutions;
-    procedure SetAbilities(AAbilities:TAd2DLibAbilities);
-    procedure PluginCallBack(DllFileName:string;DllInfo:TAd2dLibInfo;DllAbilities:TAd2DLibAbilities);
-  public
-    function Execute(
-      acaption:string; acopyright:string; aimage:string; aaddraw:TAdDraw;
-      asections:TAdSetupDlgSections=[dlgResolution, dlgAdvancedOptions, dlgPlugin];
-      aform:TForm=nil; aini:TIniFile=nil):boolean;overload;
+  TAdSetupSection = class
+    private
+      FGroupbox: TGroupbox;
+      FControls: TList;
+      FSpacerPanel: TPanel;
+      FCaption: string;
+      function GetHeight: integer;
+    public
+      constructor Create(AParent: TWinControl; ACaption: string);
+      destructor Destroy;override;
+
+      procedure AddControl(AControl: TWinControl);
+
+      property Caption: string read FCaption;
+  end;
+
+  TAdSetupForm = class(TForm)
+    private
+      FOnRebuildControls: TNotifyEvent;
+      procedure MsgRebuildControls(var Message: TMessage); message WM_AD_REBUILDCONTROLS;
+    public
+      procedure DoRebuildControls;
+      property OnRebuildControls: TNotifyEvent read FOnRebuildControls write FOnRebuildControls;
   end;
 
   TAdSetup = class
-  private
-    FCaption:string;
-    FCopyright:string;
-    FImage:string;
-    FAdDraw:TAdDraw;
-    FForm:TForm;
-    FSections:TAdSetupDlgSections;
-    FOwner:TComponent;
-    FIni:TIniFile;
-    FIniFile: TIniFile;
-    FOwnIniFile:boolean;
-    procedure SetIni(AValue:TIniFile);
-  public
-    constructor Create(AOwner:TComponent);
-    destructor Destroy;override;
+    private
+      FDraw: TAdDraw;
+      FDllExplorer: TAdDllExplorer;
+      FForm: TAdSetupForm;
 
-    property Title:string read FCaption write FCaption;
-    property Copyright:string read FCopyright write FCopyright;
-    property Image:string read FImage write FImage;
-    property AdDraw:TAdDraw read FAdDraw write FAdDraw;
-    property Form:TForm read FForm write FForm;
-    property Sections:TAdSetupDlgSections read FSections write FSections;
-    property Ini:TIniFile read FIniFile write SetIni;
+      FTopPanel: TPanel;
+      FImageFrame: TPanel;
+      FBottomPanel: TPanel;
+      FCenterPanel: TPanel;
+      FOkBtn: TButton;
+      FCancelBtn: TButton;
+      FPluginCombobox: TComboBox;
+      FResolutionCombobox: TComboBox;
+      FFullscreenCheckBox: TCheckBox;
+      FDesktopResolutionCheckBox: TCheckBox;
+      FHeaderImage: TImage;
 
-    function Execute(
-      acaption:string; acopyright:string; aimage:string; aaddraw:TAdDraw;
-      asections:TAdSetupDlgSections=[dlgResolution, dlgAdvancedOptions, dlgPlugin];
-      aform:TForm=nil; aini:TIniFile=nil):boolean;overload;
-    function Execute:boolean;overload;
+      FPluginList: TStringList;
+      FPluginIndex: integer;
+
+      FSetupSections: TList;
+      FUpdating: boolean;
+
+      FSections: TAdSetupDlgSections;
+      FImage: string;
+      FTitle: string;
+      FIni: TInifile;
+      FOwnIni: boolean;
+
+      procedure CreateDefaultControls;
+      procedure CreateSectionControls;
+      procedure CreateAdvancedControls;      
+      procedure CreatePluginControls;
+      procedure CreateResolutionControls;
+      procedure AutoResize;
+      
+      procedure AddSectionSpacer;
+
+      procedure FreeSections;
+      procedure InitForm;
+      procedure SetupForm;
+      procedure FreeForm;
+      function GetPlugins: boolean;
+      procedure GetResolutions;
+
+      procedure DesktopResolutionClick(Sender: TObject);
+      procedure FullscreenClick(Sender: TObject);
+      procedure PluginChange(Sender: TObject);
+      procedure ResolutionChange(Sender: TObject);
+
+      procedure BooleanPropChange(Sender: TObject);
+
+      procedure DoRebuildControls(Sender: TObject);
+
+      function SearchTagComponent(ATag: integer; AComp: TComponent): TComponent;
+
+      procedure SetIni(AValue: TIniFile);
+      procedure LoadSettings;
+      procedure StoreSettings;
+    public
+      constructor Create(ADraw: TAdDraw);
+      destructor Destroy;override;
+
+      function Execute: boolean;
+
+      property Sections: TAdSetupDlgSections read FSections write FSections;
+      property Image: string read FImage write FImage;
+      property Title: string read FTitle write FTitle;
+      property Ini: TIniFile read FIni write SetIni;
   end;
 
 const
   dlgAll = [dlgResolution, dlgAdvancedOptions, dlgPlugin];
 
+
 implementation
 
-{$R *.dfm}
+{ TAdSetup }
+
+constructor TAdSetup.Create(ADraw: TAdDraw);
+begin
+  inherited Create;
+
+  FDraw := ADraw;
+
+  FDllExplorer := TAdDllExplorer.Create;
+  FSetupSections := TList.Create;
+  FPluginList := TStringList.Create;
+
+  FPluginIndex := -1;
+
+  FSections := dlgAll;
+  FTitle := Application.Title;
+  FOwnIni := true;
+end;
+
+destructor TAdSetup.Destroy;
+begin
+  FDllExplorer.Free;
+  FSetupSections.Free;
+  FPluginList.Free;
+
+  FreeForm;
+
+  inherited;
+end;
+
+function TAdSetup.Execute: boolean;
+begin
+  result := false;
+
+  //Initialize Form
+  InitForm;
+
+  //Create controls
+  CreateDefaultControls;
+
+  //Search for a plugin list
+  if GetPlugins then
+  begin
+    //Create section controls
+    CreateSectionControls;
+
+    //Load old settings
+    LoadSettings;
+
+    if FPluginIndex = -1 then
+    begin
+      FPluginIndex := 0;
+      PluginChange(nil);
+    end;
+
+    if FForm.ShowModal = mrOk then
+    begin
+      //Store new settings
+      StoreSettings;
+      result := true;
+    end else
+    begin
+      if FIni <> nil then
+      begin
+        FIni.Free;
+        FIni := nil;
+      end;
+    end;    
+  end else
+    raise ESetupDlgNoPluginsFound.Create(MsgSetupNoPluginsFound);
+
+  //Free created dialog controls
+  FreeSections;
+  FreeForm;
+end;
+
+procedure TAdSetup.InitForm;
+begin
+  //Free old instance (if existing) first
+  FreeForm;
+
+  FForm := TAdSetupForm.CreateNew(nil);
+  FForm.OnRebuildControls := DoRebuildControls;
+
+  //Set form properties
+  SetupForm;
+end;
+
+procedure TAdSetup.SetupForm;
+begin
+  FForm.Width := 320;
+  FForm.Height := 460;
+  FForm.BorderStyle := bsSingle;
+  FForm.BorderIcons := [biSystemMenu];
+  FForm.Caption := FTitle;
+  FForm.Position := poScreenCenter;
+end;
+
+procedure TAdSetup.FreeForm;
+begin
+  if FForm <> nil then
+  begin
+    FForm.Free;
+    FForm := nil;
+  end;
+
+  FTopPanel := nil;
+  FImageFrame := nil;
+  FHeaderImage := nil;
+  FBottomPanel := nil;
+  FCenterPanel := nil;
+  FCancelBtn := nil;
+  FOkBtn := nil;
+end;
+
+procedure TAdSetup.CreateDefaultControls;
+begin
+  //Create top panel
+  FTopPanel := TPanel.Create(FForm);
+  FTopPanel.Parent := FForm;
+  FTopPanel.BevelOuter := bvNone;
+  FTopPanel.Align := alTop;
+  FTopPanel.Height := 0;
+
+  if FileExists(FImage) then
+  begin
+    FImageFrame := TPanel.Create(FTopPanel);
+    FImageFrame.Parent := FTopPanel;
+    FImageFrame.BevelWidth := 2;
+    FImageFrame.BevelOuter := bvLowered;
+
+    //Create image
+    FHeaderImage := TImage.Create(FImageFrame);
+    FHeaderImage.Parent := FImageFrame;
+    FHeaderImage.Align := alClient;
+    //FHeaderImage.Proportional := true;
+    FHeaderImage.Picture.LoadFromFile(FImage);
+
+    FImageFrame.Width := FHeaderImage.Picture.Width + FImageFrame.BevelWidth * 2;
+    FImageFrame.Height := FHeaderImage.Picture.Height + FImageFrame.BevelWidth * 2;
+    FTopPanel.Height := FImageFrame.Height + 10;
+
+    FImageFrame.Top := 5;
+    FImageFrame.Left := (FTopPanel.ClientWidth - FImageFrame.Width) div 2;
+  end;
+
+  //Create bottom panel
+  FBottomPanel := TPanel.Create(FForm);
+  FBottomPanel.Parent := FForm;
+  FBottomPanel.BevelOuter := bvNone;
+  FBottomPanel.Align := alBottom;
+  FBottomPanel.Height := 35;
+  FBottomPanel.BorderWidth := 5;
+
+  //Create center panel
+  FCenterPanel := TPanel.Create(FForm);
+  FCenterPanel.Parent := FForm;
+  FCenterPanel.BevelOuter := bvNone;
+  FCenterPanel.Left := 20;
+  FCenterPanel.Width := FForm.ClientWidth - 40;
+  FCenterPanel.Top := FTopPanel.Height;
+  FCenterPanel.Height := FForm.ClientHeight - FBottomPanel.Height - FTopPanel.Height;
+
+  FCenterPanel.Anchors := [akTop, akLeft, akRight, akBottom];
+  FCenterPanel.BorderWidth := 5;
+
+  //Create buttons for bottom panel
+
+  //"Cancel" Button
+  FCancelBtn := TButton.Create(FBottomPanel);
+  FCancelBtn.Parent := FBottomPanel;
+  FCancelBtn.Caption := MsgSetupBtnCancel;
+  FCancelBtn.Width := 75;
+  FCancelBtn.Align := alRight;
+  FCancelBtn.Cancel := true;
+  FCancelBtn.ModalResult := mrCancel;
+
+  //Spacer
+  with TPanel.Create(FBottomPanel) do
+  begin
+    Parent := FBottomPanel;
+    BevelOuter := bvNone;
+    Width := 10;
+    Align := alRight;
+    Left := FBottomPanel.ClientWidth - FCancelBtn.Width;
+  end;
+
+  //"Ok" Button
+  FOkBtn := TButton.Create(FBottomPanel);
+  FOkBtn.Parent := FBottomPanel;
+  FOkBtn.Caption := MsgSetupBtnOk;
+  FOkBtn.Width := 75;
+  FOkBtn.Align := alRight;
+  FOkBtn.Default := true;
+  FOkBtn.ModalResult := mrOk;
+  FOkBtn.TabOrder := 0;
+end;
+
+procedure TAdSetup.FreeSections;
+var
+  i: Integer;
+begin
+  for i := 0 to FSetupSections.Count - 1 do
+  begin
+    TAdSetupSection(FSetupSections[i]).Free;
+  end;
+  FSetupSections.Clear;
+
+  for i := FCenterPanel.ComponentCount - 1 downto 0 do
+  begin
+    if FCenterPanel.Components[i] is TPanel then
+      FCenterPanel.Components[i].Free;
+  end;
+end;
+
+function TAdSetup.GetPlugins: boolean;
+begin
+  if dlgPlugin in FSections then
+  begin
+    FPluginIndex := -1;
+    FPluginList.Clear;
+    
+    {$IFDEF WIN32}
+      FDllExplorer.GetPlugins(FPluginList, ExtractFilePath(ParamStr(0)), '.dll');
+    {$ELSE}
+      FDllExplorer.GetPlugins(FPluginList, ExtractFilePath(ParamStr(0)), '.so');
+    {$ENDIF}
+
+    result := FPluginList.Count > 0;
+  end else
+  begin
+    result := true;
+  end;  
+end;
+
+procedure TAdSetup.AddSectionSpacer;
+var
+  spc: TPanel;
+begin
+  //Create spacer control
+  spc := TPanel.Create(FCenterPanel);
+  spc.Parent := FCenterPanel;
+  spc.BevelOuter := bvNone;
+  spc.Align := alTop;
+  spc.Height := 5;
+  spc.Top := FCenterPanel.ClientHeight + 1000;
+end;
+
+procedure TAdSetup.AutoResize;
+var
+  i: integer;
+  h: integer;
+begin
+  h := 0;
+  for i := 0 to FCenterPanel.ComponentCount - 1 do
+  begin
+    if FCenterPanel.Components[i] is TControl then
+    begin
+      h := h + TControl(FCenterPanel.Components[i]).Height;
+    end;
+  end;
+
+  FForm.ClientHeight := h +
+    FBottomPanel.Height +
+    FTopPanel.Height +
+    FCenterPanel.BorderWidth * 2;
+end;
+
+procedure TAdSetup.CreateSectionControls;
+begin
+  if dlgResolution in FSections then
+    CreateResolutionControls;
+
+  if dlgAdvancedOptions in FSections then
+    CreateAdvancedControls;  
+
+  if dlgPlugin in FSections then
+    CreatePluginControls;
+  
+  AutoResize;
+end;
+
+procedure TAdSetup.CreatePluginControls;
+var
+  setupsection: TAdSetupSection;
+  i: integer;
+begin
+  setupsection := TAdSetupSection.Create(FCenterPanel, MsgSetupPlugin);
+
+  FPluginCombobox := TCombobox.Create(FForm);
+  setupsection.AddControl(FPluginCombobox);
+
+  FPluginCombobox.Style := csDropDownList;
+  for i := 0 to FPluginList.Count - 1 do
+    FPluginCombobox.Items.Add(FPluginList.Names[i]);
+
+  if FPluginIndex = -1 then
+    FPluginCombobox.ItemIndex := 0
+  else
+    FPluginCombobox.ItemIndex := FPluginIndex;
+
+  FPluginCombobox.OnChange := PluginChange;
+
+  AddSectionSpacer;
+  FSetupSections.Add(setupsection);
+end;
+
+procedure TAdSetup.GetResolutions;
+{$IFDEF WIN32}
+var
+  res:boolean;
+  mode:TDevMode;
+  i:integer;
+  s:string;
+  mon: TMonitor;
+{$ENDIF}
+begin
+  FResolutionCombobox.Items.Clear;
+  {$IFDEF WIN32}
+    i := 0;
+    repeat
+      mode.dmSize := SizeOf(TDevMode);
+      res := EnumDisplaySettings(nil,i,mode);
+      if res then
+      begin
+        if (mode.dmPelsWidth >= 640) and (mode.dmBitsPerPel >= 16) then
+        begin
+          s := inttostr(mode.dmPelsWidth)+'x'+inttostr(mode.dmPelsHeight)+'x'
+               +inttostr(mode.dmBitsPerPel);
+          if FResolutionCombobox.Items.IndexOf(s) = -1 then
+            FResolutionCombobox.Items.Add(s);
+        end;
+        i := i + 1;
+      end;
+    until not res;
+  {$ELSE}
+    FResolutionCombobox.Items.Add('800x600x32');
+    FResolutionCombobox.Items.Add('1024x768x32');
+    FResolutionCombobox.Items.Add('1280x1024x32');
+  {$ENDIF}
+
+  mon := Screen.MonitorFromWindow(FForm.Handle);
+  s := IntToStr(mon.Width) + 'x' + IntToStr(mon.Height) + 'x32';
+  if FResolutionCombobox.Items.IndexOf(s) > -1 then
+   FResolutionCombobox.ItemIndex := FResolutionCombobox.Items.IndexOf(s)
+  else
+    FResolutionCombobox.ItemIndex := FResolutionCombobox.Items.Count - 1;
+end;
+
+procedure TAdSetup.CreateResolutionControls;
+var
+  setupsection: TAdSetupSection;
+begin
+  setupsection := TAdSetupSection.Create(FCenterPanel, MsgSetupResolution);
+
+  //Add resolution drop down
+  FResolutionCombobox := TCombobox.Create(FForm);
+  setupsection.AddControl(FResolutionCombobox);
+
+  FResolutionCombobox.Style := csDropDownList;
+
+  //Load items
+  GetResolutions;
+
+  FResolutionCombobox.OnChange := ResolutionChange;
+
+  //Add fullscreen checkbox
+  FFullscreenCheckBox := TCheckBox.Create(FForm);
+  setupsection.AddControl(FFullscreenCheckBox);
+
+  FFullscreenCheckBox.Caption := MsgSetupFullscreen;
+  FFullscreenCheckBox.OnClick := FullscreenClick;
+
+  //Add current desktop resolution checkbox
+  FDesktopResolutionCheckBox := TCheckBox.Create(FForm);
+  setupsection.AddControl(FDesktopResolutionCheckBox);
+
+  FDesktopResolutionCheckBox.Caption := MsgSetupCurrentDesktopResolution;
+  FDesktopResolutionCheckBox.OnClick := DesktopResolutionClick;
+
+  AddSectionSpacer;
+  FSetupSections.Add(setupsection);
+end;
+
+procedure TAdSetup.CreateAdvancedControls;
+
+  //Returns a existing section with the specified section. If the section
+  //does not exist, a new one is created. 
+  function GetSection(ACaption: string): TAdSetupSection;
+  var
+    i: integer;
+  begin
+    result := nil;
+    for i := 0 to FSetupSections.Count - 1 do
+    begin
+      if (TAdSetupSection(FSetupSections[i]).Caption = ACaption) then
+      begin
+        result := TAdSetupSection(FSetupSections[i]);
+        break;
+      end;
+    end;
+
+    if result = nil then
+    begin
+      result := TAdSetupSection.Create(FCenterPanel, ACaption);
+      FSetupSections.Add(result);
+      AddSectionSpacer;
+    end;
+  end;
+
+var
+  i: Integer;
+  sect: TAdSetupSection;
+  chkcntr: TCheckBox;
+begin
+  for i := 0 to FDraw.Properties.Count - 1 do
+  begin
+
+    //The resolution group is a fixed part of the setup dialog
+    if FDraw.Properties[i].PropGroup = 'Resolution' then
+      continue;
+
+    //Don't display the read only properties
+    if FDraw.Properties[i].PropType = ptReadOnly then
+      continue;
+      
+    sect := GetSection(FDraw.Properties[i].PropGroup);
+    case FDraw.Properties[i].PropType of
+      //Add a new checkbox control to the section
+      ptBoolean:
+      begin
+        chkcntr := TCheckBox.Create(FForm);
+        sect.AddControl(chkcntr);
+        chkcntr.Caption := FDraw.Properties[i].PropViewName;
+        chkcntr.Tag := (i + 1);
+        chkcntr.OnClick := BooleanPropChange;
+      end;
+    end;      
+  end;
+end;
+
+procedure TAdSetup.DoRebuildControls(Sender: TObject);
+begin
+  //Make Form invisible to hide the unaesthetic control rebuild process
+  FForm.Hide;
+
+  //Store current settings
+  StoreSettings;
+
+  FUpdating := true;
+
+  try
+    FreeSections;
+    CreateSectionControls;
+
+    //Relead current settings
+    LoadSettings;
+  finally
+    FUpdating  := false;
+    FForm.Show;
+  end;         
+end;
+
+function TAdSetup.SearchTagComponent(ATag: integer;
+  AComp: TComponent): TComponent;
+var
+  i: integer;
+begin
+  if AComp.Tag = ATag then
+    result := AComp
+  else
+  begin
+    result := nil;
+    for i := 0 to AComp.ComponentCount - 1 do
+    begin
+      result := SearchTagComponent(ATag, AComp.Components[i]);
+      if result <> nil then break;
+    end;
+  end;
+end;
+
+procedure TAdSetup.SetIni(AValue: TIniFile);
+begin
+  if (FIni <> nil) and (FOwnIni) then
+  begin
+    FIni.Free;
+    FIni := nil;
+  end;
+
+  FOwnIni := false;
+  FIni := AValue;
+end;
+
+procedure TAdSetup.LoadSettings;
+var
+  i: integer;
+  comp: TComponent;
+  ind: integer;
+begin
+  if FOwnIni then
+  begin
+    if FIni <> nil then
+      FIni.Free;  
+    FIni := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'adsettings.ini');
+  end;
+
+  if FIni <> nil then
+  begin
+    //Load resolution settings
+    if (dlgResolution in FSections) then
+    begin
+      FResolutionCombobox.ItemIndex :=
+        FResolutionCombobox.Items.IndexOf(
+          FIni.ReadString('ad2dsetup', 'resolution', '1024x768x32'));
+      if FResolutionCombobox.ItemIndex < 0 then
+        FResolutionCombobox.ItemIndex := 0;
+
+      FDesktopResolutionCheckBox.Checked :=
+        FIni.ReadBool('ad2dsetup', 'curres', false);
+      FFullscreenCheckBox.Checked :=
+        FIni.ReadBool('ad2dsetup', 'fullscreen', false);
+
+
+      with FDraw.Display do
+        DisplayMode := dmWindowed;
+
+      ResolutionChange(nil);
+      if FFullscreenCheckBox.Checked then
+        FullscreenClick(nil);
+      if FDesktopResolutionCheckBox.Checked then
+        DesktopResolutionClick(nil);
+    end;
+
+    //Load plugin settings
+    if (dlgPlugin in FSections) then
+    begin
+      if not FUpdating then
+      begin
+        ind := FPluginList.IndexOf(FIni.ReadString('ad2dsetup', 'plugin', ''));
+        if ind <> FPluginIndex then
+        begin
+          FPluginIndex := ind;
+          PluginChange(nil);
+        end;
+      end;
+    end;
+
+    //Load advanced settings
+    if (dlgAdvancedOptions in FSections) then
+    begin
+      for i := 0 to FDraw.Properties.Count - 1 do
+      begin
+        comp := SearchTagComponent(i + 1, FForm);
+        if (comp <> nil) then
+        begin
+          case FDraw.Properties[i].PropType of
+            ptBoolean:
+            begin
+              if comp is TCheckBox then
+              begin
+                TCheckBox(comp).Checked :=
+                  FIni.ReadBool('ad2dsetup', FDraw.Properties[i].PropName, false);
+                //Store property
+                BooleanPropChange(comp);
+              end;
+            end;
+          end;
+        end;
+      end;
+    end;    
+  end;
+end;
+
+procedure TAdSetup.StoreSettings; 
+var
+  i: integer;
+  comp: TComponent;
+begin
+  if (FIni <> nil) then
+  begin
+    //Store resolution settings
+    if (dlgResolution in FSections) then
+    begin
+      FIni.WriteString('ad2dsetup', 'resolution',
+        FResolutionCombobox.Items[FResolutionCombobox.ItemIndex]);
+      FIni.WriteBool('ad2dsetup', 'curres', FDesktopResolutionCheckBox.Checked);
+      FIni.WriteBool('ad2dsetup', 'fullscreen', FFullscreenCheckBox.Checked);
+    end;
+
+    //Store plugin settings
+    if (dlgPlugin in FSections) then
+    begin
+      FIni.WriteString('ad2dsetup', 'plugin',
+        FPluginList.ValueFromIndex[FPluginIndex]);
+    end;
+
+    //Store advanced options
+    if (dlgAdvancedOptions in FSections) then
+    begin
+      for i := 0 to FDraw.Properties.Count - 1 do
+      begin
+        comp := SearchTagComponent(i + 1, FForm);
+        if (comp <> nil) then
+        begin
+          case FDraw.Properties[i].PropType of
+            ptBoolean:
+            begin
+              if comp is TCheckBox then
+                FIni.WriteBool('ad2dsetup', FDraw.Properties[i].PropName,
+                  TCheckBox(comp).Checked);
+            end;
+          end;
+        end;
+      end;
+    end;
+
+    //Free current ini and save settings to file
+    if (FOwnIni) then
+    begin
+      FIni.UpdateFile;
+      FIni.Free;
+      FIni := nil;
+    end;
+  end;
+end;
+
+//Event handling
+
+procedure TAdSetup.DesktopResolutionClick(Sender: TObject);
+begin
+  FResolutionCombobox.Enabled := not FDesktopResolutionCheckBox.Checked;
+  FFullscreenCheckBox.Enabled := not FDesktopResolutionCheckBox.Checked;
+  FFullscreenCheckBox.Checked := true;
+
+  if FDesktopResolutionCheckBox.Checked then
+  begin
+    with FDraw.Display do
+      DisplayMode := dmScreenRes;
+  end
+  else
+    FullScreenClick(nil);
+end;
+
+procedure TAdSetup.FullscreenClick(Sender: TObject);
+begin
+  if FFullscreenCheckBox.Checked then
+  begin
+    with FDraw.Display do
+      DisplayMode := dmFullscreen;
+  end
+  else
+  begin
+    with FDraw.Display do
+      DisplayMode := dmWindowed;
+  end
+end;
+
+procedure TAdSetup.PluginChange(Sender: TObject);
+begin
+  if (FPluginCombobox.ItemIndex > -1) and (not FUpdating) then
+  begin
+    FDraw.DllName := FPluginList.ValueFromIndex[FPluginCombobox.ItemIndex];
+    FPluginIndex := FPluginCombobox.ItemIndex;
+
+    FForm.DoRebuildControls;
+  end;
+end; 
 
 type
   TStringArray = array of string;
@@ -153,376 +831,105 @@ begin
   end;
 end;
 
-type
-  PAbilities = ^TAd2DLibAbilities;
-
-procedure TAbilitiesList.Add(Item: TAd2DLibAbilities);
+procedure TAdSetup.ResolutionChange(Sender: TObject);
 var
-  ptr:PAbilities;
+  strs: TStringArray;
 begin
-  New(ptr);
-  ptr^ := Item;
-  inherited Add(ptr);
-end;
-
-function TAbilitiesList.GetItem(AIndex:integer):TAd2DLibAbilities;
-begin
-  result := PAbilities(inherited Items[AIndex])^;
-end;
-
-procedure TAbilitiesList.Notify(ptr: Pointer; action: TListNotification);
-begin
-  if (action = lnDeleted) and (ptr <> nil) then
-    Dispose(PAbilities(ptr));
-end;
-
-procedure TAbilitiesList.SetItem(AIndex:integer;AItem:TAd2DLibAbilities);
-begin
-  inherited Items[AIndex] := @AItem;
-end;             
-
-{ TTAdSetupDlg }
-
-procedure TAdSetupFrm.CheckBox3Click(Sender: TObject);
-begin
-  Combobox2.Enabled := not CheckBox3.Checked;
-end;
-
-procedure TAdSetupFrm.ComboBox1Change(Sender: TObject);
-begin
-  SetAbilities(FPluginAbilities.Items[ComboBox1.ItemIndex]);
-end;
-
-function TAdSetupFrm.Execute(
-   acaption:string; acopyright:string; aimage:string; aaddraw:TAdDraw;
-   asections:TAdSetupDlgSections; aform:TForm; aini:TIniFile):boolean;
-var
-  scrwidth,scrheight,bitdepth:integer;
-  strs:TStringArray;
-  toppos,i,gb:integer;
-begin
-  //Create Lists
-  FPluginFiles := TStringList.Create;
-  FPluginAbilities := TAbilitiesList.Create;
-
-  //Set captions and load image
-  Caption := acaption;
-  Label1.Caption := acopyright;
-  if FileExists(aimage) then
-    Image1.Picture.LoadFromFile(aimage);
-
-  //Fill comboboxes
-  if not GetPlugins then
+  //Get Resolution
+  DevideString(FResolutionCombobox.Items[FResolutionCombobox.ItemIndex],'x',strs);
+  with FDraw.Display do
   begin
-    Application.MessageBox('No Andorra 2D Plugin found.','Fatal error');
-    result := false;
-    exit;
-  end;
-  GetResolutions;
-
-  //Preset options
-  if (aaddraw <> nil) and (aini = nil) then
-  begin
-    CheckBox1.Checked := doAntialias in aaddraw.Options;
-    CheckBox2.Checked := doVSync in aaddraw.Options;
-    CheckBox4.Checked := doFullscreen in aaddraw.Options;
-    RadioButton1.Checked := not (doHardware in aaddraw.Options);
-    RadioButton2.Checked := doHardware in aaddraw.Options;
-
-    Combobox1.ItemIndex := FPluginFiles.IndexOf(aaddraw.DllName);
-    if Combobox1.ItemIndex < 0 then
-      Combobox1.ItemIndex := 0;
-  end
-  else
-  begin
-    //Load presets from ini file
-    if aini <> nil then
-    begin
-      CheckBox1.Checked := aini.ReadBool('ad2dsetup','antialias',false);
-      CheckBox2.Checked := aini.ReadBool('ad2dsetup','vsync',false);
-      CheckBox3.Checked := aini.ReadBool('ad2dsetup','curres',false);
-      CheckBox4.Checked := aini.ReadBool('ad2dsetup','fullscreen',false);
-      RadioButton1.Checked := not aini.ReadBool('ad2dsetup','hardware',true);
-      RadioButton2.Checked := aini.ReadBool('ad2dsetup','hardware',true);
-
-      Combobox1.ItemIndex := FPluginFiles.IndexOf(aini.ReadString('ad2dsetup','plugin',''));
-      if Combobox1.ItemIndex < 0 then
-        Combobox1.ItemIndex := 0;
-
-      Combobox2.ItemIndex := Combobox2.Items.IndexOf(aini.ReadString('ad2dsetup','resolution','1024x768x32'));
-      if Combobox2.ItemIndex < 0 then
-        Combobox2.ItemIndex := 0;
-
-      Combobox1Change(nil);
+    Width := StrToInt(strs[0]);
+    Height := StrToInt(strs[1]);
+    case StrToInt(strs[2]) of
+      16: BitDepth := ad16Bit;
+      32: BitDepth := ad32Bit;  
     end;
   end;
-
-  //Setup Setup-Dialog option group selections
-  toppos := 0;
-  gb := 0;
-  for i := 0 to ComponentCount-1 do
-  begin
-    if Components[i] is TGroupbox then
-      with Components[i] as TGroupbox do
-      begin
-        if TAdSetupDlgSection(gb) in asections then
-        begin
-          Top := toppos;
-          toppos := toppos + Height + 5;
-          Visible := true;
-        end
-        else
-        begin
-          Visible := false;
-        end;
-
-        gb := gb+1;
-      end;
-  end;
-  Panel1.Height := toppos;
-  ClientHeight := Panel2.Height + Panel3.Height + toppos;
-
-  if FPluginFiles.Count > 0 then
-  begin
-    result := ShowModal = mrOk;
-    if result then
-    begin
-      //Get Resolution
-      DevideString(Combobox2.Items[Combobox2.ItemIndex],'x',strs);
-      scrwidth := StrToInt(strs[0]);
-      scrheight := StrToInt(strs[1]);
-      bitdepth := StrToInt(strs[2]);
-
-      if aaddraw <> nil then
-      begin
-        //Set Dll-File
-        if (dlgPlugin in asections) then
-          aaddraw.DllName := ExtractFilePath(ParamStr(0))+FPluginFiles[Combobox1.ItemIndex];
-
-        if dlgPlugin in asections then
-          aaddraw.Options := aaddraw.Options - [doHardware];
-        if dlgResolution in asections then
-          aaddraw.Options := aaddraw.Options - [doFullscreen];
-        if dlgAdvancedOptions in asections then
-        begin
-          aaddraw.Options := aaddraw.Options - [doAntialias];
-          aaddraw.Options := aaddraw.Options - [doVSync];
-        end;
-
-        //Set Options
-        if RadioButton2.Checked and (dlgPlugin in asections) then
-          aaddraw.Options := aaddraw.Options + [doHardware];
-        if CheckBox4.Checked and (dlgResolution in asections) then
-          aaddraw.Options := aaddraw.Options + [doFullscreen];
-        if CheckBox1.Checked and (dlgAdvancedOptions in asections) then
-          aaddraw.Options := aaddraw.Options + [doAntialias];
-        if CheckBox2.Checked and (dlgAdvancedOptions in asections) then
-          aaddraw.Options := aaddraw.Options + [doVSync];
-
-        //Get current desktop resolution
-        if CheckBox3.Checked then
-        begin
-          scrwidth := Screen.Width;
-          scrheight := Screen.Height;
-          bitdepth := 32;
-        end;
-
-        //Set AdDraw Display
-        aaddraw.Display.Width := scrwidth;
-        aaddraw.Display.Height := scrheight;
-        aaddraw.Display.BitCount := bitdepth;
-      end;
-
-      //Setup form
-      if (aform <> nil) and (dlgResolution in asections) then
-      begin
-        aform.Width := scrwidth;
-        aform.Height := scrheight;
-
-        aform.BorderIcons := [biSystemMenu, biMinimize];
-
-        //Set form position. Place in Top-Left edge if fullscreen.
-        if CheckBox4.Checked then
-        begin
-          Top := 0;
-          Left := 0;
-        end
-        else
-        begin
-          aform.Position := poScreenCenter;
-        end;
-
-        //Set form border - if fullscreen or current screen resolution then use no border.
-        if (CheckBox3.Checked) or (CheckBox4.Checked) then
-        begin
-          aform.BorderStyle := bsNone;
-        end else
-        begin
-          aform.BorderStyle := bsSingle;
-        end;
-      end;
-
-      //Save settings
-      if aini <> nil then
-      begin
-        aini.WriteBool('ad2dsetup','antialias',CheckBox1.Checked);
-        aini.WriteBool('ad2dsetup','vsync',CheckBox2.Checked);
-        aini.WriteBool('ad2dsetup','curres',CheckBox3.Checked);
-        aini.WriteBool('ad2dsetup','fullscreen',CheckBox4.Checked);
-        aini.WriteBool('ad2dsetup','hardware',RadioButton2.Checked);
-        aini.WriteString('ad2dsetup','plugin',FPluginFiles[Combobox1.ItemIndex]);
-        aini.WriteString('ad2dsetup','resolution',Combobox2.Items[Combobox2.ItemIndex]);
-      end;
-    end;
-  end
-  else
-  begin
-    Application.MessageBox('No Andorra 2D Plugin DLLs were found!','Error',0);
-    result := false;
-  end;
-
-  FPluginAbilities.Free;
-  FPluginFiles.Free;
 end;
 
-procedure TAdSetupFrm.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TAdSetup.BooleanPropChange(Sender: TObject);
 begin
-  if ModalResult = mrNone then  
-    ModalResult := mrCancel;
-end;
-
-function TAdSetupFrm.GetPlugins:boolean;
-var
-  explorer:TAdDLLExplorer;
-begin
-  FPluginFiles.Clear;
-  FPluginAbilities.Clear;
-  Combobox1.Items.Clear;
-
-  explorer := TAdDllExplorer.Create;
-  explorer.GetPlugins(PluginCallBack, ExtractFilePath(ParamStr(0)), 'dll');
-  explorer.Free;
-
-  result := Combobox1.Items.Count > 0;
-  if result then
+  if (Sender is TCheckBox) then
   begin
-    Combobox1.ItemIndex := 0;
-    Combobox1Change(nil);
+    FDraw.Properties.SetProp(
+      FDraw.Properties[TCheckBox(Sender).Tag - 1].PropName,
+      TCheckBox(Sender).Checked);
   end;
 end;
 
-procedure TAdSetupFrm.GetResolutions;
-{$IFDEF win32}
-var
-  res:boolean;
-  mode:TDevMode;
-  i:integer;
-  s:string;
-{$ENDIF}
+{ TAdSetupSection }
+
+constructor TAdSetupSection.Create(AParent: TWinControl; ACaption: string);
 begin
-  Combobox2.Items.Clear;
-  {$IFDEF win32}
-    i := 0;
-    repeat
-      mode.dmSize := SizeOf(TDevMode);
-      res := EnumDisplaySettings(nil,i,mode);
-      if res then
-      begin
-        if (mode.dmPelsWidth >= 640) and (mode.dmBitsPerPel >= 16) then
-        begin
-          s :=  inttostr(mode.dmPelsWidth)+'x'+inttostr(mode.dmPelsHeight)+'x'
-               +inttostr(mode.dmBitsPerPel);
-          if Combobox2.Items.IndexOf(s) = -1 then
-            Combobox2.Items.Add(s);
-        end;
-        i := i + 1;
-      end;
-    until not res;
-  {$ELSE}
-    Combobox2.Items.Add('800x600x32');
-    Combobox2.Items.Add('1024x768x32');
-    Combobox2.Items.Add('1280x1024x32');
-  {$ENDIF}
-  Combobox2.ItemIndex := Combobox2.Items.Count-1;
+  inherited Create;
+
+  //Create groupbox
+  FGroupbox := TGroupBox.Create(AParent);
+  FGroupbox.Parent := AParent;
+  FGroupbox.Align := alTop;
+  FGroupbox.Caption := ACaption;
+  FGroupbox.Top := AParent.ClientHeight + 1000;
+  FGroupbox.Height := 16;
+
+  //Create inner spacer panel
+  FSpacerPanel := TPanel.Create(FGroupbox);
+  FSpacerPanel.Parent := FGroupbox;
+  FSpacerPanel.Align := alClient;
+  FSpacerPanel.BevelOuter := bvNone;
+  FSpacerPanel.BorderWidth := 5;
+
+  //Create controls list
+  FControls := TList.Create;
+
+  //Set caption property
+  FCaption := ACaption;
 end;
 
-procedure TAdSetupFrm.PluginCallBack(DllFileName: string; DllInfo: TAd2dLibInfo;
-  DllAbilities: TAd2DLibAbilities);
+destructor TAdSetupSection.Destroy;
 begin
-  FPluginFiles.Add(DllFileName);
-  FPluginAbilities.Add(DllAbilities);
-  Combobox1.Items.Add(DllInfo.LibTitle);
-end;
-
-procedure TAdSetupFrm.SetAbilities(AAbilities: TAd2DLibAbilities);
-begin
-  CheckBox4.Enabled := AAbilities.LibFullscreen or (not AAbilities.LibWindowed);
-  CheckBox4.Checked := (AAbilities.LibFullscreen and CheckBox4.Checked) or (not AAbilities.LibWindowed);
-  CheckBox1.Enabled := AAbilities.LibAntialias;
-  CheckBox1.Checked := AAbilities.LibAntialias and CheckBox1.Checked;
-  CheckBox2.Enabled := AAbilities.LibVSync;
-  CheckBox2.Checked := AAbilities.LibVSync and CheckBox2.Checked;
-  RadioButton1.Enabled := AAbilities.LibSoftware;
-  RadioButton2.Enabled := AAbilities.LibHardware;
-  RadioButton1.Checked := (AAbilities.LibSoftware) or RadioButton1.Checked;
-  RadioButton2.Checked := (AAbilities.LibHardware) or RadioButton2.Checked;
-end;
-
-{ TAdSetup }
-
-constructor TAdSetup.Create(AOwner:TComponent);
-begin
-  FCaption := Application.Title;
-  FCopyright := #169+' by Andreas Stöckel';
-  FImage := '';
-  FAdDraw := nil;
-  FForm := nil;
-  FSections := dlgAll;
-  FOwner := AOwner;
-  FIni := TIniFile.Create(ExtractFilePath(ParamStr(0))+'adsettings.ini');
-  FOwnIniFile := true;
-end;
-
-function TAdSetup.Execute(acaption, acopyright, aimage: string;
-  aaddraw: TAdDraw; asections: TAdSetupDlgSections; aform: TForm; aini:TIniFile): boolean;
-var
-  dlg:TAdSetupFrm;
-begin
-  FCaption := acaption;
-  Copyright := acopyright;
-  Image := aimage;
-  AdDraw := aaddraw;
-  Sections := asections;
-  Form := aform;
-  dlg := TAdSetupFrm.Create(fowner);
-  result := dlg.Execute(acaption, acopyright, aimage, aaddraw, asections, aform, aini);
-  dlg.Free;
-end;
-
-destructor TAdSetup.Destroy;
-begin
-  if FOwnIniFile then
-  begin
-    FreeAndNil(FIni);
-  end;
-
+  FGroupbox.Free;
+  FControls.Free;
+  
   inherited;
 end;
 
-function TAdSetup.Execute: boolean;
+function TAdSetupSection.GetHeight: integer;
+var
+  i: Integer;
 begin
-  result := Execute(FCaption, FCopyRight, FImage, FAdDraw, FSections, FForm, FIni);
+  result := 10;
+  for i := 0 to FControls.Count - 1 do
+  begin
+    result := result + TControl(FControls[i]).Height;
+  end;
 end;
 
-procedure TAdSetup.SetIni(AValue: TIniFile);
+procedure TAdSetupSection.AddControl(AControl: TWinControl);
+var
+  h: integer;
 begin
-  if FOwnIniFile then
-  begin
-    FreeAndNil(FIni);
-  end;
-  
-  FOwnIniFile := false;
-  FIni := AValue;
+  h := GetHeight;
+  AControl.Parent := FSpacerPanel;
+  AControl.Left := 10;
+  AControl.Top := h;
+  AControl.Width := FSpacerPanel.ClientWidth - 20;
+
+  FGroupbox.Height := h + AControl.Height + 30;
+  FControls.Add(AControl);
+end;
+
+{ TAdSetupForm }
+
+procedure TAdSetupForm.DoRebuildControls;
+begin
+  PostMessage(Handle, WM_AD_REBUILDCONTROLS, 0, 0);
+end;
+
+procedure TAdSetupForm.MsgRebuildControls(var Message: TMessage);
+begin
+  if Assigned(FOnRebuildControls) then
+    FOnRebuildControls(self);
 end;
 
 end.

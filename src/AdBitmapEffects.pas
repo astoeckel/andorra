@@ -38,7 +38,11 @@ type
 
   {A array used by TAdBitmap blur. @seealso(TAdBitmapBlur)}
   TAdBlurMatrix = array[-100..100] of Single;
-  {Class which is able to blur a bitmap @seealso(TAdBitmapEffect) @seealso(TAd2dBimtap) @author(This class uses code written by Phantom1 (http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html))}
+  {Class which is able to blur a bitmap using a gausian blur.
+   @seealso(TAdBitmapEffect)
+   @seealso(TAd2dBitmap)
+   @author(This class uses code written by Phantom1, see
+    (http://www.delphipraxis.net/topic14072_5x5blur+bzw+antialiasing.html))}
   TAdBitmapBlur = class(TAdBitmapEffect)
     private
       FRadius: Single;

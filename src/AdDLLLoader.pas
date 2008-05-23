@@ -22,7 +22,8 @@ unit AdDLLLoader;
 interface
 
 uses 
-  SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses;
+  SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF},
+  AdClasses, AdShaderClasses;
 
 //This is the class which loads the plugin DLL
 type
@@ -35,10 +36,13 @@ type
     public
       //The function which creates the application from the DLL
       CreateApplication:TAdCreateApplicationProc;
+
+      CreateShaderSystem:TAdCreateShaderProc;
+
       //Contains information about the loaded library
       LibInfo:TAd2DLibInfo;
-      //Contains information about the abilities of the plugin
-      LibAbilities:TAd2DLibAbilities;
+      //Function that is used to receive information about the plugin. @seealso(TAd2dProperty)
+      LibProperties:TAndorra2DApplicationProperties;
       //Loads the library
       procedure LoadLibrary(afile:string);
       //Unloads the library
@@ -73,9 +77,8 @@ end;
 procedure TAdDllLoader.LoadLibrary(afile: string);
 var
   InfoProc: TAndorra2DLibraryInformation;
-  AbilitiesProc: TAndorra2DLibraryAbilities;
 begin
-  if fileExists(afile) then
+  if FileExists(afile) then
   begin
     if LibraryLoaded then
     begin
@@ -90,13 +93,14 @@ begin
     begin
       @CreateApplication := GetProcAddress(DllHandle, 'CreateApplication');
 
+      @CreateShaderSystem := GetProcAddress(DllHandle, 'CreateShaderSystem');
+
       //Get information
       @InfoProc := GetProcAddress(DllHandle, 'Andorra2DLibraryInformation');
       InfoProc(LibInfo);
 
-      //Get abilities
-      @AbilitiesProc := GetProcAddress(DllHandle, 'Andorra2DLibraryAbilities');
-      AbilitiesProc(LibAbilities);
+      //Get library properties function
+      @LibProperties := GetProcAddress(DllHandle, 'Andorra2DApplicationProperties');
 
       if LibInfo.LibVersion <> LibraryVersion then
       begin

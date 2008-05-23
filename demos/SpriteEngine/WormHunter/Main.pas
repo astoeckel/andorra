@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls,
-  AdPNG, AdSetupDlg, AdSprites, AdParticles, AdPerformanceCounter;
+  AdPNG, AdTypes, AdSprites, AdParticles, AdPerformanceCounter, AdSetupDlg;
 
 type
   TKey = (kyUp, kyDown, kyLeft, kyRight);
@@ -54,7 +54,6 @@ type
   TMainCharacter = class(TCharacter)
     private
       FKeys:TKeys;
-      FPart:TAdParticle;
     protected
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var Done:boolean);override;
@@ -97,8 +96,6 @@ type
 
     procedure Idle(Sender:TObject;var Done:boolean);
     procedure AddWorm;
-
-    procedure WMEraseBkgnd(var m: TWMEraseBkgnd); message WM_ERASEBKGND;
   end;
 
 const
@@ -124,24 +121,21 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  AdSetupDlg:TAdSetup;
   i:integer;
+  AdSetup: TAdSetup;
 begin
   Randomize;
 
   AdPerCounter := TAdPerformanceCounter.Create;
-//  AdPerCounter.Interpolate := false;
+  //AdPerCounter.Interpolate := false;
 
   Cursor := crNone;
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
-  AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
-
-  if AdSetupDlg.Execute then
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
+  if AdSetup.Execute then
   begin
     if AdDraw.Initialize then
     begin
@@ -151,8 +145,6 @@ begin
       AdImageList.LoadFromFile(path+'images.ail');
 
       AdSpriteEngine := TSpriteEngine.Create(AdDraw);
-      AdSpriteEngine.GridSize  := 256;
-      //AdSpriteEngine.CollisionOptimizationTyp := ctNormal;
 
       with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
@@ -191,12 +183,7 @@ begin
                   'mode or another video adapter.');
       halt;
     end;
-  end
-  else
-  begin
-    halt;
   end;
-  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -225,7 +212,7 @@ begin
 
     ActTime := ActTime + AdPerCounter.TimeGap;
 
-    if ActTime > 50 then
+    if ActTime > 100 then
     begin
       keys := [];
       if GetKeyState(VK_LEFT) < 0 then keys := keys + [kyLeft];
@@ -258,11 +245,6 @@ begin
     AdDraw.Flip; 
   end;
   Done := false;
-end;
-
-procedure TForm1.WMEraseBkgnd(var m: TWMEraseBkgnd);
-begin
-  m.Result := LRESULT(false);
 end;
 
 { TAnimCharacter }
@@ -409,8 +391,6 @@ end;
 constructor TMainCharacter.Create(AParent: TSprite);
 begin
   inherited;
-  FPart := TAdParticle.Create(nil);
-  FPart.LoadFromFile(path+'splatter.apf');
 end;
 
 procedure TMainCharacter.DoCollision(Sprite: TSprite; var Done: boolean);
@@ -422,7 +402,7 @@ begin
     begin
       with TParticleSprite.Create(Engine) do
       begin
-        PartSys.DefaultParticle.Assign(FPart);
+        PartSys.LoadFromFile(path+'splatter.apf');
         Image := Form1.AdImageList.Find('particle');
         Emit(20);
         X := Sprite.X + Sprite.Width / 2;

@@ -23,66 +23,30 @@ unit AdVCLComponentWindow;
 interface
 
 uses
-  SysUtils, Classes, Types, Forms, Controls, TypInfo,
-  AdEvents, AdWindowFramework;
+  SysUtils, Classes, Types, Forms, Controls, TypInfo, Windows,
+  AdTypes, AdEvents, AdWindowFramework,
+  AdVCLComponentEventConnector;
 
 type
   {@exclude}
-  TAdVCLComponentWindow = class(TAdHandleWindowFrameWork)
+  TAdVCLComponentWindow = class(TAdHandleWindowFramework)
     private
       FBinded:boolean;
       FInitialized:boolean;
-      FControl : TWinControl;
-
-      FOldClick : TNotifyEvent;
-      FOldDblClick : TNotifyEvent;
-      FOldMouseMove : TMouseMoveEvent;
-      FOldMouseUp : TMouseEvent;
-      FOldMouseDown : TMouseEvent;
-      FOldMouseWheel : TMouseWheelEvent;
-
-      FOldKeyDown : TKeyEvent;
-      FOldKeyPress : TKeyPressEvent;
-      FOldKeyUp : TKeyEvent;
-
-      FClickComp : TControl;
-      FDblClickComp : TControl;
-      FMouseMoveComp : TControl;
-      FMouseDownComp : TControl;
-      FMouseUpComp : TControl;
-      FMouseWheelComp : TControl;
-
-      FKeyDownComp : TControl;
-      FKeyUpComp : TControl;
-      FKeyPressComp : TControl;
-
-      FMouseX, FMouseY : integer;
-
-      procedure Click(Sender:TObject);
-      procedure DblClick(Sender:TObject);
-      procedure MouseMove(Sender:TObject; Shift:TShiftState; X, Y:integer);
-      procedure MouseDown(Sender:TObject; Button:TMouseButton;
-        Shift : TShiftState; X, Y:integer);
-      procedure MouseUp(Sender:TObject; Button:TMouseButton;
-        Shift : TShiftState; X, Y:integer);
-      procedure MouseWheel(Sender:TObject; Shift:TShiftState;
-        WheelDelta: integer; MousePos: TPoint; var Handled: Boolean);
-
-      procedure KeyDown(Sender:TObject; var Key:Word; Shift : TShiftState);
-      procedure KeyUp(Sender:TObject; var Key:Word; Shift : TShiftState);
-      procedure KeyPress(Sender:TObject; var Key:Char);
+      FControl: TWinControl;
+      FConnector: TAdVCLComponentEventConnector;
     protected
       function GetClientWidth:integer;override;
       function GetClientHeight:integer;override;
       procedure SetTitle(AValue:string);override;
 
+      function ChangeResolution(width, height, bitdepth: LongWord):boolean;
+      procedure SetupDisplay(AProps: TAdDisplayProperties);
+
       procedure SetupEvents;
       procedure ResetEvents;
 
       procedure SetCursorVisible(AValue:Boolean);override;
-
-      function ConvertButton(Button: TMouseButton): TAdMouseButton;
-      function ConvertShift(Shift: TShiftState): TAdShiftState;
     public
       constructor Create;override;
       destructor Destroy;override;
@@ -141,6 +105,8 @@ begin
   begin
     FInitialized := true;
     SetupEvents;
+    if AProps.Mode <> dmDefault then
+      SetupDisplay(AProps);
     result := true;
   end;
 end;
@@ -165,248 +131,91 @@ end;
 procedure TAdVCLComponentWindow.SetTitle(AValue: string);
 begin
   Application.Title := AValue;
+end;          
+
+procedure TAdVCLComponentWindow.SetupDisplay(AProps: TAdDisplayProperties);
+var
+  form: TForm;
+begin
+  if (FControl is TForm) then
+    form := TForm(FControl)
+  else
+    form := nil;
+
+  if form <> nil then
+  begin
+    form.Color := 0;
+    form.BorderIcons := [biSystemMenu];
+    form.Caption := Title;
+
+    if AProps.Mode = dmWindowed then
+    begin
+      form.BorderStyle := bsSingle;
+      form.ClientWidth := AProps.Width;
+      form.ClientHeight := AProps.Height;
+      form.Position := poScreenCenter;
+    end else
+    if (AProps.Mode = dmScreenRes) or (AProps.Mode = dmFullscreen) then
+    begin
+      if AProps.Mode = dmFullScreen then
+      begin
+        ChangeResolution(AProps.Width, AProps.Height, ord(AProps.BitDepth));
+      end;
+      form.BorderStyle := bsNone;
+      form.Width := Screen.Width;
+      form.Height := Screen.Height;
+      form.Top := 0;
+      form.Left := 0;
+    end;
+  end;
 end;
 
-type
-  PNotifyEvent = ^TNotifyEvent;
-  PMouseMoveEvent = ^TMouseMoveEvent;
-  PMouseEvent = ^TMouseEvent;
-  PMouseWheelEvent = ^TMouseWheelEvent;
-  PKeyEvent = ^TKeyEvent;
-  PKeyPressEvent = ^TKeyPressEvent;
+function TAdVCLComponentWindow.ChangeResolution(width, height, bitdepth: LongWord):boolean;
+var
+  DeviceMode: TDeviceModeA;
+  i:integer;
+begin
+  result := false;
+  i := 0;
+  while EnumDisplaySettings(nil, i, DeviceMode) do
+  begin
+    with DeviceMode do
+    begin
+      if (dmPelsWidth = width) and (dmPelsHeight = height) and (dmBitsPerPel = bitdepth) then
+      begin
+        if ChangeDisplaySettings(DeviceMode, CDS_TEST) = DISP_CHANGE_SUCCESSFUL then
+        begin
+          result := true;
+          ChangeDisplaySettings(DeviceMode, CDS_FULLSCREEN);
+        end
+        else
+          exit;
+      end;
+    end;
+
+    i := i + 1;
+  end;
+end;
 
 procedure TAdVCLComponentWindow.SetupEvents;
-var
-  count : integer;
-  Properties:TPropList;
-  i : integer;
-  Control : TControl;
-  method : TMethod;
 begin
-  if FInitialized then
-  begin
-    Control := FControl;
-    while Control <> nil do
-    begin
-      count := GetPropList(Control.ClassInfo, [tkMethod], @Properties);
+  ResetEvents;
 
-      for i := 0 to count - 1 do
-      begin
-        method := GetMethodProp(Control, Properties[i]^.Name);
-        if (Properties[i]^.Name = 'OnClick') and (FClickComp = nil) then
-        begin
-          FOldClick := TNotifyEvent(method);
-          PNotifyEvent(@method.Code)^ := Click; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FClickComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnDblClick') and (FDblClickComp = nil) then
-        begin
-          FOldDblClick := TNotifyEvent(method);
-          PNotifyEvent(@method.Code)^ := DblClick; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FDblClickComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnMouseMove') and (FMouseMoveComp = nil) then
-        begin
-          FOldMouseMove := TMouseMoveEvent(method);
-          PMouseMoveEvent(@method.Code)^ := MouseMove; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FMouseMoveComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnMouseUp') and (FMouseUpComp = nil) then
-        begin
-          FOldMouseUp := TMouseEvent(method);
-          PMouseEvent(@method.Code)^ := MouseUp; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FMouseUpComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnMouseDown') and (FMouseDownComp = nil) then
-        begin
-          FOldMouseDown := TMouseEvent(method);
-          PMouseEvent(@method.Code)^ := MouseDown; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FMouseDownComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnMouseWheel') and (FMouseWheelComp = nil) then
-        begin
-          FOldMouseWheel := TMouseWheelEvent(method);
-          PMouseWheelEvent(@method.Code)^ := MouseWheel; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FMouseWheelComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnKeyDown') and (FKeyDownComp = nil) then
-        begin
-          FOldKeyDown := TKeyEvent(method);
-          PKeyEvent(@method.Code)^ := KeyDown; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FKeyDownComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnKeyUp') and (FKeyUpComp = nil) then
-        begin
-          FOldKeyUp := TKeyEvent(method);
-          PKeyEvent(@method.Code)^ := KeyUp; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FKeyUpComp := Control;
-        end else
-        if (Properties[i]^.Name = 'OnKeyPress') and (FKeyPressComp = nil) then
-        begin
-          FOldKeyPress := TKeyPressEvent(method);
-          PKeyPressEvent(@method.Code)^ := KeyPress; method.Data := self;
-          SetMethodProp(Control, Properties[i]^.Name, method);
-          FKeyPressComp := Control;
-        end;
-      end;
-      
-      if Control.Parent is TControl then
-        Control := Control.Parent
-      else
-        Control := nil;
-    end;
-  end;   
+  FConnector := TAdVCLComponentEventConnector.Create(FControl, self);
 end;
 
 procedure TAdVCLComponentWindow.ResetEvents;
 begin
-  if FInitialized then
+  if FConnector <> nil then
   begin
-    if FClickComp <> nil then
-      SetMethodProp(FClickComp, 'OnClick', TMethod(FOldClick));
-    if FDblClickComp <> nil then
-      SetMethodProp(FDblClickComp, 'OnDblClick', TMethod(FOldDblClick));
-    if FMouseDownComp <> nil then
-      SetMethodProp(FMouseDownComp, 'OnMouseDown', TMethod(FOldMouseDown));
-    if FMouseUpComp <> nil then
-      SetMethodProp(FMouseUpComp, 'OnMouseUp', TMethod(FOldMouseUp));
-    if FMouseMoveComp <> nil then
-      SetMethodProp(FMouseMoveComp, 'OnMouseMove', TMethod(FOldMouseMove));
-    if FMouseWheelComp <> nil then
-      SetMethodProp(FMouseWheelComp, 'OnMouseWheel', TMethod(FOldMouseWheel));
-    if FKeyDownComp <> nil then
-      SetMethodProp(FKeyDownComp, 'OnKeyDown', TMethod(FOldKeyDown));
-    if FKeyUpComp <> nil then
-      SetMethodProp(FKeyUpComp, 'OnKeyUp', TMethod(FOldKeyUp));
-    if FKeyPressComp <> nil then
-      SetMethodProp(FKeyPressComp, 'OnKeyPress', TMethod(FOldKeyPress));
+    FConnector.Free;
+    FConnector := nil;
   end;
 end;
 
 procedure TAdVCLComponentWindow.Terminate;
 begin
   Application.Terminate;
-end;
-
-function TAdVCLComponentWindow.ConvertButton(Button: TMouseButton): TAdMouseButton;
-begin
-  result := TAdMouseButton(ord(Button));
-end;
-
-function TAdVCLComponentWindow.ConvertShift(Shift: TShiftState): TAdShiftState;
-begin
-  result := [];
-  if ssShift in Shift then result := result + [asShift];
-  if ssCtrl in Shift then result := result + [asCtrl];
-  if ssAlt in Shift then result := result + [asAlt];
-  if ssDouble in Shift then result := result + [asDouble];
-  if ssLeft in Shift then result := result + [asLeft];
-  if ssRight in Shift then result := result + [asRight];
-  if ssMiddle in Shift then result := result + [asMiddle];
-end;        
-
-{ TAdVCLComponent Event Handlers }
-
-procedure TAdVCLComponentWindow.Click(Sender: TObject);
-begin
-  if Assigned(Events.OnClick) then
-    Events.OnClick(self, FMouseX, FMouseY);  
-
-  if Assigned(FOldClick) then
-    FOldClick(Sender);
-end;
-
-procedure TAdVCLComponentWindow.DblClick(Sender: TObject);
-begin
-  if Assigned(Events.OnDblClick) then
-    Events.OnDblClick(self, FMouseX, FMouseY);  
-
-  if Assigned(FOldDblClick) then
-    FOldDblClick(Sender);
-end;
-
-procedure TAdVCLComponentWindow.KeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-  if Assigned(Events.OnKeyDown) then
-    Events.OnKeyDown(self, Key, ConvertShift(Shift));
-
-  if Assigned(FOldKeyDown) then
-    FOldKeyDown(Sender, Key, Shift);
-end;
-
-procedure TAdVCLComponentWindow.KeyPress(Sender: TObject; var Key: Char);
-begin
-  if Assigned(Events.OnKeyPress) then
-    Events.OnKeyPress(self, Key);
-
-  if Assigned(FOldKeyPress) then
-    FOldKeyPress(Sender, Key);
-end;
-
-procedure TAdVCLComponentWindow.KeyUp(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-  if Assigned(Events.OnKeyUp) then
-    Events.OnKeyUp(self, Key, ConvertShift(Shift));
-
-  if Assigned(FOldKeyUp) then
-    FOldKeyUp(Sender, Key, Shift);
-end;
-
-procedure TAdVCLComponentWindow.MouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  FMouseX := X; FMouseY := Y;
-
-  if Assigned(Events.OnMouseDown) then
-    Events.OnMouseDown(self, ConvertButton(Button), ConvertShift(Shift), X, Y);
-
-  if Assigned(FOldMouseDown) then
-    FOldMouseDown(Sender, Button, Shift, X, Y);
-end;
-
-procedure TAdVCLComponentWindow.MouseMove(Sender: TObject; Shift: TShiftState;
-  X, Y: integer);
-begin
-  FMouseX := X; FMouseY := Y;
-  
-  if Assigned(Events.OnMouseMove) then
-    Events.OnMouseMove(self, ConvertShift(Shift), X, Y);
-
-  if Assigned(FOldMouseMove) then
-    FOldMouseMove(Sender, Shift, X, Y);
-end;
-
-procedure TAdVCLComponentWindow.MouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  FMouseX := X; FMouseY := Y;
-
-  if Assigned(Events.OnMouseUp) then
-    Events.OnMouseUp(self, ConvertButton(Button), ConvertShift(Shift), X, Y);
-
-  if Assigned(FOldMouseUp) then
-    FOldMouseUp(Sender, Button, Shift, X, Y);
-end;
-
-procedure TAdVCLComponentWindow.MouseWheel(Sender: TObject; Shift: TShiftState;
-  WheelDelta: integer; MousePos: TPoint; var Handled: Boolean);
-begin
-  if Assigned(Events.OnMouseWheel) then
-    Events.OnMouseWheel(self, ConvertShift(Shift), WheelDelta, MousePos.X,
-      MousePos.Y);
-
-  if Assigned(FOldMouseWheel) then
-    FOldMouseWheel(Sender, Shift, WheelDelta, MousePos, Handled);
 end;
 
 initialization

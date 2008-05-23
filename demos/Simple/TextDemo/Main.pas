@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs,
-  AdDraws, AdClasses, AdSetupDlg, AdPng, AdCanvas, AdPerformanceCounter,
+  AdDraws, AdMath, AdClasses, AdSetupNew, AdPng, AdCanvas, AdPerformanceCounter,
   AdTypes, AdFont, AdFontFactory, AdStandardFontGenerator;
 
 type
@@ -49,10 +49,8 @@ begin
 
   c := -500;
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw1);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw1;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin

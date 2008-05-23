@@ -13,10 +13,10 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdDraws.pas
-* Comment: This unit contais the main Andorra 2D Component (TAdDraw) comparable to TDXDraw
+* Comment: Contains the main Andorra 2D classes for graphic output
 }
 
-{ Contains the main Andorra Classes for graphic output }
+{ Contains the main Andorra 2D classes for graphic output }
 unit AdDraws;
 
 {$IFDEF FPC}
@@ -32,7 +32,7 @@ uses
 
   SysUtils, Classes,
   AdClasses, AdTypes, AdList, AdPersistent,
-  AdWindowFramework, AdDLLLoader,
+  AdWindowFramework, AdDLLLoader, AdLog, AdMath,
   AdCanvas, AdBitmap, AdFontFactory, AdFont, AdEvents
   {$IFNDEF DO_NOT_INCLUDE_STD_FORMATS}
   ,AdStandardFontGenerator, AdSimpleCompressors, AdFormats
@@ -45,9 +45,7 @@ type
 
   ELoad = class(Exception);
 
-  {This is the main class for using Andorra 2D.}
   TAdDraw = class;
-
   TAdCustomImage = class;
   TAdImage = class;
   TAdCustomTexture = class;
@@ -56,48 +54,113 @@ type
 
 
   {Specifies the event which called the procedure}
-  TSurfaceEventState = (seInitialize,seFinalize,seInitialized,seBeginScene,seEndScene);
-  {The declaration of the surface event handler}
-  TSurfaceEvent = procedure(Sender:TObject;AEvent:TSurfaceEventState) of object;
+  TAdSurfaceEventState = (
+    seInitialize, {< Triggered when TAdDraw is initialized - all Andorra 2D
+      components should obtain a new Andorra 2D plugin object}
+    seInitialized, {< Triggered after all Andorra 2D components have been
+      initialized}
+    seFinalize, {< Triggered when TAdDraw is finalized - all Andorra 2D
+      components should free their reserved Andorra 2D plugin object because
+      it may not be valid anymore.}
+    seBeginScene, {< Triggered when the "BeginScene" method of TAdDraw is
+      called. }
+    seEndScene {< Triggered when the "EngScene" method of TAdDraw is called.}
+  );
+
+  {The declaration of the surface event handler callback procedure.}
+  TAdSurfaceEvent = procedure(Sender:TObject;
+    AEvent:TAdSurfaceEventState) of object;
+
   {A pointer on TSurfaceEvent}
-  PSurfaceEvent = ^TSurfaceEvent;
-  {A list which contains the surface events}
-  TSurfaceEventList = class(TAdList)
+  PAdSurfaceEvent = ^TAdSurfaceEvent;
+
+  {A list class for registering the surface events in TAdDraw.
+   @seealso(TAdSurfaceEvent)}
+  TAdSurfaceEventList = class(TAdList)
     private
-      function GetItem(AIndex:integer):TSurfaceEvent;
-      procedure SetItem(AIndex:integer;AItem:TSurfaceEvent);
+      function GetItem(AIndex:integer):TAdSurfaceEvent;
+      procedure SetItem(AIndex:integer;AItem:TAdSurfaceEvent);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
-      property Items[AIndex:integer]:TSurfaceEvent read GetItem write SetItem;default;
-      procedure Add(Item:TSurfaceEvent);
-      procedure Remove(Item:TSurfaceEvent);
+      {Allows access on each TAdSurfaceEvent element in the list.}
+      property Items[AIndex:integer]:TAdSurfaceEvent read GetItem write SetItem; default;
+      {Adds a callback procedure to the list.}
+      procedure Add(Item:TAdSurfaceEvent);
+      {Removes a specific callback procedure to the list.}
+      procedure Remove(Item:TAdSurfaceEvent);
   end;
 
 
-  //A record for adding a new log entry into the log system
-  TAdLogMessage = record
-    Text:string;//< the text of the message
-    Sender:string;//< the sender of the message. (May be the plugin or something else.)
-    Typ:string;//< the typ of the message
+  {Used internally in TAdPluginProperty list to store set property data.}
+  TAdPluginPropertyListPointerSet = record
+    {Pointer to the property data.}
+    SetPtr: Pointer;
+    {Size of the data.}
+    SetSize: integer;
   end;
 
-  //The log system class
-  TAdLog = class
+  {List used to store the plugin properties. TAdPluginPropertyList permits acces
+   on available properties in the plugin and allows the user to set them.
+   An instance of TAdPluginPropertyList is held by TAdDraw by default.}
+  TAdPluginPropertyList = class
     private
-      FItems:TStringList;
+      FProps: array of TAd2dProperty;
+      FValues: array of TAd2dPropertyValue;
+      FPtrs: array of TAdPluginPropertyListPointerSet;
+      FCount: integer;
+      function GetProperty(Index: integer): TAd2dProperty;
+      procedure AddValue(AName: string; var AValue; ASize: Integer);
+      procedure AddProp(AProp: TAd2dProperty);
     public
-      FileName:string;
-
+      {Creates an instance of TAdPluginPropertyList. Properties from the plugin
+       are read via the "ReadProperties" method.}
       constructor Create;
-      destructor Destroy;override;
-      procedure LoadFromFile(AFile:string);
-      procedure SaveToFile(AFile:string);
-      procedure AddMessage(AMessage:TAdLogMessage);virtual;
+      {Destroys the instance of TAdPluginPropertyList.}
+      destructor Destroy; override;
 
-      property Items:TStringList read FItems;
+      {Clears all read properties and all settings that have been made.}
+      procedure Clear;
+
+      {Reads the available properties from a loaded plugin library. After this
+       properties may be accesed by the "Items" property of
+       TAdPluginPropertyList.}
+      procedure ReadProperties(ADllLoader: TAdDllLoader);
+      {Writes all set properties into a created Andorra 2D application. If a
+       property does not exists, nothing will happen. The WriteProperties
+       is normally automatically be called by TAdDraw.}
+      procedure WriteProperties(AAppl: TAd2DApplication);
+
+      {Sets a boolean property. Properties are stored when the "WriteProperties"
+       method is called.}
+      procedure SetProp(AName: string; AValue: boolean);overload;
+      {Sets a integer property. Properties are stored when the "WriteProperties"
+       method is called.}
+      procedure SetProp(AName: string; AValue: integer);overload;
+      {Sets a resolution property. Properties are stored when the
+       "WriteProperties" method is called.}
+      procedure SetProp(AName: string; AValue: TAd2dResolution);overload;
+
+      {Returns whether a certain property exists.}
+      function PropertyExists(AName: string): boolean;
+
+      {Allows to read plugin the properties directly.}
+      property Items[Index: integer]: TAd2dProperty read GetProperty; default;
+      {Returns the current property count.}
+      property Count: integer read FCount;
   end;
 
+  {TAdSurface is the abstract base class for all Andorra 2D surfaces. A surface
+   represents a kind of virtual picture where drawing operations may target on.
+   In fact, although many drawing operations require a "Surface" parameter, they
+   are not bound to a specific surface, since they allways affect the active
+   surface. A surface is activated by calling the "Activate" function. Graphic
+   operations requiring a "Surface" parameter only call this activate function
+   before performing graphic operations.
+   @seealso(TAdDraw)
+   @seealso(TAdScene)
+   @seealso(TAdRenderingSurface)
+   @seealso(TAdTextureSurface)}
   TAdSurface = class
     private
       FDraw : TAdDraw;
@@ -107,118 +170,261 @@ type
       property AdDraw:TAdDraw read FDraw write SetDraw;
 
       procedure DoActivation;virtual;
-      procedure DoDeactivation;virtual;      
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);virtual;
+      procedure DoDeactivation;virtual;
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);virtual;
     public
+      {Creates an instance of TAdSurface and links itself to the TAdDraw object.
+       Remember that TAdSurface is only an abstract class and so you should
+       never create an instance of it directly. Use TAdTextureSurface or TAdDraw
+       instead.}
       constructor Create(ADraw:TAdDraw);virtual;
 
+      {Activates the surface so that graphic operations will affect this surface
+       from now on.}
       procedure Activate;
+      {Deactivates the surface. This procedure is called automatically by the
+       parent TAdDraw when another surface is activated.}
       procedure Deactivate;
-      property Activated: boolean read FActivated write FActivated;
 
-      procedure ClearSurface(AColor: Cardinal);virtual;
+      {Indicates wheter the surface is currently activated or not.}
+      property Activated: boolean read FActivated;
 
+      {Clears the surface with a specific color.}
+      procedure ClearSurface(AColor: LongInt);virtual;
+
+      {Returns wheteher the surface is able to be activated and used.}
       function CanDraw:boolean;virtual;abstract;
 
+      {Pointer on the parent AdDraw.}
       property Parent: TAdDraw read FDraw;
   end;
 
-  TAdRenderingSurface = class(TAdSurface)
+  {Simple class that copes with scene management. TAdScene holds its own copy of
+   the current view and projection matrix and applies it to the graphic system
+   when needed. TAdScene is used in TAdRenderingSurface (and so in TAdDraw and
+   TAdTextureSurface, as they are descendants of TAdRenderingsurface) to allow
+   easy access on the scene settings of the surface.}
+  TAdScene = class
     private
-      FWidth, FHeight: integer;
-      FSceneWidth, FSceneHeight: integer;
-      FCanvas: TAdCanvas;
-      FViewPort: TAdRect;
+      FDraw: TAdDraw;
+      
+      FWidth: integer;
+      FHeight: integer;
+      FViewport: TAdRect;
+
+      FNearZ, FFarZ: double;
+
       FViewMatrix: TAdMatrix;
       FProjectionMatrix: TAdMatrix;
+
+      FActivated: boolean;
+
+      procedure UpdateMatrix;
+
       procedure SetViewPort(AValue:TAdRect);
       procedure SetViewMatrix(AValue:TAdMatrix);
       procedure SetProjectionMatrix(AValue:TAdMatrix);
-      procedure UpdateMatrix;
+    public
+      {Creates an instance of TAdScene and links itself to the TAdDraw object.}
+      constructor Create(ADraw: TAdDraw);
+      {Destroys the instance of TAdScene.}
+      destructor Destroy;override;
+      
+      {Pushs the current scene settings in the graphic system and indicates this
+       scene object as being "active".}
+      procedure Activate;
+      {Actually does not more than indicating this scene object to be inactive.}
+      procedure Deactivate;
+
+      {Creates an orhtogonal 2D-Scene with a specific width and height.
+       SceneWidth and SceneHeight are set to the values passed here.
+       For compatibility reasons, the setup 2D-Scene method of the graphic plugin
+       automatically sets its viewport to the sizes passed. So if you only want
+       to use a specific part of the screen, don't forget to set your viewport
+       again after calling "Setup2DScene".}
+      procedure Setup2DScene(AWidth, AHeight: integer);
+      {Creates an perspectivic 3D-Scene. SceneWidth and SceneHeight are set to
+       the values passed here.
+       @param(APos defines the position of the camera)
+       @param(ADir defines the target point of the camara)
+       @param(AUp is a normalized vector that targets at the head of the scene)}
+      procedure Setup3DScene(AWidth, AHeight: integer; APos, ADir, AUp: TAdVector3);
+
+      {The ViewMatrix specifies the position of the objects in the scene. It is
+       normally established by the SetupScene functions. You can set this
+       property to transform the objects on the screen in a special way.}
+      property ViewMatrix:TAdMatrix read FViewMatrix write SetViewMatrix;
+      {The ProjectionMatrix specifies the way the objects are projected on the
+       surface. It is normally established by the SetupScene functions.
+       You can set this property to project the objects on the screen in a
+       special way.}
+      property ProjectionMatrix:TAdMatrix read FProjectionMatrix write SetProjectionMatrix;
+
+      {Defines the rectangle where graphic operations take place. Viewport may
+       be automatically overriden by Setup2DScene. So remember to reset the
+       viewport after calling this method.}
+      property Viewport:TAdRect read FViewPort write SetViewPort;
+
+      {Returns the width of the scene, that specifies the width of the relative
+       coordinate system.}
+      property Width: integer read FWidth;
+      {Returns the height of the scene, that specifies the height of the
+       relative coordinate system.}
+      property Height: integer read FHeight;
+
+      {The position of the near Z-Clipping plane. The distance between the
+       near and the far clipping plane should always be as small as possible,
+       because it changes the resolution of the Z-Buffer. A change of the
+       value will be in force after setting up a new 2D/3D scene.}
+      property ClipPlaneNearZ: double read FNearZ write FNearZ;
+      {The position of the far Z-Clipping plane. The distance between the
+       near and the far clipping plane should always be as small as possible,
+       because it changes the resolution of the Z-Buffer. A change of the
+       value will be in force after setting up a new 2D/3D scene.}
+      property ClipPlaneFarZ: double read FFarZ write FFarZ;
+
+      {Returns whether the scene is currently activated.}
+      property Activated: boolean read FActivated;
+      {Points on the parent AdDraw instance.}
+      property AdDraw: TAdDraw read FDraw;
+  end;
+
+  {A basic, abstract surface class that extends TAdSurface and adds its own
+   canvas and scene object.}
+  TAdRenderingSurface = class(TAdSurface)
+    private
+      FCanvas: TAdCanvas;
+      FScene: TAdScene;
+      FOptions: TAd2dOptions;
+
       function GetDisplayRect: TAdRect;
+      procedure SetOptions(AOptions: TAd2dOptions);
     protected
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);override;
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);override;
       procedure DoInitialize;virtual;
       procedure DoFinalize;virtual;
       procedure DoBeginScene;virtual;
       procedure DoEndScene;virtual;
       procedure DoActivation;override;
+      procedure DoDeactivation;override;
+      function GetWidth: integer;virtual;abstract;
+      function GetHeight: integer;virtual;abstract;
       procedure CanvasRelease(Sender:TObject);
-      property Width: integer read FWidth write FWidth;
-      property Height: integer read FHeight write FHeight;
-      property SceneWidth: integer read FSceneWidth;
-      property SceneHeight: integer read FSceneHeight;
     public
-      procedure Setup2DScene(AWidth, AHeight: integer);overload;
-      procedure Setup2DScene;overload;
-      procedure Setup3DScene(AWidth, AHeight: integer; APos, ADir, AUp: TAdVector3);
+      {Creates an instance of TAdRenderingSurface. Remember that
+       TAdRenderingSurface is an abstract class, that should not be
+       created directly. Use TAdDraw or TAdTextureSurface instead.}
+      constructor Create(ADraw:TAdDraw);override;
+      {Destroys the instance of TAdRenderingSurface.}
+      destructor Destroy;override;
 
-      property ViewMatrix:TAdMatrix read FViewMatrix write SetViewMatrix;
-      property ProjectionMatrix:TAdMatrix read FProjectionMatrix write SetProjectionMatrix;
-      property Viewport:TAdRect read FViewPort write SetViewPort;
-
-      property DisplayRect: TAdRect read GetDisplayRect;
-
+      {A hardware accelerated canvas. All drawing operations will automatically
+       be made on the owner of the canvas property.}
       property Canvas:TAdCanvas read FCanvas;
+      {This is the place where the scene settings for the surface are made.
+       @seealso(TAdScene)}
+      property Scene: TAdScene read FScene;
+      {Options that control the rendering process. When TAdRenderingSurface is
+       created, the options are copied from the parent TAdDraw.}
+      property Options: TAd2dOptions read FOptions write SetOptions;
+      {DisplayRect returns the size of the current szene. Those coordinates are
+       relative. }
+      property DisplayRect: TAdRect read GetDisplayRect;
+      {The width of the surface in pixels.}
+      property Width: integer read GetWidth;
+      {The height of the surface in pixels.}
+      property Height: integer read GetHeight;
+
+      {Calls Scene.Setup2DScene with the width and the height of the surface.
+       After calling Setup2DScene the relative and the absolute coordinate
+       system are equal.}
+      procedure Setup2DScene;
   end;
 
+  {A surface object that allows you to render your graphics in a texture.}
   TAdTextureSurface = class(TAdRenderingSurface)
     private
       FImage : TAdCustomImage;
       FTexture: TAdRenderTargetTexture;
     protected
       procedure DoActivation;override;
+      function GetWidth: integer;override;
+      function GetHeight: integer;override;
     public
+      {Creates an instance of TAdTextureSurface.}
       constructor Create(ADraw:TAdDraw);override;
+      {Destroys the instance of TAdTextureSurface}
       destructor Destroy;override;
 
-      procedure ClearSurface(AColor: Cardinal);override;
+      {Clears the surface with a specific color.}
+      procedure ClearSurface(AColor: LongInt);override;
+      {Sets the size of the surface to a new value. Normally the surface has
+       a size of 128x128 pixels.}
       procedure SetSize(AWidth, AHeight: integer);
 
+      {Returns whether graphic operations can be performed on the surface.}
       function CanDraw:boolean;override;
 
-      property Image:TAdCustomImage read FImage;
-      property Texture:TAdRenderTargetTexture read FTexture;
+      {Image object that can be used to draw the texture directly on another
+       surface.}
+      property Image: TAdCustomImage read FImage;
+
+      {Pointer on the texture, that contains the scene surface.}
+      property Texture: TAdRenderTargetTexture read FTexture;
   end;
 
-  {This is the main class for using Andorra 2D. It builds the main surface.}
+  TAdDisplay = record
+    Width: integer;
+    Height: integer;
+    BitDepth: TAdBitDepth;
+    Freq: integer;
+    DisplayMode: TAdWindowDisplayMode;
+  end;
+
+  {This is the main class for using Andorra 2D. It represents the main surface. }
   TAdDraw = class(TAdRenderingSurface)
   private
-
     FParent:Pointer;
-    FOptions:TAdOptions;
-    FDllName:string;
-    FFinalize:TNotifyEvent;
-    FInitialize:TNotifyEvent;
-    FInitialized:boolean;
-    FDisplayRect:TAdRect;
 
-    FAmbientColor:LongInt;
+    FFinalize: TNotifyEvent;
+    FInitialize: TNotifyEvent;
+    FInitialized: boolean;
 
-    FSurfaceEventList:TSurfaceEventList;
-    FFonts:TAdFontFactory;
+    FDisplay: TAdDisplay;
 
-    FTextureFilter:TAd2dTextureFilter;
-    FWnd:TAdWindowFramework;
+    FSurfaceEventList: TAdSurfaceEventList;
+    FActiveSurface: TAdSurface;
+    FWnd: TAdWindowFramework;
+    FFonts: TAdFontFactory;
+    FProperties: TAdPluginPropertyList;
+    FLog: TAdLog;
 
-    FActiveSurface:TAdSurface;
+    FDllLoader: TAdDllLoader;
+    FDllName: string;
+
+    FAdAppl: TAd2dApplication;
 
     procedure SetDllName(val : string);
-    procedure SetupThings;
-    procedure SetOptions(AValue:TAdOptions);
-    function GetDisplayRect:TAdRect;
     function SearchWindowFramework:boolean;
     procedure SetActiveSurface(ASurface:TAdSurface);
+
+    procedure SetupDisplay;
+    procedure InitDisplay;
+
+    function GetSurfaceRect: TAdRect;
   protected
     procedure DoActivation;override;
-    procedure CallNotifyEvent(AEventState:TSurfaceEventState);
+    procedure CallNotifyEvent(AEventState:TAdSurfaceEventState);
+    function GetWidth: integer;override;
+    function GetHeight: integer;override;
+    procedure LogProc(AModule: PChar; ASeverity: TAd2dLogSeverity;
+      AMessage: PChar);
   public
-    AdDllLoader : TAdDllLoader;
-    AdAppl:TAd2DApplication;
-    Display : TAdDisplay;
-
-    constructor Create(AParent: Pointer);reintroduce;
+    constructor Create(AParent: Pointer); reintroduce;
     destructor Destroy; override;
+
+    function CanDraw:boolean;override;
+    procedure ClearSurface(AColor: LongInt); override;
 
     function Initialize: boolean;
     procedure Finalize;
@@ -227,30 +433,23 @@ type
     procedure BeginScene;
     procedure EndScene;
 
-    property Parent : Pointer read FParent;
-    property DisplayRect:TAdRect read FDisplayRect;
-
-    procedure LogProc(LogItem:TAdLogItem);
-
-    procedure RegisterNotifyEvent(AProc:TSurfaceEvent);
-    procedure UnRegisterNotifyEvent(AProc:TSurfaceEvent);
+    procedure RegisterNotifyEvent(AProc:TAdSurfaceEvent);
+    procedure UnRegisterNotifyEvent(AProc:TAdSurfaceEvent);
 
     procedure Run;
 
-    procedure ClearSurface(AColor: Cardinal);override;
-
-    function GetTextureParams(ABitDepth:byte):TAd2dBitmapTextureParameters;
-
-    function CanDraw:boolean;override;
-
-    property Options : TAdOptions read FOptions write SetOptions;
-    property TextureFilter : TAd2dTextureFilter read FTextureFilter write FTextureFilter;
     property DllName : string read FDllName write SetDllName;
+    property DllLoader: TAdDllLoader read FDllLoader;
     property Initialized : boolean read FInitialized;
-
     property Fonts:TAdFontFactory read FFonts;
     property Window:TAdWindowFramework read FWnd;
     property ActiveSurface:TAdSurface read FActiveSurface write SetActiveSurface;
+    property Parent: Pointer read FParent;
+    property AdAppl: TAd2dApplication read FAdAppl;
+    property Properties: TAdPluginPropertyList read FProperties;
+    property Log: TAdLog read FLog;
+    property Display: TAdDisplay read FDisplay;
+    property SurfaceRect: TAdRect read GetSurfaceRect;
 
     property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
     property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
@@ -270,7 +469,7 @@ type
       procedure SetColor(AValue:TAndorraColor);
       procedure SetFalloff(AValue:double);
     protected
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
     public
       AdLight:TAd2DLight;
       constructor Create(AParent:TAdDraw);
@@ -295,12 +494,14 @@ type
   TAdCustomTexture = class
     private
       FParent:TAdDraw;
-      FBitDepth: Byte;
+      FBitDepth: TAdBitDepth;
+      FFilter: TAd2dTextureFilter;
 
-      function GetBitDepth:byte;
+      function GetBitDepth: TAdBitDepth;
       function GetInitialized:boolean;
-      procedure SetBitDepth(AValue:byte);
+      procedure SetBitDepth(AValue: TAdBitDepth);
       procedure SetAd2DTexture(AValue: TAd2dTexture);
+      procedure SetFilter(AValue: TAd2dTextureFilter);
     protected
       FOwnTexture: Boolean;
       FAd2dTexture:TAd2dTexture;
@@ -315,8 +516,9 @@ type
 
       property Texture: TAd2dTexture read FAd2DTexture write SetAd2DTexture;
       property Initialized: boolean read GetInitialized;
-      property BitDepth: Byte read GetBitDepth write SetBitDepth;
+      property BitDepth: TAdBitDepth read GetBitDepth write SetBitDepth;
       property Parent: TAdDraw read FParent;
+      property Filter: TAd2dTextureFilter read FFilter write SetFilter;
   end;
 
   TAdRenderTargetTexture = class(TAdCustomTexture)
@@ -330,7 +532,7 @@ type
       procedure SetHeight(AValue: integer);
       procedure UpdateSize;
     protected
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
     public
       constructor Create(AParent:TAdDraw);override;
       destructor Destroy;override;
@@ -351,7 +553,7 @@ type
       function GetTexture:TAd2dBitmapTexture;
       procedure SetTexture(AValue:TAd2dBitmapTexture);
     protected
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
     public
       constructor Create(AParent:TAdDraw);override;
       destructor Destroy;override;
@@ -374,14 +576,14 @@ type
       property Texture: TAd2dBitmapTexture read GetTexture write SetTexture;
   end;
 
-  TRectList = class(TAdList)
+  TAdRectList = class(TAdList)
     private
      	function GetItem(AIndex:integer):TAdRect;
      	procedure SetItem(AIndex:integer;AItem:TAdRect);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
-      {Read/Write acess to the rectangles.}
+      {Read/Write access to the rectangles.}
      	property Items[AIndex:integer]:TAdRect read GetItem write SetItem;default;
       {Add a rectangle.}
       procedure Add(ARect:TAdRect);
@@ -400,7 +602,10 @@ type
       FAlpha:byte;
       FDetails:integer;
       FSrcRect:TAdRect;
-      FUseIndexBuffer:boolean;
+      FFilter: TAd2dTextureFilter;
+
+      procedure SetFilter(AValue: TAd2dTextureFilter);
+      function GetFilter: TAd2dTextureFilter;
       procedure SetPatternWidth(AValue:integer);
       procedure SetPatternHeight(AValue:integer);
       procedure SetSkipWidth(AValue:integer);
@@ -415,15 +620,15 @@ type
     protected
       FOwnTexture:boolean;
       FTexture:TAdCustomTexture;
-
-      Rects:TRectList;
+      Rects:TAdRectList;
       procedure DrawMesh(DestApp:TAdSurface;DestRect,SourceRect:TAdRect;Rotation:integer;
         RotCenterX,RotCenterY:single;BlendMode:TAd2DBlendMode);
       procedure BuildVertices;
+      procedure SetSrcRegion;
       procedure CreatePatternRects;
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);    
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
     public
-      //Contains the link to Andorras Image
+      //The mesh object used to display the image
       AdMesh:TAd2DMesh;
 
       //A Constructor
@@ -502,6 +707,9 @@ type
       property Color:Longint read FColor write FColor;
       //Important for using lights: How many vertices does the image have.
       property Details:integer read FDetails write SetDetails;
+
+      //The filter that should be used when a texture is mini- or magnified
+      property Filter: TAd2dTextureFilter read GetFilter write SetFilter;
   end;
 
   TAdImageList = class;
@@ -544,12 +752,20 @@ type
     private
       FParent:TAdDraw;
       FCompressor:TAdGraphicCompressorClass;
+      FFilter: TAd2dTextureFilter;
      	function GetItem(AIndex:integer):TAdImage;
      	procedure SetItem(AIndex:integer;AItem:TAdImage);
       procedure SetCompressor(ACompressor:TAdGraphicCompressorClass);
+      procedure SetFilter(AValue: TAd2dTextureFilter);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
+      {Creates a new instance of TAdImageList.}
+      constructor Create(AAdDraw:TAdDraw);
+      {Frees the instance of TAdImageList. Images that were created by the
+       imagelist are freed too. }
+      destructor Destroy;override;
+
       //Returns you an item
      	property Items[AIndex:integer]:TAdImage read GetItem write SetItem;default;
       //Add a new image to the list.
@@ -558,14 +774,11 @@ type
       function IndexOf(AName:string):integer;
       //Finds an image in the list.
       function Find(AName:string):TAdImage;
-      //Returns a new imagelist which contains all images which name contains the given substring
+      {Returns a new imagelist, that contains all images containing the given
+       substring. The returned imagelist has to be freed manually.}
       function FindEx(ASubStr:string):TAdImageList;
       //Call the restore function of every item in the list.
       procedure Restore;
-      //A constructor
-      constructor Create(AAdDraw:TAdDraw);
-      //A destructor
-      destructor Destroy;override;
       //Save the whole list to a stream
       procedure SaveToStream(AStream:TStream);
       //Load a whole list from a stream
@@ -574,12 +787,14 @@ type
       procedure SaveToFile(AFile:string);
       //Loads a whole list from a file
       procedure LoadFromFile(AFile:string);
-      //The parent you've specified in the constructor.
+
+      //The parent AdDraw you've specified in the constructor.
       property Parent:TAdDraw read FParent;
-      //Apply the same compressor on every item
+      //Apply the same graphic compressor class to each item in the list.
       property Compressor:TAdGraphicCompressorClass read FCompressor write SetCompressor;
-    published
-  end;
+      //Texture filter that should be applied to all images in the list.
+      property Filter: TAd2dTextureFilter read FFilter write SetFilter;
+    end;
 
 implementation
 
@@ -588,48 +803,51 @@ implementation
 constructor TAdDraw.Create(AParent : Pointer);
 begin
 	inherited Create(nil);
-  FParent := AParent;
-  FAmbientColor := RGB(255, 255, 255);
-  AdDllLoader := TAdDllLoader.Create;
-  SetupThings;
 
-  FTextureFilter := atPoint;
-  FSurfaceEventList := TSurfaceEventList.Create;
+  FParent := AParent;
+
+  FDllLoader := TAdDllLoader.Create;
+  FSurfaceEventList := TAdSurfaceEventList.Create;
+  FProperties := TAdPluginPropertyList.Create;
+  FLog := TAdLog.Create;
+  FLog.AutoSave := true;
+
+  SetupDisplay;
 
   AdDraw := self;
-end;
-
-procedure TAdDraw.SetupThings;
-begin
-  //Initialize all Parameters
-  with Display do
-  begin
-    Width := 800;
-    Height := 600;
-    BitCount := 32;
-    Freq := 0;
-  end;
-
-  FOptions := [doHardware];
 end;
 
 destructor TAdDraw.Destroy;
 begin
   //Free all loaded objects
   if AdAppl <> nil then
-  begin
     Finalize;
-  end;
-  
-  AdDllLoader.Destroy;
 
+  FProperties.Free;
   FSurfaceEventList.Free;
+  FDllLoader.Free;
+  FLog.Free;
 
 	inherited Destroy;
 end;
 
+procedure TAdDraw.SetupDisplay;
+begin
+  //Set default display settings
+  with FDisplay do
+  begin
+    Width := 800;
+    Height := 600;
+    BitDepth := ad32Bit;
+    Freq := 0;
+    DisplayMode := dmDefault;
+  end;
+
+  Options := [aoTextures, aoBlending, aoCulling];
+end;
+
 procedure TAdDraw.DoActivation;
-begin 
+begin
   if Initialized then
   begin
     AdAppl.SetRenderTarget(nil);
@@ -637,12 +855,12 @@ begin
   end;
 end;
 
-procedure TAdDraw.UnRegisterNotifyEvent(AProc: TSurfaceEvent);
+procedure TAdDraw.UnRegisterNotifyEvent(AProc: TAdSurfaceEvent);
 begin
   FSurfaceEventList.Remove(AProc)
 end;
 
-procedure TAdDraw.RegisterNotifyEvent(AProc: TSurfaceEvent);
+procedure TAdDraw.RegisterNotifyEvent(AProc: TAdSurfaceEvent);
 begin
   FSurfaceEventList.Add(AProc);
 end;    
@@ -655,9 +873,11 @@ end;
 
 procedure TAdDraw.SetActiveSurface(ASurface: TAdSurface);
 begin
+  //Deactivate the currently active surface
   if FActiveSurface <> nil then
     FActiveSurface.Deactivate;
 
+  //Set the new active surface
   FActiveSurface := ASurface;
 end;
 
@@ -671,16 +891,10 @@ begin
     FDllName := val;
 
     //Load the new Library
-    AdDllLoader.LoadLibrary(val);
-  end;
-end;
+    FDllLoader.LoadLibrary(val);
 
-procedure TAdDraw.SetOptions(AValue:TAdOptions);
-begin
-  FOptions := AValue;
-  if Initialized then
-  begin
-    AdAppl.Options := AValue;
+    //Read the plugin properties
+    FProperties.ReadProperties(FDllLoader);
   end;
 end;
 
@@ -689,146 +903,174 @@ var
   PSS:^ShortString;
   cref:TAdWindowFrameworkClass;
 begin
+  //Assume that no framework is found
   result := false;
+
+  //Iterate through the registered frameworks
   RegisteredWindowFrameworks.StartIteration;
   while not RegisteredWindowFrameworks.ReachedEnd do
   begin
+    //Create a temporaty window framework and store it in "FWnd".
     PSS := RegisteredWindowFrameworks.GetCurrent;
     cref := TAdWindowFrameworkClass(AdGetClass(PSS^));
     FWnd := cref.Create;
+
+    //Check whether the window framework matches to the chosen target window
+    //and is supported by the rendering plugin
     result := FWnd.BindTo(FParent) and AdAppl.SupportsWindowFramework(FWnd.IdentStr);
     if not result then
     begin
       FWnd.Free; FWnd := nil;
     end else
-    begin
       exit;
+  end;
+end;
+
+procedure TAdDraw.InitDisplay;
+var
+  wndprops:TAdDisplayProperties;
+  plgprops:TAd2dResolution;  
+begin
+  //Setup the properties for the windowframeworks  
+  wndprops.Width := FDisplay.Width;
+  wndprops.Height := FDisplay.Height;
+  wndprops.BitDepth := FDisplay.BitDepth;
+
+  if Properties.PropertyExists('fullscreen') and
+     (FDisplay.DisplayMode = dmFullscreen) then
+  begin
+    plgprops.Width := FDisplay.Width;
+    plgprops.Height := FDisplay.Height;
+    plgprops.BitDepth := FDisplay.BitDepth;
+    wndprops.Mode := dmScreenRes;
+    Properties.SetProp('fullscreen', true);
+    Properties.SetProp('fullscreen_res', plgprops);
+  end
+  else
+  begin
+    wndprops.Mode := FDisplay.DisplayMode;
+  end;
+
+  //Initialize the window framework
+  FWnd.InitDisplay(wndprops);
+end;
+
+function TAdDraw.Initialize: boolean;
+begin
+  //Fianlize the current TAdDraw instance
+  Finalize;
+  
+  //Assume the the oppertation will fail
+  result := false;
+  FInitialized := false;
+
+  if FDllLoader.LibraryLoaded then
+  begin
+    //Create the new Application
+    FAdAppl := FDllLoader.CreateApplication;
+
+    FAdAppl.LogCallback := LogProc;
+
+    if AdAppl <> nil then
+    begin
+      if SearchWindowFramework then
+      begin
+        //Initialize the window
+        InitDisplay;
+
+        //Store settings in the plugin
+        FProperties.WriteProperties(AdAppl);
+
+        //Initialize the Andorra 2D application with the created window framework
+        if AdAppl.Initialize(FWnd) then
+        begin
+          //Call the on initialize event
+          if Assigned(FInitialize) then
+            FInitialize(Self);
+
+          //Create the font system
+          FFonts := TAdFontFactory.Create(AdAppl);
+
+          //Call all registered initialization routines
+          CallNotifyEvent(seInitialize);
+          CallNotifyEvent(seInitialized);
+
+          //Initialization did not fail - congratulations
+          result := true;
+          FInitialized := true;
+
+          //Store options
+          AdAppl.SetOptions(FOptions);
+
+          //Setup view- and projection matrix
+          FScene.Setup2DScene(FWnd.ClientWidth, FWnd.ClientHeight); 
+
+        end else
+          FreeAndNil(FAdAppl);
+          
+      end else
+        FreeAndNil(FAdAppl);
     end;
   end;
 end;
 
-function TAdDraw.Initialize: boolean;
+procedure TAdDraw.LogProc(AModule: PChar; ASeverity: TAd2dLogSeverity;
+  AMessage: PChar);
 var
-  rect:TAdRect;
-  props:TAdDisplayProperties;
+  msg: TAdLogMessage;
 begin
-
-  result := false;
-  if AdDllLoader.LibraryLoaded then
-  begin
-
-    //Create the new Application
-    AdAppl := AdDllLoader.CreateApplication;
-    
-    if AdAppl <> nil then
-    begin
-      //Give the Plugin the possibility to send logs
-      AdAppl.SetLogProc(LogProc);
-
-      if SearchWindowFramework then
-      begin
-        props.Width := Display.Width;
-        props.Height := Display.Height;
-        props.BitDepth := Display.BitCount;
-        if doFullscreen in Options then
-          props.Mode := dmFullscreen
-        else
-          props.Mode := dmWindowed;
-          
-        FWnd.InitDisplay(props);
-
-        FDisplayRect := GetDisplayRect;
-        Display.Width := FDisplayRect.Right;
-        Display.Height := FDisplayRect.Bottom;
-
-        result := AdAppl.Initialize(FWnd,Options,Display);
-
-        rect.Left := 0;
-        rect.Top := 0;
-        rect.Right := FWnd.ClientWidth;
-        rect.Bottom := FWnd.ClientHeight;
-        AdAppl.Viewport := rect;
-
-        Width := FWnd.ClientWidth;
-        Height := FWnd.ClientHeight;
-      end else
-      begin
-        AdAppl.Free; AdAppl := nil;
-      end;
-    end
-    else
-    begin
-    end;
-
-    if Assigned(FInitialize) then
-    begin
-      //OnInitialize
-      FInitialize(Self);
-    end;
-
-    FInitialized := result;
-
-    if CanDraw then
-    begin
-      FFonts := TAdFontFactory.Create(AdAppl);
-
-      CallNotifyEvent(seInitialize);
-      CallNotifyEvent(seInitialized);
-
-      ViewPort := AdRect(0,0,Width,Height);
-      Setup2DScene(Width, Height);
-    end;
+  //Set message data
+  case ASeverity of
+    lsInfo: msg.Typ := 'Info';
+    lsWarning: msg.Typ := 'Warning';
+    lsError: msg.Typ := 'Error';
+    lsFatalError: msg.Typ := 'Fatal Error';
   end;
+
+  msg.Sender := AModule;
+  msg.Text := AMessage;
+
+  //Add message to log
+  FLog.AddMessage(msg);
 end;
 
 procedure TAdDraw.Finalize;
 begin
+  //Call the "OnFinalize" Event
   if Assigned(FFinalize) then
-  begin
     FFinalize(Self);
+
+  //Destroy the window object
+  if FWnd <> nil then
+    FreeAndNil(FWnd);
+
+  //Destroy the fonts object
+  if FFonts <> nil then
+    FreeAndNil(FFonts);
+
+  //Destroy the AdAppl object
+  if AdAppl <> nil then
+  begin
+    AdAppl.Finalize;
+    AdAppl.Free;
   end;
 
-  if FWnd <> nil then
-    FWnd.Free;
+  //Tell everybody that this instance of TAdDraw is no longer initialized
+  FInitialized := false;
+  CallNotifyEvent(seFinalize);
+end;
+
+procedure TAdDraw.ClearSurface(AColor: LongInt);
+begin
+  inherited;
 
   if AdAppl <> nil then
   begin
-    if FFonts <> nil then
-    begin
-      FFonts.Free;
-    end;
-    
-    FInitialized := false;
-    CallNotifyEvent(seFinalize);
-    
-    AdAppl.Finalize;
-    if AdAppl <> nil then FreeAndNil(AdAppl);
+    //Call the AdAppl clear surface method and clear all surfaces.
+    AdAppl.ClearSurface(
+      SurfaceRect, [alColorBuffer],
+      ColorToAdColor(AColor), 1, 0);
   end;
-end;
-
-procedure TAdDraw.LogProc(LogItem: TAdLogItem);
-var Temp:TAdLogMessage;
-begin
-  Temp.Sender := self.ClassName;
-  case LogItem.Typ of
-    ltInfo: Temp.Typ := 'Info';
-    ltWarning: Temp.Typ := 'Warning';
-    ltError: Temp.Typ := 'Error';
-    ltFatalError: Temp.Typ := 'Fatal Error';
-    ltNone: Temp.Typ := 'Info';
-  end;
-  Temp.Text := PChar(LogItem.Text);
-//  Log.AddMessage(Temp);
-end;
-
-procedure TAdDraw.ClearSurface(AColor: Cardinal);
-begin
-  inherited;
-  
-  AdAppl.ClearSurface(Ad_ARGB(255,
-    GetRValue(AColor),
-    GetGValue(AColor),
-    GetBValue(AColor)));
 end;
 
 procedure TAdDraw.BeginScene;
@@ -852,49 +1094,31 @@ end;
 procedure TAdDraw.Flip;
 begin
   if AdAppl <> nil then
-  begin
     AdAppl.Flip;
-  end;
 end;
 
-function TAdDraw.GetTextureParams(
-  ABitDepth: byte): TAd2dBitmapTextureParameters;
+function TAdDraw.GetHeight: integer;
 begin
-  with result do
-  begin
-    if BitDepth <> 0 then    
-      BitDepth := ABitDepth
-    else
-      BitDepth := Display.BitCount;  
-
-    UseMipMaps := false;//doMipmaps in FOptions;
-    MinFilter := FTextureFilter;
-    MagFilter := FTextureFilter;
-    MipFilter := FTextureFilter;
-  end;
+  result := FWnd.ClientHeight;
 end;
 
-function TAdDraw.GetDisplayRect: TAdRect;
+function TAdDraw.GetSurfaceRect: TAdRect;
 begin
-  if dofullscreen in Options then
-  begin
-    result := AdBounds(0,0,Display.Width,Display.Height);
-  end
-  else
-  begin
-    result := AdBounds(0,0,FWnd.ClientWidth,FWnd.ClientHeight);
-  end;
+  result := AdRect(0, 0, FWnd.ClientWidth, FWnd.ClientHeight);
 end;
 
-procedure TAdDraw.CallNotifyEvent(AEventState: TSurfaceEventState);
-var i:integer;
+function TAdDraw.GetWidth: integer;
 begin
-  i := 0;
-  while i < FSurfaceEventList.Count do
-  begin
-    FSurfaceEventList.Items[i](self,AEventState);
-    i := i + 1;
-  end;
+  result := FWnd.ClientWidth;
+end;
+
+procedure TAdDraw.CallNotifyEvent(AEventState: TAdSurfaceEventState);
+var
+  i:integer;
+begin
+  //Iterate through the list of registred surface event handlers
+  for i := FSurfaceEventList.Count - 1 downto 0 do
+    FSurfaceEventList.Items[i](self, AEventState);
 end;
 
 function TAdDraw.CanDraw:boolean;
@@ -902,9 +1126,9 @@ begin
   result := (AdAppl <> nil) and (Initialized);
 end;
 
-{TRectList}
+{ TRectList }
 
-procedure TRectList.Add(ARect: TAdRect);
+procedure TAdRectList.Add(ARect: TAdRect);
 var ar:PAdRect;
 begin
   new(ar);
@@ -912,27 +1136,26 @@ begin
   inherited Add(ar);
 end;
 
-function TRectList.GetItem(AIndex:integer):TAdRect;
+function TAdRectList.GetItem(AIndex:integer):TAdRect;
 begin
   result := PAdRect(inherited Items[AIndex])^;
 end;
 
-procedure TRectList.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TAdRectList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
+  //Free reserved memory
   if Action = lnDeleted then
-  begin
     Dispose(PAdRect(Ptr));
-  end;
+
   inherited;
 end;
 
-procedure TRectList.SetItem(AIndex:integer;AItem:TAdRect);
+procedure TAdRectList.SetItem(AIndex:integer;AItem:TAdRect);
 begin
   PAdRect(inherited Items[AIndex])^ := AItem;
-end;
+end;   
 
-
-{TPictureCollectionItem}
+{ TAdCustomImage }
 
 constructor TAdCustomImage.Create(AAdDraw:TAdDraw);
 begin
@@ -942,7 +1165,8 @@ begin
 
   FParent := AAdDraw;
   FParent.RegisterNotifyEvent(Notify);
-  Rects := TRectList.Create;
+  Rects := TAdRectList.Create;
+  FSrcRect := AdRect(0, 0, 0, 0);
   FColor := RGB(255, 255, 255);
   FAlpha := 255;
   FPatternStop := 0;
@@ -976,7 +1200,7 @@ begin
   if (not CompareRects(SourceRect,FSrcRect)) then
   begin
     FSrcRect := SourceRect;
-    BuildVertices;
+    SetSrcRegion;
   end;
 
   //Initialize the matrix
@@ -1006,18 +1230,39 @@ begin
   mat1 := AdMatrix_Translate(DestRect.Left,DestRect.Top,0);
   mat2 := AdMatrix_Multiply(mat2,mat1);
 
-  AdMesh.SetMatrix(mat2); 
+  AdMesh.Matrix := mat2; 
 
-  if AdMesh.UseIndexBuffer then
-  begin
-    Mode := adTriangles;
-  end
+  if AdMesh.Indices <> nil then
+    Mode := adTriangles
   else
-  begin
     Mode := adTriangleStrips;
-  end;
-  
-  AdMesh.Draw(BlendMode,Mode);
+
+  AdMesh.Draw(BlendMode, Mode);
+end;
+
+procedure TAdCustomImage.SetSrcRegion;
+var
+  texw, texh: integer;
+  rectw, recth: integer;
+  mat: TAdMatrix;
+begin
+  texw := Texture.Texture.Width;
+  texh := Texture.Texture.Height;
+
+  rectw := FSrcRect.Right - FSrcRect.Left;
+  recth := FSrcRect.Bottom - FSrcRect.Top;
+
+  mat := AdMatrix_Identity;
+
+  //Scale the texture
+  mat[0,0] := rectw / texw;
+  mat[1,1] := recth / texh;
+
+  //Translate the texture
+  mat[2,0] := FSrcRect.Left / texw;
+  mat[2,1] := FSrcRect.Top / texh;
+
+  AdMesh.TextureMatrix := mat;
 end;
 
 procedure TAdCustomImage.BuildVertices;
@@ -1026,7 +1271,6 @@ var
   Indices:TAdIndexArray;
   i,x,y:integer;
   ax,ay:double;
-  w,h:integer;
   vc,ic:integer;
   c:TAndorraColor;
 begin
@@ -1038,12 +1282,9 @@ begin
     SetLength(Vertices,vc);
     SetLength(Indices,ic);
 
-    FUseIndexBuffer := FDetails > 1;
-
-    w := FSrcRect.Right - FSrcRect.Left;
-    h := FSrcRect.Bottom - FSrcRect.Top;
     c := GetColor;
 
+    //Set vertex coordinates
     i := 0;
     for y := 0 to FDetails do
     begin
@@ -1053,17 +1294,17 @@ begin
         ax := x*fwidth/FDetails;
         Vertices[i].Position := AdVector3(ax,ay,0);
         Vertices[i].Color := c;
-        Vertices[i].Texture :=
-          AdVector2(
-            (FSrcRect.Left + w/FDetails*x) / Texture.Texture.Width,
-            (FSrcRect.Top  + h/FDetails*y) / Texture.Texture.Height);
+        Vertices[i].Texture := AdVector2(
+          (1 / FDetails) * x,
+          (1 / FDetails) * y);
         Vertices[i].Normal := AdVector3(0,0,-1);
         i := i + 1;
       end;
     end;
     AdMesh.Vertices := Vertices;
 
-    if FUseIndexBuffer then
+    //Create indices
+    if FDetails > 1 then
     begin
       i := 0;
       for y := 0 to FDetails - 1 do
@@ -1079,14 +1320,14 @@ begin
           i := i + 6;
         end;
       end;
-      AdMesh.IndexBuffer := Indices;
+      AdMesh.Indices := Indices;
     end
     else
     begin
-      AdMesh.IndexBuffer := nil;
+      AdMesh.Indices := nil;
     end;
 
-    AdMesh.PrimitiveCount := FDetails*FDetails*2;
+    AdMesh.PrimitiveCount := sqr(FDetails)*2;
     AdMesh.Update;
   end;
 end;
@@ -1252,7 +1493,7 @@ begin
   FHeight := Texture.Texture.BaseHeight;
   AdMesh.Texture := Texture.Texture;
   CreatePatternRects;
-  FSrcRect := GetPatternRect(0);
+  FSrcRect := AdRect(0, 0, 0, 0);
   FLastColor := GetColor;
   BuildVertices;
 end;
@@ -1327,6 +1568,13 @@ begin
   end;
 end;
 
+procedure TAdCustomImage.SetFilter(AValue: TAd2dTextureFilter);
+begin
+  FFilter := AValue;
+  if FTexture <> nil then
+    FTexture.Filter := AValue;
+end;
+
 procedure TAdCustomImage.SetPatternHeight(AValue: Integer);
 begin
   if AValue >= 0 then
@@ -1342,6 +1590,14 @@ end;
 function TAdCustomImage.GetColor: TAndorraColor;
 begin
   result := Ad_ARGB(FAlpha,GetRValue(FColor),GetGValue(FColor),GetBValue(FColor));
+end;
+
+function TAdCustomImage.GetFilter: TAd2dTextureFilter;
+begin
+  if FTexture <> nil then
+    result := FTexture.Filter
+  else
+    result := FFilter;
 end;
 
 function TAdCustomImage.GetHeight: integer;
@@ -1360,22 +1616,20 @@ end;
 
 procedure TAdCustomImage.Initialize;
 begin
-  if AdMesh <> nil then
-  begin
-    Finalize;
-  end;
+  //Finalize the image, if it is still initialized
+  Finalize;
+
+  //Create a new mesh
   AdMesh := FParent.AdAppl.CreateMesh;
 end;
 
 procedure TAdCustomImage.Finalize;
 begin
   if AdMesh <> nil then
-  begin
     FreeAndNil(AdMesh);
-  end;
 end;
 
-procedure TAdCustomImage.Notify(ASender: TObject;AEvent: TSurfaceEventState);
+procedure TAdCustomImage.Notify(ASender: TObject;AEvent: TAdSurfaceEventState);
 begin
   if AEvent = seFinalize then
   begin
@@ -1655,6 +1909,7 @@ begin
       ms.CopyFrom(AStream,size);
       ms.Position := 0;
       temp := TAdImage.Create(FParent);
+      temp.Filter := FFilter;
       with temp do
       begin
         FreeByList := self;
@@ -1695,12 +1950,23 @@ end;
 
 procedure TAdImageList.SetCompressor(ACompressor: TAdGraphicCompressorClass);
 var
-  i:integer;
+  i: integer;
 begin
   FCompressor := ACompressor;
   for i := 0 to Count - 1 do
   begin
     Items[i].Texture.Compressor := FCompressor;
+  end;
+end;
+
+procedure TAdImageList.SetFilter(AValue: TAd2dTextureFilter);
+var
+  i: integer;
+begin
+  FFilter := AValue;
+  for i := 0 to Count - 1 do
+  begin
+    Items[i].Filter := FFilter;
   end;
 end;
 
@@ -1760,7 +2026,7 @@ begin
   AdLight.Restore;
 end;
 
-procedure TAdLight.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+procedure TAdLight.Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
 begin
   if AEvent = seInitialize then
   begin
@@ -1832,89 +2098,31 @@ begin
   end;
 end;
 
-{ TAdLog }
-
-procedure TAdLog.AddMessage(AMessage: TAdLogMessage);
-const
-  cTabulator = 20;
-var
-  Space:integer;
-  LMessage:string;
-  i:integer;
-begin
-  LMessage := '[' + AMessage.Typ + ']';
-
-  Space := cTabulator - length(AMessage.Typ) - 2;
-  if Space < 1 then Space := 1;
-  for i := 0 to Space do
-    LMessage := LMessage + ' ';
-
-
-  LMessage := LMessage + AMessage.Sender + ':';
-
-  Space := cTabulator - length(AMessage.Sender) - 1;
-  if Space < 1 then Space := 1;
-  for i := 0 to Space do
-    LMessage := LMessage + ' ';
-
-
-  LMessage := LMessage + AMessage.Text;
-
-  self.Items.Add(LMessage);
-  if FileName <> '' then
-  begin
-    SaveToFile(FileName);
-  end;
-end;
-
-constructor TAdLog.Create;
-begin
-  inherited Create;
-  FItems := TStringList.Create;
-end;
-
-destructor TAdLog.Destroy;
-begin
-  Items.Free;
-  inherited Destroy;
-end;
-
-procedure TAdLog.LoadFromFile(AFile: string);
-begin
-  Items.LoadFromFile(AFile);
-  Items.Add('');
-end;
-
-procedure TAdLog.SaveToFile(AFile: string);
-begin
-  Items.SaveToFile(AFile);
-end;
-
 { TSurfaceEventList }
 
-procedure TSurfaceEventList.Add(Item: TSurfaceEvent);
-var Event:PSurfaceEvent;
+procedure TAdSurfaceEventList.Add(Item: TAdSurfaceEvent);
+var
+  Event:PAdSurfaceEvent;
 begin
   New(Event);
   Event^ := Item;
   inherited Add(Event);
 end;
 
-function TSurfaceEventList.GetItem(AIndex:integer):TSurfaceEvent;
+function TAdSurfaceEventList.GetItem(AIndex:integer):TAdSurfaceEvent;
 begin
-  result := PSurfaceEvent(inherited Items[AIndex])^;
+  result := PAdSurfaceEvent(inherited Items[AIndex])^;
 end;
 
-procedure TSurfaceEventList.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TAdSurfaceEventList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   if Action = lnDeleted then
-  begin
-    Dispose(PSurfaceEvent(Ptr));
-  end;
+    Dispose(PAdSurfaceEvent(Ptr));
+
   inherited;
 end;
 
-procedure TSurfaceEventList.Remove(Item: TSurfaceEvent);
+procedure TAdSurfaceEventList.Remove(Item: TAdSurfaceEvent);
 var i:integer;
 begin
   i := 0;
@@ -1929,7 +2137,7 @@ begin
   end;
 end;
 
-procedure TSurfaceEventList.SetItem(AIndex:integer;AItem:TSurfaceEvent);
+procedure TAdSurfaceEventList.SetItem(AIndex:integer;AItem:TAdSurfaceEvent);
 begin
   inherited Items[AIndex] := @AItem;
 end;  
@@ -1941,7 +2149,7 @@ begin
   inherited Create;
   
   FParent := AParent;
-  FBitDepth := 32;
+  FBitDepth := ad32Bit;
   
   Initialize;
 end;
@@ -1952,11 +2160,11 @@ begin
   inherited;
 end;
 
-function TAdCustomTexture.GetBitDepth: byte;
+function TAdCustomTexture.GetBitDepth: TAdBitDepth;
 begin
   if Initialized then
   begin
-    result := Texture.BitCount;
+    result := Texture.BitDepth;
   end
   else
   begin
@@ -1977,13 +2185,20 @@ begin
   FOwnTexture := false;
   FAd2dTexture := AValue;
 
-  FBitDepth := AValue.BitCount;
+  FBitDepth := AValue.BitDepth;
 end;
 
-procedure TAdCustomTexture.SetBitDepth(AValue: byte);
+procedure TAdCustomTexture.SetBitDepth(AValue: TAdBitDepth);
 begin
   FBitDepth := AValue;
 end;   
+
+procedure TAdCustomTexture.SetFilter(AValue: TAd2dTextureFilter);
+begin
+  FFilter := AValue;
+  if (FAd2dTexture <> nil) then
+    FAd2dTexture.Filter := FFilter;
+end;
 
 { TAdTexture }
 
@@ -2004,7 +2219,8 @@ end;
 procedure TAdTexture.Initialize;
 begin
   Finalize;
-  FAd2dTexture := Parent.AdAppl.CreateBitmapTexture;  
+  FAd2dTexture := Parent.AdAppl.CreateBitmapTexture;
+  FAd2dTexture.Filter := FFilter;  
 end;
 
 procedure TAdTexture.Finalize;
@@ -2056,7 +2272,8 @@ begin
   bmp := TAdBitmap.Create;
   try
     bmp.Assign(AGraphic);
-    Texture.LoadFromBitmap(bmp, FParent.GetTextureParams(BitDepth));
+
+    Texture.LoadFromBitmap(bmp, ad32Bit);
   finally
     bmp.Free;
   end;
@@ -2084,15 +2301,16 @@ begin
   bmp := TAdBitmap.Create;
   try
     bmp.LoadGraphicFromFile(AFile, Transparent, TransparentColor);
-    Texture.LoadFromBitmap(bmp, FParent.GetTextureParams(BitDepth));
+    Texture.LoadFromBitmap(bmp, ad32Bit);
   finally
     bmp.Free;
   end;
 end;
 
 procedure TAdTexture.LoadFromStream(AStream: TStream);
-var c:char;
-    bmp:TAdBitmap;
+var
+  c:char;
+  bmp:TAdBitmap;
 begin
   AStream.Read(c,1);
   if c = 'T' then
@@ -2101,7 +2319,8 @@ begin
     try
       bmp.LoadFromStream(AStream);
       AStream.Read(FBitDepth,1);
-      Texture.LoadFromBitmap(bmp, FParent.GetTextureParams(BitDepth));
+
+      Texture.LoadFromBitmap(bmp, ad32Bit);
       bmp.Free;
     except
       bmp.Free;
@@ -2113,7 +2332,7 @@ end;
 procedure TAdTexture.SaveToStream(AStream: TStream);
 var c:char;
     bmp:TAdBitmap;
-    bits:byte;
+    bits: TAdBitDepth;
 begin
   if (Texture.Loaded) then
   begin
@@ -2129,7 +2348,7 @@ begin
       bmp.Free;
     end;
 
-    bits := Texture.BitCount;
+    bits := Texture.BitDepth;
     AStream.Write(bits,1);
 
   end
@@ -2139,7 +2358,7 @@ begin
   end;
 end;
 
-procedure TAdTexture.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+procedure TAdTexture.Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
 begin
   if AEvent = seFinalize then
   begin
@@ -2177,12 +2396,112 @@ begin
   inherited Texture := AValue;
 end;
 
+{ TAdScene }
+
+constructor TAdScene.Create(ADraw: TAdDraw);
+begin
+  inherited Create;
+  FDraw := ADraw;
+
+  FNearZ := -100;
+  FFarZ := 100;
+end;
+
+destructor TAdScene.Destroy;
+begin
+  inherited;
+end;
+
+procedure TAdScene.Activate;
+begin
+  FActivated := true;
+  UpdateMatrix;
+end;
+
+procedure TAdScene.Deactivate;
+begin
+  FActivated := false;
+end;
+
+procedure TAdScene.SetProjectionMatrix(AValue: TAdMatrix);
+begin
+  FProjectionMatrix := AValue;
+  UpdateMatrix;
+end;
+
+procedure TAdScene.SetViewMatrix(AValue: TAdMatrix);
+begin
+  FViewMatrix := AValue;
+  UpdateMatrix;
+end;
+
+procedure TAdScene.SetViewPort(AValue: TAdRect);
+begin
+  FViewPort := AValue;
+  if FActivated and FDraw.CanDraw then
+    FDraw.AdAppl.Viewport := AValue;
+end;
+
+procedure TAdScene.UpdateMatrix;
+begin
+  if FActivated and FDraw.CanDraw then
+    FDraw.AdAppl.SetupManualScene(FViewMatrix, FProjectionMatrix);
+end;
+
+procedure TAdScene.Setup2DScene(AWidth, AHeight: integer);
+var
+  curscene:TAdSurface;
+begin
+  if AdDraw.CanDraw then
+  begin
+    curscene := nil;
+    if not Activated then
+      curscene := AdDraw.ActiveSurface;
+
+    Activate;
+    FDraw.AdAppl.Setup2DScene(AWidth, AHeight, FFarZ, FNearZ);
+    FDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
+
+    FWidth := AWidth;
+    FHeight := AHeight;
+
+    if curscene <> nil then
+      curscene.Activate;
+  end;
+end;
+
+procedure TAdScene.Setup3DScene(AWidth, AHeight: integer; APos, ADir,
+  AUp: TAdVector3);
+var
+  curscene:TAdSurface;
+begin
+  if AdDraw.CanDraw then
+  begin
+    curscene := nil;
+    if not Activated then
+      curscene := AdDraw.ActiveSurface;
+
+    Activate;
+    FDraw.AdAppl.Setup3DScene(AWidth, AHeight, APos, ADir, AUp, FNearZ, FFarZ);
+    FDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
+
+    FWidth := AWidth;
+    FHeight := AHeight;
+
+    if curscene <> nil then
+      curscene.Activate;
+  end;
+end;
+
 { TAdSurface }
 
 constructor TAdSurface.Create(ADraw: TAdDraw);
 begin
   inherited Create;
-  AdDraw := ADraw;
+  if (ADraw = nil) and (self is TAdDraw) then
+    FDraw := TAdDraw(self)
+  else
+    AdDraw := ADraw;
 end;
 
 procedure TAdSurface.Activate;
@@ -2214,12 +2533,12 @@ begin
   //
 end;
 
-procedure TAdSurface.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+procedure TAdSurface.Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
 begin
   //
 end;
 
-procedure TAdSurface.ClearSurface(AColor: Cardinal);
+procedure TAdSurface.ClearSurface(AColor: LongInt);
 begin
   Activate;
 end;
@@ -2238,10 +2557,31 @@ end;
 
 { TAdRenderingSurface }
 
-procedure TAdRenderingSurface.CanvasRelease(Sender: TObject);
+constructor TAdRenderingSurface.Create(ADraw: TAdDraw);
 begin
-  if not Activated then
-    Activate;
+  inherited;
+  FScene := TAdScene.Create(AdDraw);
+  FOptions := AdDraw.Options;
+end;
+
+destructor TAdRenderingSurface.Destroy;
+begin
+  FScene.Free;
+  inherited;
+end;
+
+procedure TAdRenderingSurface.DoInitialize;
+begin
+  DoFinalize;
+  FCanvas := TAdCanvas.Create(AdDraw.AdAppl);
+  FCanvas.OnRelease := CanvasRelease;
+  FCanvas.Font := AdDraw.Fonts.GenerateFont('Tahoma', 10, []);
+end;
+
+function TAdRenderingSurface.GetDisplayRect: TAdRect;
+begin
+  result :=
+    AdRect(0, 0, FScene.Width, FScene.Height);
 end;
 
 procedure TAdRenderingSurface.DoFinalize;
@@ -2253,23 +2593,20 @@ begin
   end;
 end;
 
-procedure TAdRenderingSurface.DoInitialize;
-begin
-  DoFinalize;
-  FCanvas := TAdCanvas.Create(AdDraw.AdAppl);
-  FCanvas.OnRelease := CanvasRelease;
-  FCanvas.Font := AdDraw.Fonts.GenerateFont('Tahoma', 10, []);
-end;
-
 procedure TAdRenderingSurface.DoActivation;
 begin
-  AdDraw.AdAppl.Viewport := FViewPort;
-  UpdateMatrix;
+  FScene.Activate;
+  AdDraw.AdAppl.SetOptions(FOptions);
 end;
 
 procedure TAdRenderingSurface.DoBeginScene;
 begin
   FCanvas.StartFrame;
+end;
+
+procedure TAdRenderingSurface.DoDeactivation;
+begin
+  FScene.Deactivate;
 end;
 
 procedure TAdRenderingSurface.DoEndScene;
@@ -2278,7 +2615,7 @@ begin
 end;
 
 procedure TAdRenderingSurface.Notify(ASender: TObject;
-  AEvent: TSurfaceEventState);
+  AEvent: TAdSurfaceEventState);
 begin
   case AEvent of
     seBeginScene: DoBeginScene;
@@ -2288,84 +2625,22 @@ begin
   end;
 end;
 
-procedure TAdRenderingSurface.SetProjectionMatrix(AValue: TAdMatrix);
+procedure TAdRenderingSurface.SetOptions(AOptions: TAd2dOptions);
 begin
-  FProjectionMatrix := AValue;
-  UpdateMatrix;
-end;
-
-procedure TAdRenderingSurface.SetViewMatrix(AValue: TAdMatrix);
-begin
-  FViewMatrix := AValue;
-  UpdateMatrix;
-end;
-
-procedure TAdRenderingSurface.SetViewPort(AValue: TAdRect);
-begin
-  FViewPort := AValue;
-  if Activated and AdDraw.CanDraw then
-    AdDraw.AdAppl.Viewport := AValue;
-end;
-
-function TAdRenderingSurface.GetDisplayRect: TAdRect;
-begin
-  result := AdRect(0, 0, FSceneWidth, FSceneHeight);
-end;
-
-procedure TAdRenderingSurface.UpdateMatrix;
-begin
-  if Activated and AdDraw.CanDraw then
-    AdDraw.AdAppl.SetupManualScene(FViewMatrix, FProjectionMatrix);
-end;
-
-procedure TAdRenderingSurface.Setup2DScene(AWidth, AHeight: integer);
-var
-  curscene:TAdSurface;
-begin
-  if AdDraw.CanDraw then
-  begin
-    curscene := nil;
-    if not Activated then
-      curscene := AdDraw.ActiveSurface;
-
-    Activate;
-    AdDraw.AdAppl.Setup2DScene(AWidth, AHeight);
-    AdDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
-
-    FSceneWidth := AWidth;
-    FSceneHeight := AHeight;
-
-    if curscene <> nil then
-      curscene.Activate;
-  end;
+  FOptions := AOptions;
+  if (Activated) and (AdDraw.CanDraw) then
+    AdDraw.AdAppl.SetOptions(FOptions);
 end;
 
 procedure TAdRenderingSurface.Setup2DScene;
 begin
-  Setup2DScene(FWidth, FHeight);
+  Scene.Setup2DScene(Width, Height);
 end;
 
-procedure TAdRenderingSurface.Setup3DScene(AWidth, AHeight: integer; APos, ADir,
-  AUp: TAdVector3);
-var
-  curscene:TAdSurface;
+procedure TAdRenderingSurface.CanvasRelease(Sender: TObject);
 begin
-  if AdDraw.CanDraw then
-  begin
-    curscene := nil;
-    if not Activated then
-      curscene := AdDraw.ActiveSurface;
-
+  if not Activated then
     Activate;
-    AdDraw.AdAppl.Setup3DScene(AWidth, AHeight, APos, ADir, AUp);
-    AdDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
-
-    FSceneWidth := AWidth;
-    FSceneHeight := AHeight;
-
-    if curscene <> nil then
-      curscene.Activate;
-  end;
 end;
 
 { TAdTextureSurface }
@@ -2377,8 +2652,6 @@ begin
   FImage := TAdCustomImage.Create(ADraw);
   FTexture := TAdRenderTargetTexture.Create(ADraw);
   FImage.Texture := FTexture;
-  Width := 128;
-  Height := 128;
   if ADraw.Initialized then
     DoInitialize;
 end;
@@ -2392,15 +2665,11 @@ end;
 
 procedure TAdTextureSurface.SetSize(AWidth, AHeight: integer);
 begin
-  Width := AWidth;
-  Height := AHeight;
-  Viewport := AdRect(0,0,AWidth,AHeight);
   if CanDraw then
   begin
     FTexture.Width := AWidth;
     FTexture.Height := AHeight;
     FImage.Restore;
-    Setup2DScene(Width, Height);
   end;
 end;
 
@@ -2413,22 +2682,29 @@ begin
   end;
 end;
 
+function TAdTextureSurface.GetHeight: integer;
+begin
+  result := FTexture.Height;
+end;
+
+function TAdTextureSurface.GetWidth: integer;
+begin
+  result := FTexture.Width;
+end;
+
 function TAdTextureSurface.CanDraw: boolean;
 begin
   result := FTexture.Initialized and AdDraw.CanDraw;
 end;
 
-procedure TAdTextureSurface.ClearSurface(AColor: Cardinal);
+procedure TAdTextureSurface.ClearSurface(AColor: LongInt);
 begin
   inherited;
 
-  if CanDraw then
-    AdDraw.AdAppl.ClearSurface(
-      Ad_ARGB(
-        (AColor and $FF000000) shr 24,
-        (AColor and $000000FF),
-        (AColor and $0000FF00) shr 8,
-        (AColor and $00FF0000) shr 16));
+  //Clear the surface with the specified color.
+  AdDraw.AdAppl.ClearSurface(
+    DisplayRect, [alColorBuffer, alZBuffer, alStencilBuffer],
+    ColorToAdColor(AColor), 1, 0);
 end;
 
 { TAdRenderTargetTexture }
@@ -2461,6 +2737,7 @@ procedure TAdRenderTargetTexture.Initialize;
 begin
   Finalize;
   FAd2dTexture := Parent.AdAppl.CreateRenderTargetTexture;
+  FAd2dTexture.Filter := FFilter;
   UpdateSize;
 end;
 
@@ -2474,7 +2751,7 @@ begin
 end;
 
 procedure TAdRenderTargetTexture.Notify(ASender: TObject;
-  AEvent: TSurfaceEventState);
+  AEvent: TAdSurfaceEventState);
 begin
   case AEvent of
     seInitialize: Initialize;
@@ -2515,6 +2792,126 @@ begin
   if FAd2dTexture <> nil then
   begin
     Texture.SetSize(FWidth, FHeight, FBitDepth);
+  end;
+end;
+
+{ TAdPluginPropertyList }
+
+procedure AddPropProc(const ASender: TObject; const AProp: TAd2dProperty); stdcall;
+begin
+  TAdPluginPropertyList(ASender).AddProp(AProp);
+end;
+
+constructor TAdPluginPropertyList.Create;
+begin
+  inherited;       
+end;
+
+destructor TAdPluginPropertyList.Destroy;
+begin
+  Clear;
+  inherited;
+end;
+
+procedure TAdPluginPropertyList.Clear;
+var
+  i: integer;
+begin
+  //Free all reserved memory
+  for i := 0 to High(FPtrs) do
+    FreeMem(FPtrs[i].SetPtr, FPtrs[i].SetSize);
+
+  //Finalize all arrays
+  SetLength(FProps, 0);
+  SetLength(FPtrs, 0);
+  SetLength(FValues, 0);
+
+  FCount := 0;
+end;
+
+procedure TAdPluginPropertyList.ReadProperties(ADllLoader: TAdDllLoader);
+begin
+  //Clear the list
+  Clear;
+
+  //Store properties in the local list
+  ADllLoader.LibProperties(self, AddPropProc);
+end;
+
+procedure TAdPluginPropertyList.WriteProperties(AAppl: TAd2DApplication);
+begin
+  //Store the values in the Ad2dAppliation instance
+  AAppl.SetProperties(Length(FValues), @FValues[0]);
+end;
+
+function TAdPluginPropertyList.GetProperty(Index: integer): TAd2dProperty;
+begin
+  result := FProps[Index];
+end;
+
+function TAdPluginPropertyList.PropertyExists(AName: string): boolean;
+var
+  i: integer;
+begin
+  result := false;
+
+  for i := 0 to FCount - 1 do
+  begin
+    if Lowercase(FProps[i].PropName) = Lowercase(AName) then
+    begin
+      result := true;
+      break;
+    end;
+  end;
+end;
+
+procedure TAdPluginPropertyList.SetProp(AName: string; AValue: integer);
+begin
+  AddValue(AName, AValue, SizeOf(Integer));
+end;
+
+procedure TAdPluginPropertyList.SetProp(AName: string; AValue: boolean);
+begin
+  AddValue(AName, AValue, SizeOf(Boolean));
+end;
+
+procedure TAdPluginPropertyList.SetProp(AName: string; AValue: TAd2dResolution);
+begin
+  AddValue(AName, AValue, SizeOf(TAd2dResolution));
+end;
+
+procedure TAdPluginPropertyList.AddProp(AProp: TAd2dProperty);
+begin
+  //Write the new property set
+  SetLength(FProps, Length(FProps) + 1);
+  FProps[High(FProps)] := AProp;
+
+  FCount := FCount + 1;
+end;
+
+procedure TAdPluginPropertyList.AddValue(AName: string; var AValue; ASize: Integer);
+var
+  ptr: Pointer;
+begin
+  //Reserve memory for the new value
+  GetMem(ptr, ASize);
+  Move(AValue, ptr^, ASize);
+
+  //Add the pointer to the pointer array. The pointer array is needed to dispose
+  //the reserved memory when the list is cleared.
+  SetLength(FPtrs, Length(FPtrs) + 1);
+  with FPtrs[High(FPtrs)] do
+  begin
+    SetPtr := ptr;
+    SetSize := ASize;
+  end;
+
+  //Add a value that will be written into the plugin
+  SetLength(FValues, Length(FValues) + 1);
+  with FValues[High(FValues)] do
+  begin
+    PropName := Lowercase(AName);
+    PropValue := ptr;
   end;
 end;
 

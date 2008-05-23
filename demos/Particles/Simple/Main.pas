@@ -18,8 +18,6 @@ type
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     PartSys:TAdParticleSystem;
-    Pos: double;
-    DefPart: TAdBillboardParticle;
     AdImageList:TAdImageList;
     MouseX,MouseY:integer;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -65,7 +63,7 @@ begin
       end;
       PartSys := TAdParticleSystem.Create(AdDraw);
       PartSys.Texture := AdImageList.Items[0].Texture;
-      PartSys.LoadFromFile('part.xml');
+      PartSys.LoadFromFile(path + 'part.xml');
     end
     else
     begin
@@ -84,7 +82,6 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  defpart.Free;
   PartSys.Free;
   AdImageList.Free;
   AdPerCounter.Free;
@@ -100,20 +97,11 @@ begin
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
-const
-  pps = 1;
 begin
   if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
     Caption := 'FPS:'+inttostr(AdPerCounter.FPS) + ' C:'+inttostr(PartSys.Items.Count);
-
-    Pos := Pos + AdPerCounter.TimeGap;
-    if Pos > pps then
-    begin
-      //PartSys.Emit(Round(Pos / pps), MouseX, MouseY);
-      Pos := Pos - pps * Round(Pos / pps);
-    end;
 
     AdDraw.ClearSurface(0);
     AdDraw.BeginScene;

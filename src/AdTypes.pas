@@ -56,6 +56,10 @@ type
   {Pointer type of TRGBArray.}
   PRGBArray = ^TRGBArray;
 
+  TAdBitDepth = (
+    ad32Bit = 32,
+    ad16Bit = 16);
+
   {--- 3D-Data ---}
 
   {A vector type which has two components.}
@@ -169,6 +173,35 @@ type
   {A type which represents a set of triangles}
   TAdTriangles = array of TAdTriangle;
 
+  {--- Window properties ---}
+  {Defines how the window is displayed.}
+  TAdWindowDisplayMode = (
+    dmDefault,{< The size of the parent control isn't changed. If the window framwork
+      doesn't use a parent control (e.g. because it creates its own window),
+      dmDefault is equivalent to dmWindowed.}
+    dmWindowed,{< The window is displayed in the window mode.}
+    dmScreenRes,{< The window is resized to the current screen resolution.}
+    dmFullscreen{< The screen resolution will be changed and the window is displayed int the fullscreen mode.});
+
+  {Defines the properties of the window}
+  TAdDisplayProperties = record
+    Width : integer;{< The width of the window.}
+    Height : integer;{< The height of the window.}
+    Mode : TAdWindowDisplayMode;{< The displaymode. @seealso(TAdWindowDisplayMode)}
+    BitDepth : TAdBitDepth;{< The window bit depth. May be 16- or 32-Bit.}
+  end;
+
+  {---Types used in the shader system---}
+  TAd2dShaderSourceType = (
+    assSource,
+    assCompiled
+  );
+
+  TAd2dShaderType = (
+    astVertex,
+    astFragment
+  );  
+
 
 //Creates a rectangle of the type "TAdRect"  with specific x/y coordinates and a specific width/height
 function AdBounds(X,Y,Width,Height:LongInt):TAdRect;
@@ -198,24 +231,10 @@ function OverlapRect(const Rect1, Rect2: TAdRect): boolean;
 {Returns true, if the point lies within the rect}
 function InRect(const X, Y: integer; const Rect: TAdRect): boolean;
 
-{Retruns a vector with three components.}
+{Returns a vector with three components.}
 function AdVector3(AX,AY,AZ:double):TAdVector3;
-{Retruns a vector with two components.}
+{Returns a vector with two components.}
 function AdVector2(AX,AY:double):TAdVector2;
-
-{Multiplies two matrixes and returns the new matrix}
-function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
-{Returns a translation matrix.}
-function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
-{Returns a scale matrix.}
-function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
-{Returns a matrix for rotation around the X-Axis}
-function AdMatrix_RotationX(angle:single):TAdMatrix;
-{Returns a matrix for rotation around the Y-Axis}
-function AdMatrix_RotationY(angle:single):TAdMatrix;
-{Returns a matrix for rotation around the Z-Axis}
-function AdMatrix_RotationZ(angle:single):TAdMatrix;
-
 
 {Creates an andorra color with the given components.}
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
@@ -471,69 +490,7 @@ end;
 
 function ColorToAdColor(AColor:LongInt):TAndorraColor;
 begin
-  result := Ad_RGB(AColor,AColor shr 8,AColor shr 16);
-end;
-
-function AdMatrix_Multiply(amat1,amat2:TAdMatrix):TAdMatrix;
-var x,y:integer;
-begin
-  for x := 0 to 3 do
-  begin
-    for y := 0 to 3 do
-    begin
-      result[x,y] := amat2[0,y]*amat1[x,0] + amat2[1,y]*amat1[x,1] + amat2[2,y]*amat1[x,2] +amat2[3,y]*amat1[x,3];
-    end;
-  end;
-end;
-
-function AdMatrix_Translate(tx,ty,tz:single):TAdMatrix;
-begin
-  result := AdMatrix_Identity;
-  result[3,0] := tx;
-  result[3,1] := ty;
-  result[3,2] := tz;
-end;
-
-function AdMatrix_Scale(sx,sy,sz:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := sx;
-  result[1,1] := sy;
-  result[2,2] := sz;
-  result[3,3] := 1;
-end;
-
-function AdMatrix_RotationX(angle:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := 1;
-  result[1,1] := cos(angle);
-  result[1,2] := sin(angle);
-  result[2,1] := -sin(angle);
-  result[2,2] := cos(angle);
-  result[3,3] := 1;
-end;
-
-function AdMatrix_RotationY(angle:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := cos(angle);
-  result[0,2] := -sin(angle);
-  result[1,1] := 1;
-  result[2,0] := sin(angle);
-  result[2,2] := cos(angle);
-  result[3,3] := 1;
-end;
-
-function AdMatrix_RotationZ(angle:single):TAdMatrix;
-begin
-  result := AdMatrix_Clear;
-  result[0,0] := cos(angle);
-  result[0,1] := sin(angle);
-  result[1,0] := -sin(angle);
-  result[1,1] := cos(angle);
-  result[2,2] := 1;
-  result[3,3] := 1;
+  result := Ad_ARGB(255, AColor,AColor shr 8,AColor shr 16);
 end;
 
 function FloatsEqual(v1, v2, e:double):boolean;

@@ -18,7 +18,9 @@ unit AdJPEG;
 
 interface
 
-uses JPEG, AdDraws, AdClasses, AdVCLFormats, AdBitmap, Classes, Graphics;
+uses
+  JPEG, Classes, Graphics,
+  AdDraws, AdClasses, AdVCLFormats, AdBitmap;
 
 type
   {A loader for JPEG files and TJPEGImage.}
@@ -34,9 +36,7 @@ type
       function AssignAlphaChannelTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
 end;
 
-implementation
-
-
+implementation    
 
 { TAdJPEGFormat }
 

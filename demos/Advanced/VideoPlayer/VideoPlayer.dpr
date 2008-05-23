@@ -1,5 +1,7 @@
 program VideoPlayer;
 
+{$APPTYPE CONSOLE}
+
 uses
   Forms,
   Main in 'Main.pas';

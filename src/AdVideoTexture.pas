@@ -254,7 +254,6 @@ function TAdCustomVideoTexture.NextFrame:boolean;
 var
   adbmp:TAdBitmap;
   buf: TAdVideoMemory;
-  aparams: TAd2dBitmapTextureParameters;
 begin
   result := false;
   if FDecoderThread <> nil then
@@ -275,16 +274,7 @@ begin
           adbmp.ReserveMemory(buf.Width, buf.Height);
           System.Move(buf.Memory^, adbmp.Scanline^, adbmp.Size);
 
-          with aparams do
-          begin
-            BitDepth := 32;
-            UseMipMaps := false;
-            MagFilter := atLinear;
-            MinFilter := atLinear;
-            MipFilter := atLinear;
-          end;
-
-          FTexture.LoadFromBitmap(adbmp, aparams);
+          FTexture.LoadFromBitmap(adbmp, ad32Bit);
 
           adbmp.Free;
           

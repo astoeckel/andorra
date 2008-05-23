@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites, AdParticles, AdClasses, AdPng, AdSetupDlg,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Dialogs, AdDraws, AdSprites, AdSpriteEngineEx, AdParticles, AdClasses, AdPng, AdSetupDlg,
   AdPerformanceCounter, AdTypes, AdBitmap, AdCanvas;
 
 type
@@ -17,10 +17,6 @@ type
   end;
 
   TBall = class(TImageSpriteEx)
-    protected
-      FPart1,FPart2:TAdParticle;
-      FPartSprite:TParticleSprite;
-      FImg:TAdImage;
     public
       XDir,YDir:double;
       Speed:double;
@@ -29,7 +25,6 @@ type
       procedure ChangeDir(top:boolean);
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var done:boolean);override;
-      procedure SetParticles(APart1,APart2:TAdParticle;AImg:TAdImage);
   end;
 
   TBat = class (TImageSprite)
@@ -72,30 +67,37 @@ implementation
 {$R *.dfm}
 
 procedure TMainDlg.CreateLevel;
-var ax,ay:integer;
+var
+  ax,ay:integer;
+  c, w: integer;
 begin
-for ax := 0 to 7 do
-begin
-  for ay := 0 to 7 do
+  c := ClientWidth div AdImgLst.Find('bricks').Width; 
+  w := AdImgLst.Find('bricks').Width;
+  w := round(w * (ClientWidth / ((c) * w)));
+  for ax := 0 to c - 1 do
   begin
-    with TBrickSprite.Create(AdSpriteEngine) do
+    for ay := 0 to 7 do
     begin
-      Image := AdImgLst.Find('bricks');
-      x := ax * 75;
-      y := ay * 20;
-      case random(3) of
-        0 :  Color := RGB(255,128,128);
-        1 :  Color := RGB(128,150,255);
-        2 :  Color := RGB(128,255,150);
+      with TBrickSprite.Create(AdSpriteEngine) do
+      begin
+        Image := AdImgLst.Find('bricks');
+        Width := w;
+        x := ax * w;
+        y := ay * 20;
+        case random(5) of
+          0 :  Color := RGB(255,128,128);
+          1 :  Color := RGB(128,128,255);
+          2 :  Color := RGB(128,255,128);
+          3 :  Color := RGB(255,200,128);
+          4 :  Color := RGB(128,200,255);
+        end;
       end;
     end;
   end;
 end;
-end;
 
 procedure TMainDlg.FormCreate(Sender: TObject);
 var
-  part1,part2:TAdParticle;
   bmp:TBitmap;
   adbmp:TAdBitmap;
   AdSetupDlg:TAdSetup;
@@ -104,14 +106,13 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
-  AdSetupDlg.Sections := AdSetupDlg.Sections - [dlgResolution];
+  AdSetupDlg.Sections := AdSetupDlg.Sections;
 
   if AdSetupDlg.Execute then
   begin
+    Cursor := crNone;
     if AdDraw.Initialize then
     begin
       AdImgLst := TAdImageList.Create(AdDraw);
@@ -138,7 +139,7 @@ begin
       adbmp.AssignAlphaChannel(bmp);
       with AdImgLst.Add('star') do
       begin
-        Texture.Texture.LoadFromBitmap(adbmp, AdDraw.GetTextureParams(32));
+        Texture.Texture.LoadFromBitmap(adbmp, ad32Bit);
       end;
       adbmp.Free;
       bmp.Free;
@@ -151,21 +152,13 @@ begin
       Randomize;
       CreateLevel;
 
-      part1 := TAdParticle.Create(nil);
-      part1.LoadFromFile(path+'bg.apf');
-
-      part2 := TAdParticle.Create(nil);
-      part2.LoadFromFile(path+'explode.apf');
 
       with TBall.Create(AdSpriteEngine) do
       begin
         Image := AdImglst.Find('ball');
         X := 294;
         Y := 295;
-        SetParticles(part1,part2,AdImgLst.Find('star'));
       end;
-      part1.Free;
-      part2.Free;
 
       Bat := TBat.Create(AdSpriteEngine);
       with Bat do
@@ -179,7 +172,7 @@ begin
 
       Application.OnIdle := Idle;
 
-      CamPos := AdVector3(ClientWidth / 2,ClientHeight /2, -(ClientHeight * 1.2));
+      CamPos := AdVector3(ClientWidth / 2,ClientHeight / 2, -(ClientHeight * 1.3));
       VX := 100;
       VY := 100;
       VZ := 20;
@@ -243,19 +236,20 @@ begin
     VY := -VY;
   end;
 
-  if (CamPos.z < -1000) then
+  if (CamPos.z < - ClientHeight * 1.7) then
   begin
-    CamPos.z := -1000;
+    CamPos.z := -ClientHeight * 1.7;
     VZ := -VZ;
   end;
-  if (CamPos.z > -720) then
+  if (CamPos.z > -ClientHeight * 1.2) then
   begin
-    CamPos.z := -720;
+    CamPos.z := -ClientHeight * 1.2;
     VZ := -VZ;
   end;
 
   AdDraw.AdAppl.Setup3DScene(ClientWidth,ClientHeight,
-      CamPos,AdVector3(ClientWidth / 2,ClientHeight / 2,0),AdVector3(0,-1,0));
+      CamPos, AdVector3(ClientWidth / 2,ClientHeight / 2, 0), AdVector3(0,-1,0),
+      -100, 100);
 
   AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
   AdSpriteEngine.Draw;
@@ -268,9 +262,7 @@ begin
 
   with AdDraw.Canvas do
   begin
-    DrawIn2D := true;
     TextOut(2,2,'FPS: '+inttostr(AdPerCounter.FPS));
-    DrawIn2D := false;
     Brush.Style := abClear;
     Pen.Color := Ad_ARGB(255,255,255,255);
     Rectangle(AdRect(0,0,ClientWidth,ClientHeight));
@@ -322,17 +314,10 @@ begin
   YDir := 1;
   Speed := 150;
   Color := RGB(150,150,255);
-  FPartSprite := TParticleSprite.Create(Engine);
-  FPartSprite.EmissionCount := 20;
-  FPartSprite.Z := -1;
-  FPart1 := TAdParticle.Create(nil);
-  FPart2 := TAdParticle.Create(nil);
 end;
 
 destructor TBall.Destroy;
 begin
-  FPart1.Free;
-  FPart2.Free;
   inherited;
 end;
 
@@ -345,15 +330,6 @@ begin
       Die;
       self.Y := Y + Height;
       Speed := Speed + 5;
-    end;
-    with TParticleSprite.Create(Engine) do
-    begin
-      X := Sprite.X + Sprite.Width / 2;
-      Y := Sprite.Y + Sprite.Height / 2;
-      Z := 1;
-      PartSys.DefaultParticle.Assign(FPart2);
-      Image := FImg;
-      Emit(100);
     end;
     ChangeDir(true);
   end;
@@ -399,18 +375,6 @@ begin
     ChangeDir(true);
     Y := 0;
   end;
-
-  FPartSprite.EmissionX := X+Width/2;
-  FPartSprite.EmissionY := Y+Height/2;
-end;
-
-procedure TBall.SetParticles(APart1, APart2: TAdParticle;AImg:TAdImage);
-begin
-  FPart1.Assign(APart1);
-  FPart2.Assign(APart2);
-  FImg := AImg;
-  FPartSprite.Image := AImg;
-  FPartSprite.PartSys.DefaultParticle.Assign(APart1);
 end;
 
 { TBar }
@@ -441,4 +405,4 @@ begin
   FDestX := round(AX-Width / 2);
 end;
 
-end.                                     
+end.

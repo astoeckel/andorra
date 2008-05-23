@@ -23,23 +23,9 @@ unit AdWindowFramework;
 interface
 
 uses
-  AdPersistent, AdEvents, AdContainers;
+  AdTypes, AdPersistent, AdEvents, AdContainers;
 
 type
-  {Defines how the window is displayed.}
-  TAdWindowDisplayMode = (
-    dmWindowed,{< The window is displayed in the window mode.}
-    dmScreenRes,{< The window is resized to the current screen resolution.}
-    dmFullscreen{< The screen resolution will be changed and the window is displayed int the fullscreen mode.});
-
-  {Defines the properties of the window}
-  TAdDisplayProperties = record
-    Width : integer;{< The width of the window.}
-    Height : integer;{< The height of the window.}
-    Mode : TAdWindowDisplayMode;{< The displaymode. @seealso(TAdWindowDisplayMode)}
-    BitDepth : Byte;{< The window bit depth. May be 16- or 32-Bit.}
-  end;
-
   {A simple class which contains all events that may be caught by a TAdWindowFramework.}
   TAdEventHandler = class(TAdPersistent)
     private
@@ -158,7 +144,7 @@ type
 
 {Returns a TAdDisplayProperties record containing the specified parameters. @seealso(TAdDisplayProperties)}
 function AdDisplayProperties(AWidth, AHeight:integer; AMode:TAdWindowDisplayMode;
-  ABitDepth:byte):TAdDisplayProperties;
+  ABitDepth: TAdBitDepth):TAdDisplayProperties;
 
 {Procedure which registers a window framework class so that it may be automaticly used by TAdDraw lateron.}
 procedure RegisterWindowFramework(AWndFrmWrk:TAdWindowFrameworkClass);
@@ -181,7 +167,7 @@ begin
 end;
 
 function AdDisplayProperties(AWidth, AHeight:integer; AMode:TAdWindowDisplayMode;
-  ABitDepth:byte):TAdDisplayProperties;
+  ABitDepth: TAdBitDepth): TAdDisplayProperties;
 begin
   with result do
   begin
