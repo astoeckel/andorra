@@ -21,7 +21,7 @@ type
   TDXApplication = class(TAd2DApplication)
     private
       FLastTexture:TAd2DTexture;
-      FCurrentLights:integer;
+      FLastSource:Cardinal;
       FPresent:TD3DPresentParameters;
       FOwnRenderTarget: IDirect3dSurface9;
       FSetToOwnRenderTarget: boolean;
@@ -74,8 +74,6 @@ type
       procedure EndScene;override;
       procedure Flip;override;
 
-      procedure SetMaterialSource(ASource: TAd2dMaterialSource);override;
-      procedure SetMaterial(AMaterial: TAd2dMaterial);override;
       procedure SetLight(ALight: Cardinal; AData: PAd2dLight);override;
   end;
 
@@ -84,7 +82,10 @@ type
       FVertexBuffer:IDirect3DVertexBuffer9;
       FIndexBuffer:IDirect3DIndexBuffer9;
       FParent:TDXApplication;
+      FMaterial: TD3DMaterial9;
+      FUsesMaterial: boolean;
       procedure FreeBuffers;
+      procedure PushMaterial;
     protected
       procedure SetVertices(AVertices:TAdVertexArray);override;
       procedure SetIndices(AIndex:TAdIndexArray);override;
@@ -95,6 +96,7 @@ type
       destructor Destroy;override;
       procedure Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);override;
       procedure Update;override;
+      procedure SetMaterial(AMaterial: PAd2dMaterial);override;
   end;
 
   TDXBitmapTexture = class(TAd2DBitmapTexture)
@@ -165,6 +167,7 @@ begin
   FVSync := false;
   FMipmaps := false;
   FTextures := true;
+  FLastSource := High(Cardinal);
 end;
 
 destructor TDXApplication.Destroy;
@@ -202,11 +205,9 @@ var
   afmt : D3DFORMAT;
   D3DCaps9 : TD3DCaps9;
   hw : boolean;
-  vp,i : integer;
+  vp : integer;
   hr : HRESULT;
   level:Integer;
-
-  l:Td3dlight9;
 begin
   result := false;
   if Direct3D9 <> nil then
@@ -311,10 +312,6 @@ begin
     begin
       //WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
       exit;
-    end
-    else
-    begin
-      result := true;
     end;
 
     FWidth := FWnd.ClientWidth;
@@ -329,9 +326,6 @@ begin
 
 
     Log('AdDirectX93D', lsInfo, PChar(Inttostr(Direct3DDevice9.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.'));
-
-    //Setup Material
-    SetMaterialSource(amVertices);
 
     //Enable Texture alphablending
     Direct3DDevice9.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
@@ -374,23 +368,14 @@ begin
 
 end;
 
-procedure TDXApplication.SetMaterial(AMaterial: TAd2dMaterial);
+function ConvertColor(ACol: TAndorraColor): TD3DCOLORVALUE;
 begin
-  inherited;
-
-end;
-
-procedure TDXApplication.SetMaterialSource(ASource: TAd2dMaterialSource);
-begin
-  case ASource of
-    amVertices:
-    begin
-      Direct3DDevice9.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-      Direct3DDevice9.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
-      Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_COLOR1);
-      
-    end;
-    amMaterial: ;
+  with result do
+  begin
+    r := ACol.r / 255;
+    g := ACol.g / 255;
+    b := ACol.b / 255;
+    a := ACol.a / 255;
   end;
 end;
 
@@ -411,7 +396,7 @@ begin
   Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, LongWord(aoZBuffer in AOptions));
   
   //Light
-  Direct3DDevice9.SetRenderState(D3DRS_LIGHTING, LongWord(aoTextures in AOptions));
+  Direct3DDevice9.SetRenderState(D3DRS_LIGHTING, LongWord(aoLight in AOptions));
 
   //Culling
   if not (aoCulling in AOptions) then
@@ -686,6 +671,8 @@ begin
     with FParent do
     begin
 
+      PushMaterial;
+
       //Set Blendmode
       if ABlendMode = bmAlpha then
       begin
@@ -703,11 +690,15 @@ begin
         Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
       end;
 
+      //Set texture filter
       if FTexture <> nil then
         TDXBitmapTexture(FTexture).SetFilter;
 
+      //Apply transform matrices
       Direct3DDevice9.SetTransform(D3DTS_WORLDMATRIX(0), TD3DMatrix(FMatrix));
       Direct3DDevice9.SetTransform(D3DTS_TEXTURE0, TD3DMatrix(FTextureMatrix));
+
+      //Set texture
       if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
       begin
         if (FTexture <> FLastTexture) then
@@ -724,9 +715,12 @@ begin
         Direct3DDevice9.SetTexture(0,nil);
         FLastTexture := nil;
       end;
+
+      //Set vertex stream soure
       Direct3DDevice9.SetStreamSource(0, FVertexBuffer, 0, sizeof(TD3DLVertex));
       Direct3DDevice9.SetFVF(D3DFVF_TD3DLVertex);
 
+      //Set draw mode
       case ADrawMode of
         adTriangleStrips: Mode := D3DPT_TRIANGLESTRIP;
         adTriangles: Mode := D3DPT_TRIANGLELIST;
@@ -739,6 +733,7 @@ begin
         Mode := D3DPT_TRIANGLESTRIP;
       end;
 
+      //Enable pointsprite settings
       if ADrawMode = adPointSprites then
       begin
         Direct3DDevice9.SetRenderState( D3DRS_POINTSPRITEENABLE, 1);
@@ -750,6 +745,8 @@ begin
         end;
       end;
 
+
+      //Render primitives
       if FIndices <> nil then
       begin
         Direct3DDevice9.SetIndices(FIndexBuffer);
@@ -760,6 +757,7 @@ begin
         Direct3DDevice9.DrawPrimitive(Mode, 0, FPrimitiveCount);
       end;
 
+      //Disable pointsprite settings
       if ADrawMode = adPointSprites then
       begin
         Direct3DDevice9.SetRenderState( D3DRS_POINTSPRITEENABLE, 0);
@@ -780,12 +778,61 @@ begin
   result := FVertexBuffer <> nil;
 end;
 
+procedure TDXMesh.PushMaterial;
+var
+  src: Cardinal;
+begin
+  if FUsesMaterial then
+  begin
+    src := D3DMCS_MATERIAL;
+
+    //Push material settings
+    FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARENABLE,
+      Cardinal(FMaterial.Power > 0.01));
+    FParent.Direct3DDevice9.SetMaterial(FMaterial);
+  end else
+  begin
+    src := D3DMCS_COLOR1;
+  end;
+
+  //Set material source
+  if FParent.FLastSource <> src then
+  begin
+    FParent.Direct3DDevice9.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, src);
+    FParent.Direct3DDevice9.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, src);
+    FParent.Direct3DDevice9.SetRenderState(D3DRS_EMISSIVEMATERIALSOURCE, src);
+    FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, src);
+
+    FParent.FLastSource := src;
+
+    //Disable specular lightning if we use don't use a material
+    if not FUsesMaterial then
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARENABLE, 0);
+  end;
+end;
+
 procedure TDXMesh.SetIndices(AIndex: TAdIndexArray);
 begin
   if FIndices <> nil then
     Finalize(FIndices);
 
   FIndices := Copy(AIndex);
+end;
+
+procedure TDXMesh.SetMaterial(AMaterial: PAd2dMaterial);
+begin
+  if AMaterial <> nil then
+  begin
+    //Set material data
+    FMaterial.Diffuse := ConvertColor(AMaterial^.Diffuse);
+    FMaterial.Ambient := ConvertColor(AMaterial^.Ambient);
+    FMaterial.Specular := ConvertColor(AMaterial^.Specular);
+    FMaterial.Emissive := ConvertColor(AMaterial^.Emissive);
+    FMaterial.Power := AMaterial.Power;
+
+    FUsesMaterial := true;
+  end else
+    FUsesMaterial := false;
 end;
 
 procedure TDXMesh.SetTexture(ATexture: TAd2DTexture);

@@ -79,19 +79,6 @@ begin
   prop.PropViewName := 'Antialias';
   AddPropertyProc(ASender, prop);
 
-  //
-
-  prop.PropGroup := 'Test';
-  prop.PropType := ptBoolean;
-
-  prop.PropViewName := 'Dies ist ein Test';
-  prop.PropName := 'test';
-  AddPropertyProc(ASender, prop);
-
-  prop.PropViewName := 'Dies ist noch ein Test';
-  prop.PropName := 'test2';
-  AddPropertyProc(ASender, prop);
-
   //Write capabilities
   prop.PropGroup := '';
   prop.PropViewName := '';

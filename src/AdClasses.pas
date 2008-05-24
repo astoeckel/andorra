@@ -50,11 +50,6 @@ type
   end;
   PAd2dResolution = ^TAd2dResolution;
 
-  TAd2dMaterialSource = (
-    amVertices,
-    amMaterial
-  );
-
   TAd2dMaterial = record
     Diffuse: TAndorraColor;
     Ambient: TAndorraColor;
@@ -62,6 +57,7 @@ type
     Emissive: TAndorraColor;
     Power: single;
   end;
+  PAd2dMaterial = ^TAd2dMaterial;
 
   TAd2dLightType = (
     altDirectional,
@@ -332,12 +328,6 @@ type
        application.}
       property LogCallback: TAd2dLogCallback read FLogCallback write SetLogCallback;
 
-      {Sets the material source. Either the vertex color data or the material
-       color data is used.}
-      procedure SetMaterialSource(ASource: TAd2dMaterialSource);virtual;abstract;
-      {Sets the material color data. Don't forget to set the active material
-       as source.}
-      procedure SetMaterial(AMaterial: TAd2dMaterial);virtual;abstract;
       {Sets the the properties for a light. If "AData" is nil, the light will
        be disabled.}
       procedure SetLight(ALight: Cardinal; AData: PAd2dLight);virtual;abstract;
@@ -398,6 +388,9 @@ type
       procedure Update;virtual;abstract;
       {Draws the mesh.}
       procedure Draw(ABlendMode:TAd2DBlendMode;ADrawMode:TAd2DDrawMode);virtual;abstract;
+      {Sets the material data. If AMaterial is nil, the vertex colors are used as
+       material source.}
+      procedure SetMaterial(AMaterial: PAd2dMaterial);virtual;abstract;
       {Returnes weather data is loaded.}
       property Loaded:boolean read GetLoaded;
       {The vertices a mesh has.}
