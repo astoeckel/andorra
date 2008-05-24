@@ -164,8 +164,6 @@ type
    actually be cleared. @seealso(TAd2dSurfaceLayer)}
   TAd2dSurfaceLayers = set of TAd2dSurfaceLayer;
   
-  {An abstract class which represents a light in Andorra's engine. }
-  TAd2DLight = class;
   {A class which represents a texture in Andorra's engine. }
   TAd2DTexture = class;
   {A class which represents a render target texture}
@@ -253,8 +251,6 @@ type
       FViewPort:TAdRect;
       procedure SetViewPort(AValue:TAdRect);virtual;
     public
-      {Creates and returns a TAd2DLight}
-      function CreateLight:TAd2DLight;virtual;abstract;
       {Creates and returns a TAd2DBitmapTexture}
       function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
       {Creates and returns a TAd2dRenderTargetTexture}
@@ -336,9 +332,15 @@ type
        application.}
       property LogCallback: TAd2dLogCallback read FLogCallback write SetLogCallback;
 
-      {procedure SetMaterialSource(ASource: TAd2dMaterialSource);
-      procedure SetMaterial(AMaterial: TAd2dMaterial);
-      procedure SetLight(ALight: Cardinal; AEnabled: boolean; AData: PAd2dLight);}
+      {Sets the material source. Either the vertex color data or the material
+       color data is used.}
+      procedure SetMaterialSource(ASource: TAd2dMaterialSource);virtual;abstract;
+      {Sets the material color data. Don't forget to set the active material
+       as source.}
+      procedure SetMaterial(AMaterial: TAd2dMaterial);virtual;abstract;
+      {Sets the the properties for a light. If "AData" is nil, the light will
+       be disabled.}
+      procedure SetLight(ALight: Cardinal; AData: PAd2dLight);virtual;abstract;
   end;
 
   {An class which represents a texture in Andorra's engine. }
