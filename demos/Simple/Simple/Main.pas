@@ -41,7 +41,7 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdDraw.Options := AdDraw.Options;
+  AdDraw.Options := AdDraw.Options + [aoLight];
 
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
@@ -86,6 +86,8 @@ begin
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+var
+  mat: TAd2dMaterial;
 begin
   if AdDraw.CanDraw then
   begin
@@ -94,6 +96,13 @@ begin
     AdDraw.ClearSurface(clBlack);
 
     AdDraw.BeginScene;
+
+    mat.Ambient := Ad_ARGB(255, 255, 255, 0);
+    mat.Specular := Ad_ARGB(255, 255, 255, 0);
+    mat.Diffuse := Ad_ARGB(255, 255, 255, 0);
+    mat.Emissive := Ad_ARGB(255, 255, 255, 0);
+    mat.Power := 0;
+    AdImage.AdMesh.SetMaterial(@mat);
 
     AdImage.StretchDraw(AdDraw, AdRect(0, 0, mx, my), 0);
 
