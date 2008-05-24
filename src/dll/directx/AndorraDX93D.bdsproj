@@ -150,7 +150,7 @@
 			<VersionInfo Name="MajorVer">0</VersionInfo>
 			<VersionInfo Name="MinorVer">1</VersionInfo>
 			<VersionInfo Name="Release">5</VersionInfo>
-			<VersionInfo Name="Build">34</VersionInfo>
+			<VersionInfo Name="Build">35</VersionInfo>
 			<VersionInfo Name="Debug">False</VersionInfo>
 			<VersionInfo Name="PreRelease">False</VersionInfo>
 			<VersionInfo Name="Special">False</VersionInfo>
@@ -162,7 +162,7 @@
 		<VersionInfoKeys>
 			<VersionInfoKeys Name="CompanyName">FAll Entertainment</VersionInfoKeys>
 			<VersionInfoKeys Name="FileDescription">The Andorra 2D DirectX Plugin</VersionInfoKeys>
-			<VersionInfoKeys Name="FileVersion">0.1.5.34</VersionInfoKeys>
+			<VersionInfoKeys Name="FileVersion">0.1.5.35</VersionInfoKeys>
 			<VersionInfoKeys Name="InternalName"></VersionInfoKeys>
 			<VersionInfoKeys Name="LegalCopyright">(c) by Andreas Stöckel</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys>
@@ -171,17 +171,6 @@
 			<VersionInfoKeys Name="ProductVersion">0.1.5.0</VersionInfoKeys>
 			<VersionInfoKeys Name="Comments"></VersionInfoKeys>
 		</VersionInfoKeys>  
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     <Excluded_Packages>
       <Excluded_Packages Name="c:\programme\borland\bds\4.0\Bin\dclib100.bpl">Borland InterBase Express Components</Excluded_Packages>
