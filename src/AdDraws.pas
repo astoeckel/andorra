@@ -219,11 +219,15 @@ type
 
       FActivated: boolean;
 
+      FAmbientColor: TAndorraColor;
+
       procedure UpdateMatrix;
+      procedure UpdateAmbientColor;
 
       procedure SetViewPort(AValue:TAdRect);
       procedure SetViewMatrix(AValue:TAdMatrix);
       procedure SetProjectionMatrix(AValue:TAdMatrix);
+      procedure SetAmbientColor(AValue:TAndorraColor);
     public
       {Creates an instance of TAdScene and links itself to the TAdDraw object.}
       constructor Create(ADraw: TAdDraw);
@@ -264,6 +268,11 @@ type
        be automatically overriden by Setup2DScene. So remember to reset the
        viewport after calling this method.}
       property Viewport:TAdRect read FViewPort write SetViewPort;
+
+      {The ambient color of the scene. The ambient color is the base color all
+       lights are added to. To use an ambient color, lights have to be enabled.
+       @seealso(TAdRenderingSurface.Options)}
+      property AmbientColor: TAndorraColor read FAmbientColor write SetAmbientColor;
 
       {Returns the width of the scene, that specifies the width of the relative
        coordinate system.}
@@ -970,7 +979,7 @@ begin
           FScene.Setup2DScene(FWnd.ClientWidth, FWnd.ClientHeight); 
 
         end else
-          FreeAndNil(FAdAppl);
+          FreeAndNil(FAdAppl);  
           
       end else
         FreeAndNil(FAdAppl);
@@ -2246,6 +2255,7 @@ begin
 
   FNearZ := -100;
   FFarZ := 100;
+  FAmbientColor := Ad_ARGB(255, 255, 255, 255);
 end;
 
 destructor TAdScene.Destroy;
@@ -2274,6 +2284,7 @@ procedure TAdScene.SetViewMatrix(AValue: TAdMatrix);
 begin
   FViewMatrix := AValue;
   UpdateMatrix;
+  UpdateAmbientColor;
 end;
 
 procedure TAdScene.SetViewPort(AValue: TAdRect);
@@ -2283,10 +2294,22 @@ begin
     FDraw.AdAppl.Viewport := AValue;
 end;
 
+procedure TAdScene.UpdateAmbientColor;
+begin
+  if FActivated and FDraw.CanDraw then
+    FDraw.AdAppl.AmbientColor := FAmbientColor;
+end;
+
 procedure TAdScene.UpdateMatrix;
 begin
   if FActivated and FDraw.CanDraw then
     FDraw.AdAppl.SetupManualScene(FViewMatrix, FProjectionMatrix);
+end;
+
+procedure TAdScene.SetAmbientColor(AValue: TAndorraColor);
+begin
+  FAmbientColor := AValue;
+  UpdateAmbientColor;
 end;
 
 procedure TAdScene.Setup2DScene(AWidth, AHeight: integer);

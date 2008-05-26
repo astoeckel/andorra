@@ -22,16 +22,24 @@ library AndorraOGL;
 {$ENDIF}
 
 uses
+  SysUtils,
   AdClasses,
+  AdShaderClasses,
   OGLMain in 'OGLMain.pas';
 
+{$IFNDEF FPC}
 {$E .dll}
-
 {$R *.res}
+{$ENDIF}
 
 function CreateApplication:TAd2DApplication;stdcall;
 begin
   result := TOGLApplication.Create;
+end;
+
+function CreateShaderSystem:TAd2dShaderSystem;stdcall;
+begin
+  result := nil;
 end;
 
 procedure Andorra2DLibraryInformation(var libinfo:TAd2DLibInfo);stdcall;
@@ -39,32 +47,33 @@ begin
   with libinfo do
   begin
     LibTitle := 'Andorra OpenGL Plugin';
-    LibAuthor := '(c) by Andreas Stöckel 2007';
-    LibDescription := 'This plugin wraps around the OpenGL graphicssystem.';
+    LibAuthor := '(c) by Andreas Stöckel 2008';
+    LibDescription := 'This plugin wraps around OpenGL.';
     LibVersion := LibraryVersion;
     LibImage := 'ogl.png';
   end;
 end;
 
-procedure Andorra2DLibraryAbilities(var libabilities:TAd2DLibAbilities);stdcall;
+procedure Andorra2DApplicationProperties(const ASender: TObject;
+  const AddPropertyProc: TAd2dPropertyProc);stdcall;
+var
+  prop: TAd2dProperty;
 begin
-  with libabilities do
-  begin
-    LibFullscreen := false;
-    LibWindowed := true;
-    LibHardware := true;
-    LibSoftware := false;
-    LibAntialias := false;
-    LibLights := true;
-    Lib3D := true;
-    LibVSync := false;
-  end;
+  //Write capabilities
+  prop.PropGroup := '';
+  prop.PropViewName := '';
+  prop.PropType := ptReadOnly;
+
+  prop.PropName := 'shaders';
+  AddPropertyProc(ASender, prop);
 end;
 
 exports
   CreateApplication,
+  CreateShaderSystem,
   Andorra2DLibraryInformation,
-  Andorra2DLibraryAbilities;
+  Andorra2DApplicationProperties;
+
 
 begin
 end.

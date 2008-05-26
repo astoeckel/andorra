@@ -1,11 +1,17 @@
 unit AdSetupDlg;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
+  {$IFDEF FPC}Interfaces,{$ENDIF}
   SysUtils, Forms, Classes, Controls, StdCtrls, ExtCtrls, Messages,
   IniFiles,
-  {$IFNDEF FPC}XPMan, Windows, {$ENDIF}
+  {$IFNDEF FPC}XPMan, {$ELSE}lMessages, {$ENDIF}
+  {$IFDEF WIN32}Windows,{$ENDIF}
   AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages;
 
 const
@@ -211,7 +217,12 @@ begin
   //Free old instance (if existing) first
   FreeForm;
 
+  {$IFDEF FPC}
+  Application.Initialize;
+  FForm := TAdSetupForm.Create(nil);
+  {$ELSE}
   FForm := TAdSetupForm.CreateNew(nil);
+  {$ENDIF}
   FForm.OnRebuildControls := DoRebuildControls;
 
   //Set form properties
@@ -252,6 +263,7 @@ begin
   FTopPanel.Parent := FForm;
   FTopPanel.BevelOuter := bvNone;
   FTopPanel.Align := alTop;
+  FTopPanel.Width := FForm.Width;
   FTopPanel.Height := 0;
 
   if FileExists(FImage) then
@@ -265,7 +277,6 @@ begin
     FHeaderImage := TImage.Create(FImageFrame);
     FHeaderImage.Parent := FImageFrame;
     FHeaderImage.Align := alClient;
-    //FHeaderImage.Proportional := true;
     FHeaderImage.Picture.LoadFromFile(FImage);
 
     FImageFrame.Width := FHeaderImage.Picture.Width + FImageFrame.BevelWidth * 2;
@@ -282,6 +293,7 @@ begin
   FBottomPanel.BevelOuter := bvNone;
   FBottomPanel.Align := alBottom;
   FBottomPanel.Height := 35;
+  FBottomPanel.Width := FForm.Width;
   FBottomPanel.BorderWidth := 5;
 
   //Create center panel
@@ -441,17 +453,19 @@ procedure TAdSetup.GetResolutions;
 {$IFDEF WIN32}
 var
   res:boolean;
-  mode:TDevMode;
+  mode:TDeviceMode;
   i:integer;
   s:string;
+  {$IFNDEF FPC}
   mon: TMonitor;
+  {$ENDIF}
 {$ENDIF}
 begin
   FResolutionCombobox.Items.Clear;
   {$IFDEF WIN32}
     i := 0;
     repeat
-      mode.dmSize := SizeOf(TDevMode);
+      mode.dmSize := SizeOf(TDeviceMode);
       res := EnumDisplaySettings(nil,i,mode);
       if res then
       begin
@@ -471,12 +485,14 @@ begin
     FResolutionCombobox.Items.Add('1280x1024x32');
   {$ENDIF}
 
+  {$IFNDEF FPC}
   mon := Screen.MonitorFromWindow(FForm.Handle);
   s := IntToStr(mon.Width) + 'x' + IntToStr(mon.Height) + 'x32';
   if FResolutionCombobox.Items.IndexOf(s) > -1 then
    FResolutionCombobox.ItemIndex := FResolutionCombobox.Items.IndexOf(s)
   else
     FResolutionCombobox.ItemIndex := FResolutionCombobox.Items.Count - 1;
+  {$ENDIF}
 end;
 
 procedure TAdSetup.CreateResolutionControls;
@@ -652,7 +668,6 @@ begin
       FFullscreenCheckBox.Checked :=
         FIni.ReadBool('ad2dsetup', 'fullscreen', false);
 
-
       with FDraw.Display do
         DisplayMode := dmWindowed;
 
@@ -668,11 +683,17 @@ begin
     begin
       if not FUpdating then
       begin
-        ind := FPluginList.IndexOf(FIni.ReadString('ad2dsetup', 'plugin', ''));
+        ind := -1;
+        for i := 0 to FPluginList.Count - 1 do
+        begin
+          if FPluginList.ValueFromIndex[i] = FIni.ReadString('ad2dsetup', 'plugin', '') then
+          begin
+            ind := i; break;
+          end;
+        end;
         if ind <> FPluginIndex then
         begin
-          FPluginIndex := ind;
-          PluginChange(nil);
+          FPluginCombobox.ItemIndex := ind;
         end;
       end;
     end;
@@ -868,6 +889,7 @@ begin
   FGroupbox := TGroupBox.Create(AParent);
   FGroupbox.Parent := AParent;
   FGroupbox.Align := alTop;
+  FGroupbox.Width := AParent.ClientWidth;
   FGroupbox.Caption := ACaption;
   FGroupbox.Top := AParent.ClientHeight + 1000;
   FGroupbox.Height := 16;
@@ -876,6 +898,7 @@ begin
   FSpacerPanel := TPanel.Create(FGroupbox);
   FSpacerPanel.Parent := FGroupbox;
   FSpacerPanel.Align := alClient;
+  FSpacerPanel.Width := FGroupbox.ClientWidth;
   FSpacerPanel.BevelOuter := bvNone;
   FSpacerPanel.BorderWidth := 5;
 
@@ -913,7 +936,11 @@ begin
   AControl.Parent := FSpacerPanel;
   AControl.Left := 10;
   AControl.Top := h;
+  {$IFDEF FPC}
+  AControl.Width := FSpacerPanel.ClientWidth - 30;
+  {$ELSE}
   AControl.Width := FSpacerPanel.ClientWidth - 20;
+  {$ENDIF}
 
   FGroupbox.Height := h + AControl.Height + 30;
   FControls.Add(AControl);

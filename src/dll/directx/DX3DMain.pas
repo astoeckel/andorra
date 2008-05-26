@@ -35,6 +35,7 @@ type
       FMipmaps: boolean;
     protected
       procedure SetViewPort(AValue:TAdRect);override;
+      procedure SetAmbientColor(AValue: TAndorraColor);override;
       procedure ResetRenderTarget;
     public
       Direct3D9:IDirect3D9;
@@ -47,6 +48,7 @@ type
       function CreateRenderTargetTexture:TAd2dRenderTargetTexture;override;
       function CreateMesh:TAd2DMesh;override;
       function CreatePixelCounter:TAd2dPixelCounter;override;
+      function CreateLight: TAd2dLight;override;
       function Initialize(AWnd:TAdWindowFramework):boolean;override;
       procedure Finalize;override;
 
@@ -56,8 +58,7 @@ type
       procedure SetStencilOptions(AReference, AMask: Word;
         AFunction: TAd2dStencilFunction);override;
       procedure SetStencilEvent(AEvent: TAd2dStencilEvent;
-        AOperation: TAd2dStencilOperation);override;
-
+        AOperation: TAd2dStencilOperation);override;    
       
       procedure Setup2DScene(AWidth, AHeight:integer;
         ANearZ, AFarZ: double);override;
@@ -73,8 +74,6 @@ type
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
-
-      procedure SetLight(ALight: Cardinal; AData: PAd2dLight);override;
   end;
 
   TDXMesh = class(TAd2DMesh)
@@ -140,6 +139,20 @@ type
       function StopCount: cardinal;override;
   end;
 
+  TDXLight = class(TAd2dLight)
+    private
+      FParent: TDXApplication;
+      FLightNr: Cardinal;
+      FLight: TD3DLight9;
+    protected
+      procedure SetData(AValue: TAd2dLightData);override;
+    public
+      constructor Create(AParent: TDXApplication);
+      procedure EnableLight(ALight: Cardinal);override;
+      procedure DisableLight;override;
+  end;
+
+
 //Our Vertex and the definition of the flexible vertex format (FVF)
 type TD3DLVertex = record
   position: TD3DXVector3;
@@ -152,6 +165,17 @@ const
   D3DFVF_TD3DLVertex = D3DFVF_XYZ or D3DFVF_NORMAL or D3DFVF_DIFFUSE or D3DFVF_TEX1;
 
 implementation
+
+function ConvertColor(ACol: TAndorraColor): TD3DCOLORVALUE;
+begin
+  with result do
+  begin
+    r := ACol.r / 255;
+    g := ACol.g / 255;
+    b := ACol.b / 255;
+    a := ACol.a / 255;
+  end;
+end;
 
 { TDXApplication }
 
@@ -195,6 +219,11 @@ end;
 function TDXApplication.CreateBitmapTexture: TAd2DBitmapTexture;
 begin
   result := TDXBitmapTexture.Create(self);
+end;
+
+function TDXApplication.CreateLight: TAd2dLight;
+begin
+  result := TDXLight.Create(self);
 end;
 
 function TDXApplication.Initialize(AWnd: TAdWindowFramework):boolean;
@@ -330,6 +359,10 @@ begin
     //Enable Texture alphablending
     Direct3DDevice9.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 
+    //Make presets for the "Alpha Mask" option
+    Direct3DDevice9.SetRenderState(D3DRS_ALPHAREF, 0);
+    Direct3DDevice9.SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+
     //Enable texture transformation
     Direct3DDevice9.SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 
@@ -362,21 +395,11 @@ begin
   //WriteLog(ltInfo,'Finalization Complete.');
 end;
 
-procedure TDXApplication.SetLight(ALight: Cardinal; AData: PAd2dLight);
+procedure TDXApplication.SetAmbientColor(AValue: TAndorraColor);
 begin
   inherited;
-
-end;
-
-function ConvertColor(ACol: TAndorraColor): TD3DCOLORVALUE;
-begin
-  with result do
-  begin
-    r := ACol.r / 255;
-    g := ACol.g / 255;
-    b := ACol.b / 255;
-    a := ACol.a / 255;
-  end;
+  Direct3DDevice9.SetRenderState(D3DRS_AMBIENT,
+    D3DColor_ARGB(AValue.a,AValue.r,AValue.g,AValue.b));
 end;
 
 procedure TDXApplication.SetOptions(AOptions: TAd2dOptions);
@@ -385,12 +408,7 @@ begin
   Direct3DDevice9.SetRenderState(D3DRS_ALPHABLENDENABLE, LongWord(aoBlending in AOptions));
 
   //Alpha-Mask
-  if aoAlphaMask in AOptions then
-  begin
-    Direct3DDevice9.SetRenderState(D3DRS_ALPHATESTENABLE, 1);
-    Direct3DDevice9.SetRenderState(D3DRS_ALPHAREF, 0);
-    Direct3DDevice9.SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
-  end;
+  Direct3DDevice9.SetRenderState(D3DRS_ALPHATESTENABLE, LongWord(aoAlphaMask in AOptions));
 
   //Z-Buffer
   Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, LongWord(aoZBuffer in AOptions));
@@ -671,6 +689,7 @@ begin
     with FParent do
     begin
 
+      //Set material settings
       PushMaterial;
 
       //Set Blendmode
@@ -779,35 +798,45 @@ begin
 end;
 
 procedure TDXMesh.PushMaterial;
-var
-  src: Cardinal;
 begin
   if FUsesMaterial then
   begin
-    src := D3DMCS_MATERIAL;
-
     //Push material settings
     FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARENABLE,
       Cardinal(FMaterial.Power > 0.01));
     FParent.Direct3DDevice9.SetMaterial(FMaterial);
-  end else
-  begin
-    src := D3DMCS_COLOR1;
   end;
-
+  
   //Set material source
-  if FParent.FLastSource <> src then
+  if FParent.FLastSource <> Cardinal(FUsesMaterial) then
   begin
-    FParent.Direct3DDevice9.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, src);
-    FParent.Direct3DDevice9.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, src);
-    FParent.Direct3DDevice9.SetRenderState(D3DRS_EMISSIVEMATERIALSOURCE, src);
-    FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, src);
+    if FUsesMaterial then
+    begin
+      //Use the material as material source
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_MATERIAL);
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_EMISSIVEMATERIALSOURCE, D3DMCS_MATERIAL); 
+    end else
+    begin
+      //Use the diffuse color as material source
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_COLOR1);
+      FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARMATERIALSOURCE, D3DMCS_MATERIAL);
 
-    FParent.FLastSource := src;
-
-    //Disable specular lightning if we use don't use a material
-    if not FUsesMaterial then
+      //Disable specular lightning if we use don't use a material
       FParent.Direct3DDevice9.SetRenderState(D3DRS_SPECULARENABLE, 0);
+
+      //Reset the material settings to zero
+      FillChar(FMaterial, SizeOf(FMaterial), 0);
+
+      //Set the material settings
+      FParent.Direct3DDevice9.SetMaterial(FMaterial);
+    end;
+
+
+    FParent.FLastSource := Cardinal(FUsesMaterial);
   end;
 end;
 
@@ -1285,6 +1314,53 @@ begin
   Direct3DQuery.Issue(D3DISSUE_END);
 
   while Direct3DQuery.GetData(@result, SizeOf(DWORD), D3DGETDATA_FLUSH) = S_FALSE do;
+end;
+
+{ TDXLight }
+
+constructor TDXLight.Create(AParent: TDXApplication);
+begin
+  inherited Create;
+  FParent := AParent;
+end;
+
+procedure TDXLight.DisableLight;
+begin
+  FParent.Direct3DDevice9.LightEnable(FLightNr, false);
+end;
+
+procedure TDXLight.EnableLight(ALight: Cardinal);
+begin
+  FLightNr := ALight;
+  FParent.Direct3DDevice9.SetLight(ALight, FLight);
+  FParent.Direct3DDevice9.LightEnable(ALight, true);
+end;
+
+procedure TDXLight.SetData(AValue: TAd2dLightData);
+begin
+  //Clear FLight record
+  FillChar(FLight, SizeOf(FLight), 0);
+
+  //Set light type
+  case AValue.LightType of
+    altPoint: FLight._Type := D3DLIGHT_POINT;
+    altSpotlight: FLight._Type := D3DLIGHT_SPOT;
+    altDirectional: FLight._Type := D3DLIGHT_DIRECTIONAL;
+  end;
+
+  //Copy light settings
+  FLight.Diffuse := ConvertColor(AValue.Diffuse);
+  FLight.Specular := ConvertColor(AValue.Specular);
+  FLight.Ambient := ConvertColor(AValue.Ambient);
+  FLight.Position := PD3DXVector3(@AValue.Position)^;
+  FLight.Direction := PD3DXVector3(@AValue.Direction)^;
+  FLight.Range := AValue.Range;
+  FLight.Falloff := AValue.Falloff;
+  FLight.Attenuation0 := AValue.ConstantAttenuation;
+  FLight.Attenuation1 := AValue.LinearAttenuation;
+  FLight.Attenuation2 := AValue.QuadraticAttenuation;
+  FLight.Theta := AValue.Theta;
+  FLight.Phi := AValue.Phi;
 end;
 
 end.

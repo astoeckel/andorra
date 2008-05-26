@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.4 2008/04/19 10:06:31 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.5 2008/05/26 19:52:44 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -52,7 +52,7 @@ interface
 
 uses
   {$IFDEF Win32}Windows, {$ENDIF}
-  SysUtils, Classes, Variants, IniFiles;
+  SysUtils, Classes, Variants, IniFiles, Math;
 
 type
   {$IFDEF FPC}
@@ -1373,12 +1373,8 @@ begin
 end;
 
 function TAdSimpleXMLElem.GetFloatValue: Extended;
-var
-  Settings: TFormatSettings;
 begin
-  GetLocaleFormatSettings(1033, Settings);
-  if not TryStrToFloat(Value, Result, Settings) then
-    Result := 0.0;
+  result := StrToFloat(Value);
 end;
 
 function TAdSimpleXMLElem.GetIntValue: Int64;
@@ -1489,11 +1485,8 @@ end;
 
 function TAdSimpleXMLElems.Add(const Name: string;
   const Value: Extended): TAdSimpleXMLElemClassic;
-var
-  Settings: TFormatSettings; 
 begin
-  GetLocaleFormatSettings(1033, Settings);
-  Result := Add(Name, FloatToStr(Value, Settings));
+  Result := Add(Name, FloatToStr(Value));
 end;
 
 function TAdSimpleXMLElems.Add(const Name: string;
@@ -3397,7 +3390,7 @@ end;
 
 procedure TXMLVariant.Copy(var Dest: TVarData; const Source: TVarData;
   const Indirect: Boolean);
-begin
+begin          
   if Indirect and VarDataIsByRef(Source) then
     VarDataCopyNoInd(Dest, Source)
   else

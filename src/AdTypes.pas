@@ -57,8 +57,9 @@ type
   PRGBArray = ^TRGBArray;
 
   TAdBitDepth = (
-    ad32Bit = 32,
-    ad16Bit = 16);
+    ad16Bit = 16,
+    ad32Bit = 32
+  );
 
   {--- 3D-Data ---}
 

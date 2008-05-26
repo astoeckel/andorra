@@ -43,7 +43,7 @@ begin
   with libinfo do
   begin
     LibTitle := 'Andorra DirectX9 Plugin';
-    LibAuthor := '(c) by Andreas Stöckel 2007';
+    LibAuthor := '(c) by Andreas Stöckel 2008';
     LibDescription := 'This plugin wraps around Direct3D 9.';
     LibVersion := LibraryVersion;
     LibImage := 'dx93d.png';

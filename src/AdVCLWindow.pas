@@ -116,10 +116,9 @@ begin
         begin
           result := true;
           ChangeDisplaySettings(DeviceMode, CDS_FULLSCREEN);
-        end
-        else
-          exit;
-      end;
+        end;
+        exit;
+     end;
     end;
 
     i := i + 1;
@@ -148,19 +147,22 @@ begin
     end else
     if (AProps.Mode = dmScreenRes) or (AProps.Mode = dmFullscreen) then
     begin
+      FForm.BorderStyle := bsNone;
+      FForm.Width := Screen.Width;
+      FForm.Height := Screen.Height;
+      FForm.Top := 0;
+      FForm.Left := 0;
+
       if AProps.Mode = dmFullScreen then
       begin
+        FForm.Width := AProps.Width;
+        FForm.Height := AProps.Height;
         if not ChangeResolution(AProps.Width, AProps.Height, ord(AProps.BitDepth)) then
         begin
           result := false;
           exit;
         end;
       end;
-      FForm.BorderStyle := bsNone;
-      FForm.Width := Screen.Width;
-      FForm.Height := Screen.Height;
-      FForm.Top := 0;
-      FForm.Left := 0;
     end else exit;
 
     result := true;

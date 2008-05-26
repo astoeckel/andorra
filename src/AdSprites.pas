@@ -572,7 +572,7 @@ var i:integer;
     rect:TAdRect;
 begin
   result := nil;
-  for i := Items.Count-1 downto 0 do
+  for i := Items.Count - 1 downto 0 do
   begin
     rect := Items[i].BoundsRect;
     if (X >= rect.Left) and (X <= rect.Right) and

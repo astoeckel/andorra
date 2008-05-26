@@ -2,7 +2,7 @@ program Simple;
 
 uses
   Forms,
-  Main in 'Main.pas';
+  Main in 'Main.pas' {Form1};
 
 {$R *.res}
 

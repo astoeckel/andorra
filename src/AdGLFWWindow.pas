@@ -23,7 +23,7 @@ unit AdGLFWWindow;
 interface
 
 uses
-  AdEvents, AdWindowFramework, glfw;
+  AdTypes, AdEvents, AdWindowFramework, glfw;
 
 type
   TAdGLFWWindow = class(TAdGLContextGeneratingWindowFrameWork)
@@ -347,7 +347,7 @@ begin
   result := false;
   if FBinded and (not FInitialized) then
   begin
-    if AProps.BitDepth = 16 then
+    if AProps.BitDepth = ad16Bit then
     begin
       rBits := 5; gBits := 6; bBits := 5; aBits := 0;
     end
@@ -379,7 +379,7 @@ begin
       mode := GLFW_FULLSCREEN;
     end;
 
-    FInitialized := glfwOpenWindow(w, h, rBits, gBits, bBits, aBits, 16, 16, mode) = 1;
+    FInitialized := glfwOpenWindow(w, h, rBits, gBits, bBits, aBits, 24, 8, mode) = 1;
 
     if AProps.Mode = dmWindowed then
     begin

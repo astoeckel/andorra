@@ -187,15 +187,15 @@ begin
         begin
           result := true;
           ChangeDisplaySettings(DeviceMode, CDS_FULLSCREEN);
-        end
-        else
-          exit;
-      end;
+        end;
+        exit;
+     end;
     end;
 
     i := i + 1;
   end;
 end;
+
 
 procedure TAdVCLComponentWindow.SetupEvents;
 begin

@@ -1,5 +1,9 @@
 unit AdVCLComponentEventConnector;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

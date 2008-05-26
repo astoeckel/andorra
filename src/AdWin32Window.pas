@@ -22,10 +22,8 @@ unit AdWin32Window;
 
 interface
 
-
 uses
   Messages, Windows, AdTypes, AdEvents, AdWindowFramework;
-
 
 type
   {@exclude}
@@ -143,9 +141,8 @@ begin
         begin
           result := true;
           ChangeDisplaySettings(DeviceMode, CDS_FULLSCREEN);
-        end
-        else
-          exit;
+        end;
+        exit;
       end;
     end;
 

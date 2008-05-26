@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Dialogs, SysUtils, Forms, Types, Classes, Graphics,  
-  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg;
+  Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,  
+  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, AdSprites;
 
 type
   TForm1 = class(TForm)
@@ -18,6 +18,7 @@ type
     AdPerCounter:TAdPerformanceCounter;
     AdImage: TAdImage;
     AdTexture: TAdTexture;
+    AdLight: TAd2dLight;
 
     mx, my: integer;
 
@@ -34,6 +35,7 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetup: TAdSetup;
+  data: TAd2dLightData;
 begin
   ReportMemoryLeaksOnShutdown := true;
 
@@ -51,11 +53,30 @@ begin
     begin
       Application.OnIdle := Idle;
 
+      AdDraw.Scene.AmbientColor := AD_ARGB(255, 255, 255, 255);
+
       AdImage := TAdImage.Create(AdDraw);
       AdImage.Texture.LoadGraphicFromFile('water.bmp');
-      AdImage.Details := 16;
+      AdImage.Details := 32;
       AdImage.Filter := atLinear;
       AdImage.Restore;
+
+      AdLight := AdDraw.AdAppl.CreateLight;
+      {with data do
+      begin
+        LightType := altPoint;
+        Diffuse := AD_ARGB(255, 255, 255, 255);
+        Specular := AD_ARGB(0, 0, 0, 0);
+        Ambient := AD_ARGB(0, 255, 255, 255);
+        Position := AdVector3(ClientWidth / 2, ClientHeight / 2, 0);
+        Range := 100;
+        ConstantAttenuation := 1;
+        LinearAttenuation := 0.005;
+        QuadraticAttenuation := 0.005;
+      end;
+      AdLight.Data := data;
+
+      AdLight.EnableLight(0);}
     end
     else
     begin
@@ -73,6 +94,7 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  AdLight.Free;
   AdImage.Free;
   AdPerCounter.Free;
   AdDraw.Free;
@@ -86,8 +108,6 @@ begin
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
-var
-  mat: TAd2dMaterial;
 begin
   if AdDraw.CanDraw then
   begin
@@ -97,14 +117,7 @@ begin
 
     AdDraw.BeginScene;
 
-    mat.Ambient := Ad_ARGB(255, 255, 255, 0);
-    mat.Specular := Ad_ARGB(255, 255, 255, 0);
-    mat.Diffuse := Ad_ARGB(255, 255, 255, 0);
-    mat.Emissive := Ad_ARGB(255, 255, 255, 0);
-    mat.Power := 0;
-    AdImage.AdMesh.SetMaterial(@mat);
-
-    AdImage.StretchDraw(AdDraw, AdRect(0, 0, mx, my), 0);
+    AdImage.StretchDraw(AdDraw, AdRect(0, 0, ClientWidth, ClientHeight), 0);
 
     AdDraw.EndScene;
 

@@ -65,7 +65,7 @@ type
     altPoint
   );
 
-  TAd2dLight = record
+  TAd2dLightData = record
     LightType: TAd2dLightType;
     Diffuse: TAndorraColor;
     Specular: TAndorraColor;
@@ -73,13 +73,14 @@ type
     Position: TAdVector3;
     Direction: TAdVector3;
     Range: single;
+    Falloff: single;
     ConstantAttenuation: single;
     LinearAttenuation: single;
     QuadraticAttenuation: single;
     Theta: single;
     Phi: single;
   end;
-  PAd2dLight = ^TAd2dLight;
+  PAd2dLight = ^TAd2dLightData;
 
   {Declares, how a mesh is blended}
   TAd2dBlendMode = (
@@ -170,6 +171,8 @@ type
   TAd2DMesh = class;
   {An abstract class which represents a counter for the pixels drawn}
   TAd2dPixelCounter = class;
+  {An abstract class that represents a single light}
+  TAd2dLight = class;
 
   {A record that returns information about the current library.
    The information is returned by the Andorra2DLibraryInformation function.}
@@ -239,6 +242,7 @@ type
   TAd2DApplication = class
     private
       FLogCallback: TAd2dLogCallback;
+      FAmbientColor: TAndorraColor;
       procedure SetLogCallback(ALogCallback: TAd2dLogCallback);
     protected
       FWidth:integer;
@@ -246,15 +250,18 @@ type
       FMaxLightCount:integer;
       FViewPort:TAdRect;
       procedure SetViewPort(AValue:TAdRect);virtual;
+      procedure SetAmbientColor(AValue: TAndorraColor);virtual;
     public
       {Creates and returns a TAd2DBitmapTexture}
-      function CreateBitmapTexture:TAd2DBitmapTexture;virtual;abstract;
+      function CreateBitmapTexture: TAd2DBitmapTexture;virtual;abstract;
       {Creates and returns a TAd2dRenderTargetTexture}
-      function CreateRenderTargetTexture:TAd2dRenderTargetTexture;virtual;abstract;
+      function CreateRenderTargetTexture: TAd2dRenderTargetTexture;virtual;abstract;
       {Creates and returns a TAd2DMesh}
-      function CreateMesh:TAd2DMesh;virtual;abstract;
+      function CreateMesh: TAd2DMesh;virtual;abstract;
       {Creates and returns a TAd2DPixelCounter}
-      function CreatePixelCounter:TAd2dPixelCounter;virtual;abstract;
+      function CreatePixelCounter: TAd2dPixelCounter;virtual;abstract;
+      {Creates and returns a TAd2dLight}
+      function CreateLight: TAd2dLight;virtual;abstract;
 
       {Sets the surface that the graphic system should render on. If ATarget is
        nil, the graphic system will rendern on its main surface.}
@@ -319,6 +326,8 @@ type
       property MaxLights:integer read FMaxLightCount;
       {The rectangle where the output is made}
       property Viewport:TAdRect read FViewPort write SetViewPort;
+      {The scene ambient color}
+      property AmbientColor: TAndorraColor read FAmbientColor write SetAmbientColor;
 
       {This procedure can be used to add a log message. If the log message
        callback is not equal to nil, it is called an the parameters are passed.}
@@ -327,10 +336,6 @@ type
       {Callback used to log log messages from the plugin in the host
        application.}
       property LogCallback: TAd2dLogCallback read FLogCallback write SetLogCallback;
-
-      {Sets the the properties for a light. If "AData" is nil, the light will
-       be disabled.}
-      procedure SetLight(ALight: Cardinal; AData: PAd2dLight);virtual;abstract;
   end;
 
   {An class which represents a texture in Andorra's engine. }
@@ -369,7 +374,6 @@ type
 
   {An abstract class which represents a mesh (a set of vertices)  in Andorra's engine. }
   TAd2DMesh = class
-    private
     protected
       FVertices:TAdVertexArray;
       FIndices:TAdIndexArray;
@@ -438,6 +442,18 @@ type
       function StopCount: Cardinal;virtual;abstract;
   end;
 
+  TAd2dLight = class
+    private
+      FData: TAd2dLightData;
+    protected
+      procedure SetData(AValue: TAd2dLightData);virtual;
+    public
+      procedure EnableLight(ALight: Cardinal);virtual;abstract;
+      procedure DisableLight;virtual;abstract;
+
+      property Data: TAd2dLightData read FData write SetData;
+  end;
+
   //Used to import the CreateApplication function form the DLL.
   TAdCreateApplicationProc = function:TAd2dApplication;stdcall;
 
@@ -463,6 +479,11 @@ begin
   end;
 end;
 
+procedure TAd2DApplication.SetAmbientColor(AValue: TAndorraColor);
+begin
+  FAmbientColor := AValue;
+end;
+
 procedure TAd2DApplication.SetLogCallback(ALogCallback: TAd2dLogCallback);
 begin
   FLogCallback := ALogCallback;
@@ -478,6 +499,13 @@ end;
 procedure TAd2DMesh.SetTexture(ATexture:TAd2DTexture);
 begin
   FTexture := ATexture;
+end;
+
+{ TAd2dLight }
+
+procedure TAd2dLight.SetData(AValue: TAd2dLightData);
+begin
+  FData := AValue;
 end;
 
 end.

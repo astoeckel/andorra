@@ -56,7 +56,7 @@ var
   fileinfo:TAndorra2DLibraryInformation;
   info:TAd2DLibInfo;
 begin
-  res := FindFirst(dir+'*'+Extension,faAnyFile, searchrec);
+  res := FindFirst(dir+'*Andorra*'+Extension,faAnyFile, searchrec);
   ahandle := 0;
   while (res = 0) do
   begin
@@ -66,7 +66,7 @@ begin
       {$ELSE}
         ahandle := dynlibs.LoadLibrary(PChar(dir+searchrec.Name));
       {$ENDIF}
-
+      
       @fileinfo := GetProcAddress(ahandle, 'Andorra2DLibraryInformation');
 
       //If procedure exists, it must be an Andorra 2D Plugin Library
