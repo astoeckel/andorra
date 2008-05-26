@@ -1,10 +1,8 @@
 program VideoPlayer;
 
-{$APPTYPE CONSOLE}
-
 uses
-  Forms,
-  Main in 'Main.pas';
+  Main in 'Main.pas',
+  AdSDLWindow in '..\..\..\src\AdSDLWindow.pas';
 
 var
   Appl: TAdAppl;

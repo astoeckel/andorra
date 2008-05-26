@@ -7,9 +7,9 @@ interface
 {$ENDIF}
 
 uses
-  SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
+  SysUtils, Dialogs, AdSDLWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
   AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
-  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents, AdJPEG;
+  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents, AdSetupDlg;
 
 type
   TAdAppl = class
@@ -100,14 +100,17 @@ begin
 end;
 
 procedure TAdAppl.Run;
+var
+  AdSetup: TAdSetup;
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(nil);
+  
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
 
-  AdDraw.DllName := 'AndorraDX93D.dll';
-
-  if true then
+  if AdSetup.Execute then
   begin
     if AdDraw.Initialize then
     begin
@@ -143,6 +146,7 @@ begin
       ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
                   'mode or another video adapter.');
   end;
+  AdSetup.Free;
   AdGUIConnector.Free;
   AdGUI.Free;
   AdVideo.Free;
