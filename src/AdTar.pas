@@ -18,6 +18,8 @@
 * o Add support for links and file rights (not a big deal, but not too
 *   important either) 
 }
+
+{Provides a class for loading and saving (TODO) tar files.}
 unit AdTar;
 
 interface

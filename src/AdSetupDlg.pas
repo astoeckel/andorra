@@ -1,3 +1,26 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AdSetupDlg.pas
+* Comment: Contains a cross plattform (and compiler) setup dialog, that enables
+  the possibility of choosing a plugin and setting the resolution. Special 
+  properties of the plugin library are also parsed and displayed.
+}
+
+{Contains a cross plattform (and compiler) setup dialog, that enables
+  the possibility of choosing a plugin and setting the resolution. Special 
+  properties of the plugin library are also parsed and displayed. }
 unit AdSetupDlg;
 
 {$IFDEF FPC}
@@ -15,6 +38,11 @@ uses
   AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages;
 
 const
+  {A window message that is sent to the setup dlg form. This message tells the
+   form to tell the setup dlg main class, that it should rebuild its components.
+   This event is needed, because the main class isn't able to delete components 
+   in a event handler method. Therefore it posts a new event, that is handled 
+   after the current event handle method.}
 {$IFNDEF FPC}
   WM_AD_REBUILDCONTROLS = WM_USER + 1;
 {$ELSE}
@@ -22,17 +50,26 @@ const
 {$ENDIF}
 
 type
+  {Exceptions concerning the setup dialog are derivated from this class.}
   ESetupDlg = class(Exception);
+  {Exception raised when the setup dialog is opened but no plugin is found.}
   ESetupDlgNoPluginsFound = class(ESetupDlg);
 
+  {Specifies the sections of the setup dialog that should be shown.
+   @seealso(TAdSetupDlgSections)}
   TAdSetupDlgSection = (
-    dlgResolution,
-    dlgAdvancedOptions,
-    dlgPlugin
+    dlgResolution, {< If set, the resolution setup part of the dialog is shown.}
+    dlgAdvancedOptions, {< If set, additional properties are parsed from the 
+      plugin.}
+    dlgPlugin {< If set, the setup dialog searches for Andorra 2D graphic 
+      plugins and displays them.}
   );
-
+  
+  {Set used to define the different sections of the setup dialog.}
   TAdSetupDlgSections = set of TAdSetupDlgSection;
 
+  {Class used internally by the setup dialog that adds a new property group to
+   the dialof.}
   TAdSetupSection = class
     private
       FGroupbox: TGroupbox;
@@ -41,23 +78,36 @@ type
       FCaption: string;
       function GetHeight: integer;
     public
+      {Creates a new section as child of a certain control and with a specific
+       caption.}
       constructor Create(AParent: TWinControl; ACaption: string);
+      {Destroys the sections.}
       destructor Destroy;override;
 
+      {Adds a new control to the section that is automatically centered and 
+       aligned.}
       procedure AddControl(AControl: TWinControl);
 
+      {Caption specifies the caption set in the constructor.}
       property Caption: string read FCaption;
   end;
 
+  {Form class used by TAdSetupDlg.}
   TAdSetupForm = class(TForm)
     private
       FOnRebuildControls: TNotifyEvent;
       procedure MsgRebuildControls(var Message: TMessage); message WM_AD_REBUILDCONTROLS;
     public
+      {Sends a WM_AD_REBUILDCONTROLS message to itself.
+       @seealso(WM_AD_REBUILDCONTROLS)}
       procedure DoRebuildControls;
+      {Event called when the WM_AD_REBUILDCONTROLS message is received.}
       property OnRebuildControls: TNotifyEvent read FOnRebuildControls write FOnRebuildControls;
   end;
 
+  {A cross plattform (and compiler) setup dialog, that enables
+   the possibility of choosing a plugin and setting the resolution. Special 
+   published properties of the plugin library are also parsed and displayed.}
   TAdSetup = class
     private
       FDraw: TAdDraw;
@@ -119,18 +169,30 @@ type
       procedure LoadSettings;
       procedure StoreSettings;
     public
+      {Creates an instance of TAdSetup.
+       @param(ADraw specifies the parent AdDraw all settings refer to)}
       constructor Create(ADraw: TAdDraw);
+      {Destroys the instance of TAdSetup.}
       destructor Destroy;override;
 
+      {Executes the dialog. Returns whether the user presseed the ok button.}
       function Execute: boolean;
 
+      {Use this property to set the sections the dialog show.
+       @seealso(TAdSetupDlgSection)}
       property Sections: TAdSetupDlgSections read FSections write FSections;
+      {The filename of the image that is displayed in the top of the window.}
       property Image: string read FImage write FImage;
+      {The title of the dialog. By default this is the title of the application.}
       property Title: string read FTitle write FTitle;
+      {The ini file object all settings should be stored in. Normally TAdSetup
+       creates its own ini file. After setting your own ini file object, this
+       own ini file object is automatically freed.}
       property Ini: TIniFile read FIni write SetIni;
   end;
 
 const
+  {Use this section constant if you want to view all setup dialog sections.}
   dlgAll = [dlgResolution, dlgAdvancedOptions, dlgPlugin];
 
 

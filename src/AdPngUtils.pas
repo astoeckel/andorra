@@ -13,7 +13,8 @@
 * Comment: Contains some helper functions for working with png images
 }
 
-{Contains some helper functions for working with png images}
+{Contains some helper functions for working with png images. Those functions 
+ are used by various png loaders.}
 unit AdPNGUtils;
 
 {$IFDEF FPC}
@@ -26,18 +27,27 @@ uses
   SysUtils, Classes;
 
 type
+  {A record that represents a png chunk.}
   TPngChunk = packed record
-    Length : LongWord;
-    Name : array[0..3] of Char;
+    Length : LongWord; //< The length of the chunk
+    Name : array[0..3] of Char; //< The name of the chunk
   end;
 
+  {Exception that is raised when you call the ExtractPng procedure, but no png
+   data is found.}
   EAdExtractPng = class(Exception);
 
+
+{Extracts a single png from the source stream and saves it to the destination
+ stream.}
 procedure ExtractPng(Src, Dst : TStream);
+{Returns true if the data in the stream is a png image.}
 function IsPng(Src : TStream) : boolean;
+{Converts a the endian of a 32-Bit value.}
 function PngConvertEndian(const AVal: LongWord):LongWord;
 
 const
+  {The signature a png file is recognized by.}
   PngSignature = #137#80#78#71#13#10#26#10;
 
 implementation
@@ -72,9 +82,16 @@ begin
   begin
     FillChar(Chunk, SizeOf(Chunk), 0);
     Start := Src.Position - 8;
+    
+    //Iterate through the png chunks until the end chink is found
     repeat
+      //Read a chunk
       Src.Read(Chunk, SizeOf(Chunk));
+      
+      //Increment the position by the position in the chunk and four bytes 
+      //for the checksum.
       Src.Position := Src.Position + PngConvertEndian(Chunk.Length) + 4;
+      
     until CompareMem(@Chunk.Name[0], @endchunk[1], 4);
     Stop := Src.Position;
 

@@ -1,5 +1,3 @@
-unit AdRAWFontData;
-
 {
 * This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
@@ -18,6 +16,9 @@ unit AdRAWFontData;
 * Comment: Contains a loader class and a save procedure for RAW Andorra Font Data
 }
 
+{Contains a loader class and a save procedure for RAW Andorra Font Data}
+unit AdRAWFontData;
+
 interface
 
 {$IFDEF FPC}
@@ -28,6 +29,7 @@ uses
   Classes, AdTypes, AdClasses, AdFont, AdFontGenerator, AdBitmap;
 
 type
+  {A font generator that creates a font from a saved Andorra font.}
   TAdRAWFontData = class(TAdFontGenerator)
     public
       procedure Generate(AData:Pointer;ASize:Cardinal;
@@ -35,7 +37,8 @@ type
       function IsValidData(AData:Pointer;ASize:Cardinal):boolean;override;
   end;
 
-procedure SaveRAWFontData(AFont:TAdFont;AStream:TStream);
+{Saves a specific font to a data stream.}
+procedure SaveRAWFontData(AFont:TAdFont; AStream:TStream);
 
 implementation
 

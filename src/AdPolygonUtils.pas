@@ -13,7 +13,7 @@
 * Comment: Contains a simple function to triangulate a given polygon
 }
 
-{ Contains a simple function to triangulate a given polygon }
+{Contains a simple function to triangulate a given polygon.}
 unit AdPolygonUtils;
 
 {$IFDEF FPC}

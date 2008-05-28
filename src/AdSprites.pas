@@ -50,7 +50,10 @@ type
       procedure Remove(ASprite:TSprite);
   end;
 
+  {Array type used internally by TAd2dSpriteList}
   TIntegerArray = array of Integer;
+  
+  {Matrix that contains a bucket for sprites in each cell.}
   T2DSpriteListArray = array of array of TSpriteList;
 
   {A list used to optimize the spriteengine}
@@ -94,7 +97,15 @@ type
       property Unoptimized:boolean read FUnOptimized;
   end;
 
-  TCollisionTyp = (ctOptimized, ctNormal);
+  {Used to specifie the collision optimization method for the sprite engine 
+   system.}
+  TCollisionTyp = (
+    ctOptimized, {< The sprite system uses optimizations. This mode is up to
+      five times faster than the normal mode. The optimized mode is best 
+      suitable for games with large levels organized in the spriteengine.}
+    ctNormal {< If you experience any problems with the optimized mode, use
+      this mode to use the old DelphiX-like collision mode.}
+  );
 
   {The sprite engines base class.}
   TSprite = class

@@ -57,9 +57,11 @@ type
   {Pointer type of TRGBArray.}
   PRGBArray = ^TRGBArray;
 
+  {Used to specifies the bit depth of a bitmap. Because bitmaps in Andorra 2D 
+   are allways RGBA, only 16 and 32 bits are supported.}
   TAdBitDepth = (
-    ad16Bit = 16,
-    ad32Bit = 32
+    ad16Bit = 16,  //< The bit depth is 16 Bit
+    ad32Bit = 32 //< The bit depth is 32 Bit
   );
 
   {--- 3D-Data ---}
@@ -194,14 +196,17 @@ type
   end;
 
   {---Types used in the shader system---}
+  
+  {Specifies the type of the shader sourcecode}
   TAd2dShaderSourceType = (
-    assSource,
-    assCompiled
+    assSource, //< You have passed the shader sourcecode to the system
+    assCompiled //< The shader is already precompiled
   );
 
+  {Specifies the type of the shader program}
   TAd2dShaderType = (
-    astVertex,
-    astFragment
+    astVertex, //< This program is a vertex program
+    astFragment //< This program is a fragment (pixel) program
   );  
 
 
