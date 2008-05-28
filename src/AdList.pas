@@ -10,16 +10,18 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdList.pas
-* Comment: A unit which adds a new class - TAdList. This list adds implementations which are missing in Delphi 4-5.
+* Comment: A unit which adds a new class - TAdList. This list adds implementations which are missing in Delphi 4.
 }
 
 unit AdList;
 
 interface
 
-uses Classes;
+uses 
+  Classes;
 
 type
+  {A Andorra list class. Will soon be replaced by some own list type.}
   TAdList = class(TList)
   end;
 

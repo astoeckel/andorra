@@ -3,14 +3,18 @@
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
 *
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL.
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program 
+* under the GPL.
 * You also should have recieved a copy of this license with this file.
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
 * Author:  Manuel Eberl
 * File: AdTGA.pas
+* Comment: Adds the ability of loading TGA-Files to Andorra 2D
 }
+
+{Adds the ability of loading TGA-Files to Andorra 2D}
 unit AdTGA;
 
 interface

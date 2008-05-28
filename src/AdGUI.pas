@@ -31,12 +31,29 @@ uses
   AdXML, AdList, AdCanvas, AdFont, AdFontList, AdPersistent;         
 
 type                                                                
-  TAdDownRgn = (drNone,drMiddle,drLeftTop,drLeftBottom,drRightTop,drRightBottom);
+  {Represents the region where the mouse cursor hit the component in the editor
+   mode.}
+  TAdDownRgn = (
+    drNone, {< The mouse didn't hit the component}
+    drMiddle, {< The mouse hit the middle of the component}
+    drLeftTop, {< The mouse hit the left top handle}
+    drLeftBottom, {< The mouse hit the left bottom handle}
+    drRightTop, {< The mouse hit the right top handle}
+    drRightBottom {< The mouse hit the right bottom handle}
+  );
 
   TAdComponent = class;
 
+  {A integer type decleration that is used for representing a
+   color in the gui.}
   TGUIColor = -$7FFFFFFF-1..$7FFFFFFF;
 
+  {TAdHint is used by the gui system to show a smal hint window
+   when pointing on a specific GUI control. To change (e.g.)
+   the color of the hints in the whole GUI environment, simply
+   use TAdGUI.HintWnd for this purpose. This is also the place
+   where you can replace the hint window with your own, extended
+   TAdHint class.}
   TAdHint = class
     private
       FShowTime:single;
@@ -56,32 +73,55 @@ type
       FBorderColor:longint;
       procedure SetAlpha(Value:byte);
     public
+      {Creates an instance of TAdHint.}
       constructor Create(AParent:TAdDraw);
+      {Destroys the instance of TAdHint.}
       destructor Destroy; override;
-      procedure Show(MouseX,MouseY:integer; Text:string; Sender:TAdComponent);virtual;
+      {Shows the hint on a specific position. The hint window will 
+       automatically hide after "ShowTime" has expired. Normally this method
+       is called by the underlying component.}
+      procedure Show(MouseX, MouseY:integer; Text:string; Sender:TAdComponent);virtual;
+      {Hides the hint before its "ShowTime" has expired.}
       procedure Hide;virtual;
+      {Draws the hint, if it is visible.}
       procedure Draw;virtual;
+      {Moves the hint timers forward, so that it can hide.}
       procedure Move(TimeGap:double);virtual;
       
+      {The time in seconds the hint window should be shown after it had been 
+       activated.}
       property ShowTime:single read FShowTime write FShowTime;
+      {The time the underlying component shall wait before showing the hint 
+       window.}
       property WaitTime:single read FWaitTime write FWaitTime;
+      {The background color of the hint.}
       property Color:longint read FColor write FColor;
+      {The alpha value of the background color.}
       property Alpha:byte read FAlpha write SetAlpha;
+      {The parent TAdDraw that was passed by creating the hint window.}
       property Parent:TAdDraw read FParent;
+      {Returns whether the hint window is currently visible.}
       property Visible:boolean read FVisible write FVisible;
+      {Set this property to adjust the time the hint needs to fade in/out.}
       property FadeTime:single read FFadeTime write FFadeTime;
+      
+      {The color of the hint window border.}
       property BorderColor:longint read FBordercolor write FBorderColor;
+      {The color of the hint text.}
       property TextColor:longint read FTextColor write FTextColor;
   end;
 
+  {A list for storing the gui components. Every component contains such a list.}
   TAdComponents = class(TAdList)
     private
       procedure SetItem(Index:integer;AValue:TAdComponent);
       function GetItem(Index:integer):TAdComponent;
     public
+      {Property for accessing the components stored in the list.}
       property Items[index:integer]:TAdComponent read GetItem write SetItem; default;
   end;
 
+  {}
   TAdComponent = class(TAdPersistent)
     private
       FSkin:TAdSkin;

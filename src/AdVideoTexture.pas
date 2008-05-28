@@ -13,6 +13,7 @@
 * Comment: Contains a simple class for rendering videos in a texture
 }
 
+{Contains a simple class for rendering videos in a texture.}
 unit AdVideoTexture;
 
 {$IFDEF FPC}
@@ -26,53 +27,112 @@ uses
   AdEvents, AdClasses, AdPersistent, AdTypes, AdBitmap;
 
 type
+  {Infos about the current video frame that are exchanged between the video
+   plugin and the player.}
   TAdVideoInfo = record
-    Width, Height: Integer;
-    FPS: Byte;
-    PixelAspect: Double;
+    Width: integer; {< Width of the video frame in memory}
+    Height: Integer; {< Height of the video frame in memory}
+    FPS: Byte; {< Frequency the frames should change}
+    PixelAspect: Double; {< Some video formats are streched, like the PAL 
+      16/9 Video. PixelAspect specifies the relative width of one pixel: A 
+      value of 1.2 eg. means that a pixel is streched to 120% if its original
+      size.}
   end;
 
+  {Specifies the current position of the video.}
   TAdVideoPosition = record
-    Hour: Byte;
-    Minute: Byte;
-    Second: Byte;
-    Frame: Byte;
+    Hour: Byte; {< Time in hours.}
+    Minute: Byte; {< Time in minutes.}
+    Second: Byte; {< Time in seconds.}
+    Frame: Byte; {< The frame number}
   end;
 
-  TAdVideoDecoderState = (vdIncomplete, vdHasFrame, vdEnd);
+  {Current video decoding state of the video decoder plugin.}
+  TAdVideoDecoderState = (
+    vdIncomplete, {< The frame data was incomplete, we have to transfer more
+      data to the video decoder.}
+    vdHasFrame, {< The video decoder found a frame in the data we provided.
+      It can be received by calling the "FillBuffer" method.}
+    vdEnd {< There was a fatal error in the video stream or it idicated that
+      the video has come to an end.}
+  );
 
+  {Abstract video decoder class that can be implemented to provide a new video
+   decoder class. Call the "RegisterVideoDecoder" procedure to register your
+   new video decoder class.}
   TAdVideoDecoder = class(TAdPersistent)
     public
+      {Creates an instance of TAdVideoDecoder.}
       constructor Create; virtual;
 
+      {Returns whether this file format is supported.
+       @param(ABuf is the pointer to the first byte of the data in memory)
+       @param(ASize is the size of the data in memory)
+       @returns(true, if the video format is known and can be loaded)}
       class function SupportsFile(ABuf: Pointer; ASize: Cardinal):boolean;virtual;abstract;
 
+      {Tells the decoder to read a buffer from memory.
+       @param(ABuf is the pointer to the first byte of the data in memory)
+       @param(ASize is the size of the data in memory)
+       @returns(The current decoder state)
+       @seealso(TAdVideoDecoderState)}
       function ReadBuffer(ABuf: Pointer; ASize: Cardinal): TAdVideoDecoderState;virtual;abstract;
+      {Returns the video information for the current frame loaded.
+       @seealso(TAdVideoInfo)}
       function GetVideoInfo: TAdVideoInfo;virtual;abstract;
+      {Returns the current position of the video.
+       @seealso(TAdVideoPosition)}
       function GetVideoPosition: TAdVideoPosition;virtual;abstract;
+      {If ReadBuffer returned "vdHasFrame", this method will fill the given buffer
+       with video data. The buffer has already allocated and can be filled with
+       FrameWidth * FrameHeight * 4 Bytes. The video format is 32Bit, RGBA.}
       procedure FillBuffer(ABuffer: Pointer);virtual;abstract;
   end;
+  
+  {Class decleration for video decorders}
   TAdVideoDecoderClass = class of TAdVideoDecoder;
 
+  {This class represents an element in the video decoder thread buffer.}
   TAdVideoMemory = class
     public
+      {Pointer to the reserved memory}
       Memory: PByte;
-      Width, Height: integer;
+      {Width of the buffer.}
+      Width: integer;
+      {Height of the buffer.}
+      Height: integer;
+      {Critical section that has to be entered when changing data of this
+       video buffer object.}
       CriticalSection: TCriticalSection;
 
+      {If this flag is set, this element in the buffer queue is the last one.}
       StreamEnd: boolean;
+      {Video information that has been received from the video decoder when
+       saving the video data.}
       VideoInfo: TAdVideoInfo;
+      {Video position information that has been received when saving the video
+       data.}
       Time: TAdVideoPosition;
 
+      {Creates an instance of the video memory}
       constructor Create;
+      {Destroys the instance of the video memory and frees reserved memory.}
       destructor Destroy; override;
       
+      {Reserves an amout of buffer memory and stores the size in the width
+       and height property.}
       procedure ReserveMemory(AWidth, AHeight: integer);
+      {Clears the reserved memory.}
       procedure ClearMemory;
   end;
 
+  {Procedure that is used by the video decder thread to copy undecoded video
+   data from file/stream etc. to the video decoder.}
   TAdVideoReadproc = procedure(const Dest: Pointer; var Size:Cardinal) of object;
 
+  {Video decoder thread that is internally used by TAdCustomVideoTexture. The
+   video decoder thread decodes up to 4 frames in the background while the 
+   video is playing.}
   TAdVideoDecoderThread = class(TThread)
     private
       FVideoMem: array of TAdVideoMemory;
@@ -85,15 +145,36 @@ type
     protected
       procedure Execute;override;
     public
+      {Creates an instance of TAdVideoDecoderThread.
+       @param(ABufferSize specifies the size of the buffer the thread should use
+         to transfer undecoded video data to the video decoder.)
+       @param(AReadProc specifies the method that should be called when undecoded
+         video data should be read.)}
       constructor Create(ABufferSize: Cardinal; AReadProc: TAdVideoReadProc;
         ADecoder: TAdVideoDecoder);
+      {Destroys this instance of TAdVideoDecoderThread.}
       destructor Destroy;override;
+      {Returns the next frame in the video memory queue that can be processed by
+       the graphic engine.}
       function GetNextFrame: TAdVideoMemory;
+      {Buffers in queue are marked as invalid, so that the queue is filled new.}
       procedure InvalidateBuffers;
   end;
 
-  TAdVideoPlayerState = (vpStopped, vpPaused, vpPlaying);
+  {Represents the state of a video player.}
+  TAdVideoPlayerState = (
+    vpStopped, {< The player is currently stopped}
+    vpPaused, {< The player is paused, what means that it alread has data and
+      simply doesn't go on displaying it.}
+    vpPlaying {< The player is currently playing the video data.}
+  );
 
+  {A simple object, that is capable of rendering video to a texture.
+   TAdCustomVideoTexture doesn't contain any timing or loading functions,
+   it only builds the main class, that will be extended by
+   TAdVideoTexture. The main functions of TAdCustomVideoTexture are
+   protected. The playback of a audio track is not possible now, because Andorra 2D
+   is a graphic engine.}
   TAdCustomVideoTexture = class
     private
       FBufferSize: Cardinal;
@@ -129,10 +210,18 @@ type
       property StreamEnd: boolean read FStreamEnd write FStreamEnd;
       property HasFrame: boolean read FHasFrame;
     public
+      {Creates an instance of TAdVideoPlayer.}
       constructor Create(AParent: TAd2dApplication);
+      {Destroys the instance.}
       destructor Destroy;override;
   end;
 
+  {TAdVideoPlayer is extends TAdCustomVideoTexture by the capability
+   of actually playing the video with the right speed. TAdVideoTexture
+   is still not able to read video data from a stream or a file. This
+   has to be done by manually overriding the protected ReadData method from
+   TAdCustomVideoTexture. Instead you are also able to use the TAdVideoPlayer
+   object from the unit AdVideo.}
   TAdVideoTexture = class(TAdCustomVideoTexture)
     private
       FTimeGap: double;
@@ -158,33 +247,59 @@ type
       procedure DoNextFrame;virtual;
       procedure DoClose;virtual;
     public
+      {Creates an instance of TAdVideoTexture.}
       constructor Create(AParent: TAd2dApplication);
 
+      {Starts to play the video.}
       procedure Play;virtual;
+      {Pauses video playback.}
       procedure Pause;virtual;
+      {Stops video playback (resets the data source, clears all buffers)}
       procedure Stop;virtual;
+      {Destroys all created video playback objects.}
       procedure Close;virtual;
+      {Moves the timer of TAdVideoTexture on, so that playback continues.
+       @param(ATimeGap specifies the time that has been passed since the
+         last call of ATimeGap in seconds)}
       procedure Move(ATimeGap:double);virtual;
 
+      {Texture that can be accessed when you want to draw the film.}
       property Texture;
+      {Time information about the current displayed frame.
+       @seealso(TAdVideoPosition)}
       property Time;
+      {Information about the current video frame.
+       @seealso(TAdVideoInformation)}
       property Info;
+      {Current state of the player.}
       property State: TAdVideoPlayerState read FState;
+      {The FPS the video is currently played with.}
       property CurrentFPS:integer read FFPS;
+      {Set this property if you want the video to loop.}
       property Loop: boolean read FLoop write FLoop;
+      {Use this property to vary playback speed. Default is 1. For example, 0.5
+       would mean that the video is played with the half speed.}
       property Speed: double read FSpeed write SetSpeed;
 
+      {Event that is triggered when playback starts.}
       property OnPlay:TAdNotifyEvent read FOnPlay write FOnPlay;
+      {Event that is triggered when playback stops.}
       property OnStop:TAdNotifyEvent read FOnStop write FOnStop;
+      {Event that is triggered when video playback is pasued.}
       property OnPause:TAdNotifyEvent read FOnPause write FOnPause;
+      {Event that is triggered, when a new frame is displayed. This
+       event can e.g. be used to synchronize the video to an audio buffer.}
       property OnNextFrame:TAdNotifyEvent read FOnNextFrame write FOnNextFrame;
+      {Event that is triggered when the decoder is closed.}
       property OnClose:TAdNotifyEvent read FOnClose write FOnClose;
   end;
 
 var
+  {Contains all registered video decoder classes.}
   RegisteredVideoDecoders: TStringList;
-  CacheId: integer;
 
+{Registeres a new video decoder class. This should normally be done in the 
+ initialization section of the corresponding unit.}
 procedure RegisterVideoDecoder(AVideoDecoder: TAdVideoDecoderClass);
 
 implementation

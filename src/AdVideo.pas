@@ -10,9 +10,10 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdVideoTexture.pas
-* Comment: Contains a simple class for loading a video from a stream and rendering it on the surface
+* Comment: Contains a simple class for loading a video from a stream and rendering it on the surface.
 }
 
+{Contains a simple class for loading a video from a stream and rendering it on the surface.}
 unit AdVideo;
 
 {$IFDEF FPC}
@@ -26,8 +27,10 @@ uses
   AdTypes, AdClasses, AdDraws, AdVideoTexture;
 
 type
-  {The base video player class. TAdCustomVideoPlayer adds the ability of drawing
-   the video to TAdVideoTexture. Reading from files or streams is not supported.}
+  {The base video player class. TAdCustomVideoPlayer expands TAdVideoTexture in
+   the capability of drawing the video in many ways.
+   Reading from files or streams is not supported in this class, use 
+   TAdVideoPlayer instead}
   TAdCustomVideoPlayer = class(TAdVideoTexture)
     private
       FParent: TAdDraw;
@@ -38,14 +41,22 @@ type
     protected
       function DestinationRect(ADestRect: TAdRect):TAdRect;
     public
+      {Creates an instance of TAdCustomVideoPlayer}
       constructor Create(AParent: TAdDraw);
+      {Destroys the instance of TAdCustomVideoPlayer and all created objects.}
       destructor Destroy;override;
 
+      {Draws the video on a surface and }
       procedure Draw(ASurface: TAdDraw; ADestRect: TAdRect);
 
+      {Specifies wheter the image should be streched propertional.}
       property Proportional: boolean read FProportional write FProportional;
+      {If true, the video is streched to the rectangle defined in the draw
+       procedure.}
       property Stretch: boolean read FStretch write FStretch;
+      {If true, the video is centered when drawing.}
       property Center: boolean read FCenter write FCenter;
+      {The image, that is actually drawn.}
       property Image: TAdImage read FImage;
   end;
 
@@ -62,7 +73,9 @@ type
       procedure ReadData(const Dest: Pointer; var Size: Cardinal);override;
       procedure ResetData;override;
     public
+      {Opens a file.}
       procedure Open(AFile: string);overload;
+      {Opens a stream. Do not free the stream before the video is closed.}
       procedure Open(AStream: TStream);overload;
   end;
 
@@ -157,6 +170,9 @@ end;
 procedure TAdCustomVideoPlayer.Draw(ASurface: TAdDraw; ADestRect: TAdRect);
 begin
   if not HasFrame then exit;
+  
+  if ASurface <> nil then
+    ASurface.Activate;
   
   if (Info.Width <> FImage.Width) or (Info.Height <> FImage.Height) then
     FImage.Restore;

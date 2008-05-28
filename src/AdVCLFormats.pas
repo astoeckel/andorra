@@ -10,9 +10,10 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdPNGCompressor.pas
-* Comment: Contains loaders for registered vcl formats
+* Comment: Contains loaders for registered vcl graphic formats
 }
 
+{Contains loaders for registered vcl graphic formats}
 unit AdVCLFormats;
 
 {$IFDEF FPC}

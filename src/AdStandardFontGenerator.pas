@@ -3,7 +3,8 @@
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
 * 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program 
+* under the GPL. 
 * You also should have recieved a copy of this license with this file. 
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
@@ -13,6 +14,7 @@
 * Comment: The standard font generator class
 }
 
+{Contains the standard font generator class, which uses the LCL/VCL}
 unit AdStandardFontGenerator;
 
 {$IFDEF FPC}
@@ -25,21 +27,25 @@ uses
   AdTypes, AdClasses, AdFontGenerator, Graphics, AdBitmap, AdBitmapEffects;
 
 type
+  {Properties that are passed as data to the font generator class}
   TAdStandardFontProperties = packed record
-    FontName:ShortString;
-    FontSize:integer;
-    FontStyles:TAdFontStyles;
-    ShadowColor:longint;
-    ShadowAlpha:byte;
-    ShadowOffsetX:integer;
-    ShadowOffsetY:integer;
-    ShadowBlur:byte;
+    FontName:ShortString; {< Stores the name of the font}
+    FontSize:integer; {< The size of the font.}
+    FontStyles:TAdFontStyles; {< The style of the font.}
+    ShadowColor:longint; {< The shadow color of the font.}
+    ShadowAlpha:byte; {< The alpha value of the shadow.}
+    ShadowOffsetX:integer; {< The distance of the shadow from the text.}
+    ShadowOffsetY:integer; {< The distance of the shadow from the text.}
+    ShadowBlur:byte; {< The blur value of the text.}
   end;
 
+  {Pointer on TAdStandardFontProperties}
   PAdStandardFontProperties = ^TAdStandardFontProperties;
 
+  {The standard font generator class, which uses the LCL/VCL to produce a 
+   font bitmap that is given to the type setter.}
   TAdStandardFontGenerator = class(TAdFontGenerator)
-    public
+    public      
       procedure Generate(AData:Pointer;ASize:Cardinal;
         var ASizes:TAdCharSizes; var APatterns: TAdCharPatterns; ATexture:TAd2dBitmapTexture);override;
       function IsValidData(AData:Pointer;ASize:Cardinal):boolean;override;

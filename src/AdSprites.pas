@@ -3,7 +3,8 @@
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
 *
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL.
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program 
+* under the GPL.
 * You also should have recieved a copy of this license with this file.
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
@@ -370,36 +371,6 @@ type
       {Whether the background should be drawn in the center.}
       property Center:boolean read FCenter write FCenter;
   end;
-
-  {A sprite which contains a light source.}
-  (*TLightSprite = class(TSprite)
-    private
-      FRange:double;
-      FFalloff:double;
-      FColor:LongWord;
-      FLight:TAdLight;
-      procedure SetRange(AValue:double);
-      procedure SetFalloff(AValue:double);
-      procedure SetColor(AValue:LongWord);
-    protected
-      procedure DoRestore;override;
-      procedure DoDraw;override;
-      function GetBoundsRect:TAdRect;override;
-    public
-      {Creates an instance of TLightSprite}
-      constructor Create(AParent:TSprite);override;
-      {Destroys the instance of TLightSprite}
-      destructor Destroy;override;
-    published
-      {Sets the spot size of the light}
-      property Range:double read FRange write SetRange;
-      {Sets the falloff value of the light}
-      property Falloff:double read FFalloff write SetFalloff;
-      {Sets the color value of the light}
-      property Color:LongWord read FColor write SetColor;
-      {Link back to the TAdLight}
-      property Light:TAdLight read FLight;
-  end;*)
 
   {A sprite wrapping around the particle system}
   TParticleSprite = class(TSprite)
@@ -1330,60 +1301,6 @@ begin
     FDepth := AValue;
   end;
 end;
-
-{ TLightSprite }
-
-(*constructor TLightSprite.Create(AParent: TSprite);
-begin
-  inherited Create(AParent);
-  FLight := TAdLight.Create(FEngine.Surface);
-  CanDoCollisions := false;
-end;
-
-destructor TLightSprite.Destroy;
-begin
-  FLight.Free;
-  inherited Destroy;
-end;
-
-procedure TLightSprite.DoDraw;
-begin
-  FLight.X := round(X+Engine.X);
-  FLight.Y := round(Y+Engine.Y);
-  FLight.Restore;
-  FLight.Enable;
-end;
-
-procedure TLightSprite.DoRestore;
-begin
-  FLight.Disable;
-end;
-
-function TLightSprite.GetBoundsRect: TAdRect;
-var r:integer;
-begin
-  r := round(FRange);
-  result := AdRect(round(x+Engine.X)-r,round(y+Engine.Y)-r,
-                   round(x+Engine.X)+r,round(y+Engine.Y)+r);
-end;
-
-procedure TLightSprite.SetColor(AValue: LongWord);
-begin
-  FColor := AValue;
-  FLight.Color := Ad_RGB(GetRValue(AValue),GetGValue(AValue),GetBValue(AValue));
-end;
-
-procedure TLightSprite.SetFalloff(AValue: double);
-begin
-  FFalloff := AValue;
-  FLight.Falloff := AValue;
-end;
-
-procedure TLightSprite.SetRange(AValue: double);
-begin
-  FRange := AValue;
-  FLight.Range := AValue;
-end;*)
 
 { TParticleSprite }
 

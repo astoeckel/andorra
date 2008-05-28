@@ -13,6 +13,7 @@
 * Comment: Contains simple graphic compressors
 }
 
+{Contains simple graphic compressors}
 unit AdSimpleCompressors;
 
 {$IFDEF FPC}
@@ -25,20 +26,27 @@ uses
   Classes, AdBitmap, AdTypes, Huffman;
 
 type
+  {A Andorra 2D graphic compressor class, that saves the graphic data in a 
+   raw, Andorra 2D specific bitmap format.}
   TAdBMPCompressor = class(TAdGraphicCompressor)
     public
+      {Returns #5BMP}
       class function ID:TAdVeryShortString;override;
       procedure Write(ABitmap:TAdBitmap; AStream:TStream);override;
       procedure Read(ABitmap:TAdBitmap; AStream:TStream);override;
   end;
 
+  {A Andorra 2D graphic compressor class, that saves the bitmap data compressed
+   with a Huffman compressor.}
   TAdHAICompressor = class(TAdGraphicCompressor)
     public
+      {Returns #3HAI}
       class function ID:TAdVeryShortString;override;
       procedure Write(ABitmap:TAdBitmap; AStream:TStream);override;
       procedure Read(ABitmap:TAdBitmap; AStream:TStream);override;
   end;
 
+  {Enables the possibility of assigning a TAdBitmap to another.}
   TAdBitmapFormat = class(TAdGraphicFormat)
     public
       class procedure FileExts(strs:TStrings);override;

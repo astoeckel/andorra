@@ -3,16 +3,18 @@
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
 * 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program 
+* under the GPL. 
 * You also should have recieved a copy of this license with this file. 
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdSpriteEngineEx.pas
-* Comment: Contains an extended spriteengine
+* Comment: Contains an extended spriteengine that is capable of zooming in and rotating the scene.
 }
 
+{Contains an extended spriteengine that is capable of zooming in and rotating the scene.}
 unit AdSpriteEngineEx;
 
 {$IFDEF FPC}
@@ -25,6 +27,9 @@ uses
   Math, AdTypes, SysUtils, AdDraws, AdClasses, AdSprites;
 
 type
+  {An extended spriteengine that is able to zoom in and to rotate the scene. Absolute
+   screen coordinates can be transformed into spriteengine coordinates using the
+   "ScreenPointToSpriteCoords" function.}
   TSpriteEngineEx = class(TSpriteEngine)
     private
       FZoom:single;
@@ -40,17 +45,24 @@ type
       function Base:TAdRect;
       procedure RotatePoint(cx, cy:integer; var p:TAdPoint);
     protected
-//      procedure Notify(Sender:TObject;AEvent:TSurfaceEventState);override;
       procedure SetSurface(AValue:TAdRenderingSurface);override;
-    public
-      procedure Draw;
-
+    public    
+      {Creates an instance of TSpriteEngineEx}
       constructor Create(AParent:TAdDraw);
 
+      {Draws the scene}
+      procedure Draw;
+
+      {Transforms screen coordinates to sprite coordinates.}
       function ScreenPointToSpriteCoords(p:TAdPoint):TAdPoint;
 
+      {Set this property to limit the viewport of the current scene.}
       property ViewPort:TAdRect read FViewPort write SetViewPort;
+      {Use the rotation property to rotate the scene. The rotation must be 
+       given in radian measure.}
       property Rotation:single read FRotation write SetRotation;
+      {The zoom value. A value of e.g. two means that all things are twice
+       as big is in original size.}
       property Zoom:single read FZoom write SetZoom;
   end;
 

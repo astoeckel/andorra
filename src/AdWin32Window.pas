@@ -157,7 +157,7 @@ begin
   result := false;
   if (FBinded) and (not FInitialized) then
   begin
-
+    //Set window properties
     if AProps.Mode = dmWindowed then
       WndStyle := WS_CAPTION or WS_VISIBLE or WS_SYSMENU
     else
@@ -177,6 +177,7 @@ begin
 
     SetCursorVisible(true);
     
+    //Set Win32 Window properties
     FWnd.cbSize := SizeOf(TWndClassEx);
     FWnd.style := CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS;
     FWnd.lpfnWndProc := FWndProc;
@@ -203,13 +204,15 @@ procedure TAdWin32Window.Run;
 var
   Done:boolean;
 begin
+  //Program main loop
   while GetMessage(FMsg,0,0,0) do
   begin
     TranslateMessage(FMsg);
     DispatchMessage(FMsg);
 
     Done := true;
-    if Assigned(Events.OnIdle) then Events.OnIdle(self, Done);
+    if Assigned(Events.OnIdle) then 
+      Events.OnIdle(self, Done);
     while (not Done) and (not FClose) do
     begin
       if PeekMessage(FMsg, FHandle, 0, 0, PM_REMOVE) then
@@ -219,7 +222,8 @@ begin
       end;
       
       Done := true;
-      if Assigned(Events.OnIdle) then Events.OnIdle(self, Done);
+      if Assigned(Events.OnIdle) then 
+        Events.OnIdle(self, Done);
     end;
   end;
 end;
@@ -447,21 +451,26 @@ var
 begin
   Result := 0;
 
+  //Process events
   case uMsg of
     WM_CREATE:
       begin
         FHandle := hWnd;
         PlaceWindow;
       end;
+    
     WM_DESTROY:
       begin
         FClose := true;
         PostQuitMessage(0);
       end;
+    
     WM_PAINT:
       if Assigned(Events.OnPaint) then Events.OnPaint(Self);
+    
     WM_SIZE:
       if Assigned(Events.OnResize) then Events.OnResize(Self);
+    
     WM_ACTIVATE:
       begin
         if (wParam and WA_ACTIVE = WA_ACTIVE) or
@@ -474,13 +483,21 @@ begin
           if Assigned(Events.OnDeactivate) then Events.OnDeactivate(Self);
         end;
       end;
+    
+    //MouseMove
     WM_MOUSEMOVE:
       ProcessMouseMove(wParam, lParam);
+      
+    //Mousedown
     WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN,
     WM_LBUTTONDBLCLK, WM_RBUTTONDBLCLK, WM_MBUTTONDBLCLK:
       ProcessMouseDown(uMsg, wParam, lParam);
+      
+     //Mouseup
     WM_LBUTTONUP, WM_RBUTTONUP, WM_MBUTTONUP:
       ProcessMouseUp(uMsg, wParam, lParam);
+      
+    //Close
     WM_CLOSE:
       begin
         CanClose := true;
@@ -490,12 +507,20 @@ begin
         else
           result := 0;
       end;
+      
+    //Mousewheel
     WM_MOUSEWHEEL:
       ProcessMouseWheel(wParam, lParam);
+      
+    //Keydown/Up
     WM_KEYDOWN, WM_KEYUP:
       ProcessKey(uMsg, wParam);
+      
+    //Keypress
     WM_CHAR:
       if Assigned(Events.OnKeyPress) then Events.OnKeyPress(Self, Chr(wParam));
+      
+    //Remove hourglass
     WM_SETCURSOR:
       if (lParam and $0000FFFF) = (HTCLIENT) then
         Windows.SetCursor(FHCur)

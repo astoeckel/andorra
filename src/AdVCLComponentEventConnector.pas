@@ -1,3 +1,19 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
+* 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* You also should have recieved a copy of this license with this file. 
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+*
+* Project: Andorra 2D
+* Author:  Andreas Stoeckel
+* File: AdVCLComponentEventConnector.pas
+* Comment: Contains a class that connects window framework events to a vcl component.
+}
+
+{Contains a class that connects window framework events to a vcl/lcl component.}
 unit AdVCLComponentEventConnector;
 
 {$IFDEF FPC}
@@ -11,6 +27,8 @@ uses
   AdTypes, AdEvents, AdWindowFramework;
 
 type
+  {Connects the events of a vcl/lcl component to a window framework. This class
+   is internally used by a variety of windowframeworks.}
   TAdVCLComponentEventConnector = class
     private
       FControl: TControl;
@@ -71,14 +89,17 @@ type
       procedure Activate(Sender: TObject);
       procedure Deactivate(Sender: TObject);
       procedure Close(Sender: TObject; var Action: TCloseAction);
-    protected
+    protected      
       function ConvertButton(Button: TMouseButton): TAdMouseButton;
       function ConvertShift(Shift: TShiftState): TAdShiftState;
 
       procedure ConnectEvents;
       procedure DisconnectEvents;
     public
+      {Connects a control to the window framework.}
       constructor Create(AControl: TControl; AFramework: TAdWindowframework);
+      {Disconnects all eventhandlers and destroys this instance of 
+       TAdVCLComponentEventConnector.}
       destructor Destroy;override;
   end;
 

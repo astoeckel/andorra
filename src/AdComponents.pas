@@ -44,6 +44,7 @@ type
     
   {@exclude}
   TAdAlignmentEx = (axLeft, axRight, axTop, axBottom);
+  
   {Defines the state a button control is currently in.}
   TAdButtonState = (
     bsNormal,{<The button is in its standard state.}
@@ -227,7 +228,8 @@ type
       property FontColor;
     end;
 
-  {A simple CheckBox control. @author(Written by Michael Morstein alias Neutral General)}
+  {A simple CheckBox control. 
+   @author(Written by Michael Morstein alias Neutral General)}
   TAdCheckBox = class(TAdComponent)
     private
       FState: TAdButtonState;
@@ -256,13 +258,16 @@ type
       {Saves the settings to XML}
       function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
     published
-      {Returns, wether the checkbox is checked or not. Set this property to check/uncheck the checkbox.}
+      {Returns, wether the checkbox is checked or not. Set this property to 
+       check/uncheck the checkbox.}
       property Checked:Boolean read FChecked write SetChecked;
       {Defines the caption of the checkbox.}
       property Caption:String read FCaption write FCaption;
       {Sets the alignment of the checkbox.}
       property Alignment:TAdAlignmentEx read FAlignment write FAlignment;
-      {If groupindex is unequal zero,  TAdCheckBox will behave like a radio button. It is grouped with all other checkboxes with the same group index on the same parent element.}
+      {If groupindex is unequal zero,  TAdCheckBox will behave like a radio 
+       button. It is grouped with all other checkboxes with the same group 
+       index on the same parent element.}
       property GroupIndex:integer read FGroupIndex write SetGroupIndex;
       {Defines the font, which is used to draw the caption}      
       property FontName;
@@ -306,7 +311,8 @@ type
       property Picture:TAdImage read FImage;
       {Toggles whether the transparent color is used.}
       property Transparent:boolean read FTransparent write SetTransparent;
-      {Set the transparent color here. Transparent will automaticly set to "true" when using it.}
+      {Set the transparent color here. Transparent will automaticly set to 
+       "true" when using it.}
       property TransparentColor:TColor read FTransparentColor write SetTransparentColor;
       {Link to the parent TAdDraw.}
       property Parent:TAdDraw read FParent;
@@ -502,7 +508,7 @@ type
       {The count of selected chars.}
       property SelCount:integer read GetSelCount;      
     published
-      {The text, which is written in the edit field.}
+      {The text, that is written in the edit field.}
       property Text:string read FText write FText;
       {The font the text should be written in.}
       property FontName;
@@ -510,8 +516,14 @@ type
       property FontColor;
   end;
 
-  TAdOrientation = (orHorizontal, orVertical);
+  {Specifies the orientation of a track control.}
+  TAdOrientation = (
+    orHorizontal, //<The track control is horizontal
+    orVertical //< The track control is vertical
+  );
 
+  {A base class for so called track controls like TAdScrollbar and 
+   TAdTrackBar.}
   TAdTrackControl = class(TAdComponent)
     private
       FOX, FOY, FMX, FMY, FOPos: integer;
@@ -543,30 +555,46 @@ type
       function DoMouseWheel(Shift: TAdShiftState; WheelDelta: integer; X, Y: integer):boolean;override;
       function DoResize:boolean;override;
     public
+      {Creates an instance of TAdTrackControl.}
       constructor Create(AParent:TAdComponent);override;
 
+      {Loads the track control properties from the xml structure.}
       procedure LoadFromXML(aroot:TAdSimpleXMLElem); override;
+      {Saves the track control properties to the xml structure.}
       function SaveToXML(aroot:TAdSimpleXMLElems): TAdSimpleXMLElem;override;
     published
+      {The maximum value of the track control. Must be bigger or equal 
+       than the "min" value.}
       property Max: integer read FMax write SetMax;
+      {The minimum value of the track control. Must be smaller or equal
+      to the "max" value.}
       property Min: integer read FMin write SetMin;
+      {The current position of the track control.}
       property Position: integer read FPosition write SetPosition;
+      {If true, the track control slider may be at every of the bar
+       position. If false, the slider snaps into the single positions.}
       property Smooth: boolean read FSmooth write FSmooth;
+      {The way the track control is orientated.}
       property Orientation: TAdOrientation read FOrientation write SetOrientation;
-
+      
+      {Event that is triggered when the position of the track control is
+       changed.}
       property OnChange: TAdNotifyEvent read FOnChange write FOnChange;
   end;
 
+  {A simple track bar component, comparable to the VCL/LCL TTrackBar.}
   TAdTrackBar = class(TAdTrackControl)
     protected
       procedure LoadSkinItem; override;
   end;
 
+  {A simple scroll bar component, comparable to the VCL/LCL TScrollBar.}
   TAdScrollBar = class(TAdTrackControl)
     protected
       procedure LoadSkinItem; override;
   end;
 
+  {A list box component, not finished and not working now.}
   TAdListBox = class(TAdComponent)
     private
       FSkinItem : TAdSkinItem;
@@ -2692,7 +2720,7 @@ begin
 end;
 
 initialization
-  RegisterComponent(TAdListBox,'Standard');
+  //RegisterComponent(TAdListBox,'Standard');
   RegisterComponent(TAdProgressBar,'Standard');
   RegisterComponent(TAdTrackBar,'Standard');
   RegisterComponent(TAdScrollBar,'Standard');

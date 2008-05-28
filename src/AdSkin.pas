@@ -3,7 +3,8 @@
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
 * 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program 
+* under the GPL. 
 * You also should have recieved a copy of this license with this file. 
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 
@@ -64,6 +65,7 @@ type
       destructor Destroy;override;            
   end;
 
+  {List which contains all skin items.}
   TAdSkinElemList = class(TAdList)
     private
       FOnAdd:TNotifyEvent;
@@ -72,10 +74,13 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
+      {Access to all items in the list.}
       property Items[Index:integer]:TAdSkinElem read GetItem write SetItem;default;
+      {Event that is called when a element is added to the list.}
       property OnAdd:TNotifyEvent read FOnAdd write FOnAdd;
   end;
 
+  {Represents a skin item and its states - e.g. the skin of a button.}
   TAdSkinItem = class
     private
       FStates:TStringList;
@@ -90,26 +95,44 @@ type
       procedure ScaleElements(AWidth,AHeight:integer);
       procedure ChangeStates(Sender:TObject);
     public
+      {True if the element was created by a list and can also be freed by it.}
       CreatedByList:boolean;
-
+      
+      {Loads the skin element from xml.}
       procedure LoadFromXML(aroot:TAdSimpleXMLElem);virtual;
+      {Stores the skin elemts in to the xml data structure.}
       function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;virtual;
 
+      {Draws the skin element at a specific place.}
       procedure Draw(AState,AX,AY,AWidth,AHeight:integer;Alpha:byte=255);overload;
+      {Draws the skin element at a specific place.}
       procedure Draw(AState:integer;ARect:TAdRect;Alpha:byte=255);overload;
 
+      {Creates an instance of TAdSkinItem.}
       constructor Create(AParent:TAdDraw);
+      {Destroys the skin item instance.}
       destructor Destroy;override;
 
+      {A stringlist that contains the names of the states of the skin item.}
       property States:TStringList read FStates;
+      {The parrent TAdDraw passed in the constructor.}
       property Parent:TAdDraw read FParent;
+      {A list that contains all elements the skin item consists of.}
       property Elements:TAdSkinElemList read FSkinElems;
+      {The base width of the skin items. All size values in the xml file are
+       relative to this value.}
       property BaseWidth:integer read FBaseWidth write SetBaseWidth;
+      {The base height of the skin items. All size values in the xml file are
+       relative to this value.}
       property BaseHeight:integer read FBaseHeight write SetBaseHeight;
+      {Name of the skin items.}
       property Name:string read FName write FName;
+      {Contains the state images of the skin item.}
       property Images:TAdImageList read FImages write FImages;
   end;
 
+  {A class that contains a set of skin items. Those skin items build the a
+   skin that can be loaded from and stored to file, stream or xml.}
   TAdSkin = class(TAdList)
     private
       FParent:TAdDraw;
@@ -120,24 +143,41 @@ type
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification); override;
     public
+      {Creates an instance of TAdSkin.}
       constructor Create(AParent:TAdDraw);
+      {Destroys the instance.}
       destructor Destroy;override;
 
+      {Saves the skin data to file.}
       procedure SaveToFile(AFile:string);
+      {Loads the skin data from file.}
       procedure LoadFromFile(AFile:string);
 
+      {Saves the skin data to a stream.}
       procedure SaveToStream(AStream:TStream);
+      {Loads the skin data from a stream.}
       procedure LoadFromStream(AStream:TStream);
 
+      {Saves the skin data to a xml node.}
       function SaveToXML(aroot:TAdSimpleXMLElems):TAdSimpleXMLElem;
+      {Loads the skin data from a xml node.}
       procedure LoadFromXML(aroot:TAdSimpleXMLElem);
 
+      {Adds an existing skin item to the skin and returns the position of this
+       item in the list.}
       function Add(Item:TAdSkinItem):integer;overload;
+      {Adds a new skin item to the skin and returns the position of this item
+       in the list.}
       function Add(Name:string):integer;overload;
 
+      {Returns the index of a skin item with a specific name.}
       function IndexOf(Name:string):integer;overload;
+      {Gives you access to the skin items in the skin by index.}
       property Items[Index:integer]:TAdSkinItem read GetItem write SetItem;default;
+      {Gives you access to the skin items in the skin by name.}
       property ItemNamed[Index:string]:TAdSkinItem read GetNamedItem write SetNamedItem;
+      
+      {The parent TAdDraw that was set in the constructor.}
       property Parent:TAdDraw read FParent;
   end;
 
