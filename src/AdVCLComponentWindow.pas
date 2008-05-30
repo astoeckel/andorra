@@ -153,7 +153,8 @@ begin
       form.BorderStyle := bsSingle;
       form.ClientWidth := AProps.Width;
       form.ClientHeight := AProps.Height;
-      form.Position := poScreenCenter;
+      form.Top := (Screen.Height - AProps.Height) div 2;
+      form.Left := (Screen.Width - AProps.Width) div 2;
     end else
     if (AProps.Mode = dmScreenRes) or (AProps.Mode = dmFullscreen) then
     begin

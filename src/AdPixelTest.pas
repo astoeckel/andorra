@@ -23,7 +23,8 @@ uses
   AdClasses, AdTypes, AdDraws;
 
 type
-  TAdCollisionTestDrawEvent = procedure(ASurface: TAdSurface; AX, AY: integer) of object;
+  TAdCollisionTestDrawEvent = procedure(AObj: TObject; ASurface: TAdRenderingSurface;
+    AX, AY: integer) of object;
 
   TAdPixelCollisionTester = class
     private
@@ -42,9 +43,9 @@ type
 
       property AdDraw: TAdDraw read FDraw;
 
-      function CheckCollision(ABoundsRect1: TAdRect;
-        ACallback1: TAdCollisionTestDrawEvent; ABoundsRect2: TAdRect;
-        ACallback2: TAdCollisionTestDrawEvent): boolean;
+      function CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
+        AObj2: TObject; ABoundsRect2: TAdRect;
+        ACallback: TAdCollisionTestDrawEvent): boolean;
 
       property Surface: TAdTextureSurface read FSurface;
   end;
@@ -76,9 +77,9 @@ begin
   inherited;
 end;
 
-function TAdPixelCollisionTester.CheckCollision(ABoundsRect1: TAdRect;
-  ACallback1: TAdCollisionTestDrawEvent; ABoundsRect2: TAdRect;
-  ACallback2: TAdCollisionTestDrawEvent): boolean;
+function TAdPixelCollisionTester.CheckCollision(AObj1: TObject;
+  ABoundsRect1: TAdRect; AObj2: TObject; ABoundsRect2: TAdRect;
+  ACallback: TAdCollisionTestDrawEvent): boolean;
 var
   AOverlapRect: TAdRect;
   w, h: integer;
@@ -103,7 +104,7 @@ begin
     FDraw.AdAppl.SetStencilEvent(asePass, asoIncrement);
 
     //Draw the first object
-    ACallback1(FSurface,
+    ACallback(AObj1, FSurface,
       ABoundsRect1.Left - AOverlapRect.Left,
       ABoundsRect1.Top - AOverlapRect.Top);
 
@@ -116,7 +117,7 @@ begin
     FPixelCounter.StartCount;
 
     //Draw the second object
-    ACallback2(FSurface,
+    ACallback(AObj2, FSurface,
       ABoundsRect2.Left - AOverlapRect.Left,
       ABoundsRect2.Top - AOverlapRect.Top);
 
@@ -188,9 +189,7 @@ begin
       AO.Right := AR2.Right;       
 
   end else
-  begin
     result := false;
-  end;
 end;
 
 end.

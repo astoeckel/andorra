@@ -33,6 +33,7 @@ type
     AdSpriteEngine:TSpriteEngine;
     AdPercounter:TAdPerformanceCounter;
     AdImageList:TAdImageList;
+    ColTest: TAdSpritePixelCollisionTester;
     Sprite:TImageSprite;
     procedure Idle(Sender:TObject; var Done:boolean);
   end;
@@ -57,10 +58,8 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
@@ -68,6 +67,8 @@ begin
     begin
       AdImageList := TAdImageList.Create(AdDraw);
       AdImageList.LoadFromFile(path+'misc.ail');
+
+      ColTest := TAdSpritePixelCollisionTester.Create(AdDraw);
 
       AdSpriteEngine := TSpriteEngine.Create(AdDraw);
 
@@ -80,7 +81,7 @@ begin
           Image := AdImageList.Items[random(AdImageList.Count)];
           X := random(round(ClientWidth - Width));
           Y := random(round(ClientHeight - Height));
-          PixelCheck := true;
+          PixelCollisionTester := ColTest;
         end;
       end;
 
@@ -89,7 +90,7 @@ begin
       begin
         Image := AdImageList.Items[2];
         z := 1;
-        PixelCheck := true;
+        PixelCollisionTester := ColTest;
       end;
 
       Application.OnIdle := Idle;
@@ -108,6 +109,7 @@ end;
 
 procedure TMainFrm.FormDestroy(Sender: TObject);
 begin
+  ColTest.Free;
   AdSpriteEngine.Free;
   AdPerCounter.Free;
   AdImageList.Free;
@@ -125,7 +127,7 @@ procedure TMainFrm.Idle(Sender: TObject; var Done: boolean);
 begin
   AdPercounter.Calculate;
 
-  AdDraw.ClearSurface(clBlack);
+  AdDraw.ClearSurface(0);
   AdDraw.BeginScene;
 
   with AdDraw.Canvas do
@@ -158,6 +160,7 @@ procedure TAdTestSprite.DoMove(timegap: double);
 begin
   inherited;  
   col := false;
+  Angle := Angle + timegap;
 end;
 
 { TAdCursorSprite }

@@ -14,7 +14,7 @@ unit DX3DMain;
 interface
 
 uses                 
-  SysUtils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
+  SysUtils, AdWindowFramework, d3dx9, Direct3D9, dxerr9, AdClasses, Windows, Math,
   AdTypes, AdBitmapClass;
 
 type
@@ -34,6 +34,7 @@ type
       FTextures: boolean;
       FMipmaps: boolean;
     protected
+      procedure WriteLog(ALogSeverity: TAd2dLogSeverity; AMessage: string);
       procedure SetViewPort(AValue:TAdRect);override;
       procedure SetAmbientColor(AValue: TAndorraColor);override;
       procedure ResetRenderTarget;
@@ -247,7 +248,7 @@ begin
 
     if Failed(Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, dtype, D3DCaps9)) then
     begin
-      //WriteLog(ltFatalError,'No connection to the default device.');
+      WriteLog(lsFatalError,'No connection to the default device.');
     end;
     hw := D3DCaps9.DevCaps and D3DDEVCAPS_HWTRANSFORMANDLIGHT <> 0;
     if hw then
@@ -257,7 +258,7 @@ begin
     else
     begin
       vp := D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-      //WriteLog(ltWarning,'The current device does not support "HARDWARE TRANSFORM AND LIGHT".');
+      WriteLog(lsWarning,'The current device does not support "HARDWARE TRANSFORM AND LIGHT".');
     end;
 
     Fillchar(d3dpp, sizeof(d3dpp),0);
@@ -285,8 +286,8 @@ begin
         end;
         if failed(Direct3D9.CheckDeviceType(D3DADAPTER_DEFAULT, dtype, afmt, afmt, false)) then
         begin
-          //WriteLog(ltWarning,'The current device settings may be unsupportet.');
-          //WriteLog(ltInfo,'Try to use other modes.');
+          WriteLog(lsWarning, 'The current device settings may be unsupportet.');
+          WriteLog(lsInfo, 'Try to use other modes.');
           case FResolution.BitDepth of
             ad16Bit: afmt := D3DFMT_R5G6B5;
             ad32Bit: afmt := D3DFMT_A8R8G8B8;
@@ -299,14 +300,14 @@ begin
       begin
         if Failed(Direct3D9.GetAdapterDisplayMode(D3DADAPTER_DEFAULT, d3ddm)) then
         begin
-          //WriteLog(ltWarning,'Can not access current display settings. Try to run in fullscreen mode.');
+          WriteLog(lsFatalError, 'Can not access current display settings. Try to run in fullscreen mode.');
           exit;
         end;
         afmt := d3ddm.Format;
       end;
       if failed(Direct3D9.CheckDeviceType(D3DADAPTER_DEFAULT, dtype, afmt, afmt, false)) then
       begin
-        //WriteLog(ltFatalError,'The current device settings are unsupportet. Try another adapter mode.');
+        WriteLog(lsFatalError, 'The current device settings are unsupportet. Try another adapter mode.');
         exit;
       end;
       BackBufferFormat := afmt;
@@ -327,10 +328,10 @@ begin
       (Direct3D9.CheckDeviceFormat(D3DADAPTER_DEFAULT, dtype, afmt, D3DUSAGE_AUTOGENMIPMAP, D3DRTYPE_TEXTURE, afmt) = D3D_OK);
     if not CanAutoGenMipMaps then
     begin
-      //WriteLog(ltInfo, 'Device can not create mipmaps. Mipmaps will be disabled.');
+      WriteLog(lsInfo, 'Device can not create mipmaps. Mipmaps will be disabled.');
     end;
 
-    //WriteLog(ltInfo,'Try to initialize the device.');
+    WriteLog(lsInfo, 'Try to initialize the device.');
 
     FPresent := d3dpp;
 
@@ -339,7 +340,8 @@ begin
       TAdHandleWindowFramework(AWnd).Handle, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
     begin
-      //WriteLog(ltFatalError,'Couldn''t initialize Direct3DDevice! ');
+      WriteLog(lsError, DXGetErrorString9A(hr));
+      WriteLog(lsFatalError, 'Couldn''t initialize Direct3DDevice! ');
       exit;
     end;
 
@@ -351,10 +353,10 @@ begin
 
     //Get the number of lights
     FMaxLightCount := d3dcaps9.MaxActiveLights;
-    Log('AdDirectX93D', lsInfo, PChar('Device supports '+inttostr(MaxLights)+' lights'));
+    WriteLog(lsInfo, 'Device supports '+inttostr(MaxLights)+' lights');
 
 
-    Log('AdDirectX93D', lsInfo, PChar(Inttostr(Direct3DDevice9.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.'));
+    WriteLog(lsInfo, Inttostr(Direct3DDevice9.GetAvailableTextureMem div 1024 div 1024)+'MB Texture Memory on this device.');
 
     //Enable Texture alphablending
     Direct3DDevice9.SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
@@ -368,12 +370,13 @@ begin
 
     FSetToOwnRenderTarget := true;
 
-    //WriteLog(ltInfo,'Initialization complete.');
+    WriteLog(lsInfo,'Initialization complete.');
     result := true;
   end
   else
   begin
-    //WriteLog(ltFatalError,'Error while connecting to DirectX. Check out whether you have the right DirectX Version (9c) installed.');
+    WriteLog(lsFatalError,'Error while creating DirectX Interface. Please check ' +
+     'whether you have the right DirectX Version (9c) installed.');
   end;
 end;
 
@@ -591,6 +594,12 @@ function TDXApplication.SupportsWindowFramework(
 begin
   result :=
     Pos('tadhandlewindowframework',lowercase(AClassId)) > 0;
+end;
+
+procedure TDXApplication.WriteLog(ALogSeverity: TAd2dLogSeverity;
+  AMessage: string);
+begin
+  Log('Andorra Direct3D 9', ALogSeverity, PChar(AMessage)); 
 end;
 
 procedure TDXApplication.BeginScene;

@@ -25,7 +25,7 @@ interface
 
 uses 
   SysUtils, Classes, Math,
-  AdBitmap, AdTypes, AdDraws, AdClasses, AdParticles, AdList, AdShapes;
+  AdBitmap, AdTypes, AdDraws, AdClasses, AdParticles, AdList, AdPixelTest;
 
 type
   {The sprite engines base class.}
@@ -107,6 +107,26 @@ type
       this mode to use the old DelphiX-like collision mode.}
   );
 
+  TAdSpritePixelCollisionTester = class
+    private
+      FPixelTester: TAdPixelCollisionTester;
+      FSurfaceWidth, FSurfaceHeight: integer;
+      FSprite1, FSprite2: TSprite;
+      procedure DrawSpriteProc(AObj: TObject; ASurface: TAdRenderingSurface;
+        AX, AY: integer);
+      procedure SetSurfaceWidth(AValue: integer);
+      procedure SetSurfaceHeight(AValue: integer);
+    protected
+    public
+      constructor Create(AParent: TAdDraw);
+      destructor Destroy;override;
+
+      function TestCollision(ASprite1, ASprite2: TSprite): boolean;
+
+      property SurfaceWidth: integer read FSurfaceWidth write SetSurfaceWidth;
+      property SurfaceHeight: integer read FSurfaceHeight write SetSurfaceHeight;
+  end;
+
   {The sprite engines base class.}
   TSprite = class
     private
@@ -124,8 +144,6 @@ type
       FGridSize:integer;
       FAutoOptimize:boolean;
       FCollisionTyp:TCollisionTyp;
-      FShape:TAdShape;
-      FOwnShape:boolean;
       FVisibilityTest:boolean;
       procedure SetParent(AParent:TSprite);
       procedure Add(ASprite:TSprite);
@@ -149,12 +167,10 @@ type
       procedure SetY(AValue:double);virtual;
       procedure SetWidth(AValue:double);virtual;
       procedure SetHeight(AValue:double);virtual;
-      procedure SetShape(AValue:TAdShape);virtual;
       procedure RemapField;
       procedure MoveInField(ASprite:TSprite);
       function GetCollisionField:TAdRect;virtual;
       procedure CheckCollisionWith(ASprite:TSprite);virtual;
-      property OwnShape:boolean read FOwnShape write FOwnShape;
     public
       {Creates an instance of TSprite.}
       constructor Create(AParent:TSprite);virtual;
@@ -171,15 +187,18 @@ type
       procedure Draw;
       {Tells the engine that this instance of TSprite wants to bee freed.}
       procedure Dead;virtual;
-      {Gives all sprites the posibility to restore their setings - eg. for Lights in Splitscreenmode}
+      {Gives all sprites the posibility to restore their setings - eg. for
+       Lights in Splitscreenmode}
       procedure Restore;
 
       {Deletes all sprites}
       procedure Clear;
 
-      {Checks whether this sprite collides with another sprite in the spriteengine.  Returns the count of sprites.}
+      {Checks whether this sprite collides with another sprite in the
+       spriteengine.  Returns the count of sprites.}
       function Collision:integer;
-      {Checks whether this sprite collides to the sprite, that wants to know whether it collides with another sprite.}
+      {Checks whether this sprite collides to the sprite, that wants to know
+       whether it collides with another sprite.}
       procedure Collision2;
 
       {Returns the count of a sprite class}
@@ -191,7 +210,8 @@ type
       {Returns one sprite at the specified position}
       function GetSpriteAt(X,Y:integer):TSprite;virtual;
       
-      {Returns a rect which contains the relative coordinates of the sprite.}
+      {Returns a rect which contains the relative coordinates (relative to the
+       screen) of the sprite.}
       property BoundsRect:TAdRect read GetBoundsRect;
       {Contains all child sprites.}
       property Items:TSpriteList read FList;
@@ -201,11 +221,9 @@ type
       {Sets the type of the collision optimization.}
       property CollisionOptimizationTyp:TCollisionTyp read FCollisionTyp write SetCollisionOptimization;
 
-      {Returns the 2D-Matrix in which all sprites are sorted by their position. This Matrix may be used for fast accses on the sprites.}
+      {Returns the 2D-Matrix in which all sprites are sorted by their position.
+       This Matrix may be used for fast access on the sprites.}
       property SpriteField:TAd2DSpriteList read FSpriteField;
-
-      {Returns the Shape of the Sprite. Normaly this is nil. Shapes are used to make per-pixel collisions.}
-      property Shape:TAdShape read FShape write SetShape;
     published
       {The absolute X Position of the sprite.}
       property X:double read FX write SetX;
@@ -226,7 +244,8 @@ type
       {Disable to call the "draw" method of sprites although they aren't visible}
       property VisibilityTest:boolean read FVisibilityTest write FVisibilityTest;
 
-      {Defines whether this sprite is included in the collision system. Equal to DelpiX's "Collisioned". Must have been a translation fault.}
+      {Defines whether this sprite is included in the collision system. Equal to
+       DelpiX's "Collisioned".}
       property CanDoCollisions:boolean read FDoCollisions write FDoCollisions;
       {Defines whether the "DoMove" function is called. Equal to DelphiX's "Moved".}
       property CanDoMoving:boolean read FDoMoving write FDoMoving;
@@ -284,15 +303,12 @@ type
       FAnimStart: Integer;
       FAnimStop: Integer;
       FAnimActive: Boolean;
-      FPixelCheck: Boolean;
+      FPixelCollisionTester: TAdSpritePixelCollisionTester;
       function GetAnimCount:integer;
       procedure SetAnimStart(AValue:integer);
       procedure SetAnimStop(AValue:integer);
-      procedure SetPixelCheck(AValue:boolean);
     protected
-      //Creates the shape of the Sprite
-      procedure CreateMask;virtual;
-      //Setter method of the Image-Property
+      function TestCollision(Sprite:TSprite):boolean;override;
       procedure SetImage(AValue:TAdImage);virtual;
       procedure SetHeight(AValue:double);override;
       procedure SetWidth(AValue:double);override;
@@ -321,7 +337,8 @@ type
       //The animation speed in frames (patterns) per second.
       property AnimSpeed:double read FAnimSpeed write FAnimSpeed;
       //Pixel checking
-      property PixelCheck:boolean read FPixelCheck write SetPixelCheck;
+      property PixelCollisionTester: TAdSpritePixelCollisionTester read
+        FPixelCollisionTester write FPixelCollisionTester;
     end;
 
   {An extended sprite which draws sprites blended and rotatet.}
@@ -914,12 +931,6 @@ begin
   end;
 end;
 
-procedure TSprite.SetShape(AValue: TAdShape);
-begin
-  FShape := AValue;
-  FOwnShape := false;
-end;
-
 procedure TSprite.SetHeight(AValue: double);
 begin
   FHeight := AValue;
@@ -958,37 +969,8 @@ begin
 end;     
 
 function TSprite.TestCollision(Sprite: TSprite): boolean;
-var
-  rect:TAdRectShape;
 begin
-  if FShape <> nil then
-  begin
-    if Sprite.Shape <> nil then
-    begin
-      result := Shape.CollideWithShape(Sprite.Shape,
-        AdPoint(round(x),round(y)),
-        AdPoint(round(Sprite.X),round(Sprite.Y)));
-    end
-    else
-    begin
-      rect := TAdRectShape.Create(round(Sprite.Width),round(Sprite.Height));
-      result := Shape.CollideWithShape(rect,
-        AdPoint(round(x),round(y)),
-        AdPoint(round(Sprite.X),round(Sprite.Y)));
-      rect.Free;
-    end;
-  end else
-  if Sprite.Shape <> nil then
-  begin
-    rect := TAdRectShape.Create(round(Width),round(Height));
-    result := rect.CollideWithShape(Sprite.Shape,
-     AdPoint(round(x),round(y)),
-     AdPoint(round(Sprite.X),round(Sprite.Y)));
-    rect.Free;
-  end else
-  begin
-    result := true;
-  end;
+  result := true;
 end;
 
 { TSpriteEngine }
@@ -1043,11 +1025,11 @@ begin
   FAnimActive := true;
   FAnimSpeed := 25;
   FAnimLoop := true;
+  FPixelCollisionTester := nil;
 end;
 
 destructor TImageSprite.Destroy;
 begin
-  SetPixelCheck(false);
   inherited;
 end;
 
@@ -1120,65 +1102,22 @@ begin
   FImage := AValue;
 end;
 
-procedure TImageSprite.SetPixelCheck(AValue: boolean);
-begin
-  if (FShape <> nil)  then FreeAndNil(FShape);
-  FPixelCheck := AValue;
-  CreateMask;
-end;
-
 procedure TImageSprite.SetWidth(AValue: double);
 begin
   inherited;
-  CreateMask;
+end;
+
+function TImageSprite.TestCollision(Sprite: TSprite): boolean;
+begin
+  result := true;
+
+  if FPixelCollisionTester <> nil then
+    result := FPixelCollisionTester.TestCollision(self, Sprite);
 end;
 
 procedure TImageSprite.SetHeight(AValue: double);
 begin
   inherited;
-  CreateMask;
-end;
-
-procedure TImageSprite.CreateMask;
-var
-  adbmp:TAdBitmap;
-begin
-  if (FPixelCheck) and (FImage <> nil) then
-  begin
-    if (FShape <> nil) then FreeAndNil(FShape);
-    begin
-      FShape := TAdBitmapShape.Create(round(Width),round(Height));
-      adbmp := TAdBitmap.Create;
-
-//      w := round(Width);
-//      h := round(Height);
-
-//      adbmp.ReserveMemory(Image.Texture.Texture.BaseWidth,Image.Texture.Texture.BaseHeight);
-//      Image.Texture.Texture.SaveToBitmap(adbmp);
-//      if (w = Image.Texture.Texture.BaseWidth) and
-//         (h = Image.Texture.Texture.BaseHeight) then
-//      begin
-      Image.Texture.SaveToGraphic(adbmp);
-      TAdBitmapShape(FShape).Mask.AssignBitmap(adbmp);
-//      end
-{      else
-      begin
-        bmp1 := TBitmap.Create;
-        bmp2 := TBitmap.Create;
-        adbmp.AssignTo(bmp1);
-
-        bmp2.Width := w;
-        bmp2.Height := h;
-
-        bmp2.Canvas.StretchDraw(rect(0,0,w,h),bmp1);
-        TAdBitmapShape(FShape).Mask.AssignBitmap(bmp2,clWhite);
-
-        bmp2.Free;
-        bmp1.Free;
-      end;}
-      adbmp.Free;
-    end;
-  end;
 end;
 
 { TImageSpriteEx }
@@ -1234,7 +1173,6 @@ end;
 procedure TImageSpriteEx.SetAngle(AValue: double);
 begin
   FAngle := AValue;
-  CreateMask;
 end;
 
 procedure TImageSpriteEx.SetColor(AValue: Integer);
@@ -1634,6 +1572,77 @@ begin
 
     FUnOptimized := false;      
   end;  
+end;
+
+{ TAdSpritePixelCollisionCheck }
+
+constructor TAdSpritePixelCollisionTester.Create(AParent: TAdDraw);
+begin
+  inherited Create;
+
+  FPixelTester := TAdPixelCollisionTester.Create(AParent);
+
+  FSurfaceWidth := FPixelTester.Surface.Width;
+  FSurfaceHeight := FPixelTester.Surface.Height;
+end;
+
+destructor TAdSpritePixelCollisionTester.Destroy;
+begin
+  FPixelTester.Free;
+  inherited;
+end;
+
+procedure TAdSpritePixelCollisionTester.DrawSpriteProc(AObj: TObject;
+  ASurface: TAdRenderingSurface; AX, AY: integer);
+var
+  oldx, oldy: double;
+  oldsurface: TAdRenderingSurface;
+begin
+  with AObj as TSprite do
+  begin
+    //Temporarily set the new pixel check surface
+    oldsurface := Engine.Surface;
+    Engine.Surface := ASurface;
+
+    //Calculate temporal position
+    oldx := X;
+    oldy := Y;
+
+    X := X - BoundsRect.Left + AX;
+    Y := Y - BoundsRect.Top + AY;
+
+    //Draw the sprite
+    Draw;
+
+    //Reset position and surface
+    Engine.Surface := oldsurface;
+    X := oldx;
+    Y := oldy;
+  end;
+end;
+
+procedure TAdSpritePixelCollisionTester.SetSurfaceHeight(AValue: integer);
+begin
+  //Set the new surface height of the pixel tester
+  FSurfaceHeight := AValue;
+  FPixelTester.Surface.SetSize(FSurfaceWidth, FSurfaceHeight);
+end;
+
+procedure TAdSpritePixelCollisionTester.SetSurfaceWidth(AValue: integer);
+begin
+  //Set the new surface width of the pixel tester
+  FSurfaceWidth := AValue;
+  FPixelTester.Surface.SetSize(FSurfaceWidth, FSurfaceHeight);
+end;
+
+function TAdSpritePixelCollisionTester.TestCollision(ASprite1,
+  ASprite2: TSprite): boolean;
+begin
+  //Call the collision test routine. The procedure "DrawSpriteProc" will be
+  //called by the pixel collision tester.
+  result :=
+    FPixelTester.CheckCollision(ASprite1, ASprite1.BoundsRect,
+      ASprite2, ASprite2.BoundsRect, DrawSpriteProc);
 end;
 
 end.
