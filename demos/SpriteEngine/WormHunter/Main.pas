@@ -90,6 +90,7 @@ type
     AdPerCounter:TAdPerformanceCounter;
     AdImageList:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
+    AdPixelCollisionTester: TAdSpritePixelCollisionTester;
 
     MainCharacter:TMainCharacter;
     ActTime:double;
@@ -144,6 +145,8 @@ begin
       AdImageList := TAdImageList.Create(AdDraw);
       AdImageList.LoadFromFile(path+'images.ail');
 
+      AdPixelCollisionTester := TAdSpritePixelCollisionTester.Create(AdDraw);
+
       AdSpriteEngine := TSpriteEngine.Create(AdDraw);
 
       with TBackgroundSprite.Create(AdSpriteEngine) do
@@ -157,6 +160,7 @@ begin
       begin
         SetAnims(AdImageList,'viking');
         SetKeys([]);
+        CollisionTester := AdPixelCollisionTester;
         Init;
       end;
 
@@ -188,6 +192,7 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  AdPixelCollisionTester.Free;
   AdSpriteEngine.Free;
   AdPerCounter.Free;
   AdImageList.Free;
@@ -397,20 +402,16 @@ procedure TMainCharacter.DoCollision(Sprite: TSprite; var Done: boolean);
 begin
   if (Sprite is TWorm) and (TWorm(Sprite).State <> stDie) then
   begin
-    if (Y + Height - 10 > Sprite.Y) and
-       (abs((Sprite.X + Sprite.Width / 2) - (X+Width / 2)) < 20) then
+    with TParticleSprite.Create(Engine) do
     begin
-      with TParticleSprite.Create(Engine) do
-      begin
-        PartSys.LoadFromFile(path+'splatter.apf');
-        Image := Form1.AdImageList.Find('particle');
-        Emit(20);
-        X := Sprite.X + Sprite.Width / 2;
-        Y := Sprite.Y + Sprite.Height / 2;
-        Z := Sprite.Z;
-      end;
-      TWorm(Sprite).Die;
+      PartSys.LoadFromFile(path+'splatter.apf');
+      Image := Form1.AdImageList.Find('particle');
+      Emit(20);
+      X := Sprite.X + Sprite.Width / 2;
+      Y := Sprite.Y + Sprite.Height / 2;
+      Z := Sprite.Z;
     end;
+    TWorm(Sprite).Die;
   end;
 end;
 
@@ -538,8 +539,6 @@ begin
     Die;
     FLifeTime := 0;
   end;
-
-  Collision;
 end;
 
 procedure TWorm.Init;

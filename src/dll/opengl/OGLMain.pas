@@ -153,6 +153,18 @@ type
 
       property FBO: GLuint read FFBO; 
   end;
+
+  TOGLPixelCounter = class(TAd2dPixelCounter)
+    private
+      OGLQuery: Gluint;
+    public
+      constructor Create;
+      destructor Destroy;override;
+
+      procedure StartCount;override;
+      procedure StopCount;override;
+      function GetCount: Cardinal;override;
+  end;
   
 implementation
 
@@ -165,7 +177,7 @@ end;
 
 function TOGLApplication.CreatePixelCounter: TAd2dPixelCounter;
 begin
-  result := nil;
+  result := TOGLPixelCounter.Create;
 end;
 
 function TOGLApplication.CreateBitmapTexture: TAd2DBitmapTexture;
@@ -1044,6 +1056,9 @@ begin
     //Set Texture Data
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,  w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil);
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+
     //Connect buffers to framebuffer
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
       GL_TEXTURE_2D, PCardinal(FTexture)^, 0);
@@ -1063,6 +1078,35 @@ begin
 
   FBaseWidth := AWidth;
   FBaseHeight := AHeight;
+end;
+
+{ TDXPixelCounter }
+
+constructor TOGLPixelCounter.Create;
+begin
+  inherited;
+  glGenQueries(1, @OGLQuery);
+end;
+
+destructor TOGLPixelCounter.Destroy;
+begin
+  glDeleteQueries(1, @OGLQuery);
+  inherited;
+end;
+
+function TOGLPixelCounter.GetCount: Cardinal;
+begin
+  glGetQueryObjectivARB(OGLQuery, GL_QUERY_RESULT_ARB, @result);
+end;
+
+procedure TOGLPixelCounter.StartCount;
+begin
+  glBeginQueryARB(GL_SAMPLES_PASSED_ARB, OGLQuery);
+end;
+
+procedure TOGLPixelCounter.StopCount;
+begin
+  glEndQuery(OGLQuery);
 end;
 
 end.

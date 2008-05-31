@@ -20,20 +20,31 @@ unit AdPixelTest;
 interface
 
 uses
-  AdClasses, AdTypes, AdDraws;
+  AdClasses, AdTypes, AdDraws, AdContainers;
 
 type
-  TAdCollisionTestDrawEvent = procedure(AObj: TObject; ASurface: TAdRenderingSurface;
+  TAdCollisionTestDrawProc = procedure(AObj: TObject; ASurface: TAdRenderingSurface;
     AX, AY: integer) of object;
+  TAdCollisionTestCollisionProc = procedure(AObj1, AObj2: TObject) of object;
+
+  TAdCollisionTesterItem = record
+    Obj1, Obj2: TObject;
+    CollisionCallback: TAdCollisionTestCollisionProc;
+    PixelCounter: TAd2dPixelCounter;
+  end;
+  PAdCollisionTesterItem = ^TAdCollisionTesterItem;
 
   TAdPixelCollisionTester = class
     private
       FSurface: TAdTextureSurface;
       FDraw: TAdDraw;
-      FPixelCounter: TAd2dPixelCounter;
+      FCollisionObjectList: TAdLinkedList;
+      FCount: integer;
 
       procedure Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
       function CalcOverlapRect(out AO: TAdRect; const AR1, AR2: TAdRect): boolean;
+      procedure Clear;
+      function AddTestItem: PAdCollisionTesterItem;
     protected
       procedure Initialize;
       procedure Finalize;
@@ -43,9 +54,12 @@ type
 
       property AdDraw: TAdDraw read FDraw;
 
-      function CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
+      procedure CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
         AObj2: TObject; ABoundsRect2: TAdRect;
-        ACallback: TAdCollisionTestDrawEvent): boolean;
+        ADrawCallback: TAdCollisionTestDrawProc;
+        ACollisionCallback: TAdCollisionTestCollisionProc);
+
+      procedure GetCollisions;
 
       property Surface: TAdTextureSurface read FSurface;
   end;
@@ -63,7 +77,9 @@ begin
 
   FSurface := TAdTextureSurface.Create(FDraw);
   FSurface.Options := [aoStencilBuffer, aoAlphaMask, aoZBuffer, aoTextures];
-  FSurface.SetSize(32, 32);
+  FSurface.SetSize(32, 32); 
+
+  FCollisionObjectList := TAdLinkedList.Create;
 
   if FDraw.Initialized then  
     Initialize;
@@ -73,21 +89,26 @@ destructor TAdPixelCollisionTester.Destroy;
 begin
   Finalize;
   FSurface.Free;
+
+  FCollisionObjectList.Free;
   
   inherited;
 end;
 
-function TAdPixelCollisionTester.CheckCollision(AObj1: TObject;
-  ABoundsRect1: TAdRect; AObj2: TObject; ABoundsRect2: TAdRect;
-  ACallback: TAdCollisionTestDrawEvent): boolean;
+procedure TAdPixelCollisionTester.CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
+  AObj2: TObject; ABoundsRect2: TAdRect;
+  ADrawCallback: TAdCollisionTestDrawProc;
+  ACollisionCallback: TAdCollisionTestCollisionProc);
 var
   AOverlapRect: TAdRect;
+  ATestItem: PAdCollisionTesterItem;
   w, h: integer;
 begin
-  result := false;
-
   if CalcOverlapRect(AOverlapRect, ABoundsRect1, ABoundsRect2) then
   begin
+    //Get new list element
+    ATestItem := AddTestItem;
+
     //Clear surface
     FSurface.ClearSurface(0);
 
@@ -104,7 +125,7 @@ begin
     FDraw.AdAppl.SetStencilEvent(asePass, asoIncrement);
 
     //Draw the first object
-    ACallback(AObj1, FSurface,
+    ADrawCallback(AObj1, FSurface,
       ABoundsRect1.Left - AOverlapRect.Left,
       ABoundsRect1.Top - AOverlapRect.Top);
 
@@ -114,35 +135,70 @@ begin
     FDraw.AdAppl.SetStencilEvent(asePass, asoKeep);
 
     //Start counting drawn pixels
-    FPixelCounter.StartCount;
+    ATestItem^.PixelCounter.StartCount;
 
     //Draw the second object
-    ACallback(AObj2, FSurface,
+    ADrawCallback(AObj2, FSurface,
       ABoundsRect2.Left - AOverlapRect.Left,
       ABoundsRect2.Top - AOverlapRect.Top);
 
-    //Stop counting - If at least one pixel had been drawn, there is a collision
-    result := FPixelCounter.StopCount <> 0;
+    //Stop counting
+    ATestItem^.PixelCounter.StopCount;
+
+    //Set list item data
+    ATestItem^.Obj1 := AObj1;
+    ATestItem^.Obj2 := AObj2;
+    ATestItem^.CollisionCallback := ACollisionCallback;
 
     //Reset stencil options
     FDraw.AdAppl.SetStencilOptions(0, $FFFF, asfAlways);
   end;
 end;
 
+procedure TAdPixelCollisionTester.Clear;
+var
+  pct: PAdCollisionTesterItem;
+begin
+  FCollisionObjectList.StartIteration;
+  while not FCollisionObjectList.ReachedEnd do
+  begin
+    pct := FCollisionObjectList.GetCurrent;
+    pct^.PixelCounter.Free;
+    Dispose(pct);
+  end;
+  FCount := 0;
+end;
+
 procedure TAdPixelCollisionTester.Finalize;
 begin
-  if FPixelCounter <> nil then
+  Clear;
+end;
+
+procedure TAdPixelCollisionTester.GetCollisions;
+var
+  pct: PAdCollisionTesterItem;
+  i: integer;
+begin
+  //Iterate through list
+  i := 0;
+  FCollisionObjectList.StartIteration;
+  while (not FCollisionObjectList.ReachedEnd) and (i < FCount) do
   begin
-    FPixelCounter.Free;
-    FPixelCounter := nil;
+    pct := FCollisionObjectList.GetCurrent;
+    if pct^.PixelCounter.GetCount > 0 then
+      pct^.CollisionCallback(pct^.Obj1, pct^.Obj2);
+
+    i := i + 1;
   end;
+
+  //Reset list
+  FCollisionObjectList.StartIteration;
+  FCount := 0;
 end;
 
 procedure TAdPixelCollisionTester.Initialize;
 begin
   Finalize;
-
-  FPixelCounter := FDraw.AdAppl.CreatePixelCounter;
 end;
 
 procedure TAdPixelCollisionTester.Notify(ASender: TObject;
@@ -152,6 +208,21 @@ begin
     seInitialize: Initialize;
     seFinalize: Finalize;
   end;
+end;
+
+function TAdPixelCollisionTester.AddTestItem: PAdCollisionTesterItem;
+begin
+  if not FCollisionObjectList.ReachedEnd then
+  begin
+    result := FCollisionObjectList.GetCurrent;
+  end else
+  begin
+    New(result);
+    result^.PixelCounter := AdDraw.AdAppl.CreatePixelCounter;
+    FCollisionObjectList.Add(result);
+  end;
+
+  FCount := FCount + 1;
 end;
 
 function TAdPixelCollisionTester.CalcOverlapRect(out AO: TAdRect; const AR1,

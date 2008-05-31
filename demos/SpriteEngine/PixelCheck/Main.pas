@@ -160,7 +160,7 @@ procedure TAdTestSprite.DoMove(timegap: double);
 begin
   inherited;  
   col := false;
-  Angle := Angle + timegap;
+  Angle := Angle + timegap * 10;
 end;
 
 { TAdCursorSprite }

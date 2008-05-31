@@ -439,7 +439,8 @@ type
   TAd2dPixelCounter = class
     public
       procedure StartCount;virtual;abstract;
-      function StopCount: Cardinal;virtual;abstract;
+      procedure StopCount;virtual;abstract;
+      function GetCount: Cardinal;virtual;abstract;
   end;
 
   TAd2dLight = class

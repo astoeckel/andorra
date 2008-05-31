@@ -137,7 +137,8 @@ type
       destructor Destroy;override;
       
       procedure StartCount;override;
-      function StopCount: cardinal;override;
+      procedure StopCount;override;
+      function GetCount: Cardinal;override;
   end;
 
   TDXLight = class(TAd2dLight)
@@ -1312,17 +1313,19 @@ begin
   inherited;
 end;
 
-procedure TDXPixelCounter.StartCount;
+function TDXPixelCounter.GetCount: Cardinal;
 begin
-  if not (Direct3DQuery.Issue(D3DISSUE_BEGIN) = D3D_OK) then
-    raise Exception.Create('!');
+  while Direct3DQuery.GetData(@result, SizeOf(DWORD), D3DGETDATA_FLUSH) = S_FALSE do;
 end;
 
-function TDXPixelCounter.StopCount: cardinal;
+procedure TDXPixelCounter.StartCount;
+begin
+  Direct3DQuery.Issue(D3DISSUE_BEGIN);
+end;
+
+procedure TDXPixelCounter.StopCount;
 begin
   Direct3DQuery.Issue(D3DISSUE_END);
-
-  while Direct3DQuery.GetData(@result, SizeOf(DWORD), D3DGETDATA_FLUSH) = S_FALSE do;
 end;
 
 { TDXLight }
