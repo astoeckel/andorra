@@ -221,7 +221,10 @@ type
 
       FAmbientColor: TAndorraColor;
 
+      FOnActivate: TAdNotifyEvent;
+
       procedure UpdateMatrix;
+      procedure UpdateViewport;
       procedure UpdateAmbientColor;
 
       procedure SetViewPort(AValue:TAdRect);
@@ -296,6 +299,11 @@ type
       property Activated: boolean read FActivated;
       {Points on the parent AdDraw instance.}
       property AdDraw: TAdDraw read FDraw;
+
+      {This event is raised when the current scene is activated. OnActivate
+       may already be in use internally, so you have to test if it really is
+       set to nil if you want to assign to it.}
+      property OnActivate: TAdNotifyEvent read FOnActivate write FOnActivate;
   end;
 
   {A basic, abstract surface class that extends TAdSurface and adds its own
@@ -355,6 +363,7 @@ type
     private
       FImage : TAdCustomImage;
       FTexture: TAdRenderTargetTexture;
+      procedure SceneActivate(Sender: TObject);
     protected
       procedure DoActivation;override;
       function GetWidth: integer;override;
@@ -816,6 +825,7 @@ begin
     DisplayMode := dmDefault;
   end;
 
+  //Set default options
   Options := [aoTextures, aoBlending, aoCulling];
 end;
 
@@ -842,6 +852,7 @@ procedure TAdDraw.Run;
 begin
   if FWnd <> nil then
     FWnd.Run;
+  //TODO: Raise exception here
 end;
 
 procedure TAdDraw.SetActiveSurface(ASurface: TAdSurface);
@@ -909,6 +920,8 @@ begin
   wndprops.Height := FDisplay.Height;
   wndprops.BitDepth := FDisplay.BitDepth;
 
+  //If the graphic plugin supports the fullscreen mode, give the responsibility
+  //instead to the window framework
   if Properties.PropertyExists('fullscreen') and
      (FDisplay.DisplayMode = dmFullscreen) then
   begin
@@ -2265,8 +2278,12 @@ end;
 
 procedure TAdScene.Activate;
 begin
+  if Assigned(FOnActivate) then
+    FOnActivate(self);
+    
   FActivated := true;
   UpdateMatrix;
+  UpdateViewport;
 end;
 
 procedure TAdScene.Deactivate;
@@ -2290,8 +2307,7 @@ end;
 procedure TAdScene.SetViewPort(AValue: TAdRect);
 begin
   FViewPort := AValue;
-  if FActivated and FDraw.CanDraw then
-    FDraw.AdAppl.Viewport := AValue;
+  UpdateViewport;
 end;
 
 procedure TAdScene.UpdateAmbientColor;
@@ -2306,6 +2322,12 @@ begin
     FDraw.AdAppl.SetupManualScene(FViewMatrix, FProjectionMatrix);
 end;
 
+procedure TAdScene.UpdateViewport;
+begin
+  if FActivated and FDraw.CanDraw then
+    FDraw.AdAppl.Viewport := FViewport;
+end;
+
 procedure TAdScene.SetAmbientColor(AValue: TAndorraColor);
 begin
   FAmbientColor := AValue;
@@ -2318,17 +2340,27 @@ var
 begin
   if AdDraw.CanDraw then
   begin
+    //Store current surface
     curscene := nil;
     if not Activated then
       curscene := AdDraw.ActiveSurface;
 
+    //Deactivate current scene, so that it can be reactivated 
+    if curscene <> nil then
+      curscene.Deactivate;
+
     Activate;
+
+    //Set and store new scene settings
     FDraw.AdAppl.Setup2DScene(AWidth, AHeight, FFarZ, FNearZ);
     FDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
 
+    //Build viewport
     FWidth := AWidth;
     FHeight := AHeight;
+    Viewport := AdRect(0, 0, AWidth, AHeight);
 
+    //Reset scene if neccessary
     if curscene <> nil then
       curscene.Activate;
   end;
@@ -2341,17 +2373,26 @@ var
 begin
   if AdDraw.CanDraw then
   begin
+    //Store current surface
     curscene := nil;
     if not Activated then
       curscene := AdDraw.ActiveSurface;
 
+    //Deactivate current scene, so that it can be reactivated 
+    if curscene <> nil then
+      curscene.Deactivate;
+
     Activate;
+
+    //Set and store new scene settings
     FDraw.AdAppl.Setup3DScene(AWidth, AHeight, APos, ADir, AUp, FNearZ, FFarZ);
     FDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
 
+    //Store width and height settings
     FWidth := AWidth;
     FHeight := AHeight;
 
+    //Reset scene if neccessary
     if curscene <> nil then
       curscene.Activate;
   end;
@@ -2513,9 +2554,15 @@ constructor TAdTextureSurface.Create(ADraw: TAdDraw);
 begin
   inherited Create(ADraw);
 
+  //Connect to the scene activate event
+  Scene.OnActivate := SceneActivate;
+
+  //Create image and render surface texture
   FImage := TAdCustomImage.Create(ADraw);
   FTexture := TAdRenderTargetTexture.Create(ADraw);
   FImage.Texture := FTexture;
+
+
   if ADraw.Initialized then
     DoInitialize;
 end;
@@ -2527,6 +2574,11 @@ begin
   inherited;
 end;
 
+procedure TAdTextureSurface.SceneActivate(Sender: TObject);
+begin
+  Activate;
+end;
+
 procedure TAdTextureSurface.SetSize(AWidth, AHeight: integer);
 begin
   if CanDraw then
@@ -2534,6 +2586,8 @@ begin
     FTexture.Width := AWidth;
     FTexture.Height := AHeight;
     FImage.Restore;
+
+    Setup2DScene;
   end;
 end;
 

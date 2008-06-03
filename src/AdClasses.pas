@@ -286,8 +286,9 @@ type
       {Finalizes the engine.}
       procedure Finalize;virtual;abstract;
 
-      {Clears the active surface. You can specify which layers and which parts
-       of the surface should be cleared.}
+      {Clears the active surface. You can specify which layers and which
+       rectangular region of the surface should be cleared. The coordinats are
+       absolute.}
       procedure ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
         AColor: TAndorraColor; AZValue: integer; AStencilValue: integer); virtual; abstract;
 

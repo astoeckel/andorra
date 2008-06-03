@@ -248,19 +248,6 @@ begin
   end;
 end;
 
-procedure TOGLApplication.ResetRenderTarget;
-begin
-  if FRenderingToFBO then
-  begin
-    FRenderingToFBO := false;
-    glPopAttrib;
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-
-    FWidth := FWnd.ClientWidth;
-    FHeight := FWnd.ClientHeight;
-  end;
-end;
-
 procedure TOGLApplication.Finalize;
 begin
   Log('OpenGL', lsInfo, 'Finalize Andorra OpenGL Plugin');
@@ -316,7 +303,14 @@ begin
 
   //Culling
   if aoCulling in AOptions then
-    glEnable(GL_CULL_FACE)
+  begin
+    if FRenderingToFBO then    
+      glCullFace(GL_BACK)
+    else
+      glCullFace(GL_FRONT);
+      
+    glEnable(GL_CULL_FACE);
+  end
   else
     glDisable(GL_CULL_FACE);
 
@@ -347,11 +341,23 @@ begin
   if ATarget <> nil then
   begin
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, TOGLRenderTargetTexture(ATarget).FBO);
-    glPushAttrib(GL_VIEWPORT_BIT);
     FRenderingToFBO := true;
 
     FWidth := ATarget.BaseWidth;
     FHeight := ATarget.BaseHeight;
+  end;
+end;
+
+procedure TOGLApplication.ResetRenderTarget;
+begin
+  //Use the default surface now
+  if FRenderingToFBO then
+  begin
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    FRenderingToFBO := false;
+
+    FWidth := FWnd.ClientWidth;
+    FHeight := FWnd.ClientHeight;
   end;
 end;
 
@@ -407,9 +413,6 @@ end;
 
 procedure TOGLApplication.Setup2DScene(AWidth, AHeight: integer; ANearZ, AFarZ: double);
 begin
-  //!?
-  glViewport(0,0,AWidth,AHeight);
-
   glMatrixMode(GL_PROJECTION);
 
   glLoadIdentity;
@@ -461,6 +464,8 @@ end;
 procedure TOGLApplication.SetViewPort(AValue: TAdRect);
 begin
   inherited;
+
+  //Set viewport
   glViewPort(
     AValue.Left,
     FHeight - AValue.Top - (AValue.Bottom-AValue.Top),
@@ -514,7 +519,7 @@ procedure TOGLApplication.ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLaye
 var
   mask: Cardinal;
 begin
-  glClearColor(AColor.r / 255, AColor.g / 255, AColor.b / 255, 0);
+  glClearColor(AColor.r / 255, AColor.g / 255, AColor.b / 255, AColor.a / 255);
   glClearDepth(AZValue);
   glClearStencil(AStencilValue);
 
@@ -529,12 +534,27 @@ begin
     mask := mask or GL_DEPTH_BUFFER_BIT;
 
   glEnable(GL_SCISSOR_TEST);
+
   glScissor(
     ARect.Left, ARect.Top,
     ARect.Right - ARect.Left,
     ARect.Bottom - ARect.Top);
 
   glClear(mask);
+
+  if FRenderingToFBO then
+  begin
+    glBegin(GL_QUADS);
+
+    glColor3f(AColor.r / 255, AColor.g / 255, AColor.b / 255);
+
+    glVertex3f(ARect.Left, ARect.Top, 0);
+    glVertex3f(ARect.Right, ARect.Top,0);
+    glVertex3f(ARect.Right, ARect.Bottom ,0);
+    glVertex3f(ARect.Left, ARect.Bottom ,0);
+
+    glEnd;
+  end;
 
   glDisable(GL_SCISSOR_TEST);
 end;
@@ -577,7 +597,9 @@ begin
           FLastTexture := FTexture;
           glBindTexture(GL_TEXTURE_2D,PCardinal(FTexture.Texture)^);
         end;
-        TOGLBitmapTexture(FTexture).SetFilter;
+        if FTexture is TOGLBitmapTexture then
+          TOGLBitmapTexture(FTexture).SetFilter;
+
         glEnable(GL_TEXTURE_2D);
 
         //Set texture matrix
@@ -1044,28 +1066,31 @@ begin
   begin
     FlushMemory;
 
-    //Create texture, framebuffer and renderbuffer
-    New(PCardinal(FTexture));
+    //Create framebuffer
     glGenFramebuffersEXT(1, @FFBO);
-    glGenRenderbuffersEXT(1, @FDepthBuf);
-    glGenTextures(1, FTexture);
-
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, FFBO);
+
+    //Create texture
+    New(PCardinal(FTexture));
+    glGenTextures(1, FTexture);
     glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
-
-    //Set Texture Data
+    
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,  w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 
-    //Connect buffers to framebuffer
+    //Connect the texture to framebuffer
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
       GL_TEXTURE_2D, PCardinal(FTexture)^, 0);
 
+    //Create renderbuffer
+    glGenRenderbuffersEXT(1, @FDepthBuf);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, FDepthBuf);
+
+    //Reserve memory for the renderbuffer
     glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, w, h);
 
+    //Connect renderbuffer to the framebuffer
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
       GL_RENDERBUFFER_EXT, FDepthBuf);
 

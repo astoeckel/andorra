@@ -492,47 +492,36 @@ end;
 
 function AdColorToColor(AAdColor:TAndorraColor):Longint;
 begin
-  result := RGB(AAdColor.r,AAdColor.g,AAdColor.b);
+  result := RGB(AAdColor.r, AAdColor.g, AAdColor.b);
 end;
 
 function ColorToAdColor(AColor:LongInt):TAndorraColor;
 begin
-  result := Ad_ARGB(255, AColor,AColor shr 8,AColor shr 16);
+  result := Ad_ARGB(255, AColor, AColor shr 8, AColor shr 16);
 end;
 
 function FloatsEqual(v1, v2, e:double):boolean;
 begin
-
   result :=  abs(v1-v2) < e;
 end;
 
 
 function FloatsEqual(v1, v2, e:single):boolean;
-
 begin
-
   result :=  abs(v1-v2) < e;
-end;
-
+end;     
 
 function Cut(AValue:integer):byte;
-
 begin
   if AValue < 255 then
   begin
     if AValue < 0 then
-    begin
-      result := 0;
-    end
+      result := 0
     else
-    begin
-      result := AValue;
-    end;
+      result := AValue
   end
   else
-  begin
     result := 255;
-  end;
 end;
 
 

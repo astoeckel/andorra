@@ -117,7 +117,6 @@ type
     private
       FPixelTester: TAdPixelCollisionTester;
       FSurfaceWidth, FSurfaceHeight: integer;
-      FSprite1, FSprite2: TSprite;
       FDone: boolean;
       procedure DrawSpriteProc(AObj: TObject; ASurface: TAdRenderingSurface;
         AX, AY: integer);
