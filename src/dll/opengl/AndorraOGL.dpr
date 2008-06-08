@@ -28,8 +28,8 @@ uses
   OGLMain in 'OGLMain.pas';
 
 {$IFNDEF FPC}
-{$E .dll}
-{$R *.res}
+  {$E .dll}
+  {$R *.res}
 {$ENDIF}
 
 function CreateApplication:TAd2DApplication;stdcall;

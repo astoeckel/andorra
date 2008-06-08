@@ -29,8 +29,8 @@ uses
   {$IFDEF WIN32}, Windows{$ENDIF};
 
 type
-  TOGLColor = record
-    r,g,b,a:byte;
+  TOGLColor = packed record
+    r, g, b, a: byte;
   end;
 
   TOGLColorArray = array of TOGLColor;
@@ -96,14 +96,26 @@ type
       procedure Flip;override;
   end;
 
+  TOGLColorF = record
+    r, g, b, a: Single;
+  end;
+
+  TOGLMaterialData = record
+    Diffuse: TOGLColorF;
+    Ambient: TOGLColorF;
+    Specular: TOGLColorF;
+    Emissive: TOGLColorF;
+    Power: single;
+  end;
+
   TOGLMesh = class(TAd2DMesh)
     private
-      FParent:TOGLApplication;
-      FColors:TOGLColorArray;
-      FNormals:TOGLVector3Array;
-      FTexCoords:TOGLVector2Array;
-      FPositions:TOGLVector3Array;
-      FMaterial: TAd2dMaterial;
+      FParent: TOGLApplication;
+      FColors: TOGLColorArray;
+      FNormals: TOGLVector3Array;
+      FTexCoords: TOGLVector2Array;
+      FPositions: TOGLVector3Array;
+      FMaterial: TOGLMaterialData;
       FUsesMaterial: boolean;
       procedure DivideVertices;
     protected
@@ -165,7 +177,29 @@ type
       procedure StopCount;override;
       function GetCount: Cardinal;override;
   end;
-  
+
+  TOGLLightData = record
+    Diffuse: TOGLColorF;
+    Specular: TOGLColorF;
+    Ambient: TOGLColorF;
+    Position: TAdVector4;
+    ConstantAttenuation: single;
+    LinearAttenuation: single;
+    QuadraticAttenuation: single;
+  end;
+
+  TOGLLight = class(TAd2dLight)
+    private
+      FLightNr: Cardinal;
+      FLightData: TOGLLightData;
+    protected
+      procedure SetData(AValue: TAd2dLightData);override;
+    public
+      constructor Create;
+      procedure EnableLight(ALight: Cardinal);override;
+      procedure DisableLight;override;
+  end;
+
 implementation
 
 { TOGLApplication }
@@ -187,7 +221,7 @@ end;
 
 function TOGLApplication.CreateLight: TAd2DLight;
 begin
-  result := nil;
+  result := TOGLLight.Create;
 end;
 
 function TOGLApplication.CreateRenderTargetTexture: TAd2dRenderTargetTexture;
@@ -233,9 +267,7 @@ begin
     result := true;
 
     glEnable(GL_COLOR_MATERIAL);
-
-    glCullFace(GL_FRONT);
-
+    
     //Repeat the texture if it wraps over the edges
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
@@ -263,16 +295,16 @@ end;
 
 procedure TOGLApplication.SetAmbientColor(AValue: TAndorraColor);
 var
-  param: array[0..3] of Integer;
+  param: array[0..3] of Single;
 begin
   inherited;
-  
-  param[0] := AValue.r;
-  param[1] := AValue.g;
-  param[2] := AValue.b;
-  param[3] := AValue.a;
 
-  glLightModeliv(GL_LIGHT_MODEL_AMBIENT, @param);
+  param[0] := AValue.r / 255;
+  param[1] := AValue.g / 255;
+  param[2] := AValue.b / 255;
+  param[3] := AValue.a / 255;
+
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, @param);
 end;
 
 procedure TOGLApplication.SetOptions(AOptions: TAd2dOptions);
@@ -351,14 +383,11 @@ end;
 procedure TOGLApplication.ResetRenderTarget;
 begin
   //Use the default surface now
-  if FRenderingToFBO then
-  begin
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-    FRenderingToFBO := false;
+  glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+  FRenderingToFBO := false;
 
-    FWidth := FWnd.ClientWidth;
-    FHeight := FWnd.ClientHeight;
-  end;
+  FWidth := FWnd.ClientWidth;
+  FHeight := FWnd.ClientHeight;
 end;
 
 procedure TOGLApplication.SetStencilEvent(AEvent: TAd2dStencilEvent;
@@ -567,6 +596,7 @@ begin
   FParent := AParent;
   FMatrix := AdMatrix_Identity;
   FTextureMatrix := AdMatrix_Identity;
+  FUsesMaterial := false;
 end;
 
 destructor TOGLMesh.Destroy;
@@ -584,22 +614,43 @@ begin
   begin
     with FParent do
     begin
+      //Set blend settings
       case ABlendMode of
         bmAlpha: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         bmAdd: glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         bmMask: glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
       end;
 
+      //Set material settings
+      if FUsesMaterial then
+      begin
+        glDisable(GL_COLOR_MATERIAL);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, @FMaterial.Ambient);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, @FMaterial.Diffuse);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, @FMaterial.Specular);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, @FMaterial.Emissive);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, @FMaterial.Power);
+      end else
+      begin
+        glEnable(GL_COLOR_MATERIAL);
+      end;
+
+      //Make texture settings
       if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
       begin
+
+        //Bind texture if neccessary
         if (FTexture <> FLastTexture) then
         begin
           FLastTexture := FTexture;
           glBindTexture(GL_TEXTURE_2D,PCardinal(FTexture.Texture)^);
         end;
+
+        //Set texture filter
         if FTexture is TOGLBitmapTexture then
           TOGLBitmapTexture(FTexture).SetFilter;
 
+        //Enable textures
         glEnable(GL_TEXTURE_2D);
 
         //Set texture matrix
@@ -652,12 +703,12 @@ begin
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        glColorPointer(4,GL_UNSIGNED_BYTE,0,@FColors[0]);
-        glTexCoordPointer(2,GL_FLOAT,0,@FTexCoords[0]);
-        glNormalPointer(GL_FLOAT,0,@FNormals[0]);
-        glVertexPointer(3,GL_FLOAT,0,@FPositions[0]);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 0, @FColors[0]);
+        glTexCoordPointer(2, GL_FLOAT, 0, @FTexCoords[0]);
+        glNormalPointer(GL_FLOAT, 0, @FNormals[0]);
+        glVertexPointer(3, GL_FLOAT, 0, @FPositions[0]);
 
-        glDrawElements(mode,high(FIndices)+1,GL_UNSIGNED_SHORT,@FIndices[0]);
+        glDrawElements(mode, high(FIndices)+1, GL_UNSIGNED_SHORT, @FIndices[0]);
 
 	      glDisableClientState(GL_COLOR_ARRAY);
         glDisableClientState(GL_NORMAL_ARRAY);
@@ -684,15 +735,33 @@ begin
   DivideVertices;
 end;
 
+function ConvertColor(ACol: TAndorraColor): TOGLColorF;
+begin
+  with result do
+  begin
+    r := ACol.r / 255;
+    g := ACol.g / 255;
+    b := ACol.b / 255;
+    a := ACol.a / 255;
+  end;
+end;
+
 procedure TOGLMesh.SetMaterial(AMaterial: PAd2dMaterial);
 begin
   if AMaterial <> nil then
   begin
-    FMaterial := AMaterial^;
-    FUsesMaterial := false;
+    with FMaterial do
+    begin
+      Ambient := ConvertColor(AMaterial^.Ambient);
+      Diffuse := ConvertColor(AMaterial^.Diffuse);
+      Specular := ConvertColor(AMaterial^.Specular);
+      Emissive := ConvertColor(AMaterial^.Emissive);
+      Power := AMaterial^.Power;
+    end;
+    FUsesMaterial := true;
   end
   else
-    FUsesMaterial := true;
+    FUsesMaterial := false;
 end;
 
 procedure TOGLMesh.SetTexture(ATexture: TAd2DTexture);
@@ -715,21 +784,16 @@ var
   i:integer;
 begin
   if FColors <> nil then
-  begin
     Finalize(FColors);
-  end;
+
   if FNormals <> nil then
-  begin
     Finalize(FNormals);
-  end;
+
   if FTexCoords <> nil then
-  begin
     Finalize(FTexCoords);
-  end;
+
   if FPositions <> nil then
-  begin
     Finalize(FPositions);
-  end;
 
   if (FVertices <> nil) and (FIndices <> nil) then
   begin
@@ -1121,17 +1185,81 @@ end;
 
 function TOGLPixelCounter.GetCount: Cardinal;
 begin
-  glGetQueryObjectivARB(OGLQuery, GL_QUERY_RESULT_ARB, @result);
+  repeat
+    glGetQueryObjectuiv(OGLQuery, GL_QUERY_RESULT_AVAILABLE, @result)
+  until result = GL_TRUE;
+
+  glGetQueryObjectuiv(OGLQuery, GL_QUERY_RESULT, @result);
 end;
 
 procedure TOGLPixelCounter.StartCount;
 begin
-  glBeginQueryARB(GL_SAMPLES_PASSED_ARB, OGLQuery);
+  glBeginQuery(GL_SAMPLES_PASSED, OGLQuery);
 end;
 
 procedure TOGLPixelCounter.StopCount;
 begin
-  glEndQuery(OGLQuery);
+  glEndQuery(GL_SAMPLES_PASSED);
+end;
+
+{ TOGLLight }
+
+constructor TOGLLight.Create;
+begin
+  inherited;
+end;
+
+procedure TOGLLight.DisableLight;
+begin
+  glDisable(FLightNr);
+end;
+
+procedure TOGLLight.EnableLight(ALight: Cardinal);
+begin
+  FLightNr := GL_LIGHT0 + ALight;
+
+  //Set light properties
+  glLightfv(FLightNr, GL_DIFFUSE, @FLightData.Diffuse);
+  glLightfv(FLightNr, GL_SPECULAR, @FLightData.Specular);
+  glLightfv(FLightNr, GL_AMBIENT, @FLightData.Ambient);
+  glLightfv(FLightNr, GL_POSITION, @FLightData.Position);
+  glLightf (FLightNr, GL_CONSTANT_ATTENUATION, FLightData.ConstantAttenuation);
+  glLightf (FLightNr, GL_LINEAR_ATTENUATION, FLightData.LinearAttenuation);
+  glLightf (FLightNr, GL_QUADRATIC_ATTENUATION, FLightData.QuadraticAttenuation);
+
+
+  //Enable light
+  glEnable(FLightNr);
+end;
+
+procedure TOGLLight.SetData(AValue: TAd2dLightData);
+begin
+  inherited;
+
+  //Copy light parameters
+
+  //Zero whole record
+  FillChar(FLightData, SizeOf(FLightData), #0);
+
+  with FLightData do
+  begin
+    //Set colors - the same method in all three light types
+    Diffuse := ConvertColor(AValue.Diffuse);
+    Specular := ConvertColor(AValue.Specular);
+    Ambient := ConvertColor(AValue.Ambient);
+
+    //If the light is directional, position represents the direction
+    //The fourth "w" parameter is zero.
+    if AValue.LightType = altDirectional then
+      Position := AdVector4(AValue.Position, 0)
+    else
+      Position := AdVector4(AValue.Position, 1);
+
+    //Attenuation is automatically deactivated if the light is directional
+    ConstantAttenuation := AValue.ConstantAttenuation;
+    LinearAttenuation := AValue.LinearAttenuation;
+    QuadraticAttenuation := AValue.QuadraticAttenuation;
+  end;
 end;
 
 end.

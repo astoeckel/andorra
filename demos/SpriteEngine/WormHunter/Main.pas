@@ -128,11 +128,11 @@ begin
   Randomize;
 
   AdPerCounter := TAdPerformanceCounter.Create;
-  //AdPerCounter.Interpolate := false;
 
   Cursor := crNone;
 
   AdDraw := TAdDraw.Create(self);
+  AdDraw.Options := AdDraw.Options - [aoCulling];
 
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';

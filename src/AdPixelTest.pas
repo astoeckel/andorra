@@ -77,7 +77,7 @@ begin
 
   FSurface := TAdTextureSurface.Create(FDraw);
   FSurface.Options := [aoStencilBuffer, aoAlphaMask, aoZBuffer, aoTextures];
-  FSurface.SetSize(32, 32); 
+  FSurface.SetSize(32, 32);
 
   FCollisionObjectList := TAdLinkedList.Create;
 
@@ -152,6 +152,8 @@ begin
 
     //Reset stencil options
     FDraw.AdAppl.SetStencilOptions(0, $FFFF, asfAlways);
+
+    FSurface.Image.Draw(FDraw, 0, 0, 0);
   end;
 end;
 

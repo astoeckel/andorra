@@ -61,25 +61,32 @@ type
 
   TAd2dLightType = (
     altDirectional,
-    altSpotlight,
     altPoint
   );
 
   TAd2dLightData = record
+    {The type of the light. Can be a directional or a
+     point light.}
     LightType: TAd2dLightType;
+    {The diffuse color of the light source.}
     Diffuse: TAndorraColor;
+    {The speculat color of the light source.}
     Specular: TAndorraColor;
+    {The ambient color of the light source.}
     Ambient: TAndorraColor;
+
+    {The position of the light. If the light source is a directional light,
+     position is equivalent to the direction of the light.}
     Position: TAdVector3;
-    Direction: TAdVector3;
-    Range: single;
-    Falloff: single;
+
+    {The constant attenuation. Only used with point- and spotlights.}
     ConstantAttenuation: single;
+    {The linear attenuation. Only used with point- and spotlights.}
     LinearAttenuation: single;
+    {The quadratic attenuation. Only used with point- and spotlights.}
     QuadraticAttenuation: single;
-    Theta: single;
-    Phi: single;
   end;
+  {Pointer on TAd2dLightData.}
   PAd2dLight = ^TAd2dLightData;
 
   {Declares, how a mesh is blended}

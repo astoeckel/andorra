@@ -21,7 +21,7 @@ type
   TDXApplication = class(TAd2DApplication)
     private
       FLastTexture:TAd2DTexture;
-      FLastSource:Cardinal;
+      FUsesMaterial:Cardinal;
       FPresent:TD3DPresentParameters;
       FOwnRenderTarget: IDirect3dSurface9;
       FSetToOwnRenderTarget: boolean;
@@ -193,7 +193,7 @@ begin
   FVSync := false;
   FMipmaps := false;
   FTextures := true;
-  FLastSource := High(Cardinal);
+  FUsesMaterial := High(Cardinal);
 end;
 
 destructor TDXApplication.Destroy;
@@ -818,7 +818,7 @@ begin
   end;
   
   //Set material source
-  if FParent.FLastSource <> Cardinal(FUsesMaterial) then
+  if FParent.FUsesMaterial <> Cardinal(FUsesMaterial) then
   begin
     if FUsesMaterial then
     begin
@@ -846,7 +846,7 @@ begin
     end;
 
 
-    FParent.FLastSource := Cardinal(FUsesMaterial);
+    FParent.FUsesMaterial := Cardinal(FUsesMaterial);
   end;
 end;
 
@@ -1348,15 +1348,46 @@ begin
   FParent.Direct3DDevice9.LightEnable(ALight, true);
 end;
 
+
+function CalcRange(AValue: TAd2dLightData): single;
+//Reciprocal epsilon
+const
+  epsilon = 10000;
+begin
+  with AValue do
+  begin
+    //Set to result to a high value - if a range can not be calculated,
+    //it theoreticaly would be infinite
+    result := 1 shl 30;
+
+    if IsZero(QuadraticAttenuation) then
+    begin
+      //af = 1 / (c + lx + qx²) = e
+      //if q = 0 ==> x = (1/e - c) / l
+      if not IsZero(LinearAttenuation) then
+        result := (epsilon - ConstantAttenuation) / LinearAttenuation;
+    end else
+    begin
+      //af = 1 / (c + lx + qx²) = e
+      //                   l       -------------
+      //if q <> 0 ==> x = --- +-  / l²   c - 1/e
+      //                  2*q   \/ --- + -------
+      //                           4q²      q
+      result := - LinearAttenuation / (2 * QuadraticAttenuation) +
+        Sqrt(Sqr(LinearAttenuation) / (4 * Sqr(QuadraticAttenuation)) -
+             ((ConstantAttenuation - epsilon) / QuadraticAttenuation));
+    end;
+  end;
+end;
+
 procedure TDXLight.SetData(AValue: TAd2dLightData);
 begin
   //Clear FLight record
-  FillChar(FLight, SizeOf(FLight), 0);
+  FillChar(FLight, SizeOf(FLight), #0);
 
   //Set light type
   case AValue.LightType of
     altPoint: FLight._Type := D3DLIGHT_POINT;
-    altSpotlight: FLight._Type := D3DLIGHT_SPOT;
     altDirectional: FLight._Type := D3DLIGHT_DIRECTIONAL;
   end;
 
@@ -1364,15 +1395,17 @@ begin
   FLight.Diffuse := ConvertColor(AValue.Diffuse);
   FLight.Specular := ConvertColor(AValue.Specular);
   FLight.Ambient := ConvertColor(AValue.Ambient);
-  FLight.Position := PD3DXVector3(@AValue.Position)^;
-  FLight.Direction := PD3DXVector3(@AValue.Direction)^;
-  FLight.Range := AValue.Range;
-  FLight.Falloff := AValue.Falloff;
+  if AValue.LightType = altDirectional then
+    FLight.Direction := PD3DXVector3(@AValue.Position)^
+  else
+  begin
+    FLight.Position := PD3DXVector3(@AValue.Position)^;
+    FLight.Range := CalcRange(AValue);
+  end;
+    
   FLight.Attenuation0 := AValue.ConstantAttenuation;
   FLight.Attenuation1 := AValue.LinearAttenuation;
   FLight.Attenuation2 := AValue.QuadraticAttenuation;
-  FLight.Theta := AValue.Theta;
-  FLight.Phi := AValue.Phi;
 end;
 
 end.

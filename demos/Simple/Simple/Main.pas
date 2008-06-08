@@ -4,7 +4,8 @@ interface
 
 uses
   Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,  
-  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, AdSprites;
+  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, AdSprites,
+  AdShader, AdJPEG;
 
 type
   TForm1 = class(TForm)
@@ -18,8 +19,8 @@ type
     AdPerCounter:TAdPerformanceCounter;
     AdImage: TAdImage;
     AdTexture: TAdTexture;
-    AdLight: TAd2dLight;
-
+    AdShaderSys: TAdShaderSystem;
+    AdShader: TAdShaderEffect;
     mx, my: integer;
 
     procedure Idle(Sender: TObject; var Done: boolean);
@@ -35,7 +36,6 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetup: TAdSetup;
-  data: TAd2dLightData;
 begin
   ReportMemoryLeaksOnShutdown := true;
 
@@ -43,7 +43,7 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdDraw.Options := AdDraw.Options + [aoLight];
+  AdDraw.Options := AdDraw.Options;
 
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
@@ -53,30 +53,27 @@ begin
     begin
       Application.OnIdle := Idle;
 
-      AdDraw.Scene.AmbientColor := AD_ARGB(255, 255, 255, 255);
+      AdDraw.Scene.AmbientColor := Ad_ARGB(255, 255, 255, 255);
+
+      AdShaderSys := TAdShaderSystem.Create(AdDraw);
+
+      AdShader := TAdShaderEffect.Create(AdShaderSys);
+
+      AdShader.FragmentShader.LoadFromFile('bumpmap.cg');
+      AdShader.FragmentShader.CompileProgram('cg', 'fragment_shader', astFragment);
+      AdShader.VertexShader.LoadFromFile('bumpmap.cg');
+      AdShader.VertexShader.CompileProgram('cg', 'vertex_shader', astVertex);
 
       AdImage := TAdImage.Create(AdDraw);
-      AdImage.Texture.LoadGraphicFromFile('water.bmp');
-      AdImage.Details := 32;
+      AdImage.Texture.LoadGraphicFromFile('texture2.bmp');
+      AdImage.Details := 1;
       AdImage.Filter := atLinear;
       AdImage.Restore;
 
-      AdLight := AdDraw.AdAppl.CreateLight;
-      {with data do
-      begin
-        LightType := altPoint;
-        Diffuse := AD_ARGB(255, 255, 255, 255);
-        Specular := AD_ARGB(0, 0, 0, 0);
-        Ambient := AD_ARGB(0, 255, 255, 255);
-        Position := AdVector3(ClientWidth / 2, ClientHeight / 2, 0);
-        Range := 100;
-        ConstantAttenuation := 1;
-        LinearAttenuation := 0.005;
-        QuadraticAttenuation := 0.005;
-      end;
-      AdLight.Data := data;
+      AdTexture := TAdTexture.Create(AdDraw);
+      AdTexture.LoadGraphicFromFile('normal.bmp', false);
 
-      AdLight.EnableLight(0);}
+      AdShader.BindToObject(AdImage);
     end
     else
     begin
@@ -94,7 +91,9 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdLight.Free;
+  AdTexture.Free;
+  AdShader.Free;
+  AdShaderSys.Free;
   AdImage.Free;
   AdPerCounter.Free;
   AdDraw.Free;
@@ -108,6 +107,9 @@ begin
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+var
+  lightpos: TAdVector3;
+  px, py: integer;
 begin
   if AdDraw.CanDraw then
   begin
@@ -117,7 +119,20 @@ begin
 
     AdDraw.BeginScene;
 
-    AdImage.StretchDraw(AdDraw, AdRect(0, 0, ClientWidth, ClientHeight), 0);
+    px := (ClientWidth - AdImage.Width) div 2;
+    py := (ClientHeight - AdImage.Height) div 2;
+
+    lightpos := AdVector3(mx - px, my - py, -50);
+
+    AdShader.FragmentShader.SetParameter('colormap', AdImage.Texture.Texture);
+    AdShader.FragmentShader.SetParameter('normalmap', AdTexture.Texture);
+    AdShader.FragmentShader.SetParameter('lightintensity', 0.5);
+    AdShader.FragmentShader.SetParameter('ambientcolor', Ad_ARGB(255, 0, 0, 0));
+
+    AdShader.VertexShader.SetParameter('lightpos', lightpos);
+    AdShader.VertexShader.SetParameter('lightcolor', Ad_ARGB(255, 255, 255, 255));
+
+    AdImage.Draw(AdDraw, px, py, 0);
 
     AdDraw.EndScene;
 

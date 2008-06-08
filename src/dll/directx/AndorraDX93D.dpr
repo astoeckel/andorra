@@ -18,6 +18,10 @@
 
 library AndorraDX93D;
 
+{$IFDEF FPC}
+  {$MODE delphi}
+{$ENDIF}
+
 uses
   SysUtils,
   AdClasses,
@@ -26,7 +30,10 @@ uses
   DX3DShader in 'DX3DShader.pas',
   DX3DShaderClasses in 'DX3DShaderClasses.pas';
 
-{$R *.res}
+{$IFNDEF FPC}
+  {$E .dll}
+  {$R *.res}
+{$ENDIF}
 
 function CreateApplication:TAd2DApplication;stdcall;
 begin

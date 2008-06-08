@@ -50,6 +50,7 @@ type
       procedure SetParameter(AParam: Pointer; AValue: TAd2dTexture);overload;override;
       procedure SetParameter(AParam: Pointer; AValue: TAndorraColor);overload;override;
       procedure SetParameter(AParam: Pointer; AValue: PChar; ASize: Cardinal);overload;override;
+      procedure SetParameter(AParam: Pointer; AValue: TAdVector3);overload;override;
 
       procedure Bind;override;
       procedure Unbind;override;
@@ -231,6 +232,11 @@ begin
   SetLength(buf, ASize);
   Move(AValue^, buf[1], ASize);
   cgSetParameterSemantic(AParam, PChar(buf));
+end;
+
+procedure TDXCgShader.SetParameter(AParam: Pointer; AValue: TAdVector3);
+begin
+  cgSetParameter4fv(AParam, @AValue);
 end;
 
 end.

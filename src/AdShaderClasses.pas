@@ -93,6 +93,8 @@ type
       procedure SetParameter(AParam: Pointer; AValue: TAdMatrix);overload;virtual;abstract;
       {Sets a texture parameter.}
       procedure SetParameter(AParam: Pointer; AValue: TAd2dTexture);overload;virtual;abstract;
+      {Sets a vector parameter.}
+      procedure SetParameter(AParam: Pointer; AValue: TAdVector3);overload;virtual;abstract;
       {Sets a color parameter.}
       procedure SetParameter(AParam: Pointer; AValue: TAndorraColor);overload;virtual;abstract;
       {Sets a variable parameter.}

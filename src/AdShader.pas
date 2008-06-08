@@ -22,7 +22,7 @@ interface
 uses
   SysUtils, Classes, IniFiles,
   AdClasses, AdShaderClasses, AdTypes, AdContainers, AdMessages,
-  AdDraws;
+  AdDraws, AdMath;
 
 type
   {Parent exception class for shader purposes.}
@@ -174,12 +174,34 @@ type
        Andorra 2D color.
        @raises(EShaderNotLoaded if the shader is not compiled or not available)}
       procedure SetParameter(AName: string; AValue: TAndorraColor);overload;
+      {Sets a "uniform" float3 parameter in the shader to the specified
+       vector.
+       @raises(EShaderNotLoaded if the shader is not compiled or not available)}
+      procedure SetParameter(AName: string; AValue: TAdVector3);overload;  
 
       {Pointer on the internal shader object returned by the graphic plugin. It
        is not recommended to use this direct way if you don't know exactly what
        you're doing.
        @seealso(TAd2dShader)}
       property Shader: TAd2dShader read FShader;
+  end;
+
+  TAdShaderEffect = class
+    private
+      FObj: TAdRenderingObject;
+      FSys: TAdShaderSystem;
+      FVertexShader: TAdShader;
+      FFragmentShader: TAdShader;
+    protected
+      procedure BeginRender(Sender: TObject; AModelViewProjection: TAdMatrix);
+      procedure EndRender(Sender: TObject);
+    public
+      constructor Create(ASys: TAdShaderSystem);
+      destructor Destroy;override;
+      procedure Unbind;
+      procedure BindToObject(AObj: TAdRenderingObject);
+      property FragmentShader: TAdShader read FFragmentShader;
+      property VertexShader: TAdShader read FVertexShader;
   end;
 
 implementation
@@ -416,4 +438,64 @@ begin
   FShader.SetParameter(GetParameter(AName), AValue);
 end;
 
+procedure TAdShader.SetParameter(AName: string; AValue: TAdVector3);
+begin
+  FShader.SetParameter(GetParameter(AName), AValue);
+end;
+
+{ TAdShaderEffect }
+
+constructor TAdShaderEffect.Create(ASys: TAdShaderSystem);
+begin
+  inherited Create;
+
+  FSys := ASys;
+  FVertexShader := TAdShader.Create(FSys);
+  FFragmentShader := TAdShader.Create(FSys);
+  FObj := nil;
+end;
+
+destructor TAdShaderEffect.Destroy;
+begin
+  FVertexShader.Free;
+  FFragmentShader.Free;
+
+  inherited Destroy;
+end;
+
+procedure TAdShaderEffect.Unbind;
+begin
+  if FObj <> nil then
+  begin
+    @FObj.OnBeginRender := nil;
+    @FObj.OnEndRender := nil;
+    FObj := nil;
+  end;
+end;
+
+procedure TAdShaderEffect.BindToObject(AObj: TAdRenderingObject);
+begin
+  Unbind;
+  AObj.OnBeginRender := BeginRender;
+  AObj.OnEndRender := EndRender;
+end;
+
+procedure TAdShaderEffect.BeginRender(Sender: TObject;
+  AModelViewProjection: TAdMatrix);
+var
+  mat: TAdMatrix;
+begin
+  mat := AdMatrix_Transpose(AModelViewProjection);
+  FVertexShader.SetParameter('modelview', mat);
+  FVertexShader.BindEffect;
+  FFragmentShader.BindEffect;
+end;
+
+procedure TAdShaderEffect.EndRender(Sender: TObject);
+begin
+  FFragmentShader.UnbindEffect;
+  FVertexShader.UnbindEffect;
+end;
+
 end.
+

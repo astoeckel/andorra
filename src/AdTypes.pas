@@ -69,14 +69,23 @@ type
   {A vector type which has two components.}
   TAdVector2 = packed record
     {@exclude}
-    x,y:single;
+    x, y: single;
   end;
+  PAdVector2 = ^TAdVector2;
 
   {A vector type which has three components.}
   TAdVector3 = packed record
     {@exclude}
-    x,y,z:single;
+    x, y, z: single;
   end;
+  PAdVector3 = ^TAdVector3;
+
+ {A vector type containing four components.}
+  TAdVector4 = packed record
+    {@exclude}
+    x, y, z, w: single;
+  end;
+  PAdVector4 = ^TAdVector4;
 
   {A standard 3x3 matrix.}
   TAdMatrix = array[0..3] of array[0..3] of single;
@@ -239,7 +248,13 @@ function OverlapRect(const Rect1, Rect2: TAdRect): boolean;
 function InRect(const X, Y: integer; const Rect: TAdRect): boolean;
 
 {Returns a vector with three components.}
-function AdVector3(AX,AY,AZ:double):TAdVector3;
+function AdVector3(AX,AY,AZ:double):TAdVector3;overload;
+{Returns a vector with three components.}
+function AdVector3(AVec: TAdVector2; AZ: double): TAdVector3;overload;
+{Returns a vector with four components.}
+function AdVector4(AX, AY, AZ, AW:double):TAdVector4;overload;
+{Returns a vector with four components.}
+function AdVector4(AVec: TAdVector3; AW: double): TAdVector4;overload;
 {Returns a vector with two components.}
 function AdVector2(AX,AY:double):TAdVector2;
 
@@ -393,6 +408,29 @@ begin
     y := ay;
     z := az;
   end;
+end;
+
+function AdVector3(AVec: TAdVector2; AZ: double): TAdVector3;
+begin
+  PAdVector2(@result)^ := AVec;
+  result.z := AZ;
+end;
+
+function AdVector4(AX, AY, AZ, AW:double):TAdVector4;
+begin
+  with result do
+  begin
+    x := AX;
+    y := AY;
+    z := AZ;
+    w := AW;
+  end;
+end;
+
+function AdVector4(AVec: TAdVector3; AW: double): TAdVector4;
+begin
+  PAdVector3(@result)^ := AVec;
+  result.w := AW;
 end;
 
 function AdVector2(AX,AY:double):TAdVector2;

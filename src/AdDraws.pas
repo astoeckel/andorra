@@ -52,6 +52,16 @@ type
   TAdRenderTargetTexture = class;
   TAdTexture = class;
 
+  TAdBeginRenderEvent = procedure(Sender: TObject; AModelViewProjection: TAdMatrix) of object;
+
+  TAdRenderingObject = class
+    private
+      FBeginRender: TAdBeginRenderEvent;
+      FEndRender: TAdNotifyEvent;
+    public
+      property OnBeginRender: TAdBeginRenderEvent read FBeginRender write FBeginRender;
+      property OnEndRender: TAdNotifyEvent read FEndRender write FEndRender;
+  end;
 
   {Specifies the event which called the procedure}
   TAdSurfaceEventState = (
@@ -316,6 +326,7 @@ type
 
       function GetDisplayRect: TAdRect;
       procedure SetOptions(AOptions: TAd2dOptions);
+      procedure SceneActivate(Sender: TObject);
     protected
       procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);override;
       procedure DoInitialize;virtual;
@@ -363,7 +374,6 @@ type
     private
       FImage : TAdCustomImage;
       FTexture: TAdRenderTargetTexture;
-      procedure SceneActivate(Sender: TObject);
     protected
       procedure DoActivation;override;
       function GetWidth: integer;override;
@@ -572,7 +582,7 @@ type
   end;
 
   //This represents one image in an ImageList.
-  TAdCustomImage = class
+  TAdCustomImage = class(TAdRenderingObject)
     private
       FParent:TAdDraw;
       FWidth,FHeight:integer;
@@ -609,6 +619,9 @@ type
       procedure SetSrcRegion;
       procedure CreatePatternRects;
       procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
+
+      procedure CallBeginRenderEvent(AModelMat: TAdMatrix; AScene: TAdScene);
+      procedure CallEndRenderEvent;
     public
       //The mesh object used to display the image
       AdMesh:TAd2DMesh;
@@ -1054,7 +1067,7 @@ begin
   begin
     //Call the AdAppl clear surface method and clear all surfaces.
     AdAppl.ClearSurface(
-      SurfaceRect, [alColorBuffer],
+      SurfaceRect, [alColorBuffer, alZBuffer, alStencilBuffer],
       ColorToAdColor(AColor), 1, 0);
   end;
 end;
@@ -1223,7 +1236,31 @@ begin
   else
     Mode := adTriangleStrips;
 
+  if (DestApp <> nil) and (DestApp is TAdRenderingSurface) then
+    CallBeginRenderEvent(AdMesh.Matrix, TAdRenderingSurface(DestApp).Scene);
+
   AdMesh.Draw(BlendMode, Mode);
+
+  CallEndRenderEvent;
+end;
+
+procedure TAdCustomImage.CallBeginRenderEvent(AModelMat: TAdMatrix; AScene: TAdScene);
+var
+  mat: TAdMatrix;
+begin
+  if Assigned(OnBeginRender) then
+  begin
+    //!TODO: Only calculate VM*PM once
+    mat := AdMatrix_Multiply(AModelMat, AScene.ViewMatrix);
+    mat := AdMatrix_Multiply(mat, AScene.ProjectionMatrix);
+    OnBeginRender(self, mat);
+  end;
+end;
+
+procedure TAdCustomImage.CallEndRenderEvent;
+begin
+  if Assigned(OnEndRender) then
+    OnEndRender(self);
 end;
 
 procedure TAdCustomImage.SetSrcRegion;
@@ -2284,6 +2321,7 @@ begin
   FActivated := true;
   UpdateMatrix;
   UpdateViewport;
+  UpdateAmbientColor;
 end;
 
 procedure TAdScene.Deactivate;
@@ -2301,7 +2339,6 @@ procedure TAdScene.SetViewMatrix(AValue: TAdMatrix);
 begin
   FViewMatrix := AValue;
   UpdateMatrix;
-  UpdateAmbientColor;
 end;
 
 procedure TAdScene.SetViewPort(AValue: TAdRect);
@@ -2465,8 +2502,12 @@ end;
 constructor TAdRenderingSurface.Create(ADraw: TAdDraw);
 begin
   inherited;
+
   FScene := TAdScene.Create(AdDraw);
   FOptions := AdDraw.Options;
+
+  //Connect with the scene activate event
+  Scene.OnActivate := SceneActivate;
 end;
 
 destructor TAdRenderingSurface.Destroy;
@@ -2530,6 +2571,11 @@ begin
   end;
 end;
 
+procedure TAdRenderingSurface.SceneActivate(Sender: TObject);
+begin
+  Activate;
+end;
+
 procedure TAdRenderingSurface.SetOptions(AOptions: TAd2dOptions);
 begin
   FOptions := AOptions;
@@ -2554,9 +2600,6 @@ constructor TAdTextureSurface.Create(ADraw: TAdDraw);
 begin
   inherited Create(ADraw);
 
-  //Connect to the scene activate event
-  Scene.OnActivate := SceneActivate;
-
   //Create image and render surface texture
   FImage := TAdCustomImage.Create(ADraw);
   FTexture := TAdRenderTargetTexture.Create(ADraw);
@@ -2572,11 +2615,6 @@ begin
   FTexture.Free;
   FImage.Free;
   inherited;
-end;
-
-procedure TAdTextureSurface.SceneActivate(Sender: TObject);
-begin
-  Activate;
 end;
 
 procedure TAdTextureSurface.SetSize(AWidth, AHeight: integer);
