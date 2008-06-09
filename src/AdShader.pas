@@ -162,6 +162,9 @@ type
       {Sets a "uniform" float parameter in the shader to the specified value.
        @raises(EShaderNotLoaded if the shader is not compiled or not available)}
       procedure SetParameter(AName: string; AValue: single);overload;
+      {Sets a "uniform" integer parameter in the shader to the specified value.
+       @raises(EShaderNotLoaded if the shader is not compiled or not available)}
+      procedure SetParameter(AName: string; AValue: integer);overload;
       {Sets a "uniform" 4x4 float matrix parameter in the shader to the
        specified value.
        @raises(EShaderNotLoaded if the shader is not compiled or not available)}
@@ -178,6 +181,14 @@ type
        vector.
        @raises(EShaderNotLoaded if the shader is not compiled or not available)}
       procedure SetParameter(AName: string; AValue: TAdVector3);overload;  
+      {Sets a "uniform" float4 parameter in the shader to the specified
+       vector.
+       @raises(EShaderNotLoaded if the shader is not compiled or not available)}
+      procedure SetParameter(AName: string; AValue: TAdVector4);overload;  
+      {Sets a "uniform" float2 parameter in the shader to the specified
+       vector.
+       @raises(EShaderNotLoaded if the shader is not compiled or not available)}
+      procedure SetParameter(AName: string; AValue: TAdVector2);overload;  
 
       {Pointer on the internal shader object returned by the graphic plugin. It
        is not recommended to use this direct way if you don't know exactly what
@@ -420,17 +431,24 @@ end;
 
 procedure TAdShader.SetParameter(AName: string; AValue: TAdMatrix);
 begin
-  FShader.SetParameter(GetParameter(AName), AValue);
+  FShader.SetParameter(GetParameter(AName), PSingle(@AValue[0, 0]), 16);
 end;
 
 procedure TAdShader.SetParameter(AName: string; AValue: single);
 begin
-  FShader.SetParameter(GetParameter(AName), AValue);
+  FShader.SetParameter(GetParameter(AName), PSingle(@AValue), 1);
 end;
 
 procedure TAdShader.SetParameter(AName: string; AValue: TAndorraColor);
+var
+  vec4: TAdVector4;
 begin
-  FShader.SetParameter(GetParameter(AName), AValue);
+  vec4 := AdVector4(
+    AValue.r / 255,
+    AValue.g / 255,
+    AValue.b / 255,
+    AValue.a / 255);
+  FShader.SetParameter(GetParameter(AName), PSingle(@vec4), 4);
 end;
 
 procedure TAdShader.SetParameter(AName: string; AValue: TAd2dTexture);
@@ -440,7 +458,22 @@ end;
 
 procedure TAdShader.SetParameter(AName: string; AValue: TAdVector3);
 begin
-  FShader.SetParameter(GetParameter(AName), AValue);
+  FShader.SetParameter(GetParameter(AName), PSingle(@AValue), 3);
+end;
+
+procedure TAdShader.SetParameter(AName: string; AValue: integer);
+begin
+  FShader.SetParameter(GetParameter(AName), PInteger(@AValue), 1);
+end;
+
+procedure TAdShader.SetParameter(AName: string; AValue: TAdVector4);
+begin
+  FShader.SetParameter(GetParameter(AName), PSingle(@AValue), 4);
+end;
+
+procedure TAdShader.SetParameter(AName: string; AValue: TAdVector2);
+begin
+  FShader.SetParameter(GetParameter(AName), PSingle(@AValue), 2);
 end;
 
 { TAdShaderEffect }
@@ -476,8 +509,9 @@ end;
 procedure TAdShaderEffect.BindToObject(AObj: TAdRenderingObject);
 begin
   Unbind;
-  AObj.OnBeginRender := BeginRender;
-  AObj.OnEndRender := EndRender;
+  FObj := AObj;
+  FObj.OnBeginRender := BeginRender;
+  FObj.OnEndRender := EndRender;
 end;
 
 procedure TAdShaderEffect.BeginRender(Sender: TObject;

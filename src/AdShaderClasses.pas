@@ -88,17 +88,11 @@ type
       function GetParameter(AName: PChar): Pointer;virtual;abstract;
 
       {Sets a float parameter.}
-      procedure SetParameter(AParam: Pointer; AValue: single);overload;virtual;abstract;
-      {Sets a matrix parameter.}
-      procedure SetParameter(AParam: Pointer; AValue: TAdMatrix);overload;virtual;abstract;
+      procedure SetParameter(AParam: Pointer; AValue: PSingle; ACount: integer);overload;virtual;abstract;
+      {Sets a integer parameter.}
+      procedure SetParameter(AParam: Pointer; AValue: PInteger; ACount: integer);overload;virtual;abstract;
       {Sets a texture parameter.}
       procedure SetParameter(AParam: Pointer; AValue: TAd2dTexture);overload;virtual;abstract;
-      {Sets a vector parameter.}
-      procedure SetParameter(AParam: Pointer; AValue: TAdVector3);overload;virtual;abstract;
-      {Sets a color parameter.}
-      procedure SetParameter(AParam: Pointer; AValue: TAndorraColor);overload;virtual;abstract;
-      {Sets a variable parameter.}
-      procedure SetParameter(AParam: Pointer; AValue: PChar; ASize: Cardinal);overload;virtual;abstract;
 
       {Returns whether the shader is loaded.}
       property Loaded: boolean read GetLoaded;

@@ -1,21 +1,20 @@
-unit DX3DCg;
+unit OGLCg;
 
 interface
 
 uses
   AdShaderClasses, AdClasses, AdTypes,
-  DX3DShaderClasses,
-  cg, cgd3d9, Direct3D9;
+  OGLShaderClasses,
+  cg, cgGL;
 
 type
-  TDXCGEngine = class(TDXShaderEngine)
+  TOGLCgEngine = class(TOGLShaderEngine)
     private
       FContext: PCGContext;
     protected
       function GetInitialized: boolean;override;
     public
-      procedure Initialize(ADevice: IDirect3DDevice9;
-        ALogProc: TAd2dLogCallback);override;
+      procedure Initialize(ALogProc: TAd2dLogCallback);override;
       procedure Finalize;override;
 
       function CreateShader: TAd2dShader;override;
@@ -23,17 +22,18 @@ type
       property Context: PCGContext read FContext;
   end;
        
-  TDXCgShader = class(TAd2dShader)
+  TOGLCgShader = class(TAd2dShader)
     private
-      FSystem: TDXCGEngine;
+      FSystem: TOGLCgEngine;
       FProgram: PCGProgram;
       FProgramName: string;
       FProgramType: TAd2dShaderType;
+      FProfile: TCGProfile;
       procedure GetCGError(AState: string);
     protected
       function GetLoaded: boolean;override;
     public
-      constructor Create(ASystem: TDXCGEngine);
+      constructor Create(ASystem: TOGLCgEngine);
       destructor Destroy;override;
 
       procedure LoadProgramFromBuffer(ABuf: PChar;
@@ -55,9 +55,9 @@ type
 
 implementation
 
-{ TDXCGEngine }
+{ TOGLCgEngine }
 
-procedure TDXCGEngine.Finalize;
+procedure TOGLCgEngine.Finalize;
 begin
   inherited;
 
@@ -66,35 +66,33 @@ begin
   FContext := nil;
 end;
 
-function TDXCGEngine.GetInitialized: boolean;
+function TOGLCgEngine.GetInitialized: boolean;
 begin
   result := FContext <> nil;
 end;
 
-procedure TDXCGEngine.Initialize(ADevice: IDirect3DDevice9;
-  ALogProc: TAd2dLogCallback);
+procedure TOGLCgEngine.Initialize(ALogProc: TAd2dLogCallback);
 begin
   inherited;
 
   FContext := cgCreateContext;
-  cgD3D9SetDevice(Device);
 end;
 
-function TDXCGEngine.CreateShader: TAd2dShader;
+function TOGLCgEngine.CreateShader: TAd2dShader;
 begin
-  result := TDXCGShader.Create(self);
+  result := TOGLCgShader.Create(self);
 end;
 
-{ TDXCgShader }
+{ TOGLCgShader }
 
-constructor TDXCgShader.Create(ASystem: TDXCGEngine);
+constructor TOGLCgShader.Create(ASystem: TOGLCgEngine);
 begin
   inherited Create;
 
   FSystem := ASystem;
 end;
 
-destructor TDXCgShader.Destroy;
+destructor TOGLCgShader.Destroy;
 begin
   if FProgram <> nil then
     cgDestroyProgram(FProgram);
@@ -102,18 +100,18 @@ begin
   inherited;
 end;
 
-procedure TDXCgShader.Finalize;
+procedure TOGLCgShader.Finalize;
 begin
-  cgD3D9UnloadProgram(FProgram);
+  //
 end;
 
-procedure TDXCgShader.Initialize;
+procedure TOGLCgShader.Initialize;
 begin
   //Load program
-  cgD3D9LoadProgram(FProgram, Integer(False), 0);
+  cgGLLoadProgram(FProgram);
 end;
 
-procedure TDXCgShader.GetCGError(AState: string);
+procedure TOGLCgShader.GetCGError(AState: string);
 var
   error: CGError;
   str: PChar;
@@ -141,21 +139,19 @@ begin
     FSystem.Log('CG Program', lsError, PChar(buf));
 end;
 
-function TDXCgShader.GetLoaded: boolean;
+function TOGLCgShader.GetLoaded: boolean;
 begin
   result := FProgram <> nil;
 end;
 
-procedure TDXCgShader.LoadProgramFromBuffer(ABuf: PChar;
+procedure TOGLCgShader.LoadProgramFromBuffer(ABuf: PChar;
   ASourceType: TAd2dShaderSourceType; AProgramName: PChar;
   AShaderType: TAd2dShaderType);
 var
   srctype: TCGenum;
-  profile: TCGprofile;
-  opts: PPChar;
 begin
   srctype := TCGenum(0);
-  profile := TCGprofile(0);
+  FProfile := TCGprofile(0);
 
   FProgramName := AProgramName;
   FProgramType := AShaderType;
@@ -168,50 +164,49 @@ begin
 
   //Read the latest supported shader model profile depending on the program type
   case AShaderType of
-    astVertex: profile := cgD3D9GetLatestVertexProfile;
-    astFragment: profile := cgD3D9GetLatestPixelProfile;
+    astVertex: FProfile := cgGLGetLatestProfile(CG_GL_VERTEX);
+    astFragment: FProfile := cgGLGetLatestProfile(CG_GL_FRAGMENT);
   end;
 
-  opts := cgD3D9GetOptimalOptions(profile);
+  cgGLSetOptimalOptions(FProfile);
 
   FProgram := cgCreateProgram(FSystem.Context, srctype, ABuf,
-    profile, AProgramName, opts);
+    FProfile, AProgramName, nil);
   GetCGError('Load program');
 end;
 
-procedure TDXCgShader.Unbind;
+procedure TOGLCgShader.Unbind;
 begin
-  case FProgramType of
-    astVertex: FSystem.Device.SetVertexShader(nil);
-    astFragment: FSystem.Device.SetPixelShader(nil);
-  end;                                             
+  cgGLDisableProfile(FProfile);
+  cgGLUnbindProgram(FProfile);
 end;
 
-procedure TDXCgShader.Bind;
+procedure TOGLCgShader.Bind;
 begin
-  cgD3D9BindProgram(FProgram);
+  cgGLEnableProfile(FProfile);
+  cgGLBindProgram(FProgram);
 end;
 
-function TDXCgShader.GetParameter(AName: PChar): Pointer;
+function TOGLCgShader.GetParameter(AName: PChar): Pointer;
 begin
   result := cgGetNamedParameter(FProgram, AName);
 end;
 
-procedure TDXCgShader.SetParameter(AParam: Pointer; AValue: PSingle;
+procedure TOGLCgShader.SetParameter(AParam: Pointer; AValue: PSingle;
   ACount: integer);
 begin
   cgSetParameterValuefr(AParam, ACount, @AValue^);
 end;
 
-procedure TDXCgShader.SetParameter(AParam: Pointer; AValue: PInteger;
+procedure TOGLCgShader.SetParameter(AParam: Pointer; AValue: PInteger;
   ACount: integer);
 begin
   cgSetParameterValueir(AParam, ACount, @AValue^);
 end;
 
-procedure TDXCgShader.SetParameter(AParam: Pointer; AValue: TAd2dTexture);
+procedure TOGLCgShader.SetParameter(AParam: Pointer; AValue: TAd2dTexture);
 begin
-  cgD3D9SetTexture(AParam, IDirect3DBaseTexture9(AValue.Texture));
+  cgGLSetTextureParameter(AParam, PCardinal(AValue.Texture)^);
 end;
 
 end.

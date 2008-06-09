@@ -14,7 +14,7 @@ unit DX3DMain;
 interface
 
 uses                 
-  SysUtils, AdWindowFramework, d3dx9, Direct3D9, dxerr9, AdClasses, Windows, Math,
+  SysUtils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
   AdTypes, AdBitmapClass;
 
 type
@@ -341,7 +341,6 @@ begin
       TAdHandleWindowFramework(AWnd).Handle, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
     begin
-      WriteLog(lsError, DXGetErrorString9A(hr));
       WriteLog(lsFatalError, 'Couldn''t initialize Direct3DDevice! ');
       exit;
     end;

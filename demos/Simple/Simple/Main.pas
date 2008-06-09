@@ -12,16 +12,18 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     { Private-Deklarationen }
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdImage: TAdImage;
-    AdTexture: TAdTexture;
     AdShaderSys: TAdShaderSystem;
     AdShader: TAdShaderEffect;
     mx, my: integer;
+    a: double;
 
     procedure Idle(Sender: TObject; var Done: boolean);
   end;
@@ -59,21 +61,16 @@ begin
 
       AdShader := TAdShaderEffect.Create(AdShaderSys);
 
-      AdShader.FragmentShader.LoadFromFile('bumpmap.cg');
+      AdShader.FragmentShader.LoadFromFile('bloom.cg');
       AdShader.FragmentShader.CompileProgram('cg', 'fragment_shader', astFragment);
-      AdShader.VertexShader.LoadFromFile('bumpmap.cg');
+      AdShader.VertexShader.LoadFromFile('bloom.cg');
       AdShader.VertexShader.CompileProgram('cg', 'vertex_shader', astVertex);
 
       AdImage := TAdImage.Create(AdDraw);
-      AdImage.Texture.LoadGraphicFromFile('texture2.bmp');
-      AdImage.Details := 1;
-      AdImage.Filter := atLinear;
+      AdImage.Texture.LoadGraphicFromFile('texture2.bmp',false);
+      AdImage.Texture.Filter := atLinear;
       AdImage.Restore;
 
-      AdTexture := TAdTexture.Create(AdDraw);
-      AdTexture.LoadGraphicFromFile('normal.bmp', false);
-
-      AdShader.BindToObject(AdImage);
     end
     else
     begin
@@ -91,7 +88,6 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdTexture.Free;
   AdShader.Free;
   AdShaderSys.Free;
   AdImage.Free;
@@ -106,10 +102,13 @@ begin
   my := y;
 end;
 
+procedure TForm1.FormMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+begin
+  a := a + WheelDelta / 10;
+end;
+
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
-var
-  lightpos: TAdVector3;
-  px, py: integer;
 begin
   if AdDraw.CanDraw then
   begin
@@ -119,26 +118,26 @@ begin
 
     AdDraw.BeginScene;
 
-    px := (ClientWidth - AdImage.Width) div 2;
-    py := (ClientHeight - AdImage.Height) div 2;
+    AdShader.FragmentShader.SetParameter('bloompower', 2);
+    AdShader.FragmentShader.SetParameter('bloomalpha', a / 255);
+    AdShader.FragmentShader.SetParameter('texture', AdImage.Texture.Texture);
 
-    lightpos := AdVector3(mx - px, my - py, -50);
+    AdShader.BindToObject(AdImage);
+    AdImage.Draw(AdDraw, mx, my, 0);
+    AdShader.Unbind;
 
-    AdShader.FragmentShader.SetParameter('colormap', AdImage.Texture.Texture);
-    AdShader.FragmentShader.SetParameter('normalmap', AdTexture.Texture);
-    AdShader.FragmentShader.SetParameter('lightintensity', 0.5);
-    AdShader.FragmentShader.SetParameter('ambientcolor', Ad_ARGB(255, 0, 0, 0));
+    AdImage.Draw(AdDraw, 0, 0, 0);
 
-    AdShader.VertexShader.SetParameter('lightpos', lightpos);
-    AdShader.VertexShader.SetParameter('lightcolor', Ad_ARGB(255, 255, 255, 255));
-
-    AdImage.Draw(AdDraw, px, py, 0);
+    with AdDraw.Canvas do
+    begin
+      TextOut(0, 0, 'HALLO!');
+    end;
 
     AdDraw.EndScene;
 
     AdDraw.Flip;
 
-    Caption := 'FPS: ' + IntToStr(AdPerCounter.FPS);
+    Caption := 'FPS: ' + FloatToStr(AdPerCounter.FPS);
   end;
   Done := false;
 end;

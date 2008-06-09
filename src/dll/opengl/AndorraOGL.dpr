@@ -25,7 +25,9 @@ uses
   SysUtils,
   AdClasses,
   AdShaderClasses,
-  OGLMain in 'OGLMain.pas';
+  OGLMain in 'OGLMain.pas',
+  OGLShader in 'OGLShader.pas',
+  OGLShaderClasses in 'OGLShaderClasses.pas';
 
 {$IFNDEF FPC}
   {$E .dll}
@@ -39,7 +41,7 @@ end;
 
 function CreateShaderSystem:TAd2dShaderSystem;stdcall;
 begin
-  result := nil;
+  result := TOGLShaderSystem.Create;
 end;
 
 procedure Andorra2DLibraryInformation(var libinfo:TAd2DLibInfo);stdcall;

@@ -15,6 +15,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseMove = FormMouseMove
+  OnMouseWheel = FormMouseWheel
   PixelsPerInch = 96
   TextHeight = 13
 end
