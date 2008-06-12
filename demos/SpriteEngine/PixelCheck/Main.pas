@@ -81,7 +81,7 @@ begin
           Image := AdImageList.Items[random(AdImageList.Count)];
           X := random(round(ClientWidth - Width));
           Y := random(round(ClientHeight - Height));
-          PixelCollisionTester := ColTest;
+          CollisionTester := ColTest;
         end;
       end;
 
@@ -90,7 +90,7 @@ begin
       begin
         Image := AdImageList.Items[2];
         z := 1;
-        PixelCollisionTester := ColTest;
+        CollisionTester := ColTest;
       end;
 
       Application.OnIdle := Idle;

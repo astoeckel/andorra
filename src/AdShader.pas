@@ -510,8 +510,12 @@ procedure TAdShaderEffect.BindToObject(AObj: TAdRenderingObject);
 begin
   Unbind;
   FObj := AObj;
-  FObj.OnBeginRender := BeginRender;
-  FObj.OnEndRender := EndRender;
+  
+  if FObj <> nil then
+  begin
+    FObj.OnBeginRender := BeginRender;
+    FObj.OnEndRender := EndRender;
+  end;
 end;
 
 procedure TAdShaderEffect.BeginRender(Sender: TObject;
@@ -527,8 +531,8 @@ end;
 
 procedure TAdShaderEffect.EndRender(Sender: TObject);
 begin
-  FFragmentShader.UnbindEffect;
   FVertexShader.UnbindEffect;
+  FFragmentShader.UnbindEffect;
 end;
 
 end.

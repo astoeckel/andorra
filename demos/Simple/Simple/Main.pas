@@ -5,7 +5,7 @@ interface
 uses
   Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,  
   AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, AdSprites,
-  AdShader, AdJPEG;
+  AdBitmap;
 
 type
   TForm1 = class(TForm)
@@ -20,10 +20,9 @@ type
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdImage: TAdImage;
-    AdShaderSys: TAdShaderSystem;
-    AdShader: TAdShaderEffect;
     mx, my: integer;
     a: double;
+    framenr: integer;
 
     procedure Idle(Sender: TObject; var Done: boolean);
   end;
@@ -45,8 +44,6 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdDraw.Options := AdDraw.Options;
-
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
   if AdSetup.Execute then
@@ -57,20 +54,9 @@ begin
 
       AdDraw.Scene.AmbientColor := Ad_ARGB(255, 255, 255, 255);
 
-      AdShaderSys := TAdShaderSystem.Create(AdDraw);
-
-      AdShader := TAdShaderEffect.Create(AdShaderSys);
-
-      AdShader.FragmentShader.LoadFromFile('bloom.cg');
-      AdShader.FragmentShader.CompileProgram('cg', 'fragment_shader', astFragment);
-      AdShader.VertexShader.LoadFromFile('bloom.cg');
-      AdShader.VertexShader.CompileProgram('cg', 'vertex_shader', astVertex);
-
       AdImage := TAdImage.Create(AdDraw);
-      AdImage.Texture.LoadGraphicFromFile('texture2.bmp',false);
-      AdImage.Texture.Filter := atLinear;
+      AdImage.Texture.LoadGraphicFromFile('icon64.png');
       AdImage.Restore;
-
     end
     else
     begin
@@ -88,8 +74,6 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdShader.Free;
-  AdShaderSys.Free;
   AdImage.Free;
   AdPerCounter.Free;
   AdDraw.Free;
@@ -118,26 +102,38 @@ begin
 
     AdDraw.BeginScene;
 
-    AdShader.FragmentShader.SetParameter('bloompower', 2);
-    AdShader.FragmentShader.SetParameter('bloomalpha', a / 255);
-    AdShader.FragmentShader.SetParameter('texture', AdImage.Texture.Texture);
+    inc(framenr);
 
-    AdShader.BindToObject(AdImage);
-    AdImage.Draw(AdDraw, mx, my, 0);
-    AdShader.Unbind;
+    AdDraw.Options := AdDraw.Options + [aoStencilBuffer, aoAlphaMask];
 
-    AdImage.Draw(AdDraw, 0, 0, 0);
+    AdDraw.AdAppl.SetStencilOptions(0, $FFFF, asfAlways);
+    AdDraw.AdAppl.SetStencilEvent(asePass, asoIncrement);
 
     with AdDraw.Canvas do
     begin
-      TextOut(0, 0, 'HALLO!');
+      Font := AdDraw.Fonts.GenerateFont('Times New Roman', 32, [afBold]);
+      TextOut(mx, my, 'Mask functions using the stencil buffer');
+      TextOut(ClientWidth - mx, ClientHeight - my, 'Andorra 2D');
+      Circle(mx, mx, 10);
+      Circle(my, my, 10);
+      Release;
     end;
+
+    AdDraw.AdAppl.SetStencilOptions(0, $FFFF, asfLessThan);
+    AdDraw.AdAppl.SetStencilEvent(asePass, asoKeep);
+
+    AdDraw.Options := AdDraw.Options - [aoAlphaMask];
+
+    AdImage.StretchBltAlpha(AdDraw, AdRect(0, 0, ClientWidth, ClientHeight),
+      AdRect(0, 0, ClientWidth, ClientHeight), 0, 0, 0, 255);
+
+    AdDraw.Options := AdDraw.Options - [aoStencilBuffer];
+
+    AdImage.Draw(AdDraw,  0, 0, 0);
 
     AdDraw.EndScene;
 
     AdDraw.Flip;
-
-    Caption := 'FPS: ' + FloatToStr(AdPerCounter.FPS);
   end;
   Done := false;
 end;

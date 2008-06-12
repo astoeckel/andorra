@@ -267,6 +267,7 @@ begin
     result := true;
 
     glEnable(GL_COLOR_MATERIAL);
+    glAlphaFunc(GL_GREATER, 0);
     
     //Repeat the texture if it wraps over the edges
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -565,25 +566,12 @@ begin
   glEnable(GL_SCISSOR_TEST);
 
   glScissor(
-    ARect.Left, ARect.Top,
-    ARect.Right - ARect.Left,
-    ARect.Bottom - ARect.Top);
+    ARect.Left,
+    FHeight - ARect.Top - (ARect.Bottom-ARect.Top),
+    ARect.Right-ARect.Left,
+    ARect.Bottom-ARect.Top);
 
   glClear(mask);
-
-  if FRenderingToFBO then
-  begin
-    glBegin(GL_QUADS);
-
-    glColor3f(AColor.r / 255, AColor.g / 255, AColor.b / 255);
-
-    glVertex3f(ARect.Left, ARect.Top, 0);
-    glVertex3f(ARect.Right, ARect.Top,0);
-    glVertex3f(ARect.Right, ARect.Bottom ,0);
-    glVertex3f(ARect.Left, ARect.Bottom ,0);
-
-    glEnd;
-  end;
 
   glDisable(GL_SCISSOR_TEST);
 end;

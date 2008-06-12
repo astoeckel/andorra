@@ -178,7 +178,6 @@ end;
 procedure TOGLCgShader.Unbind;
 begin
   cgGLDisableProfile(FProfile);
-  cgGLUnbindProgram(FProfile);
 end;
 
 procedure TOGLCgShader.Bind;

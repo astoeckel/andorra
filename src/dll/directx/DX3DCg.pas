@@ -184,7 +184,7 @@ begin
   case FProgramType of
     astVertex: FSystem.Device.SetVertexShader(nil);
     astFragment: FSystem.Device.SetPixelShader(nil);
-  end;                                             
+  end;
 end;
 
 procedure TDXCgShader.Bind;
