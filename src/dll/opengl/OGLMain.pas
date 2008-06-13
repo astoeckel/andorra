@@ -443,6 +443,9 @@ end;
 
 procedure TOGLApplication.Setup2DScene(AWidth, AHeight: integer; ANearZ, AFarZ: double);
 begin
+  FWidth := FWnd.ClientWidth;
+  FHeight := FWnd.ClientHeight;
+
   glMatrixMode(GL_PROJECTION);
 
   glLoadIdentity;
@@ -450,7 +453,7 @@ begin
   if FRenderingToFBO then
     glOrtho(0, AWidth, 0, AHeight, ANearZ, AFarZ)
   else
-    glOrtho(0, AWidth, AHeight, 0, ANearZ, AFarZ);   
+    glOrtho(0, AWidth, AHeight, 0, ANearZ, AFarZ);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity;
@@ -459,6 +462,9 @@ end;
 procedure TOGLApplication.Setup3DScene(AWidth, AHeight:integer;
   APos, ADir, AUp:TAdVector3; ANearZ, AFarZ: double);
 begin
+  FWidth := FWnd.ClientWidth;
+  FHeight := FWnd.ClientHeight;
+
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity;
 
@@ -884,9 +890,11 @@ var
   cur32:PLongWord;
   newtex: boolean;
 begin
+  //Calculate power of two size of the texture
   w := 1 shl ceil(log2(ABmp.Width));
   h := 1 shl ceil(log2(ABmp.Height));
 
+  //Decide whether a new texture object has to be created
   if (w <> FWidth) or (h <> FHeight) or
      (ABitDepth <> FBitDepth) or (not Loaded) then
   begin
@@ -897,15 +905,18 @@ begin
   end else
     newtex := false;
 
+  //Bind the current texture
   glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
 
+  //Set some properties
   FWidth := w;
   FHeight := h;
   FBitDepth := ABitDepth;
   FBaseWidth := ABmp.Width;
   FBaseHeight := ABmp.Height;
   FHasMipMap := false;
-  
+
+  //Reserve memory for storing the texture data  
   GetMem(mem,w *h * Ord(ABitDepth) div 8);
   
   try

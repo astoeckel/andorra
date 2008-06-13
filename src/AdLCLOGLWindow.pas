@@ -138,7 +138,7 @@ begin
     FForm.BorderIcons := [biSystemMenu];
     FForm.Caption := Title;
 
-    if AProps.Mode = dmWindowed then
+    if (AProps.Mode = dmWindowed) or (AProps.Mode = dmDefault) then
     begin
       FForm.BorderStyle := bsSingle;
       FForm.Width := AProps.Width;

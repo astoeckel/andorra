@@ -54,13 +54,17 @@ type
       property Radius:Single read FRadius write FRadius;
   end;
 
+  {A simple filter that changes the luminance of a Andorra bitmap.}
   TAdLFilter = class(TAdBitmapEffect)
     private
       FLuminanceFactor: double;
     public
+      {Creates an instance of TAdLfilter}
       constructor Create;
       
+      {Applies the effect to a bitmap}      
       procedure AssignEffect(Dest: TAd2dBitmap);override;
+      {The factor the luminance of the picture should be multiplied with.}
       property LuminanceFactor: double read FLuminanceFactor write FLuminanceFactor;
   end;
 

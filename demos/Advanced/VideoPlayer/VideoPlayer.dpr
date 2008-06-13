@@ -1,8 +1,7 @@
 program VideoPlayer;
 
 uses
-  Main in 'Main.pas',
-  AdSDLWindow in '..\..\..\src\AdSDLWindow.pas';
+  Main in 'Main.pas';
 
 var
   Appl: TAdAppl;

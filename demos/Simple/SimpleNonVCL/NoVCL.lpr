@@ -1,6 +1,7 @@
 program NoVCL;
 
-{$MODE Delphi}
+{$APPTYPE CONSOLE}
+{$MODE DELPHI}
 
 uses
   Main in 'Main.pas', AdLCLOGLWindow, LazOpenGLContext;

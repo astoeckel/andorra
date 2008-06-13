@@ -341,7 +341,6 @@ begin
   if result = High(Word) then result := 0;
 end;
 
-
 procedure TAdWin32Window.ProcessMouseMove(wParam, lParam: Integer);
 begin
   if Assigned(Events.OnMouseMove) then

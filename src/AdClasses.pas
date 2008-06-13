@@ -48,22 +48,42 @@ type
     //The horizontal refresh rate. Can be zero to use the desktops refresh rate.
     Freq:integer;
   end;
+  {Pointer on TAd2dResolution}
   PAd2dResolution = ^TAd2dResolution;
 
+  {A record which represents a mesh material.}
   TAd2dMaterial = record
+    {The diffuse color of the material. This is the color that is reflected by
+     the object when light shines on it. For example a object that has a red
+     diffuse color would be black if only blue light shines on it. If white 
+     light hits the object, it would appear red.}
     Diffuse: TAndorraColor;
+    {The ambient color of the material. The ambient light defines the color 
+     that is reflecten when ambient light shines on it. Normally the diffuse
+     and the ambient color are always the same.}
     Ambient: TAndorraColor;
+    {Adds a shine effect to the object when light shines on it. Use the power
+     parameter to influence the strength of this effect.}
     Specular: TAndorraColor;
+    {The emissive color is the color of the object that is emitted if no light
+     shines on the object.}
     Emissive: TAndorraColor;
+    {The internsity of the specular effect.}
     Power: single;
   end;
+  {Pointer on TAd2dMaterial}
   PAd2dMaterial = ^TAd2dMaterial;
 
+  {Used to set the type of a lightsource.}
   TAd2dLightType = (
+    {All light rays are parallel. This type of light can for example be used
+     to simulate sunlight.}
     altDirectional,
+    {The light is emitted by a point light source with limited range.}
     altPoint
   );
 
+  {A record that contains light source settings.}
   TAd2dLightData = record
     {The type of the light. Can be a directional or a
      point light.}
@@ -108,6 +128,7 @@ type
     adPointSprites //< The vertices are drawn as point sprites
   );
 
+  {Specifies the way textures are filtered.}
   TAd2dTextureFilter = (
     atPoint,{< The filter with worst quality. The pixels won't be interpolated.}
     atLinear,{< The pixels will be interpolated using  a linear filter.}
@@ -129,6 +150,8 @@ type
       setuped before initializing the graphic system using the "Properties" interface.}
     aoCulling {< If this option is turned on, culling is enabled.}
   );
+  {Set of TAd2dOption used in TAdRenderingSurface. See TAd2dOption for more 
+   details.}
   TAd2dOptions = set of TAd2dOption;
 
   {TAd2dSurfaceLayer is used by the TAd2dApplication.ClearSurface method. A set
@@ -140,28 +163,36 @@ type
     alStencilBuffer {< Clears the stencil buffer, that is used by some special effects}
   );
 
+  {This type is used in the stencil buffer functions in order to set when a 
+   stencil buffer operation fails or not.
+   @seealso(TAd2dApplication.SetStencilOptions)
+   @seealso(TAd2dOption)}
   TAd2dStencilFunction = (
-    asfNever,
-    asfLessThan,
-    asfLessThanOrEqual,
-    asfEqual,
-    asfGreaterThanOrEqual,
-    asfGreaterThan,
-    asfAlways
+    asfNever, //< The stencil buffer comparison can never be achived.
+    asfLessThan, //< The pixel is set if the reference value is smaller than the stencil buffer value 
+    asfLessThanOrEqual, //< The pixel is set if the reference value is smaller or equal to the stencil value
+    asfEqual, //< The stencil buffer comparison passes if the stencil value is equal to the reference value
+    asfGreaterThanOrEqual, //< The pixel is set if the reference value is greater or equal to the stencil value
+    asfGreaterThan, //< The pixel is set if the reference value is greater than the stencil buffer.
+    asfAlways //< The stencil buffer operation will always pass
   );
 
+  {The operation that will be performed on the stencil buffer if a stencil
+   event is triggered.}
   TAd2dStencilOperation = (
-    asoKeep,
-    asoReplace,
-    asoIncrement,
-    asoDecrase,
-    asoZero
+    asoKeep, //< The current stencil value is kept
+    asoReplace, //< The stencil value is replaced by the reference value
+    asoIncrement, //< The current stencil value is incremented
+    asoDecrase, //< The current stencil value decrased
+    asoZero //< The stencil value is set to zero
   );
 
+  {TAd2dStencilEvent represents the stencil states that can be triggered when
+   the stencil test takes place.}
   TAd2dStencilEvent = (
-    aseFail,
-    aseZFail,
-    asePass
+    aseFail, //< Triggered if the stencil test fails
+    aseZFail, //< The stencil test didn't fail, but the Z-Buffer test did.
+    asePass //< The stencil test and the Z-Buffer test didn't were passed
   );
 
   {A set of TAd2dSurfaceLayer, that specifies, which parts of the surface should
@@ -432,8 +463,9 @@ type
       procedure LoadFromBitmap(ABmp:TAd2dBitmap; ABitDepth: TAdBitDepth);virtual;abstract;
       {Saves the texture to a TAd2dBitmap.}
       procedure SaveToBitmap(ABmp:TAd2dBitmap);virtual;abstract;
-    end;
-
+  end;
+  
+  {An abstract class that represents a texture that can act as a render target.}
   TAd2DRenderTargetTexture = class(TAd2dTexture)
     public
       {Resizes the render target texture. If no texture is loaded, a new texture will be created.}
@@ -444,22 +476,39 @@ type
       procedure SaveToBitmap(ABmp:TAd2dBitmap);virtual;abstract;
   end;
 
+  {Used for counting the count of pixels that passed the Z-Buffer test. The Z-Buffer 
+   has to be activated while counting pixels. Only one single pixel counter can be 
+   active (counting pixels) at a time.}
   TAd2dPixelCounter = class
     public
+      {Starts counting pixels.}
       procedure StartCount;virtual;abstract;
+      {Stops counting pixels.}
       procedure StopCount;virtual;abstract;
+      {Returns the pixel count.}
       function GetCount: Cardinal;virtual;abstract;
   end;
 
+  {A class that represents a light in the current scene. This type of light is only
+   capable of doing vertex lighting.
+   @seealso(TAd2dLightData)}
   TAd2dLight = class
     private
       FData: TAd2dLightData;
-    protected
+    protected    
       procedure SetData(AValue: TAd2dLightData);virtual;
     public
+      {Enables the current light and assigns it to the given light number. A Andorra 2D
+       graphic system implementation has to be capable of supporting the light numbers
+       0-7. The maximum light count may be read in the TAd2dApplication.MaxLightCount
+       property. The light settings have to be set before activating the light source.
+       @seealso(TAd2dLight.Data)
+       @seealso(TAd2dApplication.MaxLightCount)}
       procedure EnableLight(ALight: Cardinal);virtual;abstract;
+      {Disables the light, if it had been activated.}
       procedure DisableLight;virtual;abstract;
-
+      
+      {The light settings. Set these settings before enabling the light.}
       property Data: TAd2dLightData read FData write SetData;
   end;
 

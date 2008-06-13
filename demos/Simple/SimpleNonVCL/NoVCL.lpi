@@ -29,7 +29,7 @@
         <PackageName Value="LazOpenGLContext"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="2">
+    <Units Count="6">
       <Unit0>
         <Filename Value="NoVCL.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -43,14 +43,54 @@
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="32" Y="10"/>
+        <CursorPos X="48" Y="11"/>
         <TopLine Value="1"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <UnitName Value="AdSimpleXML"/>
+        <CursorPos X="43" Y="1340"/>
+        <TopLine Value="1395"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\src\AdLCLOGLWindow.pas"/>
+        <UnitName Value="AdLCLOGLWindow"/>
+        <CursorPos X="21" Y="112"/>
+        <TopLine Value="96"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\src\AdDraws.pas"/>
+        <UnitName Value="AdDraws"/>
+        <CursorPos X="1" Y="1005"/>
+        <TopLine Value="990"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\lcl\include\control.inc"/>
+        <CursorPos X="1" Y="1231"/>
+        <TopLine Value="1216"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit5>
     </Units>
-    <JumpHistory Count="0" HistoryIndex="-1"/>
+    <JumpHistory Count="1" HistoryIndex="0">
+      <Position1>
+        <Filename Value="..\..\..\src\AdLCLOGLWindow.pas"/>
+        <Caret Line="112" Column="21" TopLine="96"/>
+      </Position1>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="5"/>

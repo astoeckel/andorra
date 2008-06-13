@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="4"/>
+      <ActiveEditorIndexAtStart Value="2"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value="0.0.0.0"/>
@@ -27,7 +27,7 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="1">
+    <Units Count="3">
       <Unit0>
         <Filename Value="AndorraOGL.dpr"/>
         <IsPartOfProject Value="True"/>
@@ -38,7 +38,39 @@
         <UsageCount Value="23"/>
         <Loaded Value="True"/>
       </Unit0>
+      <Unit1>
+        <Filename Value="OGLShader.pas"/>
+        <UnitName Value="OGLShader"/>
+        <CursorPos X="8" Y="5"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="OGLMain.pas"/>
+        <UnitName Value="OGLMain"/>
+        <CursorPos X="1" Y="467"/>
+        <TopLine Value="440"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit2>
     </Units>
+    <JumpHistory Count="3" HistoryIndex="2">
+      <Position1>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position1>
+      <Position2>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="447" Column="18" TopLine="431"/>
+      </Position2>
+      <Position3>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="466" Column="18" TopLine="450"/>
+      </Position3>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="5"/>

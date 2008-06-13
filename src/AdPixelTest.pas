@@ -34,6 +34,11 @@ type
   end;
   PAdCollisionTesterItem = ^TAdCollisionTesterItem;
 
+  {This class can be used to see whether two user-defined objects collide. 
+   TAdPixelCollisionTester manages its own surfaces where the test objects are
+   temporaly drawn at. After sending all test to the class using the
+   "CheckCollision" method, the results can be retrieved using the "GetCollisions"
+   method.}
   TAdPixelCollisionTester = class
     private
       FSurface: TAdTextureSurface;
@@ -49,11 +54,12 @@ type
       procedure Initialize;
       procedure Finalize;
     public
+      {Creates an instance of TAdPixelCollisionTester.}
       constructor Create(AParent: TAdDraw);
+      {Destroys the instance of TAdPixelCollisionTester.}
       destructor Destroy;override;
 
-      property AdDraw: TAdDraw read FDraw;
-
+      {}
       procedure CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
         AObj2: TObject; ABoundsRect2: TAdRect;
         ADrawCallback: TAdCollisionTestDrawProc;
@@ -62,6 +68,7 @@ type
       procedure GetCollisions;
 
       property Surface: TAdTextureSurface read FSurface;
+      property AdDraw: TAdDraw read FDraw;      
   end;
 
 implementation

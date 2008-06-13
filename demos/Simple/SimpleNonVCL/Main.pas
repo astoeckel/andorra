@@ -7,8 +7,8 @@ unit Main;
 interface
 
 uses
-  AdClasses, AdEvents, AdDraws,
-  AdGUI, AdComponents, AdGUIConnector, AdWin32Window;
+  AdClasses, AdEvents, AdDraws, AdTypes,
+  AdGUI, AdComponents, AdGUIConnector, AdLCLOGLWindow;
 
 type
   TAdAppl = class
@@ -72,10 +72,12 @@ begin
     AdDraw.DllName := 'AndorraOGL.dll';
   {$ENDIF}
 
-  AdDraw.Display.Width := 800;
-  AdDraw.Display.Height := 600;
-  AdDraw.Display.BitCount := 32;
-  AdDraw.Options := AdDraw.Options + [doFullscreen];
+  with AdDraw.Display do
+  begin
+    Width := 800;
+    Height := 600;
+    BitDepth := ad32Bit;
+  end;
   if AdDraw.Initialize then
   begin
     AdDraw.Window.Events.OnIdle := Idle;

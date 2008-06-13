@@ -1998,7 +1998,7 @@ begin
  inherited Items[AIndex] := AItem;
 end;
 
-{{ TSurfaceEventList }
+{ TSurfaceEventList }
 
 procedure TAdSurfaceEventList.Add(Item: TAdSurfaceEvent);
 var

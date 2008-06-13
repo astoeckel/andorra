@@ -7,7 +7,7 @@ interface
 {$ENDIF}
 
 uses
-  SysUtils, Dialogs, AdSDLWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
+  SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
   AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
   AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents, AdSetupDlg;
 

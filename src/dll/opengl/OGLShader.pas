@@ -1,5 +1,9 @@
 unit OGLShader;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
