@@ -16,6 +16,9 @@
 * TODO:
 * o Add new functionality, if needed
 }
+
+{Provides some classes to handle virtual file systems, especially with packages.
+ For packages, see also TAdFileStreamEx in AdFileStreamEx.pas.}
 unit AdFileClasses;
 
 interface

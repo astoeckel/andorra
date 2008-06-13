@@ -500,10 +500,10 @@ type
     public
       {Enables the current light and assigns it to the given light number. A Andorra 2D
        graphic system implementation has to be capable of supporting the light numbers
-       0-7. The maximum light count may be read in the TAd2dApplication.MaxLightCount
+       0-7. The maximum light count may be read in the TAd2dApplication.MaxLights
        property. The light settings have to be set before activating the light source.
        @seealso(TAd2dLight.Data)
-       @seealso(TAd2dApplication.MaxLightCount)}
+       @seealso(TAd2dApplication.MaxLights)}
       procedure EnableLight(ALight: Cardinal);virtual;abstract;
       {Disables the light, if it had been activated.}
       procedure DisableLight;virtual;abstract;

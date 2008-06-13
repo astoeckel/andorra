@@ -14,7 +14,12 @@
            at http://pngdelphi.sourceforge.net/
 }
 
-{A PNG loader and compressor. It needs the PNG Delphi Sources which are available at http://pngdelphi.sourceforge.net/ and doesn't run with lazarus!}
+{Contains the Andorra 2D binding to the PNGImage PNG loader and compressor. It
+ needs the PNG Delphi Sources which are available at 
+ http://pngdelphi.sourceforge.net/ . This unit doesn't run with lazarus! To have 
+ PNG Support with Lazarus, try one of the other graphic library plugins like
+ AdDevIL or AdFreeImage.
+}
 unit AdPNG;
 
 interface

@@ -13,6 +13,7 @@
 * Comment: A unit which adds a new class - TAdList. This list adds implementations which are missing in Delphi 4.
 }
 
+{A unit which adds a new class - TAdList. This list adds implementations which are missing in Delphi 4.}
 unit AdList;
 
 interface

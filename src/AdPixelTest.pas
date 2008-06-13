@@ -23,15 +23,24 @@ uses
   AdClasses, AdTypes, AdDraws, AdContainers;
 
 type
+  {Callback procedure type used by TAdPicelCollisionTester. Called when a
+   object should be drawn.
+   @param(AObj represents the object that should be drawn)
+   @param(ASurface the surface it should be drawn to)
+   @param(AX, AY the top corner edge of the object where it should be drawn to.)}
   TAdCollisionTestDrawProc = procedure(AObj: TObject; ASurface: TAdRenderingSurface;
     AX, AY: integer) of object;
+  {Callback procedure type. Used by TAdPixelCollisionTester to indicate that two
+   objects collided.}
   TAdCollisionTestCollisionProc = procedure(AObj1, AObj2: TObject) of object;
 
+  {@exclude}
   TAdCollisionTesterItem = record
     Obj1, Obj2: TObject;
     CollisionCallback: TAdCollisionTestCollisionProc;
     PixelCounter: TAd2dPixelCounter;
   end;
+  {@exclude}
   PAdCollisionTesterItem = ^TAdCollisionTesterItem;
 
   {This class can be used to see whether two user-defined objects collide. 
@@ -59,15 +68,40 @@ type
       {Destroys the instance of TAdPixelCollisionTester.}
       destructor Destroy;override;
 
-      {}
+      {The check collision function performs a collision test between two 
+       objects. The only thing you need to have, is a callback function that
+       draws the objects on the surface to a specific position.
+       @param(AObj1 is only a pointer that may contain user data that is in 
+         connection with the first collision object.)
+       @param(ABoundsRect1 specifies the boundsrect of the first object.)
+       @param(AObj2 is only a pointer that may contain user data that is in 
+         connection with the second collision object.)
+       @param(ABoundsRect2 specifies the boundsrect of the second object.
+       @param(ADrawCallback is called when one of the objects should be drawn
+         on a specific surface on a specific position. The pointer given
+         in AObj1 or AObj2 will be sent, to indicate which object should be
+         drawn.)
+       @param(ACollisionCallback is called when a collision between the two
+         objects takes place. The pointers to the two given objects are sent.
+         This callback function will be called after the "GetCollisions" function
+         is called.)
+       @seealso(TAdCollisionTestDrawProc)
+       @seealso(TAdCollisionTestCollisionProc)}
       procedure CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
         AObj2: TObject; ABoundsRect2: TAdRect;
         ADrawCallback: TAdCollisionTestDrawProc;
         ACollisionCallback: TAdCollisionTestCollisionProc);
 
+      {Analyzes the last collision tests done by CheckCollision. If a collision
+       took place, the "CollisionCallback" method given to CheckCollision is
+       called.}
       procedure GetCollisions;
 
+      {The surface all collision tests take place on. Increase the size of this
+       surface by settings its size via "SetSize" to get more accurate pixel check
+       results.}
       property Surface: TAdTextureSurface read FSurface;
+      {The parent AdDraw given in the constructor.}
       property AdDraw: TAdDraw read FDraw;      
   end;
 

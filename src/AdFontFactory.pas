@@ -16,6 +16,7 @@
 * Comment: TAdFontFactory is used to create font objects
 }
 
+{TAdFontFactory is used to create font objects.}
 unit AdFontFactory;
 
 {$IFDEF FPC}

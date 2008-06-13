@@ -23,9 +23,14 @@
 {Provides an image class to load and save TGA files.}
 unit AdTGAImage;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
-uses SysUtils, Classes, AdTypes, AdBitmap;
+uses 
+  SysUtils, Classes, AdTypes, AdBitmap;
 
 const
   HIGH_COLORS: array[0..31] of Byte =

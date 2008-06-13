@@ -10,9 +10,10 @@
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
 * File: AdPNGCompressor.pas
-* Comment: Contains loaders for registered vcl formats
+* Comment: Contains loaders for registered lcl formats
 }
 
+{Contains loaders for registered lcl formats}
 unit AdLCLFormats;
 
 {$IFDEF FPC}
@@ -26,6 +27,7 @@ uses
   AdBitmap, AdTypes, AdPersistent, GraphType;
 
 type
+  {@exclude}
   TAdLCLFormat = class(TAdGraphicFormat)
     public
       class procedure FileExts(strs:TStrings);override;

@@ -17,6 +17,8 @@
 * o Optimize
 * o Add compressor (This is a lot of work!)
 }
+
+{Provides a compressor (TODO) and decompressor for the deflate compression format. (See RFC 1951 for a detailed specification)}
 unit AdDeflate;
 
 interface

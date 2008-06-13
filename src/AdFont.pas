@@ -16,6 +16,7 @@
 * Comment: This unit contains the TAdFont class, which draws the font and the TAdTypeSetter class, which sets the text.
 }
 
+{This unit contains the TAdFont class, which draws the font and the TAdTypeSetter class, which sets the text.}
 unit AdFont;
 
 interface

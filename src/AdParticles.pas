@@ -29,7 +29,7 @@ uses
 type
 
   { The main, abstract particle class. TAdParticle has methods to save and
-    load settings from/to XML via RTTI and gives chlidren class the ability to
+    load settings from/to XML and gives chlidren class the ability to
     create vertex/index data for drawing. Do not use TAdParticle directly.}
   TAdParticle = class;
 
@@ -81,7 +81,7 @@ type
   end;
 
   { The main, abstract particle class. TAdParticle has methods to save and
-    load settings from/to XML via RTTI and gives chlidren class the ability to
+    load settings from/to XML and gives chlidren class the ability to
     create vertex/index data for drawing. Do not use TAdParticle directly.}
   TAdParticle = class(TAdPersistent)
     private
@@ -131,31 +131,51 @@ type
       { Loads the particle data from the given xml node. }
       procedure LoadFromXML(ARoot: TAdSimpleXMLElem);virtual;
 
+      { Saves the particle object to any desired stream. }
       procedure SaveToStream(AStream: TStream);
+      { Loads the particle object from any desired stream. }
       procedure LoadFromStream(AStream: TStream);
 
+      { Saves the particle object to a file.}
       procedure SaveToFile(AFile: string);
+      { Loads the particle object from a file.}
       procedure LoadFromFile(AFile: string);
   end;
 
+  {Class of TAdParticle. Used for registering purposes.}
   TAdParticleClass = class of TAdParticle;
 
   {$M+}
+  {Represents a "variation value" of TAdStdParticle. Those values have
+   a start value, representing the value at the begining of the life of the particle
+   and a end value that will reached at the end of the life of the particle. Variation
+   represents the maximum variation in percent.}
   TAdParticleParameter = class
     private
       FStart, FStop, FVariation: double;
     public
+      {Loads the value from a XML node.}
       procedure LoadFromXML(AName: string; ARoot: TAdSimpleXMLElem);
+      {Saves the value to a XML node.}
       procedure SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
 
+      {Assigns another particle parameter.}
       procedure Assign(AParam: TAdParticleParameter);
     published
+      {The start value of the parameter. The parameter has this value at the
+       begin of the particle life.}
       property Start: double read FStart write FStart;
+      {The stop value of the parameter. The parameter has this value at the
+       end of the particle life.}
       property Stop: double read FStop write FStop;
+      {The variation factor for the particle parameter. In percent.}
       property Variation: double read FVariation write FVariation;
   end;
   {$M-}
-
+  
+  {A standard particle class that implements the behaviour of a base particle.
+   This classes uses point sprites for drawing the particles. Operations like
+   scaling or rotation are not availale in this particle class.}
   TAdStdParticle = class(TAdParticle)
     private
       FPosition: TAdVector3;
@@ -180,22 +200,22 @@ type
       procedure ApplyVariation(var AVal: double; AVar: double);
       procedure ApplyVelVariation(var AVel: TAdParticleParameter);
     public
-      constructor Create(ASystem: TAdParticleSystem);override; //<@exclude
-      destructor Destroy;override; //<@exclude
+      constructor Create(ASystem: TAdParticleSystem);override;
+      destructor Destroy;override;
 
-      class function VerticesPerParticle: integer;override; //<@exclude
-      class function IndicesPerParticle: integer;override; //<@exclude
-      class function DrawMode: TAd2DDrawMode;override; //<@exclude
+      class function VerticesPerParticle: integer;override;
+      class function IndicesPerParticle: integer;override;
+      class function DrawMode: TAd2DDrawMode;override;
 
-      procedure SetupMovement(AX, AY: integer);override; //<@exclude
-      procedure Assign(APart: TAdParticle);override; //<@exclude
+      procedure SetupMovement(AX, AY: integer);override;
+      procedure Assign(APart: TAdParticle);override; 
 
-      procedure Move(ATimeGap: double);override; //<@exclude
-      procedure StoreData(AData: PAdParticleData);override; //<@exclude
-      procedure StoreMinMax(AData: PAdParticleData);override; //@<exclude
+      procedure Move(ATimeGap: double);override;
+      procedure StoreData(AData: PAdParticleData);override;
+      procedure StoreMinMax(AData: PAdParticleData);override;
 
-      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;override; //<@exclude
-      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);override; //<@exclude
+      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;override;
+      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);override;
     published
       {Describes how fast the particle should move on the X-Axis. Unit: Pixel per second}
       property XVelocity: TAdParticleParameter read FXVelocity write FXVelocity;
@@ -216,6 +236,8 @@ type
       property CreationAngleRange: integer read FCreationAngleRange write FCreationAngleRange;
   end;
 
+  {A particle class extending TAdStdParticle that uses billboard sprits for
+   drawing the particles and therefore supports rotation and scaling.}
   TAdBillboardParticle = class(TAdStdParticle)
     private
       FCalculatedSize: double;
@@ -229,20 +251,22 @@ type
       constructor Create(ASystem: TAdParticleSystem);override;
       destructor Destroy;override;
 
-      class function VerticesPerParticle: integer;override; //<@exclude
-      class function IndicesPerParticle: integer;override; //<@exclude
-      class function DrawMode: TAd2DDrawMode;override; //<@exclude
+      class function VerticesPerParticle: integer;override;
+      class function IndicesPerParticle: integer;override;
+      class function DrawMode: TAd2DDrawMode;override;
 
-      procedure SetupMovement(AX, AY: integer);override; //<@exclude
-      procedure Assign(APart: TAdParticle);override; //<@exclude
+      procedure SetupMovement(AX, AY: integer);override;
+      procedure Assign(APart: TAdParticle);override;
 
-      procedure Move(ATimeGap: double);override; //<@exclude
-      procedure StoreData(AData: PAdParticleData);override; //<@exclude
+      procedure Move(ATimeGap: double);override;
+      procedure StoreData(AData: PAdParticleData);override;
 
-      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;override; //<@exclude
-      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);override; //<@exclude
+      function SaveToXML(ARoot: TAdSimpleXMLElems):TAdSimpleXMLElem;override;
+      procedure LoadFromXML(ARoot: TAdSimpleXMLElem);override;
     published
+      {The factor size of the particle.}
       property Size: TAdParticleParameter read FSize write FSize;
+      {The rotation of the particle in radiant.}
       property Angle: TAdParticleParameter read FAngle write FAngle;
   end;
 

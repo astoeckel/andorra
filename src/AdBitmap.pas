@@ -408,6 +408,8 @@ begin
       tmp.Free;
     end;
   end;
+  
+  //! RAISE EXCEPTION HERE
 end;
 
 initialization

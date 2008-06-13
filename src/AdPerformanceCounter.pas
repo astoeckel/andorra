@@ -24,9 +24,14 @@ uses
 {$ENDIF}
 
 type
-  TAdPerformanceCounterState = (psPaused, psResumed, psRunning);
+  {Represents the state of the performance counter.}
+  TAdPerformanceCounterState = (
+    psPaused, //< The performance counter is currently paused, time gap is always zero.
+    psResumed,  //< You just called the "Resume" method of the performance counter. When the calculate function is called the next time, "TimeGap" is zero, then the performance counter starts to recalculate the TimeGap.
+    psRunning //< The performance counter is up and running since more than two ticks.
+  );
 
-  //Class for calculating the FPS and the TimeGap
+  {Class for calculating the FPS and the TimeGap.}
   TAdPerformanceCounter = class
     private
       FTimeGap:Double;
@@ -39,18 +44,42 @@ type
       FInterpolationFactor:integer;
       FMaximumTimeGap:double;
     public
-      property State:TAdPerformanceCounterState read FState;
-      property FPS:integer read FFPS;
-      property TimeGap:double read FTimeGap;
-      property Interpolate:Boolean read FInterpolate write FInterpolate;
-      property InterpolationFactor:integer read FInterpolationFactor write FInterpolationFactor;
-      property MaximumTimeGap:double read FMaximumTimeGap write FMaximumTimeGap;
-
+      {Creates a new instance of TAdPerformanceCounter.
+       @param(ACreatePaused can be true, in order to create the performance counter
+         in a suspended mode)}
       constructor Create(ACreatePaused:boolean=false);
 
+      {If the performance counter was paused (suspended), resume makes the counter
+       to calculate the time-between frames again.}
       procedure Resume;
+      {Pauses the counter. TimeGap will always be zero.}
       procedure Pause;
+      
+      {Makes the counter to calculate the FPS and the time between this and the 
+       last call of "Calculate".}
       procedure Calculate;    
+
+      {Contains the current state of the performance counter.
+       @seealso(TAdPerformanceCounterState)}
+      property State:TAdPerformanceCounterState read FState;
+      {Contains the current FPS. FPS is calculated every second by
+       counting the ticks passed.}
+      property FPS:integer read FFPS;
+      {TimeGap is the time that passed between the last two calls of
+       the "Calculate" function. Zero if the counter is paused. The result is
+       in milliseconds.}
+      property TimeGap:double read FTimeGap;
+      {If true, the TimeGap values are interpolated in order to prevent the
+       game from small hangs. May cause problems if the framerate falls below
+       100 FPS.}
+      property Interpolate:Boolean read FInterpolate write FInterpolate;
+      {The factor the old TimeGap value is multiplied with. The weight of the
+       previous TimeGap is InterpolationFactor:1}
+      property InterpolationFactor:integer read FInterpolationFactor write FInterpolationFactor;
+      {If TimeGap exceeds MaximumTimeGap, TimeGap will be set to this value. This
+       is for preventing the game logic from e.g. collision bugs beause TimeGap
+       got to big.}
+      property MaximumTimeGap:double read FMaximumTimeGap write FMaximumTimeGap;      
   end;
 
 implementation

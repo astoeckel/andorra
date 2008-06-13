@@ -25,6 +25,7 @@ uses
   Classes, AdBitmap, AdTypes, AdPNGUtils, DevIL;
 
 type
+  {@exclude}
   TAdDevILPNGCompressor = class(TAdGraphicCompressor)
     public
       procedure Write(ABitmap:TAdBitmap; AStream:TStream);override;
@@ -32,6 +33,7 @@ type
       class function ID:TAdVeryShortString;override;
   end;
 
+  {@exclude}
   TAdDevILFormat = class(TAdGraphicFormat)
     public
       class procedure FileExts(strs:TStrings);override;

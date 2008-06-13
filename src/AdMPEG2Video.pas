@@ -26,6 +26,7 @@ uses
   AdBitmapClass, AdVideoTexture, libmpeg2;
 
 type
+  {@exclude}
   TAdMPEG2Decoder = class(TAdVideoDecoder)
     private
       FDecoder: PMPEG2_Decoder;

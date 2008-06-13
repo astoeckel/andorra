@@ -17,11 +17,14 @@
 {Adds the ability of loading TGA-Files to Andorra 2D}
 unit AdTGA;
 
+{$IFDEF FPC}
+ {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
-  Classes, AdBitmap, AdTypes, AdVCLFormats, AdTGAImage;
-
+  Classes, AdBitmap, AdTypes, AdTGAImage;
 
 type
   {A compressor to store textures in the TGA format}
@@ -154,7 +157,9 @@ begin
   TGA := TAdTGAImage.Create;
   try
     TGA.LoadFromFile(AFile);
-    Assign(ABitmap, TGA);
+    if not ATransparent then
+      TGA.RemoveAlphaChannel;
+    Assign(ABitmap, TGA);       
   finally
     TGA.Free;
   end;

@@ -16,6 +16,7 @@
 * Comment: Contains a font list class, which stores fonts with a corespondenting name
 }
 
+{Contains a font list class, which stores fonts with a corespondenting name}
 unit AdFontList;
 
 {$IFDEF FPC}

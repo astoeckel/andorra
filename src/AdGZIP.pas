@@ -10,13 +10,15 @@
 * Project: Andorra 2D
 * Author:  Manuel Eberl
 * File: AdGZIP.pas
-* Comment: Provides a class for loading and saving gzip files (see RFC 1952
+* Comment: Provides a class for loading and saving gzip files (see RFC 1952)
 * for a detailed specification)
 *
 * TODO:
 * o Add support to save GZIP files (before that, a compressor for deflate
 *   (TAdDeflateCompressor) has to be implemented in AdDeflate.pas.
 }
+
+{Provides a class for loading and saving gzip files (see RFC 1952)}
 unit AdGZIP;
 
 interface
