@@ -54,6 +54,7 @@ type
   TMainCharacter = class(TCharacter)
     private
       FKeys:TKeys;
+      FDefPartSys: TAdParticleSystem;
     protected
       procedure DoMove(TimeGap:double);override;
       procedure DoCollision(Sprite:TSprite; var Done:boolean);override;
@@ -61,6 +62,7 @@ type
       constructor Create(AParent:TSprite);override;      
       procedure Init;
       procedure SetKeys(Keys:TKeys);
+      procedure SetDefPartSys(APartSys: TAdParticleSystem);
   end;
 
   TWorm = class(TCharacter)
@@ -91,6 +93,7 @@ type
     AdImageList:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
     AdPixelCollisionTester: TAdSpritePixelCollisionTester;
+    AdSplatterEffect: TAdParticleSystem;
 
     MainCharacter:TMainCharacter;
     ActTime:double;
@@ -149,17 +152,22 @@ begin
 
       AdSpriteEngine := TSpriteEngine.Create(AdDraw);
 
+      AdSplatterEffect := TAdParticleSystem.Create(AdDraw);
+      AdSplatterEffect.LoadFromFile(path + 'splatter.apf');
+      AdSplatterEffect.Texture := AdImageList.Find('particle').Texture;
+      
       with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
         Image := AdImageList.Find('gras');
         Z := -10000;
-      end;
+      end;       
 
       MainCharacter := TMainCharacter.Create(AdSpriteEngine);
       with MainCharacter do
       begin
         SetAnims(AdImageList,'viking');
         SetKeys([]);
+        SetDefPartSys(AdSplatterEffect);
         CollisionTester := AdPixelCollisionTester;
         Init;
       end;
@@ -192,6 +200,7 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  AdSplatterEffect.Free;
   AdPixelCollisionTester.Free;
   AdSpriteEngine.Free;
   AdPerCounter.Free;
@@ -404,8 +413,7 @@ begin
   begin
     with TParticleSprite.Create(Engine) do
     begin
-      PartSys.LoadFromFile(path+'splatter.apf');
-      Image := Form1.AdImageList.Find('particle');
+      PartSys.Assign(FDefPartSys);
       Emit(20);
       X := Sprite.X + Sprite.Width / 2;
       Y := Sprite.Y + Sprite.Height / 2;
@@ -428,6 +436,11 @@ end;
 procedure TMainCharacter.Init;
 begin
   SetState(stStopped);
+end;
+
+procedure TMainCharacter.SetDefPartSys(APartSys: TAdParticleSystem);
+begin
+  FDefPartSys := APartSys;
 end;
 
 procedure TMainCharacter.SetKeys(Keys: TKeys);

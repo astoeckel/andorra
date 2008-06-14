@@ -328,7 +328,7 @@ type
        rectangular region of the surface should be cleared. The coordinats are
        absolute.}
       procedure ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
-        AColor: TAndorraColor; AZValue: integer; AStencilValue: integer); virtual; abstract;
+        AColor: TAndorraColor; AZValue: double; AStencilValue: integer); virtual; abstract;
 
       {Should be called after clearing the surface and before drawing on it.}
       procedure BeginScene;virtual;abstract;

@@ -76,7 +76,7 @@ type
       function SupportsWindowFramework(AClassId:ShortString):boolean;override;
 
       procedure ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
-        AColor: TAndorraColor; AZValue: integer; AStencilValue: integer); override;
+        AColor: TAndorraColor; AZValue: double; AStencilValue: integer); override;
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
@@ -639,7 +639,7 @@ begin
 end;
 
 procedure TDXApplication.ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
-  AColor: TAndorraColor; AZValue: integer; AStencilValue: integer);
+  AColor: TAndorraColor; AZValue: double; AStencilValue: integer);
 var
   flags: Cardinal;
 begin

@@ -255,10 +255,8 @@ type
 
       {Creates an orhtogonal 2D-Scene with a specific width and height.
        SceneWidth and SceneHeight are set to the values passed here.
-       For compatibility reasons, the setup 2D-Scene method of the graphic plugin
-       automatically sets its viewport to the sizes passed. So if you only want
-       to use a specific part of the screen, don't forget to set your viewport
-       again after calling "Setup2DScene".}
+       The clipping planes are set to tha values in ClipPlaneNearZ and
+       ClipPlaneFarZ.}
       procedure Setup2DScene(AWidth, AHeight: integer);
       {Creates an perspectivic 3D-Scene. SceneWidth and SceneHeight are set to
        the values passed here.
@@ -277,9 +275,10 @@ type
        special way.}
       property ProjectionMatrix:TAdMatrix read FProjectionMatrix write SetProjectionMatrix;
 
-      {Defines the rectangle where graphic operations take place. Viewport may
-       be automatically overriden by Setup2DScene. So remember to reset the
-       viewport after calling this method.}
+      {Defines the rectangle where graphic operations take place. Viewport is
+       automatically set when a change in the size of the surface occurs. If you
+       want to use your own viewport, don't forget to reset it after such a change
+       happened. The viewport is always given in absolute coordinates.}
       property Viewport:TAdRect read FViewPort write SetViewPort;
 
       {The ambient color of the scene. The ambient color is the base color all
@@ -346,6 +345,8 @@ type
       {Destroys the instance of TAdRenderingSurface.}
       destructor Destroy;override;
 
+      procedure ClearSurface(AColor: LongInt);override;
+
       {A hardware accelerated canvas. All drawing operations will automatically
        be made on the owner of the canvas property.}
       property Canvas:TAdCanvas read FCanvas;
@@ -364,6 +365,7 @@ type
       property Height: integer read GetHeight;
 
       {Calls Scene.Setup2DScene with the width and the height of the surface.
+       The viewport is changed, so that it covers the whole screen.
        After calling Setup2DScene the relative and the absolute coordinate
        system are equal.}
       procedure Setup2DScene;
@@ -384,8 +386,6 @@ type
       {Destroys the instance of TAdTextureSurface}
       destructor Destroy;override;
 
-      {Clears the surface with a specific color.}
-      procedure ClearSurface(AColor: LongInt);override;
       {Sets the size of the surface to a new value. Normally the surface has
        a size of 128x128 pixels.}
       procedure SetSize(AWidth, AHeight: integer);
@@ -452,7 +452,6 @@ type
     destructor Destroy; override;
 
     function CanDraw:boolean;override;
-    procedure ClearSurface(AColor: LongInt); override;
 
     function Initialize: boolean;
     procedure Finalize;
@@ -1057,19 +1056,6 @@ begin
   //Tell everybody that this instance of TAdDraw is no longer initialized
   FInitialized := false;
   CallNotifyEvent(seFinalize);
-end;
-
-procedure TAdDraw.ClearSurface(AColor: LongInt);
-begin
-  inherited;
-
-  if AdAppl <> nil then
-  begin
-    //Call the AdAppl clear surface method and clear all surfaces.
-    AdAppl.ClearSurface(
-      SurfaceRect, [alColorBuffer, alZBuffer, alStencilBuffer],
-      ColorToAdColor(AColor), 1, 0);
-  end;
 end;
 
 procedure TAdDraw.BeginScene;
@@ -2392,10 +2378,8 @@ begin
     FDraw.AdAppl.Setup2DScene(AWidth, AHeight, FFarZ, FNearZ);
     FDraw.AdAppl.GetScene(FViewMatrix, FProjectionMatrix);
 
-    //Build viewport
     FWidth := AWidth;
     FHeight := AHeight;
-    Viewport := AdRect(0, 0, AWidth, AHeight);
 
     //Reset scene if neccessary
     if curscene <> nil then
@@ -2522,12 +2506,14 @@ begin
   FCanvas := TAdCanvas.Create(AdDraw.AdAppl);
   FCanvas.OnRelease := CanvasRelease;
   FCanvas.Font := AdDraw.Fonts.GenerateFont('Tahoma', 10, []);
+
+  Scene.Viewport := AdRect(0, 0, Width, Height);
 end;
 
 function TAdRenderingSurface.GetDisplayRect: TAdRect;
 begin
   result :=
-    AdRect(0, 0, FScene.Width, FScene.Height);
+    AdRect(0, 0, Scene.Width, Scene.Height);
 end;
 
 procedure TAdRenderingSurface.DoFinalize;
@@ -2586,12 +2572,26 @@ end;
 procedure TAdRenderingSurface.Setup2DScene;
 begin
   Scene.Setup2DScene(Width, Height);
+  Scene.Viewport := AdRect(0, 0, Width, Height);
 end;
 
 procedure TAdRenderingSurface.CanvasRelease(Sender: TObject);
 begin
   if not Activated then
     Activate;
+end;
+
+procedure TAdRenderingSurface.ClearSurface(AColor: Integer);
+begin
+  inherited;
+  
+  if AdDraw.CanDraw then
+  begin
+    //Clear the surface with the specified color.
+    AdDraw.AdAppl.ClearSurface(
+      Scene.Viewport, [alColorBuffer, alZBuffer, alStencilBuffer],
+      ColorToAdColor(AColor), 1, 0);
+  end;
 end;
 
 { TAdTextureSurface }
@@ -2651,16 +2651,6 @@ end;
 function TAdTextureSurface.CanDraw: boolean;
 begin
   result := FTexture.Initialized and AdDraw.CanDraw;
-end;
-
-procedure TAdTextureSurface.ClearSurface(AColor: LongInt);
-begin
-  inherited;
-
-  //Clear the surface with the specified color.
-  AdDraw.AdAppl.ClearSurface(
-    DisplayRect, [alColorBuffer, alZBuffer, alStencilBuffer],
-    ColorToAdColor(AColor), 1, 0);
 end;
 
 { TAdRenderTargetTexture }

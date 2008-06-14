@@ -392,7 +392,6 @@ begin
 
     AdPartSys.Move(AdPerformanceCounter.TimeGap / 1000);
 
-    AdPartSys.BlendMode := bmAdd;
     AdPartSys.Draw(AdDraw, CenterX, CenterY);
 
     if Boundsrect1.Checked then

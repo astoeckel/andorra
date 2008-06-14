@@ -158,12 +158,10 @@ begin
     h := AOverlapRect.Bottom - AOverlapRect.Top;
 
     FSurface.Scene.Setup2DScene(w, h);
-    if (w <= FSurface.Width) and (h <= FSurface.Height) then    
-      FSurface.Scene.Viewport := AdRect(0, 0, w, h);
 
     //Setup stencil options. When a pixel is drawn, increment the stencil buffer
-    FDraw.AdAppl.SetStencilOptions(0, $FFFF, asfAlways);
-    FDraw.AdAppl.SetStencilEvent(asePass, asoIncrement);
+    FDraw.AdAppl.SetStencilOptions(1, $FFFF, asfAlways);
+    FDraw.AdAppl.SetStencilEvent(asePass, asoReplace);
 
     //Draw the first object
     ADrawCallback(AObj1, FSurface,
@@ -172,7 +170,7 @@ begin
 
     //Now, only draw a pixel, if the stencil buffer value is one, what means that
     //there is already another pixel
-    FDraw.AdAppl.SetStencilOptions(1, $FFFF, asfEqual);
+    FDraw.AdAppl.SetStencilOptions(0, $FFFF, asfLessThan);
     FDraw.AdAppl.SetStencilEvent(asePass, asoKeep);
 
     //Start counting drawn pixels
@@ -193,8 +191,6 @@ begin
 
     //Reset stencil options
     FDraw.AdAppl.SetStencilOptions(0, $FFFF, asfAlways);
-
-    FSurface.Image.Draw(FDraw, 0, 0, 0);
   end;
 end;
 

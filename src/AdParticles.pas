@@ -24,7 +24,8 @@ interface
 
 uses
   SysUtils, Classes, SyncObjs, Math,
-  AdMath, AdDraws, AdPersistent, AdClasses, AdTypes, AdColorList, AdList, AdSimpleXML;
+  AdMath, AdDraws, AdPersistent, AdClasses, AdTypes, AdColorList, AdList, AdBitmap,
+  AdSimpleXML;
 
 type
 
@@ -322,8 +323,8 @@ type
 
       FHighPerformance: boolean;
 
-      FBlendMode: TAd2dBlendMode;
-      FColors: TAdColorList;
+      FColors: TAdXMLColorList;
+      FOwnColorList: boolean;
 
       FTimeGap: double;
       FTime: double;
@@ -338,6 +339,7 @@ type
       procedure SetHighPerformance(AValue: boolean);
       procedure SetTexture(AValue: TAdCustomTexture);
       procedure SetDefaultParticle(AValue: TAdParticle);
+      procedure SetColors(AValue: TAdXMLColorList);
       function GetInitialized: boolean;
       function GetBoundsRect: TAdRect;
     protected
@@ -352,7 +354,7 @@ type
 
       procedure Emit(ACount, AX, AY: integer);
 
-      procedure Draw(ADest: TAdSurface; AX, AY: integer);
+      procedure Draw(ADest: TAdSurface; AX, AY: integer; ABlendMode: TAd2dBlendMode = bmAdd);
       procedure Move(ATimeGap: double);
 
       procedure SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
@@ -364,14 +366,15 @@ type
       procedure SaveToFile(AFile: string);
       procedure LoadFromFile(AFile: string);
 
+      procedure Assign(APartSys: TAdParticleSystem; AReferenceOnly: boolean = true);
+
       property Texture: TAdCustomTexture read FTexture write SetTexture;
       property Parent: TAdDraw read FParent;
       property Initialized: boolean read GetInitialized;
       property Items: TAdParticleList read FParticleList;
       property HighPerformance: boolean read FHighPerformance write SetHighPerformance;
-      property Colors: TAdColorList read FColors write FColors;
+      property Colors: TAdXMLColorList read FColors write SetColors;
       property DefaultParticle: TAdParticle read FDefaultParticle write SetDefaultParticle;
-      property BlendMode: TAd2dBlendMode read FBlendMode write FBlendMode;
       property FPS: integer read FPartSysFPS;
       property BoundsRect: TAdRect read GetBoundsRect;
   end;
@@ -605,11 +608,10 @@ begin
   FParticleCalcThread := TAdParticleCalculationThread.Create(FParticleList);
   FParticleCalcThread.ParticleClass := TAdParticleClass(FDefaultParticle.ClassType);
 
+  FOwnColorList := true;
   FColors := TAdXMLColorList.Create;
   FColors.Add(Ad_ARGB(255, 255, 255, 255));
   FColors.Add(Ad_ARGB(0  , 255, 255, 255));
-
-  FBlendMode := bmAdd;
 
   Initialize;
 
@@ -649,22 +651,63 @@ begin
     FTexture.Free;
 
   if (FOwnDefaultParticle) then
-    FDefaultParticle.Free;  
+    FDefaultParticle.Free;
 
-  FColors.Free;
-  
+  if (FOwnColorList) then
+    FColors.Free;
+
   inherited;
 end;
 
-procedure TAdParticleSystem.Draw(ADest: TAdSurface; AX, AY: integer);
+procedure TAdParticleSystem.Assign(APartSys: TAdParticleSystem; AReferenceOnly: boolean);
+var
+  bmp: TAdBitmap;
+  ms: TMemoryStream;
+begin
+  if AReferenceOnly then
+  begin
+    DefaultParticle := APartSys.DefaultParticle;
+    Colors := APartSys.Colors;
+    Texture := APartSys.Texture;    
+  end else
+  begin
+    //Copy most important particle data
+    ms := TMemoryStream.Create;
+    APartSys.SaveToStream(ms);
+    ms.Position := 0;
+    APartSys.LoadFromStream(ms);
+    ms.Free;
+
+    //Copy texture
+    if APartSys.Texture is TAdTexture then
+    begin
+      Texture := TAdTexture.Create(FParent);
+      FOwnTexture := true;
+
+      bmp := TAdBitmap.Create;
+      bmp.ReserveMemory(
+        APartSys.Texture.Texture.BaseWidth,
+        APartSys.Texture.Texture.BaseHeight);
+      TAd2dBitmapTexture(APartSys.Texture.Texture).SaveToBitmap(bmp);
+
+      TAd2dBitmapTexture(Texture.Texture).LoadFromBitmap(bmp, APartSys.Texture.BitDepth);
+      bmp.Free;
+    end else
+      Texture := APartSys.Texture;
+  end;
+
+  HighPerformance := APartSys.HighPerformance;
+end;
+
+procedure TAdParticleSystem.Draw(ADest: TAdSurface; AX, AY: integer; ABlendMode:
+  TAd2dBlendMode);
 begin
   if Initialized then
   begin
     ADest.Activate;
 
     FMesh.Matrix := AdMatrix_Translate(AX, AY, 0);
-
-    FMesh.Draw(FBlendMode, FDefaultParticle.DrawMode);
+    FMesh.Draw(ABlendMode, FDefaultParticle.DrawMode);
   end;
 end;
 
@@ -806,6 +849,17 @@ begin
   end;
 end;
 
+procedure TAdParticleSystem.SetColors(AValue: TAdXMLColorList);
+begin
+  if FOwnColorList then
+  begin
+    FColors.Free;
+    FOwnColorList := false;
+  end;
+
+  FColors := AValue;
+end;
+
 procedure TAdParticleSystem.SetDefaultParticle(AValue: TAdParticle);
 begin
   if FOwnDefaultParticle then
@@ -900,7 +954,7 @@ begin
       end;
     end;
 
-    TAdXMLColorList(FColors).LoadFromXML('colors', Node);
+    FColors.LoadFromXML('colors', Node);
   end;
 end;
 
@@ -911,7 +965,7 @@ begin
   Node := ARoot.Items.Add(AName);
   Node.Items.Add('particleclass', FDefaultParticle.ClassName);
   FDefaultParticle.SaveToXML(Node.Items);
-  TAdXMLColorList(FColors).SaveToXML('colors', Node);
+  FColors.SaveToXML('colors', Node);
 end;
 
 { TAdStdParticle }

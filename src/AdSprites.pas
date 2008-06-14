@@ -1144,7 +1144,7 @@ begin
     begin
       if Angle <> 0 then
       begin
-        FImage.DrawRotateAlpha(Engine.Surface,BoundsRect.Left,BoundsRect.Top,
+        FImage.DrawRotateAlpha(Engine.Surface, BoundsRect.Left, BoundsRect.Top,
           BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
           Trunc(AnimPos),FRotationCenterX,FRotationCenterY,Round(Angle),Round(Alpha));
       end

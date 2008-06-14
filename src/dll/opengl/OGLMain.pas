@@ -90,7 +90,7 @@ type
       function SupportsWindowFramework(AClassId:shortstring):boolean;override;
 
       procedure ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
-        AColor: TAndorraColor; AZValue: integer; AStencilValue: integer); override;
+        AColor: TAndorraColor; AZValue: double; AStencilValue: integer); override;
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
@@ -148,7 +148,7 @@ type
       procedure SetFilter;
   end;
 
-  TOGLRenderTargetTexture = class(TAd2dRenderTargetTexture)
+  TOGLFBORenderTargetTexture = class(TAd2dRenderTargetTexture)
     private
       FFBO: GLuint;
       FDepthBuf: GLuint;
@@ -226,7 +226,7 @@ end;
 
 function TOGLApplication.CreateRenderTargetTexture: TAd2dRenderTargetTexture;
 begin
-  result := TOGLRenderTargetTexture.Create;
+  result := TOGLFBORenderTargetTexture.Create;
 end;
 
 function TOGLApplication.Initialize(AWnd: TAdWindowFramework):boolean;
@@ -323,7 +323,7 @@ begin
     glDisable(GL_ALPHA_TEST);    
 
   //Z-Buffer
-  if aoZBuffer in AOptions then
+  if (aoZBuffer in AOptions) and (not FRenderingToFBO) then //!
     glEnable(GL_DEPTH_TEST)
   else
     glDisable(GL_DEPTH_TEST);
@@ -373,7 +373,7 @@ begin
 
   if ATarget <> nil then
   begin
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, TOGLRenderTargetTexture(ATarget).FBO);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, TOGLFBORenderTargetTexture(ATarget).FBO);
     FRenderingToFBO := true;
 
     FWidth := ATarget.BaseWidth;
@@ -443,8 +443,11 @@ end;
 
 procedure TOGLApplication.Setup2DScene(AWidth, AHeight: integer; ANearZ, AFarZ: double);
 begin
-  FWidth := FWnd.ClientWidth;
-  FHeight := FWnd.ClientHeight;
+  if not FRenderingToFBO then
+  begin
+    FWidth := FWnd.ClientWidth;
+    FHeight := FWnd.ClientHeight;                   
+  end;
 
   glMatrixMode(GL_PROJECTION);
 
@@ -462,8 +465,11 @@ end;
 procedure TOGLApplication.Setup3DScene(AWidth, AHeight:integer;
   APos, ADir, AUp:TAdVector3; ANearZ, AFarZ: double);
 begin
-  FWidth := FWnd.ClientWidth;
-  FHeight := FWnd.ClientHeight;
+  if not FRenderingToFBO then
+  begin
+    FWidth := FWnd.ClientWidth;
+    FHeight := FWnd.ClientHeight;                   
+  end;
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity;
@@ -551,7 +557,7 @@ begin
 end;
 
 procedure TOGLApplication.ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;
-  AColor: TAndorraColor; AZValue: integer; AStencilValue: integer);
+  AColor: TAndorraColor; AZValue: Double; AStencilValue: integer);
 var
   mask: Cardinal;
 begin
@@ -1069,7 +1075,7 @@ end;
 
 { TOGLRenderTargetTexture }
 
-procedure TOGLRenderTargetTexture.CheckFBO;
+procedure TOGLFBORenderTargetTexture.CheckFBO;
 var
   error: GlEnum;
 begin
@@ -1094,20 +1100,20 @@ begin
   end;
 end;
 
-constructor TOGLRenderTargetTexture.Create;
+constructor TOGLFBORenderTargetTexture.Create;
 begin
   inherited Create;
 
   FEditable := false;
 end;
 
-destructor TOGLRenderTargetTexture.Destroy;
+destructor TOGLFBORenderTargetTexture.Destroy;
 begin
   FlushMemory;  
   inherited;
 end;
 
-procedure TOGLRenderTargetTexture.FlushMemory;
+procedure TOGLFBORenderTargetTexture.FlushMemory;
 begin
   if Loaded then
   begin
@@ -1120,12 +1126,12 @@ begin
   end;
 end;
 
-function TOGLRenderTargetTexture.GetLoaded: boolean;
+function TOGLFBORenderTargetTexture.GetLoaded: boolean;
 begin
   result := FTexture <> nil;
 end;
 
-procedure TOGLRenderTargetTexture.SaveToBitmap(ABmp: TAd2dBitmap);
+procedure TOGLFBORenderTargetTexture.SaveToBitmap(ABmp: TAd2dBitmap);
 var
   mem, cur1, cur2: PLongWord;
   x,y:integer;
@@ -1158,7 +1164,7 @@ begin
   end;
 end;
 
-procedure TOGLRenderTargetTexture.SetSize(AWidth, AHeight: integer;
+procedure TOGLFBORenderTargetTexture.SetSize(AWidth, AHeight: integer;
   ABitDepth: TAdBitDepth);
 var
   w, h: integer;
@@ -1173,11 +1179,11 @@ begin
     glGenFramebuffersEXT(1, @FFBO);
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, FFBO);
 
-    //Create texture
+     //Create texture
     New(PCardinal(FTexture));
     glGenTextures(1, FTexture);
     glBindTexture(GL_TEXTURE_2D, PCardinal(FTexture)^);
-    
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,  w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -1186,15 +1192,15 @@ begin
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
       GL_TEXTURE_2D, PCardinal(FTexture)^, 0);
 
-    //Create renderbuffer
+    //Create render buffer for depth buffer
     glGenRenderbuffersEXT(1, @FDepthBuf);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, FDepthBuf);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8_EXT, w, h);
 
-    //Reserve memory for the renderbuffer
-    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, w, h);
-
-    //Connect renderbuffer to the framebuffer
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
+      GL_RENDERBUFFER_EXT, FDepthBuf);
+
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT,
       GL_RENDERBUFFER_EXT, FDepthBuf);
 
     CheckFBO;
@@ -1302,3 +1308,4 @@ begin
 end;
 
 end.
+
