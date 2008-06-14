@@ -603,6 +603,7 @@ var
   i: integer;
   mode: cardinal;
   mat: TAdMatrix;
+  count: integer;
 begin
   if Loaded then
   begin
@@ -661,14 +662,47 @@ begin
       end;
 
       case ADrawMode of
-        adTriangleStrips: mode := GL_TRIANGLE_STRIP;
-        adTriangles: mode := GL_TRIANGLES;
-        adLines: mode := GL_LINES;
-        adLineStrips: mode := GL_LINE_STRIP;
-        adTriangleFan: mode := GL_TRIANGLE_FAN;
-        adPoints: mode := GL_POINTS;
+        adTriangleStrips:
+        begin
+          mode := GL_TRIANGLE_STRIP;
+          count := FPrimitiveCount + 2;
+        end;
+        adTriangles:
+        begin
+          mode := GL_TRIANGLES;
+          count := FPrimitiveCount * 3;
+        end;
+        adLines:
+        begin
+          mode := GL_LINES;
+          count := FPrimitiveCount * 2;
+        end;
+        adLineStrips:
+        begin
+          mode := GL_LINE_STRIP;
+          count := FPrimitiveCount + 1;
+        end;
+        adTriangleFan:
+        begin
+          mode := GL_TRIANGLE_FAN;
+          count := FPrimitiveCount + 2;
+        end;
+        adPoints, adPointSprites:
+        begin
+          mode := GL_POINTS;
+          count := FPrimitiveCount;
+        end;
       else
         mode := GL_TRIANGLE_STRIP;
+        count := FPrimitiveCount + 2;
+      end;
+
+      if ADrawMode = adPointSprites then
+      begin
+        if FTexture <> nil then
+          glPointSize(FTexture.Width);
+        glEnable(GL_POINT_SPRITE);
+        glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
       end;
 
       //Set transformation matrix
@@ -679,7 +713,7 @@ begin
       if FIndices = nil then
       begin
         glBegin(mode);
-        for i := 0 to high(FVertices) do
+        for i := 0 to count - 1 do
         begin
           with FVertices[i] do
           begin
@@ -702,7 +736,7 @@ begin
         glNormalPointer(GL_FLOAT, 0, @FNormals[0]);
         glVertexPointer(3, GL_FLOAT, 0, @FPositions[0]);
 
-        glDrawElements(mode, high(FIndices)+1, GL_UNSIGNED_SHORT, @FIndices[0]);
+        glDrawElements(mode, count, GL_UNSIGNED_SHORT, @FIndices[0]);
 
 	      glDisableClientState(GL_COLOR_ARRAY);
         glDisableClientState(GL_NORMAL_ARRAY);
@@ -710,6 +744,12 @@ begin
         glDisableClientState(GL_VERTEX_ARRAY);
       end;
       glPopMatrix;
+
+      if ADrawMode = adPointSprites then
+      begin
+        glPointSize(1);
+        glDisable(GL_POINT_SPRITE);
+      end;
     end;
   end;
 end;

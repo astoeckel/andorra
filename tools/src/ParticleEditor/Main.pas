@@ -582,7 +582,7 @@ begin
   CenterX := Surface.ClientWidth div 2;
   CenterY := Surface.ClientHeight div 2;
 
-  AdDraw.Setup2DScene(Surface.ClientWidth, Surface.ClientHeight);
+  AdDraw.Setup2DScene;
 end;
 
 procedure TMainFrm.Timer1Timer(Sender: TObject);
