@@ -580,7 +580,14 @@ type
       procedure Add(ARect:TAdRect);
   end;
 
-  //This represents one image in an ImageList.
+  {TAdCustomImage is the base image class. Images are objects, that manage
+   drawing operations of texturized planes. TAdCustomImage doesn't generate its
+   own texture object. If you want to use a bitmap texture, use TAdImage instead.
+   TAdCustomImage is able to draw the image stretched, rotated, blended. You are
+   also able to draw an excerpt of the image.
+   @seealso(TAdImage)
+   @seealso(TAdTexture)
+   @seealso(TAdCustomTexture)}
   TAdCustomImage = class(TAdRenderingObject)
     private
       FParent:TAdDraw;
@@ -622,88 +629,316 @@ type
       procedure CallBeginRenderEvent(AModelMat: TAdMatrix; AScene: TAdScene);
       procedure CallEndRenderEvent;
     public
-      //The mesh object used to display the image
+      {The underlying mesh object used to display the image.}
       AdMesh:TAd2DMesh;
 
-      //A Constructor
+      {Creates a new instance of TAdCustomImage.
+       @param(AAdDraw specifies the parent TAdDraw component. This is not the
+         surface drawing operations should be performed on. If you want to draw
+         an image on another surface use the "Dest" parameter instead.)}
       constructor Create(AAdDraw:TAdDraw);virtual;
-      //A Destructor
+      {Destroys the instance of TAdCustomImage.}
       destructor Destroy;override;
 
-      //Draws the image at a specified position. If you've set "PatternWidth" and "PatternHeight", this will draw the pattern you've specified in PatternIndex.
+      {Draws the image at a specified position. All positions are relative to
+       the coordinate system of the scene of the surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(X specifies the X-Position of the image.)
+       @param(Y specifies the Y-Position of the image.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
       procedure Draw(Dest:TAdSurface;X,Y,PatternIndex:integer);
-      //The same as Draw, but you can stretch the Image.
-      procedure StretchDraw(Dest:TAdSurface;const DestRect:TAdRect;PatternIndex:integer);
-      //Draw a sprite with additive blending.
-      procedure DrawAdd(Dest: TAdSurface; const DestRect: TAdRect; PatternIndex: Integer;
-        Alpha: Integer);
-      //Draw a sprite with alpha blending.
-      procedure DrawAlpha(Dest: TAdSurface; const DestRect: TAdRect; PatternIndex: Integer;
-        Alpha: Integer);
-      //Draw only the mask.
+
+      {Draws the image to the specified rectangular region. All positions are
+        relative to the coordinate system of the scene of the surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(DestRect specifies the destination region the image should be drawn
+         to. You can flip the image if you replace the top/bottom and the
+         left/right coordinates. Remember to turn culling of if you want to do
+         this.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure StretchDraw(Dest:TAdSurface; const DestRect:TAdRect;
+        PatternIndex:integer);
+
+      {Draws the image to the specified rectangular region using additive
+        blending. All positions are relative to the coordinate system of the
+        scene of the surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(DestRect specifies the destination region the image should be drawn
+         to. You can flip the image if you replace the top/bottom and the
+         left/right coordinates. Remember to turn culling of if you want to do
+         this.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure DrawAdd(Dest: TAdSurface; const DestRect: TAdRect;
+        PatternIndex: Integer; Alpha: Integer);
+
+      {Draws the image to the specified rectangular region using alpha blending.
+       All positions are relative to the coordinate system of the scene of the
+       surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(DestRect specifies the destination region the image should be drawn
+         to. You can flip the image if you replace the top/bottom and the
+         left/right coordinates. Remember to turn culling of if you want to do
+         this.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure DrawAlpha(Dest: TAdSurface; const DestRect: TAdRect;
+        PatternIndex: Integer; Alpha: Integer);
+
+      {Draws the image to the specified rectangular region. This special blend
+       mode draws the alpha channel only. So this blend mode can be used for
+       drawing shadows.
+       All positions are relative to the coordinate system of the scene of the
+       surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(DestRect specifies the destination region the image should be drawn
+         to. You can flip the image if you replace the top/bottom and the
+         left/right coordinates. Remember to turn culling of if you want to do
+         this.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
       procedure DrawMask(Dest: TAdSurface; const DestRect: TAdRect; PatternIndex: Integer;
         Alpha: Integer);
-      //Draw a sprite rotated. CenterX and CenterY specify the center of the rotation - May be a value between 0 and 1. Rotation is a value between 0 and 360.
-      procedure DrawRotate(Dest: TAdSurface; X, Y, Width, Height: Integer; PatternIndex: Integer;
-        CenterX, CenterY: Double; Angle: Integer);
-      //The same as DrawRotate, just with additive blending.
-      procedure DrawRotateAdd(Dest: TAdSurface; X, Y, Width, Height: Integer; PatternIndex: Integer;
-        CenterX, CenterY: Double; Angle: Integer;
+
+      {Draws the image to the specified rectangular region. The image can be
+       rotated around a user defined rotation center.
+       All positions are relative to the coordinate system of the scene of the
+       surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(X specifies the X-Position of the image.)
+       @param(Y specifies the Y-Position of the image.)
+       @param(Width specifies the width of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(Height specifies the height of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(CenterX specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(CenterY specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(Angle is the rotation angle in degrees.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure DrawRotate(Dest: TAdSurface; X, Y, Width, Height: Integer;
+        PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
+
+      {Draws the image to the specified rectangular region. The image can be
+       rotated around a user defined rotation center. The image is drawn using
+       additive blending.
+       All positions are relative to the coordinate system of the scene of the
+       surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(X specifies the X-Position of the image.)
+       @param(Y specifies the Y-Position of the image.)
+       @param(Width specifies the width of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(Height specifies the height of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(CenterX specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(CenterY specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(Angle is the rotation angle in degrees.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure DrawRotateAdd(Dest: TAdSurface; X, Y, Width, Height: Integer;
+        PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
-      //The same as DrawRotate, just with alpha blending.
-      procedure DrawRotateAlpha(Dest: TAdSurface; X, Y, Width, Height: Integer; PatternIndex: Integer;
-        CenterX, CenterY: Double; Angle: Integer;
-        Alpha: Integer);
-      //The same as DrawRotate, just drawing a the mask.
-      procedure DrawRotateMask(Dest: TAdSurface; X, Y, Width, Height: Integer; PatternIndex: Integer;
-        CenterX, CenterY: Double; Angle: Integer;
-        Alpha: Integer);
+
+      {Draws the image to the specified rectangular region. The image can be
+       rotated around a user defined rotation center. The image is drawn using
+       aplha blending.
+       All positions are relative to the coordinate system of the scene of the
+       surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(X specifies the X-Position of the image.)
+       @param(Y specifies the Y-Position of the image.)
+       @param(Width specifies the width of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(Height specifies the height of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(CenterX specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(CenterY specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(Angle is the rotation angle in degrees.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure DrawRotateAlpha(Dest: TAdSurface; X, Y, Width, Height: integer;
+        PatternIndex: integer; CenterX, CenterY: double; Angle: integer;
+        Alpha: integer);
+
+      {Draws the image to the specified rectangular region. The image can be
+       rotated around a user defined rotation center. The image is drawn using
+       the so called "mask" mode. This special blend mode draws the alpha
+       channel only. So this blend mode can be used for drawing shadows.
+       All positions are relative to the coordinate system of the scene of the
+       surface.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(X specifies the X-Position of the image.)
+       @param(Y specifies the Y-Position of the image.)
+       @param(Width specifies the width of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(Height specifies the height of the image. If this value is negative
+         the image will be flipped. If you want to do this, remember to turn
+         culling off.)
+       @param(PatternIndex specifies the index of the image pattern.)
+       @param(CenterX specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(CenterY specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(Angle is the rotation angle in degrees.)
+       @param(Alpha specifies the transparency of the image.)
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
+      procedure DrawRotateMask(Dest: TAdSurface; X, Y, Width, Height: integer;
+        PatternIndex: integer; CenterX, CenterY: double; Angle: integer;
+        Alpha: integer);
+
       {The DrawEx function can be used to draw a specific part of an image with
-       a user definded rotation and in every available blendmode.} 
-      procedure DrawEx(Dest:TAdSurface; SourceRect, DestRect:TAdRect;
-        CenterX, CenterY:double; Angle:Integer; Alpha:Integer;
+       a user definded rotation and in every available blendmode. All other
+       drawing functions can be done using this function. If you want to do
+       animations you can use the "GetPatternRect" function of TAdCustomImage
+       and pass it to SourceRect.
+       @param(Dest specifies the target surface. If "Dest" is @nil, the active
+         surface will be used.)
+       @param(SourceRect specifies the rectangle, from which image data is
+         copied. The coordinates are absolute. If they are bigger or smaller
+         than the texture sizes, the image will be tiled. Due to hardware
+         limitations all textures are internally scaled to a power of two
+         texture. If you want to draw your texture tiled and it isn't in a
+         power of two size, you'll see strange gaps between the tiles.)
+       @param(DestRect specifies the destination region the image should be drawn
+         to. You can flip the image if you replace the top/bottom and the
+         left/right coordinates. Remember to turn culling of if you want to do
+         this.)
+       @param(CenterX specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(CenterY specifies the relative center of the rotation. A value of
+         0.5 is the center of the image.)
+       @param(Angle is the rotation angle in degrees.)
+       @param(Alpha specifies the transparency of the image.)
+       @param(BlendMode spcifies how the image should be blended over the
+         existing surface content.)
+       @seealso(TAd2dBlendMode)
+       @seealso(GetPatternRect)
+      }
+      procedure DrawEx(Dest: TAdSurface; SourceRect, DestRect: TAdRect;
+        CenterX, CenterY: double; Angle: integer; Alpha: integer;
         BlendMode: TAd2dBlendMode);
 
-      //If you've set the color or a new texture you have to call this function to see your changes.
+      {If you make any changes to the texture or set a new one, call restore to
+       assing the new texture to the mesh and recalculates the pattern rects and
+       the vertex grid.}
       procedure Restore;
 
-      //Frees all data
+      {Frees the mesh object. Finalize is normally automatically called when
+       the main TAdDraw is finalized.
+       @seealso(Restore)
+       @seealso(Initialize)}
       procedure Finalize;
-      //Restores all freed date
+
+      {Initialize creates a new mesh object.}
       procedure Initialize;
 
-      //Returns the rect of one pattern.
+      {Returns the texture rectangle of a pattern. ANr is clamped to [0;PatternCount]}
       function GetPatternRect(ANr:integer):TAdRect;
-      //Returns the parent you've set in the constructor
+      
+      {Returns the parent TAdDraw you've set in the constructor.}
       property Parent:TAdDraw read FParent write FParent;
 
-      //Returns the width of the image.
+      {Returns the width of the image. If pattern width and pattern height is
+       set, this size is returned.}
       property Width:integer read GetWidth;
-      //Returns the height of the image.
+      {Returns the height of the image. If pattern width and pattern height is
+       set, this size is returned.}
       property Height:integer read GetHeight;
-      //Set the width of one pattern.
+
+      {Set the width of one animation pattern.}
       property PatternWidth:integer read FPatternWidth write SetPatternWidth;
-      //Set the height of one pattern.
+      {Set the height of one animation pattern.}
       property PatternHeight:integer read FPatternHeight write SetPatternHeight;
-      //The horizontal space between the patterns.
+
+      {The horizontal space between the animation patterns.}
       property SkipWidth:integer read FSkipWidth write SetSkipWidth;
-      //The vertical space between the patterns.
+      {The vertical space between the animation patterns.}
       property SkipHeight:integer read FSkipHeight write SetSkipHeight;
 
-      //The texture which will be painted.
+      {The texture assigned to the image. Call restore after you've set a
+       new texture.
+       @seealso(Restore)}
       property Texture:TAdCustomTexture read FTexture write SetTexture;
 
-      //Returns the count of the patterns.
+      {Returns the count of animation patterns.
+       @seealso(PatternWidth)
+       @seealso(PatternHeight)
+       @seealso(SkipWidth)
+       @seealso(SkipHeight)}
       property PatternCount:integer read GetPatternCount;
-      //If you have empty patterns, you may set PatternStop. PatternCount will be decrased by PatternStop.
+      {If you have empty patterns, you may set PatternStop. PatternCount will be
+       decrased by PatternStop.
+       @seealso(PatternStop)}
       property PatternStop:integer read FPatternStop write FPatternStop;
 
-      //Defines the color the image is drawn in.
+      {Defines the color the image is drawn in. The color is in BGR order and
+       compatible to the color constants in the VCL/LCL.}
       property Color:Longint read FColor write FColor;
-      //Important for using lights: How many vertices does the image have.
+
+      {Important for using lights: How many grid cols and rows does the image
+       have. Grid count is Details*Details.}
       property Details:integer read FDetails write SetDetails;
 
-      //The filter that should be used when a texture is mini- or magnified
+      {The filter that should be used when a texture is mini- or magnified.
+       @seealso(TAd2dTextureFilter)}
       property Filter: TAd2dTextureFilter read GetFilter write SetFilter;
   end;
 
@@ -1199,8 +1434,8 @@ begin
 
   if (FloatsEqual(Rotation, 0, 0.001)) then
   begin
-    CurX := (DestRect.Right-DestRect.Left)*RotCenterX;
-    CurY := (DestRect.Bottom-DestRect.Top)*RotCenterY;
+    CurX := (DestRect.Right-DestRect.Left) * RotCenterX;
+    CurY := (DestRect.Bottom-DestRect.Top) * RotCenterY;
 
     mat1 := AdMatrix_Translate(-CurX,-CurY,0);
     mat2 := AdMatrix_Multiply(mat2,mat1);
@@ -1366,11 +1601,9 @@ end;
 
 procedure TAdCustomImage.Draw(Dest:TAdSurface;X,Y,PatternIndex:integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex),
       0, 0, 0, bmAlpha);
   end;
@@ -1379,11 +1612,9 @@ end;
 procedure TAdCustomImage.DrawAdd(Dest: TAdSurface; const DestRect: TAdRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmAdd);
   end;
 end;
@@ -1391,11 +1622,9 @@ end;
 procedure TAdCustomImage.DrawAlpha(Dest: TAdSurface; const DestRect: TAdRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmAlpha);
   end;
 end;
@@ -1403,11 +1632,9 @@ end;
 procedure TAdCustomImage.DrawMask(Dest: TAdSurface; const DestRect: TAdRect;
   PatternIndex, Alpha: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmMask);
   end;
 end;
@@ -1415,11 +1642,9 @@ end;
 procedure TAdCustomImage.DrawRotate(Dest: TAdSurface; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
      CenterX, CenterY, bmAlpha);
   end;
@@ -1429,13 +1654,11 @@ procedure TAdCustomImage.DrawRotateAdd(Dest: TAdSurface; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-      DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
-        CenterX, CenterY, bmAdd);
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
+      CenterX, CenterY, bmAdd);
   end;
 end;
 
@@ -1443,11 +1666,9 @@ procedure TAdCustomImage.DrawRotateAlpha(Dest: TAdSurface; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
     DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
       CenterX,CenterY,bmAlpha);
   end;
@@ -1457,12 +1678,11 @@ procedure TAdCustomImage.DrawRotateMask(Dest: TAdSurface; X, Y, Width,
   Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
   Alpha: Integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height),GetPatternRect(PatternIndex),Angle,CenterX,CenterY,bmMask);
+    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex),
+      Angle, CenterX, CenterY, bmMask);
   end;
 end;
 
@@ -1470,7 +1690,7 @@ procedure TAdCustomImage.DrawEx(Dest: TAdSurface; SourceRect,
   DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer;
   BlendMode: TAd2dBlendMode);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
     DrawMesh(Dest, DestRect, SourceRect, Angle, CenterX, CenterY, BlendMode);
@@ -1479,68 +1699,73 @@ end;
 
 procedure TAdCustomImage.StretchDraw(Dest: TAdSurface; const DestRect: TAdRect; PatternIndex: integer);
 begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
+  if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
-    if (PatternIndex < 0) then PatternIndex := 0;
-    if (PatternIndex > PatternCount-1) then PatternIndex := PatternCount-1;
-    DrawMesh(Dest,DestRect,GetPatternRect(PatternIndex),0,0,0,bmAlpha);
+    DrawMesh(Dest, DestRect, GetPatternRect(PatternIndex), 0, 0, 0, bmAlpha);
   end;
 end;
 
 procedure TAdCustomImage.Restore;
 begin
+  //Set sizes
   FWidth := Texture.Texture.BaseWidth;
   FHeight := Texture.Texture.BaseHeight;
+
+  //Assign texture to mesh
   AdMesh.Texture := Texture.Texture;
+
+  //Calculate patern rectangles from the given patern parameters
   CreatePatternRects;
+
+  //Reset source rectangle
   FSrcRect := AdRect(0, 0, 0, 0);
+
+  //Save the last color of the image
   FLastColor := GetColor;
+
+  //Build the vertex grid and store it in the mesh object
   BuildVertices;
 end;
 
 procedure TAdCustomImage.SetPatternWidth(AValue: Integer);
 begin
   if AValue >= 0 then
-  begin
-    FPatternWidth := AValue;
-  end
+    FPatternWidth := AValue
   else
-  begin
     FPatternWidth := 0;
-  end;
+end;
+
+procedure TAdCustomImage.SetPatternHeight(AValue: Integer);
+begin
+  if AValue >= 0 then
+    FPatternHeight := AValue
+  else
+    FPatternHeight := 0;
 end;
 
 procedure TAdCustomImage.SetSkipHeight(AValue: integer);
 begin
   if AValue >= 0 then
-  begin
-    FSkipHeight := AValue;
-  end
+    FSkipHeight := AValue
   else
-  begin
     FSkipHeight := 0;
-  end;
 end;
 
 procedure TAdCustomImage.SetSkipWidth(AValue: integer);
 begin
   if AValue >= 0 then
-  begin
-    FSkipWidth := AValue;
-  end
+    FSkipWidth := AValue
   else
-  begin
     FSkipWidth := 0;
-  end;
 end;
 
 procedure TAdCustomImage.SetTexture(AValue: TAdCustomTexture);
 begin
+  //Free own texture
   if FOwnTexture then
-  begin
     FTexture.Free;
-  end;
+
   FOwnTexture := false;
   FTexture := AValue;
 end;
@@ -1574,18 +1799,6 @@ begin
   FFilter := AValue;
   if FTexture <> nil then
     FTexture.Filter := AValue;
-end;
-
-procedure TAdCustomImage.SetPatternHeight(AValue: Integer);
-begin
-  if AValue >= 0 then
-  begin
-    FPatternHeight := AValue;
-  end
-  else
-  begin
-    FPatternHeight := 0;
-  end;
 end;
 
 function TAdCustomImage.GetColor: TAndorraColor;
@@ -1632,17 +1845,10 @@ end;
 
 procedure TAdCustomImage.Notify(ASender: TObject;AEvent: TAdSurfaceEventState);
 begin
-  if AEvent = seFinalize then
-  begin
-    Finalize;
-  end;
-  if AEvent = seInitialize then
-  begin
-    Initialize;
-  end;
-  if AEvent = seInitialized then
-  begin
-    Restore;
+  case AEvent of
+    seInitialize: Initialize;
+    seInitialized: Restore;
+    seFinalize: Finalize;
   end;
 end;
 
@@ -1656,7 +1862,7 @@ begin
   if (ANr >= 0) and (ANr < Rects.Count) then
     result := Rects[ANr]
   else
-    result := AdRect(0,0,0,0);
+    result := AdRect(0, 0, GetWidth, GetHeight);
 end;
 
 { TAdImage }

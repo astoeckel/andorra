@@ -98,13 +98,13 @@ begin
   begin
     AdPerCounter.Calculate;
 
-    AdDraw.ClearSurface(clWhite);
+    AdDraw.ClearSurface(clBlack);
 
     AdDraw.BeginScene;
 
     with AdDraw.Canvas do
     begin
-      Brush.BlendMode := bmSub;
+      Brush.BlendMode := bmAdd;
       Pen.Style := apNone;
 
       Brush.Color := Ad_ARGB(255, 0, 0, 255);

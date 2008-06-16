@@ -566,4 +566,26 @@ begin
   FData := AValue;
 end;
 
+//Make floating point operations more accurate on a 386-CPU
+
+{$IFDEF FPC}
+  {$IFDEF CPU386}
+
+const
+  Default8087CW: Word = $1332;
+
+procedure Set8087CW(NewCW: Word); assembler;
+asm
+  MOV Default8087CW, AX
+end;
+
+  {$ENDIF}
+{$ENDIF}
+
+initialization
+
+{$IFDEF CPU386}
+  Set8087CW($133F);
+{$ENDIF}
+
 end.
