@@ -137,6 +137,7 @@ type
       FTitle: string;
       FIni: TInifile;
       FOwnIni: boolean;
+      FPath: string;
 
       procedure CreateDefaultControls;
       procedure CreateSectionControls;
@@ -189,6 +190,8 @@ type
        creates its own ini file. After setting your own ini file object, this
        own ini file object is automatically freed.}
       property Ini: TIniFile read FIni write SetIni;
+      {Path to the plugin dll files. Normally set to ParamStr(0)}
+      property Path: string read FPath write FPath;
   end;
 
 const
@@ -209,6 +212,7 @@ begin
   FDllExplorer := TAdDllExplorer.Create;
   FSetupSections := TList.Create;
   FPluginList := TStringList.Create;
+  FPath := ExtractFilePath(ParamStr(0));
 
   FPluginIndex := -1;
 
@@ -427,9 +431,9 @@ begin
     FPluginList.Clear;
     
     {$IFDEF WIN32}
-      FDllExplorer.GetPlugins(FPluginList, ExtractFilePath(ParamStr(0)), '.dll');
+      FDllExplorer.GetPlugins(FPluginList, FPath, '.dll');
     {$ELSE}
-      FDllExplorer.GetPlugins(FPluginList, ExtractFilePath(ParamStr(0)), '.so');
+      FDllExplorer.GetPlugins(FPluginList, FPath, '.so');
     {$ENDIF}
 
     result := FPluginList.Count > 0;

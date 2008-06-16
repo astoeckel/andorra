@@ -658,10 +658,11 @@ type
       procedure DrawRotateMask(Dest: TAdSurface; X, Y, Width, Height: Integer; PatternIndex: Integer;
         CenterX, CenterY: Double; Angle: Integer;
         Alpha: Integer);
-      //Draw only specified part from the image. Alpha blending.
-      procedure StretchBltAlpha(Dest:TAdSurface; SourceRect,DestRect:TAdRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
-      //Draw only specified part from the image. Additive blending.
-      procedure StretchBltAdd(Dest:TAdSurface; SourceRect,DestRect:TAdRect;CenterX,CenterY:double;Angle:Integer;Alpha:Integer);
+      {The DrawEx function can be used to draw a specific part of an image with
+       a user definded rotation and in every available blendmode.} 
+      procedure DrawEx(Dest:TAdSurface; SourceRect, DestRect:TAdRect;
+        CenterX, CenterY:double; Angle:Integer; Alpha:Integer;
+        BlendMode: TAd2dBlendMode);
 
       //If you've set the color or a new texture you have to call this function to see your changes.
       procedure Restore;
@@ -1196,7 +1197,7 @@ begin
   mat1 := AdMatrix_Scale((DestRect.Right-DestRect.Left)/FWidth,(DestRect.Bottom-DestRect.Top)/FHeight,1);
   mat2 := AdMatrix_Multiply(mat1,mat2);
 
-  if (Rotation <> 0) then
+  if (FloatsEqual(Rotation, 0, 0.001)) then
   begin
     CurX := (DestRect.Right-DestRect.Left)*RotCenterX;
     CurY := (DestRect.Bottom-DestRect.Top)*RotCenterY;
@@ -1465,23 +1466,14 @@ begin
   end;
 end;
 
-procedure TAdCustomImage.StretchBltAdd(Dest: TAdSurface; SourceRect,
-  DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer);
+procedure TAdCustomImage.DrawEx(Dest: TAdSurface; SourceRect,
+  DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer;
+  BlendMode: TAd2dBlendMode);
 begin
   if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    DrawMesh(Dest,DestRect,SourceRect,Angle,CenterX,CenterY,bmAdd);
-  end;
-end;
-
-procedure TAdCustomImage.StretchBltAlpha(Dest: TAdSurface; SourceRect,
-  DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer);
-begin
-  if (Texture.Texture.Loaded) and (Dest.CanDraw) and (AdMesh <> nil) then
-  begin
-    SetCurrentColor(Alpha);
-    DrawMesh(Dest,DestRect,SourceRect,Angle,CenterX,CenterY,bmAlpha);
+    DrawMesh(Dest, DestRect, SourceRect, Angle, CenterX, CenterY, BlendMode);
   end;
 end;
 

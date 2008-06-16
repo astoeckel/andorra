@@ -620,6 +620,11 @@ begin
         bmAlpha: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         bmAdd: glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         bmMask: glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
+        bmSub:
+        begin
+          glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        end;
       end;
 
       //Set material settings
@@ -703,6 +708,7 @@ begin
         count := FPrimitiveCount + 2;
       end;
 
+      //Set draw mode to point sprites
       if ADrawMode = adPointSprites then
       begin
         if FTexture <> nil then
@@ -751,6 +757,12 @@ begin
       end;
       glPopMatrix;
 
+      if ABlendMOde = bmSub then
+      begin
+        glBlendEquation(GL_FUNC_ADD);
+      end;
+
+      //Reset draw mode if vertices were drawn as point sprites
       if ADrawMode = adPointSprites then
       begin
         glPointSize(1);

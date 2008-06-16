@@ -156,11 +156,11 @@ begin
       AdSplatterEffect.LoadFromFile(path + 'splatter.apf');
       AdSplatterEffect.Texture := AdImageList.Find('particle').Texture;
       
-      with TBackgroundSprite.Create(AdSpriteEngine) do
+   {   with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
         Image := AdImageList.Find('gras');
         Z := -10000;
-      end;       
+      end;  }
 
       MainCharacter := TMainCharacter.Create(AdSpriteEngine);
       with MainCharacter do

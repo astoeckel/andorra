@@ -721,6 +721,12 @@ begin
       begin
         Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ZERO);
         Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+      end else
+      if ABlendMode = bmSub then
+      begin
+        Direct3DDevice9.SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
+        Direct3DDevice9.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+        Direct3DDevice9.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
       end;
 
       //Set texture filter
@@ -788,6 +794,12 @@ begin
       else
       begin
         Direct3DDevice9.DrawPrimitive(Mode, 0, FPrimitiveCount);
+      end;
+
+      //Disable subtractive blending
+      if ABlendMode = bmSub then
+      begin
+        Direct3DDevice9.SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
       end;
 
       //Disable pointsprite settings
