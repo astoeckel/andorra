@@ -5,7 +5,7 @@ interface
 uses
   Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,  
   AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, AdSprites,
-  AdBitmap;
+  AdBitmap, AdCanvas;
 
 type
   TForm1 = class(TForm)
@@ -89,7 +89,7 @@ end;
 procedure TForm1.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 begin
-  a := a + WheelDelta / 10;
+  a := a + WheelDelta / 50;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
@@ -98,38 +98,35 @@ begin
   begin
     AdPerCounter.Calculate;
 
-    AdDraw.ClearSurface(clBlack);
+    AdDraw.ClearSurface(clWhite);
 
     AdDraw.BeginScene;
 
-    inc(framenr);
-
-    AdDraw.Options := AdDraw.Options + [aoStencilBuffer, aoAlphaMask];
-
-    AdDraw.AdAppl.SetStencilOptions(0, $FFFF, asfAlways);
-    AdDraw.AdAppl.SetStencilEvent(asePass, asoIncrement);
-
     with AdDraw.Canvas do
     begin
-      Font := AdDraw.Fonts.GenerateFont('Times New Roman', 32, [afBold]);
-      TextOut(mx, my, 'Mask functions using the stencil buffer');
-      TextOut(ClientWidth - mx, ClientHeight - my, 'Andorra 2D');
-      Circle(mx, mx, 10);
-      Circle(my, my, 10);
+      Brush.BlendMode := bmSub;
+      Pen.Style := apNone;
+
+      Brush.Color := Ad_ARGB(255, 0, 0, 255);
+      Brush.GradientColor := Ad_ARGB(0, 0, 0, 255);
+      Circle(
+        round(mx + cos(0) * a),
+        round(my + sin(0) * a), 90);
+
+      Brush.Color := Ad_ARGB(255, 0, 255, 0);
+      Brush.GradientColor := Ad_ARGB(0, 0, 255, 0);
+      Circle(
+        round(mx + cos(2) * a),
+        round(my + sin(2) * a), 90);
+
+      Brush.Color := Ad_ARGB(255, 255, 0, 0);
+      Brush.GradientColor := Ad_ARGB(0, 255, 0, 0);
+      Circle(
+        round(mx + cos(4) * a),
+        round(my + sin(4) * a), 90);
+
       Release;
     end;
-
-    AdDraw.AdAppl.SetStencilOptions(0, $FFFF, asfLessThan);
-    AdDraw.AdAppl.SetStencilEvent(asePass, asoKeep);
-
-    AdDraw.Options := AdDraw.Options - [aoAlphaMask];
-
-    AdImage.StretchBltAlpha(AdDraw, AdRect(0, 0, ClientWidth, ClientHeight),
-      AdRect(0, 0, ClientWidth, ClientHeight), 0, 0, 0, 255);
-
-    AdDraw.Options := AdDraw.Options - [aoStencilBuffer];
-
-    AdImage.Draw(AdDraw,  0, 0, 0);
 
     AdDraw.EndScene;
 
@@ -139,3 +136,4 @@ begin
 end;
 
 end.
+
