@@ -482,6 +482,15 @@ type
     property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
   end;
 
+  {TAdCustomTexture is the base, abstract texture class. Descendants of
+   TAdCustomTexture specify which type of texture this texture class contains.
+   This can either be a bitmap texture or a render target texture. Don't use
+   this class directly, use TAdTexture or TAdRenderTargetTexture instead.
+   TAdCustomTexture can be assigned to many different graphic interfaces like
+   TAdCustomImage, TAdMesh or TAdShader.
+   @seealso(TAdTexture)
+   @seealso(TAdRenderTargetTexture)
+   @seealso(TAdCustomImage)}
   TAdCustomTexture = class
     private
       FParent:TAdDraw;
@@ -497,21 +506,43 @@ type
       FOwnTexture: Boolean;
       FAd2dTexture:TAd2dTexture;
     public
+      {Creates a new instance of TAdCustomTexture. You shouldn't create an
+       instance of this abstract class directly. Use TAdTexture or
+       TAdRenderTargetTexture instead.
+       @param(AParent specifies the parent TAdDraw)}
       constructor Create(AParent:TAdDraw);virtual;
+      {Destroys the instance of this class and destroys all texture data.}
       destructor Destroy;override;
 
+      {Initializes a new texture object.}
       procedure Initialize;virtual;abstract;
+      {Destroys the created texture object.}
       procedure Finalize;virtual;abstract;
 
+      {Removes the texture from the memory.}
       procedure Clear;virtual;abstract;
 
+      {Provides access on the Andorra 2D graphic plugin internal texture class.}
       property Texture: TAd2dTexture read FAd2DTexture write SetAd2DTexture;
+      {Returns whether the texture is currently initialized. If true, a texture
+       object is created.}
       property Initialized: boolean read GetInitialized;
+      {Use this property to read and set the bit depth of the texture. If you set
+       this property, this bit depth will be used when a texture is loaded the
+       next time. When reading this property and a texture is loaded, the
+       bitdepth of the currently loaded texture will be returned.}
       property BitDepth: TAdBitDepth read GetBitDepth write SetBitDepth;
+      {The parent TAdDraw you've set in the constructor.}
       property Parent: TAdDraw read FParent;
+      {The filter that is applied to the texture and will be used when drawing
+       it.}
       property Filter: TAd2dTextureFilter read FFilter write SetFilter;
   end;
 
+  {TAdRenderTargetTexture extends TAdCustomTexture. It provides access to a
+   render target texture. If you want to render to a texture use
+   TAdTextureSurface instead. This class wrapps around TAdRenderTargetTexture
+   and supports drawing objects to this surface.}
   TAdRenderTargetTexture = class(TAdCustomTexture)
     private
       FWidth : integer;
@@ -525,7 +556,9 @@ type
     protected
       procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
     public
+      {Creates a new instance of TAdRenderTargetTexture.}
       constructor Create(AParent:TAdDraw);override;
+      {Destroys the instance of TAdRenderTargetTexture.}
       destructor Destroy;override;
 
       procedure Clear;override;
@@ -533,10 +566,21 @@ type
       procedure Finalize;override;
 
       property Texture:TAd2dRenderTargetTexture read GetTexture write SetTexture;
+      {Provides access on the size of the texture. Set this property to change
+       the size of the texture.}
       property Width: integer read FWidth write SetWidth;
+      {Provides access on the size of the texture. Set this property to change
+       the size of the texture.}
       property Height: integer read FHeight write SetHeight;    
   end;
 
+  {TAdTexture extends TAdCustomTexture and contains a bitmap texture. Those
+   textures can be loaded and saved to and from files or streams. You're also
+   able to assign other graphic objects to this class. To support other file
+   types or compressors, you may write your own "format" or "compressor" class.
+   @seealso(TAdBitmap)
+   @seealso(TAdGraphicCompressor)
+   @seealso(TAdGraphicFormat)}
   TAdTexture = class(TAdCustomTexture)
     private
       FCache: TMemoryStream;
@@ -546,27 +590,79 @@ type
     protected
       procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
     public
+      {Creates a new instance of TAdTexture.}
       constructor Create(AParent:TAdDraw);override;
+      {Destroys the instance of TAdTexture.}
       destructor Destroy;override;
 
       procedure Clear;override;
       procedure Initialize;override;
       procedure Finalize;override;
 
+      {Loads the texture from a stream from the Andorra 2D internal file format.
+       The data saved can be compressed using the so called "compressors".
+       This alows game programers to save space and to protect their game data
+       by using their own file format.
+       @seealso(TAdGraphicCompressor)
+      }
       procedure LoadFromStream(AStream:TStream);
+      {Saves the texture to a stream in the Andorra 2D internal file format.
+       The data saved can be compressed using the so called "compressors".
+       This alows game programers to save space and to protect their game data
+       by using their own file format.
+       @seealso(TAdGraphicCompressor)
+       @seealso(Compressor)}
       procedure SaveToStream(AStream:TStream);
+
+      {Loads the texture from a file from the Andorra 2D internal file format.
+       The data loaded can be compressed using the so called "compressors".
+       This alows game programers to save space and to protect their game data
+       by using their own file format.
+       @seealso(TAdGraphicCompressor)}
       procedure LoadFromFile(AFile:string);
+      {Saves the texture to a file in the Andorra 2D internal file format.
+       The data saved can be compressed using the so called "compressors".
+       This alows game programers to save space and to protect their game data
+       by using their own file format.
+       @seealso(TAdGraphicCompressor)
+       @seealso(Compressor)}
       procedure SaveToFile(AFile:string);
 
+      {Loads the graphic of the texture from another graphic object. Which
+       graphic objects are supported depends on the formats that are bound in.
+       Normally you can load your graphic from all VCL/LCL graphic objects.
+       @seealso(TAdGraphicFormat)}
       procedure LoadFromGraphic(AGraphic:TObject);
-      procedure LoadGraphicFromFile(AFile: string; Transparent: boolean = true;
-        TransparentColor: Longint = $1FFFFFFF);
+
+      {Saves the graphic of the texture to another graphic object. Which graphic
+       objects are supported depends on the format classes that are bound in.
+       Normally you can save your graphic to any VCL/LCL graphic classes.}
       procedure SaveToGraphic(AGraphic:TObject);
 
-      property Compressor:TAdGraphicCompressorClass read FCompressorClass write FCompressorClass;
+      {Loads the graphic from a file.
+       @param(AFile is the path to the file that should be loaded.)
+       @param(Transparent defines whether the alpha channel should be loaded.)
+       @param(TransparentColor defines which color of the graphic should be
+         transparent. This only works with formats that don't have their own
+         alpha channel. Transparent has to be true for this to work. The default
+         value is clNone ($1FFFFFFF).)
+       @seealso(TAdGraphicFormat)}
+      procedure LoadGraphicFromFile(AFile: string; Transparent: boolean = true;
+        TransparentColor: Longint = $1FFFFFFF);
+
+      {Specifies the compressor class that should be used when saving the image data.
+       When loading an image, the compressor property is automatically set to the
+       compressor class used in this file/stream.
+       @seealso(SaveToStream)
+       @seealso(SaveToFile)}
+      property Compressor:TAdGraphicCompressorClass read FCompressorClass
+        write FCompressorClass;
+
       property Texture: TAd2dBitmapTexture read GetTexture write SetTexture;
   end;
 
+  {A list that contains a set of rectangles. TAdRectList is used by TAdCustomImage
+   in order to save the precalculated pattern images.}
   TAdRectList = class(TAdList)
     private
      	function GetItem(AIndex:integer):TAdRect;
@@ -576,7 +672,7 @@ type
     public
       {Read/Write access to the rectangles.}
      	property Items[AIndex:integer]:TAdRect read GetItem write SetItem;default;
-      {Add a rectangle.}
+      {Add a rectangle to the list.}
       procedure Add(ARect:TAdRect);
   end;
 
@@ -891,93 +987,99 @@ type
       procedure Initialize;
 
       {Returns the texture rectangle of a pattern. ANr is clamped to [0;PatternCount]}
-      function GetPatternRect(ANr:integer):TAdRect;
+      function GetPatternRect(ANr: integer):TAdRect;
       
       {Returns the parent TAdDraw you've set in the constructor.}
-      property Parent:TAdDraw read FParent write FParent;
+      property Parent: TAdDraw read FParent write FParent;
 
       {Returns the width of the image. If pattern width and pattern height is
        set, this size is returned.}
-      property Width:integer read GetWidth;
+      property Width: integer read GetWidth;
       {Returns the height of the image. If pattern width and pattern height is
        set, this size is returned.}
-      property Height:integer read GetHeight;
+      property Height: integer read GetHeight;
 
       {Set the width of one animation pattern.}
-      property PatternWidth:integer read FPatternWidth write SetPatternWidth;
+      property PatternWidth: integer read FPatternWidth write SetPatternWidth;
       {Set the height of one animation pattern.}
-      property PatternHeight:integer read FPatternHeight write SetPatternHeight;
+      property PatternHeight: integer read FPatternHeight write SetPatternHeight;
 
       {The horizontal space between the animation patterns.}
-      property SkipWidth:integer read FSkipWidth write SetSkipWidth;
+      property SkipWidth: integer read FSkipWidth write SetSkipWidth;
       {The vertical space between the animation patterns.}
-      property SkipHeight:integer read FSkipHeight write SetSkipHeight;
+      property SkipHeight: integer read FSkipHeight write SetSkipHeight;
 
       {The texture assigned to the image. Call restore after you've set a
        new texture.
        @seealso(Restore)}
-      property Texture:TAdCustomTexture read FTexture write SetTexture;
+      property Texture: TAdCustomTexture read FTexture write SetTexture;
 
       {Returns the count of animation patterns.
        @seealso(PatternWidth)
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      property PatternCount:integer read GetPatternCount;
+      property PatternCount: integer read GetPatternCount;
       {If you have empty patterns, you may set PatternStop. PatternCount will be
        decrased by PatternStop.
        @seealso(PatternStop)}
-      property PatternStop:integer read FPatternStop write FPatternStop;
+      property PatternStop: integer read FPatternStop write FPatternStop;
 
       {Defines the color the image is drawn in. The color is in BGR order and
        compatible to the color constants in the VCL/LCL.}
-      property Color:Longint read FColor write FColor;
+      property Color: longint read FColor write FColor;
 
       {Important for using lights: How many grid cols and rows does the image
        have. Grid count is Details*Details.}
-      property Details:integer read FDetails write SetDetails;
+      property Details: integer read FDetails write SetDetails;
 
       {The filter that should be used when a texture is mini- or magnified.
+       Setting this property will cause in overriding the filter of the texture.
        @seealso(TAd2dTextureFilter)}
       property Filter: TAd2dTextureFilter read GetFilter write SetFilter;
   end;
 
   TAdImageList = class;
 
+  {A image class that contains a bitmap texture. The TAdImageList contains a set
+   of TAdImages.}
   TAdImage = class(TAdCustomImage)
     private
       FName:string;
       function GetTexture:TAdTexture;
       procedure SetTexture(AValue:TAdTexture);
-    protected
-
     public
-      //Contains a pointer to the image list which created the image. Set to nil if you don't want the image to be freed by the ImageList
+      {Contains a pointer to the image list which created the image.
+       Set to nil if you don't want the image to be freed by the ImageList.}
       FreeByList:TAdImageList;
 
-      //A Constructor
       constructor Create(AAdDraw:TAdDraw);override;
 
-      //Assings the settings of another item
+      {Assings the settings of another item.}
       procedure Assign(AItem:TAdImage);
 
-      //Saves the image to a stream
+      {Saves the image and all settings to a stream.}
       procedure SaveToStream(AStream:TStream);
-      //Loads the image from a stream
+      {Loads the image and all settings from a stream.}
       procedure LoadFromStream(AStream:TStream);
-      //Saves the image to a file
+      {Saves the image data to a file. This function save the data in a Andorra
+       2D internal file format.}
       procedure SaveToFile(AFile:string);
-      //Loads the image from a file
-      procedure LoadFromFile(AFile:string);        
+      {Loads the image data from a file. This function save the data in a Andorra
+       2D internal file format.}
+      procedure LoadFromFile(AFile:string);
 
-      //Name of the image in the imagelist.
-      property Name:string read FName write FName;
+      {Name of the image in the imagelist. The find procedure of the imagelist
+       uses this property.}
+      property Name: string read FName write FName;
 
-      //Access to the texture abstraction layer
-      property Texture:TAdTexture read GetTexture write SetTexture;
+      {Access to the texture abstraction layer.}
+      property Texture: TAdTexture read GetTexture write SetTexture;
   end;
 
-  //Administrates the images
+  {A list of TAdImage objects. The whole image list can be saved and loaded from
+   a single file. To create such an imagelist file you can use the tool
+   "imgedit".}
   TAdImageList = class(TAdList)
     private
       FParent:TAdDraw;
@@ -993,36 +1095,45 @@ type
       {Creates a new instance of TAdImageList.}
       constructor Create(AAdDraw:TAdDraw);
       {Frees the instance of TAdImageList. Images that were created by the
-       imagelist are freed too. }
+       imagelist are freed too.
+       @seealso(TAdImage.FreeByList)}
       destructor Destroy;override;
 
-      //Returns you an item
+      {Returns an image item to you.}
      	property Items[AIndex:integer]:TAdImage read GetItem write SetItem;default;
-      //Add a new image to the list.
+
+      {Creates and adds a new image item to the list. This item will automatically
+       freed by the list.
+       @seealso(TAdImage.FreeByList)}
       function Add(AName:string):TAdImage;overload;
-      //Returns the index of a item
+      {Searches for an item by name and returns its index.}
       function IndexOf(AName:string):integer;
-      //Finds an image in the list.
+      {Finds an image in the list by its name.}
       function Find(AName:string):TAdImage;
+
       {Returns a new imagelist, that contains all images containing the given
        substring. The returned imagelist has to be freed manually.}
       function FindEx(ASubStr:string):TAdImageList;
-      //Call the restore function of every item in the list.
+      {Calls the restore function of every item in the list.}
       procedure Restore;
-      //Save the whole list to a stream
+
+      {Save the whole list to a stream.}
       procedure SaveToStream(AStream:TStream);
-      //Load a whole list from a stream
+      {Load a whole list from a stream.}
       procedure LoadFromStream(AStream:TStream);
-      //Saves the whole list to a file
+
+      {Saves the whole list to a file.}
       procedure SaveToFile(AFile:string);
-      //Loads a whole list from a file
+      {Loads a whole list from a file.}
       procedure LoadFromFile(AFile:string);
 
-      //The parent AdDraw you've specified in the constructor.
+      {The parent TAdDraw you've specified in the constructor.}
       property Parent:TAdDraw read FParent;
-      //Apply the same graphic compressor class to each item in the list.
+
+      {Apply the same graphic compressor class to each item in the list.}
       property Compressor:TAdGraphicCompressorClass read FCompressor write SetCompressor;
-      //Texture filter that should be applied to all images in the list.
+      {Texture filter that should be applied to all images in the list. By setting
+       this property, the filter property of all image items is overwritten.}
       property Filter: TAd2dTextureFilter read FFilter write SetFilter;
     end;
 
@@ -2247,13 +2358,9 @@ end;
 function TAdCustomTexture.GetBitDepth: TAdBitDepth;
 begin
   if Initialized then
-  begin
-    result := Texture.BitDepth;
-  end
+    result := Texture.BitDepth
   else
-  begin
     result := FBitDepth;
-  end;
 end;
 
 function TAdCustomTexture.GetInitialized: boolean;
