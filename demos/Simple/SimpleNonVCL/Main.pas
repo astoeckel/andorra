@@ -7,13 +7,13 @@ unit Main;
 interface
 
 uses
-  AdClasses, AdEvents, AdDraws, AdTypes,
-  AdGUI, AdComponents, AdGUIConnector, AdLCLOGLWindow;
+  AdClasses, AdEvents, AdDraws, AdTypes, AdLCLOGLWindow;
 
 type
   TAdAppl = class
     private
       AdDraw:TAdDraw;
+      AdRenderTargetTexture: TAdTextureSurface;
     public
       MouseX, MouseY : integer;
       procedure Idle(Sender:TObject; var Done:boolean);

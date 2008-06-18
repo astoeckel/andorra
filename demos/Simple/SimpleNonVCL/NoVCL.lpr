@@ -1,6 +1,5 @@
 program NoVCL;
 
-{$APPTYPE CONSOLE}
 {$MODE DELPHI}
 
 uses
