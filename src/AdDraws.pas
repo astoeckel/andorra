@@ -1348,7 +1348,7 @@ begin
           AdAppl.SetOptions(FOptions);
 
           //Setup view- and projection matrix
-          FScene.Setup2DScene(FWnd.ClientWidth, FWnd.ClientHeight); 
+          Setup2DScene;
 
         end else
           FreeAndNil(FAdAppl);  

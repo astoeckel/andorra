@@ -570,6 +570,7 @@ end;
 
 {$IFDEF FPC}
   {$IFDEF CPU386}
+  {$ASMMODE intel}
 
 const
   Default8087CW: Word = $1332;

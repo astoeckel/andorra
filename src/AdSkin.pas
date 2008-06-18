@@ -24,7 +24,8 @@ unit AdSkin;
 interface
 
 uses
-  SysUtils, Classes, AdSimpleXML, AdXML, AdList, AdDraws, AdTypes;
+  SysUtils, Classes,
+  AdClasses, AdSimpleXML, AdXML, AdList, AdDraws, AdTypes;
 
 type
   //Defines the type of drawing elements. Currently only Stretch is supported.
@@ -254,10 +255,11 @@ begin
           case Typ of
             dtStretch:
             begin
-              Self.Images[Images[AState]].StretchBltAlpha(
+              Self.Images[Images[AState]].DrawEx(
                 FParent,
                 AdRect(ImgSrcX1,ImgSrcY1,ImgSrcX2,ImgSrcY2),
-                AdRect(AX+X1,AY+Y1,AX+X2,AY+Y2),0.5,0.5,0,Alpha);
+                AdRect(AX+X1,AY+Y1,AX+X2,AY+Y2),0.5,0.5,0,Alpha,
+                bmAlpha);
             end;
           end;
 

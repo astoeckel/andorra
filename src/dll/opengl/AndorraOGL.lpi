@@ -57,20 +57,7 @@
         <Loaded Value="True"/>
       </Unit2>
     </Units>
-    <JumpHistory Count="3" HistoryIndex="2">
-      <Position1>
-        <Filename Value="OGLMain.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position1>
-      <Position2>
-        <Filename Value="OGLMain.pas"/>
-        <Caret Line="447" Column="18" TopLine="431"/>
-      </Position2>
-      <Position3>
-        <Filename Value="OGLMain.pas"/>
-        <Caret Line="466" Column="18" TopLine="450"/>
-      </Position3>
-    </JumpHistory>
+    <JumpHistory Count="0" HistoryIndex="-1"/>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="5"/>
