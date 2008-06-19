@@ -83,7 +83,7 @@ type
   TAdMapKey = class
     public
       {Returns the hash of the object.}
-      function Hash:Cardinal;virtual;abstract;
+      function Hash:integer;virtual;abstract;
       {Returns, whether this key is equal to another one.}
       function Equal(AItem:TAdMapKey):boolean;virtual;abstract;
   end;
@@ -100,31 +100,31 @@ type
   {A simple bucket hash map class.}
   TAdMap = class
     private
-      FCapacity:Cardinal;
-      FData:Pointer;
-      FMemSize:Cardinal;
-      procedure Rehash(ACapacity:Cardinal);
+      FCapacity: integer;
+      FData: Pointer;
+      FMemSize: Cardinal;
+      procedure Rehash(ACapacity: integer);
     protected      
-      FCount:Cardinal;
+      FCount: integer;
       procedure FreeMemory;
       property Data:Pointer read FData write FData;
     public
       {Creates a new instance of TAdMap. ACapacity specifies the size of the data array the elements are stored in.}
-      constructor Create(ACapacity:Cardinal=128);
+      constructor Create(ACapacity: integer=128);
       {Destroys the instance of TAdMap}
       destructor Destroy;override;
 
       {Inserts a key connected to a value in the hash map.}
-      function Insert(AKey:TAdMapKey;AValue:TObject):Boolean;
+      function Insert(AKey:TAdMapKey; AValue:TObject):Boolean;
       {Returns the stored object or nil, if the object is not found. AKey specifies the key you search with.}
       function GetValue(AKey:TAdMapKey):TObject;
       {Removes the object connected to the key from the hash map}
       function Remove(AKey:TAdMapKey):Boolean;
 
       {Returns the count of elements in the list}
-      property Count:Cardinal read FCount;
+      property Count: integer read FCount;
       {Returns the capacity of the data array.}
-      property Capacity:Cardinal read FCapacity;
+      property Capacity: integer read FCapacity;
   end;
 
 const
@@ -372,7 +372,7 @@ end;
 
 { TAdMap }
 
-constructor TAdMap.Create(ACapacity: Cardinal);
+constructor TAdMap.Create(ACapacity: integer);
 begin
   inherited Create;
 
@@ -478,7 +478,7 @@ begin
   end;
 end;
 
-procedure TAdMap.Rehash(ACapacity: Cardinal);
+procedure TAdMap.Rehash(ACapacity: integer);
 var
   PTmp:Pointer;
   PList1,PList2:PAdLinkedList;

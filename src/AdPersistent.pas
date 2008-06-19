@@ -52,7 +52,7 @@ type
   TAdClassKey = class(TAdMapKey)
     public
       Value:ShortString;
-      function Hash:Cardinal;override;
+      function Hash:integer;override;
       function Equal(AItem:TAdMapKey):boolean;override;
   end;
 
@@ -94,7 +94,7 @@ begin
   result := Value = TAdClassKey(AItem).Value;
 end;
 
-function TAdClassKey.Hash: Cardinal;
+function TAdClassKey.Hash: integer;
 var
   i:integer;
 begin

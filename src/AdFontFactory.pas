@@ -26,38 +26,56 @@ unit AdFontFactory;
 interface
 
 uses
-  Classes, AdClasses, AdTypes, AdFont, AdFontGenerator, AdContainers, AdPersistent;
+  Classes,
+  AdClasses, AdTypes, AdFont, AdFontGenerator, AdContainers, AdPersistent;
 
 type
+  {TAdFontDataKey is used internally by TAdFontFactory to store the fonts in a
+   hash map.}
   TAdFontDataKey = class(TAdMapKey)
     private
       FHasData:boolean;
-      FHash:cardinal;
+      FHash: integer;
       FMetaData:Pointer;
       FMetaDataSize:Cardinal;
       FFont:TAdFont;
       FAutoFreeFont:boolean;
       procedure ClearData;
     public
+      {Creates an instance of TAdFontDataKey.}
       constructor Create;
+      {Destroys the instance of TAdFontDataKey.}
       destructor Destroy;override;
 
-      function Hash:Cardinal;override;
+      {Returns a hash value that represents this font data hash. The hash value
+       is calculated once when "InsertData" is called.
+       @seealso(InsertData)}
+      function Hash: integer;override;
+      {Compares AItem to itsself and returns whether the two font data keys are
+       equal.}
       function Equal(AItem:TAdMapKey):boolean;override;
 
-      procedure InsertData(AMetaData:Pointer;AMetaDataSize:Cardinal);
+      {Stores the font meta data in the key and calculates the hash value.}
+      procedure InsertData(AMetaData:Pointer; AMetaDataSize: Cardinal);
+      {Saves the key metadata to a stream.}
       procedure SaveToStream(AStream:TStream);
+      {Loads the key metadata from a stream.}
       procedure LoadFromStream(AStream:TStream);
 
+      {Pointer to the font metadata}
       property MetaData:Pointer read FMetaData;
+      {Size of the metadata stored in the metadata property.}
       property MetaDataSize:Cardinal read FMetaDataSize;
+      {The font that is attached to this font datakey}
       property Font:TAdFont read FFont write FFont;
+      {If true, the font will be freed with this data key.}
       property AutoFreeFont:boolean read FAutoFreeFont write FAutoFreeFont;
   end;
 
   TAdFontMap = class(TAdMap)
     public
       destructor Destroy;override;
+
       procedure Clear;
   end;
 
@@ -106,6 +124,7 @@ end;
 
 procedure TAdFontFactory.SetFontMap(AValue: TAdFontMap);
 begin
+  //FOwnFontMap is set to false by FreeMemory
   FreeMemory;
   FFontMap := AValue;
 end;
@@ -206,9 +225,8 @@ begin
   l := length(AFontName);
   SetLength(AFontName, 255);
   for i := l+1 to 255 do
-  begin
     AFontName[i] := #0;
-  end;
+
   SetLength(AFontName, l);
 
   ms.Write(AFontName, SizeOf(AFontName));
@@ -305,7 +323,7 @@ begin
   end;
 end;
 
-function TAdFontDataKey.Hash: Cardinal;
+function TAdFontDataKey.Hash: integer;
 begin
   result := 0;      
   if FHasData then
