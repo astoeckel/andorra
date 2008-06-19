@@ -52,14 +52,26 @@ type
   TAdRenderTargetTexture = class;
   TAdTexture = class;
 
-  TAdBeginRenderEvent = procedure(Sender: TObject; AModelViewProjection: TAdMatrix) of object;
+  {Event type used by TAdRenderingObject.
+   @param(AModelViewProjection specifies the matrix, that results when
+     multiplying the model, the view and the projection matrix)
+   @seealso(TAdRenderingObject)}
+  TAdBeginRenderEvent =
+    procedure(Sender: TObject; AModelViewProjection: TAdMatrix) of object;
 
+  {Objects derived from this class provide a set of render events. Other classes
+   may link themselves to those events and can activate/deactivate certain
+   settings before and after the object was rendered. This mechanism is used
+   for simply attaching shaders to an object.}
   TAdRenderingObject = class
     private
       FBeginRender: TAdBeginRenderEvent;
       FEndRender: TAdNotifyEvent;
     public
+      {Triggered before the object is rendered. The "ModelViewProjejectionMatrix"
+       is passed as a single parameter.}
       property OnBeginRender: TAdBeginRenderEvent read FBeginRender write FBeginRender;
+      {Triggered when rendering has been finished.}
       property OnEndRender: TAdNotifyEvent read FEndRender write FEndRender;
   end;
 
@@ -401,15 +413,30 @@ type
       property Texture: TAdRenderTargetTexture read FTexture;
   end;
 
+  {TAdDisplay represents the video display settings. This record is used for
+   setting the size of the video area used by TAdDraw.}
   TAdDisplay = record
+    {The width of the video surface.}
     Width: integer;
+    {The hieght of the video surface.}
     Height: integer;
+    {The bit depth the video surface should be created with. This property only
+     affects the fullscreen mode.}
     BitDepth: TAdBitDepth;
+    {The horizontal display refresh frequncy. This property only affects the
+     fullscreen mode.}
     Freq: integer;
+    {The mode the display is created in.
+     @seealso(TAdDisplayMode)}
     DisplayMode: TAdWindowDisplayMode;
   end;
 
-  {This is the main class for using Andorra 2D. It represents the main surface. }
+  {This is the main class for using Andorra 2D. It represents the main surface.
+   Remember that there can only be one instance of TAdDraw at one time. TAdDraw
+   is not a singleton, but the underlying graphic plugin may only support one
+   graphic context per application. If you want to have more than one surface
+   in your application, you may render your content to a TAdTextureSurface and
+   finally render this to TAdDraw.}
   TAdDraw = class(TAdRenderingSurface)
   private
     FParent:Pointer;
@@ -448,37 +475,87 @@ type
     procedure LogProc(AModule: PChar; ASeverity: TAd2dLogSeverity;
       AMessage: PChar);
   public
+    {Creates a new instance of TAdDraw.
+     @param(AParent specifies the underlying window control. If you want TAdDraw
+       to create its own window, this parameter may be nil. If the window
+       control type you've chosen not available, TAdDraw does not initialize
+       correctly.)}
     constructor Create(AParent: Pointer); reintroduce;
+    {Destroys the instance of TAdDraw. Destroy cause in finalizing the active
+     graphic surface. TAdDraw should be the first thing you create and the last
+     thing you free in your Andorra 2D application.}
     destructor Destroy; override;
 
+    {Returns true if the context is initialized and you can draw on it.}
     function CanDraw:boolean;override;
 
+    {Initializes the graphic context. If the result is true, inizialization was
+     successfull. Remember to setup the display mode and the plugin dll before
+     initializing TAdDraw. These steps can automatically be done by TAdSetup.
+     Initialize will call the "seInitialize" surface event and after that the
+     "seInitialized" event.
+     @seealso(TAdSetup)
+     @seealso(TAdDllExplorer)
+     @seealso(TAdDisplay)
+     @seealso(RegisterNotifyEvent)
+     @seealso(UnRegisterNotifyEvent)}
     function Initialize: boolean;
+    {Finalizes the surface. The "seFinalize" surface event is called.}
     procedure Finalize;
 
+    {Exchanges the front- and the backbuffer.}
     procedure Flip;
+    {All graphic operations (except for ClearSurface) should stand between
+     the "BeginScene" and "EndScene" command.}
     procedure BeginScene;
+    {All graphic operations (except for ClearSurface) should stand between
+     the "BeginScene" and "EndScene" command. End scene automatically causes
+     all registered canvases to call their "release" function.}
     procedure EndScene;
 
+    {Registeres a new SurfaceEvent function.
+     @seealso(TAdSurfaceEvent)}
     procedure RegisterNotifyEvent(AProc:TAdSurfaceEvent);
+    {Unregisters a registered SurfaceEvent function.}
     procedure UnRegisterNotifyEvent(AProc:TAdSurfaceEvent);
 
+    {If TAdDraw created its own window, call the Run function to make the
+     application actually run.}
     procedure Run;
 
+    {The filename of the graphic plugin that should be loaded.}
     property DllName : string read FDllName write SetDllName;
+    {Reference to the DllLoader class. This reference can be used to call
+     some of the dll functions directly.}
     property DllLoader: TAdDllLoader read FDllLoader;
+    {Returns whether the surface is initialized.}
     property Initialized : boolean read FInitialized;
+    {TAdDraw contains its own font factory that may be used to display fonts on
+     the surface.}
     property Fonts:TAdFontFactory read FFonts;
+    {The underlying window framework. Use this property to change properites
+     of the window framework like the window caption or to connect surface
+     events.}
     property Window:TAdWindowFramework read FWnd;
+    {Reference on the currently active surface.}
     property ActiveSurface:TAdSurface read FActiveSurface write SetActiveSurface;
+    {Reference on the partent parameter you've passed in the constructor.}
     property Parent: Pointer read FParent;
+    {Reference on the Andorra 2D graphic system abstraction layer.}
     property AdAppl: TAd2dApplication read FAdAppl;
+    {Provides access on the plugin properties. Those properties can be used to
+     pass graphic system specific parameters to the graphic plugin.}
     property Properties: TAdPluginPropertyList read FProperties;
+    {Reference on the log file wrapper.}
     property Log: TAdLog read FLog;
+    {The display settings.}
     property Display: TAdDisplay read FDisplay;
+    {Returns the size of the surface.}
     property SurfaceRect: TAdRect read GetSurfaceRect;
 
+    {Called when TAdDraw is finalized.}
     property OnFinalize : TNotifyEvent read FFinalize write FFinalize;
+    {Called when TAdDraw is initialized.}
     property OnInitialize : TNotifyEvent read FInitialize write FInitialize;
   end;
 

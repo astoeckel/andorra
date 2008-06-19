@@ -38,6 +38,7 @@ type
       FClosed:boolean;
 
       FMouseDown: boolean;
+      FLastClick: Cardinal;
 
       FSDLSurface: PSDL_Surface;
 
@@ -74,6 +75,10 @@ end;
 
 destructor TAdSDLWindow.Destroy;
 begin
+  if FInitialized then
+  begin
+    SDL_Quit;
+  end;
 
   inherited;
 end;
@@ -132,6 +137,7 @@ begin
       if FSDLSurface <> nil then
       begin
         result := true;
+        FInitialized := true;
       end;
     end;
   end;
@@ -265,6 +271,8 @@ begin
 end;
 
 procedure TAdSDLWindow.HandleEvent(AEvent: TSDL_Event);
+var
+  shift: TAdShiftState;
 begin
   case AEvent.type_ of
     SDL_ACTIVEEVENT:
@@ -297,12 +305,27 @@ begin
 
     SDL_MOUSEBUTTONUP:
     begin
-      if Assigned(Events.OnMouseUp) and (FMouseDown) then
+      shift := GetShiftState;
+      
+      //Check for doublelick
+      if (SDL_GetTicks - FLastClick) < 300 then
+      begin
+        if Assigned(Events.OnDblClick) and (FMouseDown) then
+          Events.OnDblClick(self, AEvent.button.x, AEvent.button.y);
+      end
+      else begin
+        if Assigned(Events.OnClick) and (FMouseDown) then
+          Events.OnClick(self, AEvent.button.x, AEvent.button.y);
+
+        shift := shift + [asDouble];
+
+        FLastClick := SDL_GetTicks;
+      end;
+
+      if Assigned(Events.OnMouseUp) then
         Events.OnMouseUp(
-          self, GetButton(AEvent.button.button), GetShiftState,
+          self, GetButton(AEvent.button.button), shift,
           AEvent.button.x, AEvent.button.y);
-      if Assigned(Events.OnClick) and (FMouseDown) then
-        Events.OnClick(self, AEvent.button.x, AEvent.button.y);
 
       FMouseDown := false;
     end;
@@ -357,7 +380,7 @@ procedure TAdSDLWindow.Terminate;
 begin
   if FInitialized then
   begin
-    SDL_Quit;
+    FClosed := true;
   end;
 end;
 

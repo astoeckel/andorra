@@ -358,7 +358,7 @@ begin
 
     glfwGetDesktopMode(@DesktopMode);
 
-    if AProps.Mode = dmWindowed then
+    if (AProps.Mode = dmWindowed) or (AProps.Mode = dmDefault) then
     begin
       w := AProps.Width;
       h := AProps.Height;

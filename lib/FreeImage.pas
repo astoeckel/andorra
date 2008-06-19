@@ -35,7 +35,7 @@ const
 {$IFDEF WIN32}
   FIDLL = 'FreeImage.dll';
 {$ELSE}
-  FIDLL = 'libFreeImage.so';
+  FIDLL = 'libfreeimage.so';
 {$ENDIF}
   
 // --------------------------------------------------------------------------

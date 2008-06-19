@@ -23,7 +23,7 @@ unit AdFreeImage;
 interface
 
 uses
-  Classes, AdBitmap, AdTypes, AdPngUtils, FreeImage;
+  Classes, AdBitmap, AdTypes, AdPNGUtils, FreeImage;
 
 type
   TAdFreeImagePNGCompressor = class(TAdGraphicCompressor)
