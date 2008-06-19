@@ -7,13 +7,13 @@ unit Main;
 interface
 
 uses
-  AdClasses, AdEvents, AdDraws, AdTypes, AdLCLOGLWindow;
+  AdClasses, AdEvents, AdDraws, AdTypes, AdSDLWindow, AdFreeImage;
 
 type
   TAdAppl = class
     private
       AdDraw:TAdDraw;
-      AdRenderTargetTexture: TAdTextureSurface;
+      AdImage:TAdImage;
     public
       MouseX, MouseY : integer;
       procedure Idle(Sender:TObject; var Done:boolean);
@@ -33,9 +33,12 @@ begin
     AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
 
+    AdImage.Draw(AdDraw, 0, 0, 0);
+
     with AdDraw.Canvas do
     begin
       TextOut(MouseX, MouseY, 'Andorra 2D ['+AdDraw.DllName+','+AdDraw.Window.ClassName+']');
+      Release;
     end;
 
     AdDraw.EndScene;
@@ -72,6 +75,7 @@ begin
     AdDraw.DllName := 'AndorraOGL.dll';
   {$ENDIF}
 
+
   with AdDraw.Display do
   begin
     Width := 800;
@@ -85,7 +89,13 @@ begin
     AdDraw.Window.Events.OnKeyDown := KeyDown;
     AdDraw.Window.Title := 'Andorra 2D';
 
+    AdImage := TAdImage.Create(AdDraw);
+    AdImage.Texture.LoadGraphicFromFile('icon64.png');
+    AdImage.Restore;
+
     AdDraw.Run;
+
+    AdImage.Free;
   end;
   AdDraw.Free;
 end;
