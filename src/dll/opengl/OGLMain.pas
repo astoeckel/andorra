@@ -512,7 +512,7 @@ procedure TOGLApplication.SetUsePixelShader(AValue: boolean);
 begin
   FUsePixelShader := AValue;
   if FUsePixelShader then
-    FLastTexture := nil;
+    FLastTexture := Pointer($FFFFFFFF);
 end;
 
 procedure TOGLApplication.SetViewPort(AValue: TAdRect);

@@ -609,7 +609,7 @@ procedure TDXApplication.SetUsePixelShader(AValue: boolean);
 begin
   FUsePixelShader := AValue;
   if FUsePixelShader then
-    FLastTexture := nil;
+    FLastTexture := Pointer($FFFFFFFF);
 end;
 
 procedure TDXApplication.WriteLog(ALogSeverity: TAd2dLogSeverity;
