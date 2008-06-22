@@ -22,6 +22,7 @@ unit FreeImage;
 //
 // Use at your own risk!
 // ==========================================================
+// Modified by Nikolai Wyderka 2008/06/19 for Linux compatibility
 
 {$IFDEF FPC}
   {$MODE DELPHI}
@@ -35,6 +36,8 @@ const
 {$IFDEF WIN32}
   FIDLL = 'FreeImage.dll';
 {$ELSE}
+  {$DEFINE FINoPrefix}
+  {$DEFINE FIcdecl}
   FIDLL = 'libfreeimage.so';
 {$ENDIF}
   
@@ -291,10 +294,10 @@ type
   PCardinal = ^Cardinal;
   PInt = ^Integer;
 
-  FI_ReadProc = function(buffer : pointer; size : Cardinal; count : Cardinal; handle : fi_handle) : PCardinal; stdcall;
-  FI_WriteProc = function(buffer : pointer; size, count : Cardinal; handle : FI_Handle) : PCardinal; stdcall;
-  FI_SeekProc = function(handle : fi_handle; offset : longint; origin : integer) : pint; stdcall;
-  FI_TellProc = function(handle : fi_handle) : PCardinal; stdcall;
+  FI_ReadProc = function(buffer : pointer; size : Cardinal; count : Cardinal; handle : fi_handle) : PCardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_WriteProc = function(buffer : pointer; size, count : Cardinal; handle : FI_Handle) : PCardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_SeekProc = function(handle : fi_handle; offset : longint; origin : integer) : pint; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_TellProc = function(handle : fi_handle) : PCardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
 
   FreeImageIO = packed record
     read_proc : FI_ReadProc;     // pointer to the function used to read data
@@ -323,22 +326,22 @@ const
 type
   PPluginStruct = ^PluginStruct;
 
-  FI_InitProc = procedure(Plugin: PPluginStruct; Format_ID: Integer); stdcall;
-  FI_FormatProc = function: PChar; stdcall;
-  FI_DescriptionProc = function: PChar; stdcall;
-  FI_ExtensionListProc = function: PChar; stdcall;
-  FI_RegExprProc = function: PChar; stdcall;
-  FI_OpenProc = function(IO: PFreeImageIO; Handle: FI_Handle; Read: Boolean): Pointer; stdcall;
-  FI_CloseProc = procedure(IO: PFreeImageIO; Handle: FI_Handle; Data: Pointer); stdcall;
-  FI_PageCountProc = function(IO: PFreeImageIO; Handle: FI_Handle; Data: Pointer): Integer; stdcall;
-  FI_PageCapabilityProc = function(IO: PFreeImageIO; Handle: FI_Handle; Data: Pointer): integer; stdcall;
-  FI_LoadProc = function(IO: PFreeImageIO; Handle: FI_Handle; Page, Flags: Integer; data: pointer): PFIBITMAP; stdcall;
-  FI_SaveProc = function(IO: PFreeImageIO; Dib: PFIBITMAP; Handle: FI_Handle; Page, Flags: Integer; Data: Pointer): Boolean; stdcall;
-  FI_ValidateProc = function(IO: PFreeImageIO; Handle: FI_Handle): Boolean; stdcall;
-  FI_MimeProc = function: PChar; stdcall;
-  FI_SupportsExportBPPProc = function(Bpp: integer): boolean; stdcall;
-  FI_SupportsExportTypeProc = function(AType: FREE_IMAGE_TYPE): Boolean; stdcall;
-  FI_SupportsICCProfilesProc = function: Boolean; stdcall;
+  FI_InitProc = procedure(Plugin: PPluginStruct; Format_ID: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_FormatProc = function: PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_DescriptionProc = function: PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_ExtensionListProc = function: PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_RegExprProc = function: PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_OpenProc = function(IO: PFreeImageIO; Handle: FI_Handle; Read: Boolean): Pointer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_CloseProc = procedure(IO: PFreeImageIO; Handle: FI_Handle; Data: Pointer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_PageCountProc = function(IO: PFreeImageIO; Handle: FI_Handle; Data: Pointer): Integer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_PageCapabilityProc = function(IO: PFreeImageIO; Handle: FI_Handle; Data: Pointer): integer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_LoadProc = function(IO: PFreeImageIO; Handle: FI_Handle; Page, Flags: Integer; data: pointer): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_SaveProc = function(IO: PFreeImageIO; Dib: PFIBITMAP; Handle: FI_Handle; Page, Flags: Integer; Data: Pointer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_ValidateProc = function(IO: PFreeImageIO; Handle: FI_Handle): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_MimeProc = function: PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_SupportsExportBPPProc = function(Bpp: integer): boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_SupportsExportTypeProc = function(AType: FREE_IMAGE_TYPE): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+  FI_SupportsICCProfilesProc = function: Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
 
   PluginStruct = record
     format_proc: FI_FormatProc;
@@ -417,334 +420,334 @@ const
 // Init/Error routines ------------------------------------------------------
 // --------------------------------------------------------------------------
 
-procedure FreeImage_Initialise(load_local_plugins_only : boolean = False); stdcall; external FIDLL name '_FreeImage_Initialise@4';
-procedure FreeImage_DeInitialise; stdcall; external FIDLL name '_FreeImage_DeInitialise@0';
+procedure FreeImage_Initialise(load_local_plugins_only : boolean = False); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Initialise'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+procedure FreeImage_DeInitialise; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_DeInitialise'{$IFNDEF FINoPrefix}+'@0'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Version routines ---------------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_GetVersion : PChar; stdcall; external FIDLL name '_FreeImage_GetVersion@0';
-function FreeImage_GetCopyrightMessage : PChar; stdcall; external FIDLL name '_FreeImage_GetCopyrightMessage@0';
+function FreeImage_GetVersion : PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetVersion'{$IFNDEF FINoPrefix}+'@0'{$ENDIF};
+function FreeImage_GetCopyrightMessage : PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetCopyrightMessage'{$IFNDEF FINoPrefix}+'@0'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Message output functions -------------------------------------------------
 // --------------------------------------------------------------------------
 
-procedure FreeImage_OutPutMessageProc(fif: Integer; fmt: PChar); stdcall; external FIDLL name 'FreeImage_OutputMessageProc';
-type FreeImage_OutputMessageFunction = function(fif: FREE_IMAGE_FORMAT; msg: PChar): pointer; stdcall;
-procedure FreeImage_SetOutputMessage(omf: FreeImage_OutputMessageFunction); stdcall; external FIDLL name '_FreeImage_SetOutputMessage@4';
+procedure FreeImage_OutPutMessageProc(fif: Integer; fmt: PChar); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name 'FreeImage_OutputMessageProc';
+type FreeImage_OutputMessageFunction = function(fif: FREE_IMAGE_FORMAT; msg: PChar): pointer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF};
+procedure FreeImage_SetOutputMessage(omf: FreeImage_OutputMessageFunction); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetOutputMessage'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Allocate/Unload routines -------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_Allocate(width, height, bpp: integer; red_mask: Cardinal = 0; green_mask: Cardinal = 0; blue_mask: Cardinal = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Allocate@24';
-function FreeImage_AllocateT(Atype: FREE_IMAGE_TYPE; Width, Height: Integer; bpp: Integer = 8; red_mask: Cardinal = 0; green_mask: Cardinal = 0; blue_mask: Cardinal = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_AllocateT@28';
-function FreeImage_Clone(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Clone@4';
-procedure FreeImage_Unload(dib: PFIBITMAP); stdcall; external FIDLL name '_FreeImage_Unload@4';
+function FreeImage_Allocate(width, height, bpp: integer; red_mask: Cardinal = 0; green_mask: Cardinal = 0; blue_mask: Cardinal = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Allocate'{$IFNDEF FINoPrefix}+'@24'{$ENDIF};
+function FreeImage_AllocateT(Atype: FREE_IMAGE_TYPE; Width, Height: Integer; bpp: Integer = 8; red_mask: Cardinal = 0; green_mask: Cardinal = 0; blue_mask: Cardinal = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AllocateT'{$IFNDEF FINoPrefix}+'@28'{$ENDIF};
+function FreeImage_Clone(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Clone'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+procedure FreeImage_Unload(dib: PFIBITMAP); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Unload'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Load / Save routines -----------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_Load(fif: FREE_IMAGE_FORMAT; const filename: PChar; flags: integer = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Load@12';
-function FreeImage_LoadU(fif: FREE_IMAGE_FORMAT; const filename: PWideChar; flags: Integer = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_LoadU@12';
-function FreeImage_LoadFromHandle(fif: FREE_IMAGE_FORMAT; io: PFreeImageIO; handle: fi_handle; flags: integer = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_LoadFromHandle@16';
-function FreeImage_Save(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; filename: PChar; flags: integer = 0): Boolean; stdcall; external FIDLL name '_FreeImage_Save@16';
-function FreeImage_SaveU(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; const filename: PWideChar; flags: Integer = 0): Boolean; stdcall; external FIDLL name '_FreeImage_SaveU@16';
-function FreeImage_SaveToHandle(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; io : PFreeImageIO; handle : fi_handle; flags : integer = 0) : Boolean; stdcall; external FIDLL name '_FreeImage_SaveToHandle@20';
+function FreeImage_Load(fif: FREE_IMAGE_FORMAT; const filename: PChar; flags: integer = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Load'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_LoadU(fif: FREE_IMAGE_FORMAT; const filename: PWideChar; flags: Integer = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_LoadU'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_LoadFromHandle(fif: FREE_IMAGE_FORMAT; io: PFreeImageIO; handle: fi_handle; flags: integer = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_LoadFromHandle'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_Save(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; filename: PChar; flags: integer = 0): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Save'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_SaveU(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; const filename: PWideChar; flags: Integer = 0): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SaveU'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_SaveToHandle(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; io : PFreeImageIO; handle : fi_handle; flags : integer = 0) : Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SaveToHandle'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Memory I/O stream routines -----------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_OpenMemory(data: PByte = nil; size_in_bytes: DWORD = 0): PFIMEMORY; stdcall; external FIDLL name '_FreeImage_OpenMemory@8';
-procedure FreeImage_CloseMemory(stream: PFIMEMORY); stdcall; external FIDLL name '_FreeImage_CloseMemory@4';
-function FreeImage_LoadFromMemory(fif: FREE_IMAGE_FORMAT; stream: PFIMEMORY; flags: Integer = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_LoadFromMemory@12';
-function FreeImage_SaveToMemory(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; stream: PFIMEMORY; flags: Integer = 0): Boolean; stdcall; external FIDLL name '_FreeImage_SaveToMemory@16';
-function FreeImage_TellMemory(stream: PFIMEMORY): Longint; stdcall; external FIDLL name '_FreeImage_TellMemory@4';
-function FreeImage_SeekMemory(stream: PFIMEMORY; offset: Longint; origin: Integer): Boolean; stdcall; external FIDLL name '_FreeImage_SeekMemory@12';
-function FreeImage_AcquireMemory(stream: PFIMEMORY; var data: PByte; var size_in_bytes: DWORD): Boolean; stdcall; external FIDLL name '_FreeImage_AcquireMemory@12';
+function FreeImage_OpenMemory(data: PByte = nil; size_in_bytes: DWORD = 0): PFIMEMORY; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_OpenMemory'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+procedure FreeImage_CloseMemory(stream: PFIMEMORY); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_CloseMemory'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_LoadFromMemory(fif: FREE_IMAGE_FORMAT; stream: PFIMEMORY; flags: Integer = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_LoadFromMemory'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_SaveToMemory(fif: FREE_IMAGE_FORMAT; dib: PFIBITMAP; stream: PFIMEMORY; flags: Integer = 0): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SaveToMemory'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_TellMemory(stream: PFIMEMORY): Longint; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_TellMemory'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_SeekMemory(stream: PFIMEMORY; offset: Longint; origin: Integer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SeekMemory'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_AcquireMemory(stream: PFIMEMORY; var data: PByte; var size_in_bytes: DWORD): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AcquireMemory'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Plugin Interface ---------------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_RegisterLocalPlugin(proc_address: FI_InitProc; format, description, extension, regexpr: PChar): FREE_IMAGE_FORMAT; stdcall; external FIDLL name '_FreeImage_RegisterLocalPlugin@20';
-function FreeImage_RegisterExternalPlugin(path, format, description, extension, regexpr: PChar): FREE_IMAGE_FORMAT; stdcall; external FIDLL name '_FreeImage_RegisterExternalPlugin@20';
-function FreeImage_GetFIFCount: Integer; stdcall; external FIDLL name '_FreeImage_GetFIFCount@0';
-procedure FreeImage_SetPluginEnabled(fif: FREE_IMAGE_FORMAT; enable: Boolean); stdcall; external FIDLL Name '_FreeImage_SetPluginEnabled@8';
-function FreeImage_IsPluginEnabled(fif: FREE_IMAGE_FORMAT): Integer; stdcall; external FIDLL Name '_FreeImage_IsPluginEnabled@4';
-function FreeImage_GetFIFFromFormat(const format: PChar): FREE_IMAGE_FORMAT; stdcall; external FIDLL Name '_FreeImage_GetFIFFromFormat@4';
-function FreeImage_GetFIFFromMime(const format: PChar): FREE_IMAGE_FORMAT; stdcall; external FIDLL Name '_FreeImage_GetFIFFromMime@4';
-function FreeImage_GetFormatFromFIF(fif: FREE_IMAGE_FORMAT): PChar; stdcall; external FIDLL Name '_FreeImage_GetFormatFromFIF@4';
-function FreeImage_GetFIFExtensionList(fif: FREE_IMAGE_FORMAT): PChar; stdcall; external FIDLL Name '_FreeImage_GetFIFExtensionList@4';
-function FreeImage_GetFIFDescription(fif: FREE_IMAGE_FORMAT): PChar; stdcall; external FIDLL Name '_FreeImage_GetFIFDescription@4';
-function FreeImage_GetFIFRegExpr(fif: FREE_IMAGE_FORMAT): PChar; stdcall; external FIDLL Name '_FreeImage_GetFIFRegExpr@4';
-function FreeImage_GetFIFFromFilename(const fname: PChar): FREE_IMAGE_FORMAT; stdcall; external FIDLL Name '_FreeImage_GetFIFFromFilename@4';
-function FreeImage_GetFIFFromFilenameU(const fname:PWideChar): FREE_IMAGE_FORMAT; stdcall; external FIDLL Name '_FreeImage_GetFIFFromFilenameU@4';
-function FreeImage_FIFSupportsReading(fif: FREE_IMAGE_FORMAT): Boolean; stdcall; external FIDLL Name '_FreeImage_FIFSupportsReading@4';
-function FreeImage_FIFSupportsWriting(fif: FREE_IMAGE_FORMAT): Boolean; stdcall; external FIDLL Name '_FreeImage_FIFSupportsWriting@4';
-function FreeImage_FIFSupportsExportBPP(fif: FREE_IMAGE_FORMAT; bpp: Integer): Boolean; stdcall; external FIDLL Name '_FreeImage_FIFSupportsExportBPP@8';
-function FreeImage_FIFSupportsICCProfiles(fif: FREE_IMAGE_FORMAT): Boolean; stdcall; external FIDLL Name '_FreeImage_FIFSupportsICCProfiles@4';
-function FreeImage_FIFSupportsExportType(fif: FREE_IMAGE_FORMAT; image_type: FREE_IMAGE_TYPE): Boolean; stdcall; external FIDLL name '_FreeImage_FIFSupportsExportType@8';
+function FreeImage_RegisterLocalPlugin(proc_address: FI_InitProc; format, description, extension, regexpr: PChar): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_RegisterLocalPlugin'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
+function FreeImage_RegisterExternalPlugin(path, format, description, extension, regexpr: PChar): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_RegisterExternalPlugin'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
+function FreeImage_GetFIFCount: Integer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFCount'{$IFNDEF FINoPrefix}+'@0'{$ENDIF};
+procedure FreeImage_SetPluginEnabled(fif: FREE_IMAGE_FORMAT; enable: Boolean); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetPluginEnabled'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_IsPluginEnabled(fif: FREE_IMAGE_FORMAT): Integer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_IsPluginEnabled'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFFromFormat(const format: PChar): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFFromFormat'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFFromMime(const format: PChar): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFFromMime'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFormatFromFIF(fif: FREE_IMAGE_FORMAT): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFormatFromFIF'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFExtensionList(fif: FREE_IMAGE_FORMAT): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFExtensionList'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFDescription(fif: FREE_IMAGE_FORMAT): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFDescription'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFRegExpr(fif: FREE_IMAGE_FORMAT): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFRegExpr'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFFromFilename(const fname: PChar): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFFromFilename'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetFIFFromFilenameU(const fname:PWideChar): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFIFFromFilenameU'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_FIFSupportsReading(fif: FREE_IMAGE_FORMAT): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FIFSupportsReading'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_FIFSupportsWriting(fif: FREE_IMAGE_FORMAT): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FIFSupportsWriting'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_FIFSupportsExportBPP(fif: FREE_IMAGE_FORMAT; bpp: Integer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FIFSupportsExportBPP'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_FIFSupportsICCProfiles(fif: FREE_IMAGE_FORMAT): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FIFSupportsICCProfiles'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_FIFSupportsExportType(fif: FREE_IMAGE_FORMAT; image_type: FREE_IMAGE_TYPE): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FIFSupportsExportType'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Multipaging interface ----------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_OpenMultiBitmap(fif: FREE_IMAGE_FORMAT; filename: PChar; create_new, read_only, keep_cache_in_memory: Boolean; flags: integer = 0): PFIMULTIBITMAP; stdcall; external FIDLL Name '_FreeImage_OpenMultiBitmap@24';
-function FreeImage_CloseMultiBitmap(bitmap: PFIMULTIBITMAP; flags: Integer = 0): Boolean; stdcall; external FIDLL Name '_FreeImage_CloseMultiBitmap@8';
-function FreeImage_GetPageCount(bitmap: PFIMULTIBITMAP): Integer; stdcall; external FIDLL Name '_FreeImage_GetPageCount@4';
-procedure FreeImage_AppendPage(bitmap: PFIMULTIBITMAP; data: PFIBITMAP); stdcall; external FIDLL Name '_FreeImage_AppendPage@8';
-procedure FreeImage_InsertPage(bitmap: PFIMULTIBITMAP; page: Integer; data: PFIBITMAP); stdcall; external FIDLL Name '_FreeImage_InsertPage@12';
-procedure FreeImage_DeletePage(bitmap: PFIMULTIBITMAP; page: Integer); stdcall; external FIDLL Name '_FreeImage_DeletePage@8';
-function FreeImage_LockPage(bitmap: PFIMULTIBITMAP; page: Integer): PFIBITMAP; stdcall; external FIDLL Name '_FreeImage_LockPage@8';
-procedure FreeImage_UnlockPage(bitmap: PFIMULTIBITMAP; page: PFIBITMAP; changed: boolean); stdcall; external FIDLL Name '_FreeImage_UnlockPage@12';
-function FreeImage_MovePage(bitmap: PFIMULTIBITMAP; target, source: Integer): Boolean; stdcall; external FIDLL Name '_FreeImage_MovePage@12';
-function FreeImage_GetLockedPageNumbers(bitmap: PFIMULTIBITMAP; var pages: Integer; var count : integer): Boolean; stdcall; external FIDLL Name '_FreeImage_GetLockedPageNumbers@12';
+function FreeImage_OpenMultiBitmap(fif: FREE_IMAGE_FORMAT; filename: PChar; create_new, read_only, keep_cache_in_memory: Boolean; flags: integer = 0): PFIMULTIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_OpenMultiBitmap'{$IFNDEF FINoPrefix}+'@24'{$ENDIF};
+function FreeImage_CloseMultiBitmap(bitmap: PFIMULTIBITMAP; flags: Integer = 0): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_CloseMultiBitmap'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_GetPageCount(bitmap: PFIMULTIBITMAP): Integer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetPageCount'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+procedure FreeImage_AppendPage(bitmap: PFIMULTIBITMAP; data: PFIBITMAP); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AppendPage'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+procedure FreeImage_InsertPage(bitmap: PFIMULTIBITMAP; page: Integer; data: PFIBITMAP); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_InsertPage'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_DeletePage(bitmap: PFIMULTIBITMAP; page: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_DeletePage'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_LockPage(bitmap: PFIMULTIBITMAP; page: Integer): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_LockPage'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+procedure FreeImage_UnlockPage(bitmap: PFIMULTIBITMAP; page: PFIBITMAP; changed: boolean); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_UnlockPage'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_MovePage(bitmap: PFIMULTIBITMAP; target, source: Integer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_MovePage'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_GetLockedPageNumbers(bitmap: PFIMULTIBITMAP; var pages: Integer; var count : integer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL Name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetLockedPageNumbers'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Filetype request routines ------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_GetFileType(const filename: PChar; size: Integer): FREE_IMAGE_FORMAT; stdcall; external FIDLL name '_FreeImage_GetFileType@8';
-function FreeImage_GetFileTypeU(const filename: PWideChar; size: Integer): FREE_IMAGE_FORMAT; stdcall; external FIDLL name '_FreeImage_GetFileTypeU@8';
-function FreeImage_GetFileTypeFromHandle(io: PFreeImageIO; handle: FI_Handle; size: Integer = 0): FREE_IMAGE_FORMAT; stdcall; external FIDLL name '_FreeImage_GetFileTypeFromHandle@12';
-function FreeImage_GetFileTypeFromMemory(stream: PFIMEMORY; size: Integer = 0): FREE_IMAGE_FORMAT; stdcall; external FIDLL name '_FreeImage_GetFileTypeFromMemory@8'; 
+function FreeImage_GetFileType(const filename: PChar; size: Integer): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFileType'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_GetFileTypeU(const filename: PWideChar; size: Integer): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFileTypeU'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_GetFileTypeFromHandle(io: PFreeImageIO; handle: FI_Handle; size: Integer = 0): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFileTypeFromHandle'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_GetFileTypeFromMemory(stream: PFIMEMORY; size: Integer = 0): FREE_IMAGE_FORMAT; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetFileTypeFromMemory'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // ImageType request routine ------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_GetImageType(dib: PFIBITMAP): FREE_IMAGE_TYPE; stdcall; external FIDLL name '_FreeImage_GetImageType@4';
+function FreeImage_GetImageType(dib: PFIBITMAP): FREE_IMAGE_TYPE; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetImageType'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // FreeImage helper routines ------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_IsLittleEndian: Boolean; stdcall; external FIDLL name '_FreeImage_IsLittleEndian@0';
-function FreeImage_LookupX11Color(const szColor: PChar; var nRed, nGreen, nBlue: PByte): Boolean; stdcall; external FIDLL name '_FreeImage_LookupX11Color@16';
-function FreeImage_LookupSVGColor(const szColor: PChar; var nRed, nGreen, nBlue: PByte): Boolean; stdcall; external FIDLL name '_FreeImage_LookupSVGColor@16';
+function FreeImage_IsLittleEndian: Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_IsLittleEndian'{$IFNDEF FINoPrefix}+'@0'{$ENDIF};
+function FreeImage_LookupX11Color(const szColor: PChar; var nRed, nGreen, nBlue: PByte): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_LookupX11Color'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_LookupSVGColor(const szColor: PChar; var nRed, nGreen, nBlue: PByte): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_LookupSVGColor'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Pixels access routines ---------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_GetBits(dib: PFIBITMAP): PByte; stdcall; external FIDLL name '_FreeImage_GetBits@4';
-function FreeImage_GetScanLine(dib: PFIBITMAP; scanline: Integer): PByte; stdcall; external FIDLL name '_FreeImage_GetScanLine@8';
+function FreeImage_GetBits(dib: PFIBITMAP): PByte; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetBits'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetScanLine(dib: PFIBITMAP; scanline: Integer): PByte; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetScanLine'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
-function FreeImage_GetPixelIndex(dib: PFIBITMAP; X, Y: Longint; Value: PByte): Boolean; stdcall; external FIDLL name '_FreeImage_GetPixelIndex@16';
-function FreeImage_GetPixelColor(dib: PFIBITMAP; X, Y: Longint; Value: PRGBQuad): Boolean; stdcall; external FIDLL name '_FreeImage_GetPixelColor@16';
-function FreeImage_SetPixelIndex(dib: PFIBITMAP; X, Y: Longint; Value: PByte): Boolean; stdcall; external FIDLL name '_FreeImage_SetPixelIndex@16';
-function FreeImage_SetPixelColor(dib: PFIBITMAP; X, Y: Longint; Value: PRGBQuad): Boolean; stdcall; external FIDLL name '_FreeImage_SetPixelColor@16';
+function FreeImage_GetPixelIndex(dib: PFIBITMAP; X, Y: Longint; Value: PByte): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetPixelIndex'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_GetPixelColor(dib: PFIBITMAP; X, Y: Longint; Value: PRGBQuad): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetPixelColor'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_SetPixelIndex(dib: PFIBITMAP; X, Y: Longint; Value: PByte): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetPixelIndex'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_SetPixelColor(dib: PFIBITMAP; X, Y: Longint; Value: PRGBQuad): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetPixelColor'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // DIB info routines --------------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_GetColorsUsed(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetColorsUsed@4';
-function FreeImage_GetBPP(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetBPP@4';
-function FreeImage_GetWidth(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetWidth@4';
-function FreeImage_GetHeight(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetHeight@4';
-function FreeImage_GetLine(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetLine@4';
-function FreeImage_GetPitch(dib : PFIBITMAP) : Cardinal; stdcall; external FIDLL name '_FreeImage_GetPitch@4';
-function FreeImage_GetDIBSize(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetDIBSize@4';
-function FreeImage_GetPalette(dib: PFIBITMAP): PRGBQUAD; stdcall; external FIDLL name '_FreeImage_GetPalette@4';
+function FreeImage_GetColorsUsed(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetColorsUsed'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetBPP(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetBPP'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetWidth(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetWidth'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetHeight(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetHeight'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetLine(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetLine'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetPitch(dib : PFIBITMAP) : Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetPitch'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetDIBSize(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetDIBSize'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetPalette(dib: PFIBITMAP): PRGBQUAD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetPalette'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
-function FreeImage_GetDotsPerMeterX(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetDotsPerMeterX@4';
-function FreeImage_GetDotsPerMeterY(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetDotsPerMeterY@4';
-procedure FreeImage_SetDotsPerMeterX(dib: PFIBITMAP; res: Cardinal); stdcall; external FIDLL name '_FreeImage_SetDotsPerMeterX@8';
-procedure FreeImage_SetDotsPerMeterY(dib: PFIBITMAP; res: Cardinal); stdcall; external FIDLL name '_FreeImage_SetDotsPerMeterY@8';
+function FreeImage_GetDotsPerMeterX(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetDotsPerMeterX'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetDotsPerMeterY(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetDotsPerMeterY'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+procedure FreeImage_SetDotsPerMeterX(dib: PFIBITMAP; res: Cardinal); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetDotsPerMeterX'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+procedure FreeImage_SetDotsPerMeterY(dib: PFIBITMAP; res: Cardinal); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetDotsPerMeterY'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
-//function FreeImage_GetInfoHeader(dib: PFIBITMAP): PBITMAPINFOHEADER; stdcall; external FIDLL name '_FreeImage_GetInfoHeader@4';
-//function FreeImage_GetInfo(var dib: FIBITMAP): PBITMAPINFO; stdcall; external FIDLL name '_FreeImage_GetInfo@4';
-function FreeImage_GetColorType(dib: PFIBITMAP): FREE_IMAGE_COLOR_TYPE; stdcall; external FIDLL name '_FreeImage_GetColorType@4';
+//function FreeImage_GetInfoHeader(dib: PFIBITMAP): PBITMAPINFOHEADER; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetInfoHeader'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+//function FreeImage_GetInfo(var dib: FIBITMAP): PBITMAPINFO; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetInfo'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetColorType(dib: PFIBITMAP): FREE_IMAGE_COLOR_TYPE; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetColorType'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
-function FreeImage_GetRedMask(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetRedMask@4';
-function FreeImage_GetGreenMask(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetGreenMask@4';
-function FreeImage_GetBlueMask(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetBlueMask@4';
+function FreeImage_GetRedMask(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetRedMask'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetGreenMask(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetGreenMask'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetBlueMask(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetBlueMask'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
-function FreeImage_GetTransparencyCount(dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetTransparencyCount@4';
-function FreeImage_GetTransparencyTable(dib: PFIBITMAP): PByte; stdcall; external FIDLL name '_FreeImage_GetTransparencyTable@4';
-procedure FreeImage_SetTransparent(dib: PFIBITMAP; enabled: boolean); stdcall; external FIDLL name '_FreeImage_SetTransparent@8';
-procedure FreeImage_SetTransparencyTable(dib: PFIBITMAP; table: PByte; count: integer); stdcall; external FIDLL name '_FreeImage_SetTransparencyTable@12';
-function FreeImage_IsTransparent(dib: PFIBITMAP): boolean; stdcall; external FIDLL name '_FreeImage_IsTransparent@4';
+function FreeImage_GetTransparencyCount(dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTransparencyCount'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTransparencyTable(dib: PFIBITMAP): PByte; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTransparencyTable'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+procedure FreeImage_SetTransparent(dib: PFIBITMAP; enabled: boolean); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTransparent'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+procedure FreeImage_SetTransparencyTable(dib: PFIBITMAP; table: PByte; count: integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTransparencyTable'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_IsTransparent(dib: PFIBITMAP): boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_IsTransparent'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
-function FreeImage_HasBackgroundColor(dib: PFIBITMAP): Boolean; stdcall; external FIDLL name '_FreeImage_HasBackgroundColor@4';
-function FreeImage_GetBackgroundColor(dib: PFIBITMAP; var bkcolor: PRGBQUAD): Boolean; stdcall; external FIDLL name '_FreeImage_GetBackgroundColor@8';
-function FreeImage_SetBackgroundColor(dib: PFIBITMAP; bkcolor: PRGBQUAD): Boolean; stdcall; external FIDLL name '_FreeImage_SetBackgroundColor@8';
+function FreeImage_HasBackgroundColor(dib: PFIBITMAP): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_HasBackgroundColor'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetBackgroundColor(dib: PFIBITMAP; var bkcolor: PRGBQUAD): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetBackgroundColor'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetBackgroundColor(dib: PFIBITMAP; bkcolor: PRGBQUAD): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetBackgroundColor'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // ICC profile routines -----------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_GetICCProfile(var dib: FIBITMAP): PFIICCPROFILE; stdcall; external FIDLL name '_FreeImage_GetICCProfile@4';
-function FreeImage_CreateICCProfile(var dib: FIBITMAP; data: Pointer; size: Longint): PFIICCPROFILE; stdcall; external FIDLL name 'FreeImage_CreateICCProfile@12';
-procedure FreeImage_DestroyICCProfile(var dib : FIBITMAP); stdcall; external FIDLL name 'FreeImage_DestroyICCProfile@4';
+function FreeImage_GetICCProfile(var dib: FIBITMAP): PFIICCPROFILE; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetICCProfile'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_CreateICCProfile(var dib: FIBITMAP; data: Pointer; size: Longint): PFIICCPROFILE; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name 'FreeImage_CreateICCProfile'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_DestroyICCProfile(var dib : FIBITMAP); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name 'FreeImage_DestroyICCProfile'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Line conversion routines -------------------------------------------------
 // --------------------------------------------------------------------------
 
-procedure FreeImage_ConvertLine1To4(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine1To4@12';
-procedure FreeImage_ConvertLine8To4(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQuad);  stdcall; external FIDLL name '_FreeImage_ConvertLine8To4@16';
-procedure FreeImage_ConvertLine16To4_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To4_555@12';
-procedure FreeImage_ConvertLine16To4_565(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To4_565@12';
-procedure FreeImage_ConvertLine24To4(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine24To4@12';
-procedure FreeImage_ConvertLine32To4(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine32To4@12';
+procedure FreeImage_ConvertLine1To4(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine1To4'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine8To4(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQuad);  {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine8To4'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine16To4_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To4_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine16To4_565(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To4_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine24To4(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine24To4'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine32To4(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine32To4'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
-procedure FreeImage_ConvertLine1To8(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine1To8@12';
-procedure FreeImage_ConvertLine4To8(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine4To8@12';
-procedure FreeImage_ConvertLine16To8_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To8_555@12';
-procedure FreeImage_ConvertLine16To8_565(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To8_565@12';
-procedure FreeImage_ConvertLine24To8(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine24To8@12';
-procedure FreeImage_ConvertLine32To8(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine32To8@12';
+procedure FreeImage_ConvertLine1To8(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine1To8'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine4To8(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine4To8'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine16To8_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To8_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine16To8_565(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To8_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine24To8(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine24To8'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine32To8(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine32To8'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
-procedure FreeImage_ConvertLine1To16_555(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine1To16_555@16';
-procedure FreeImage_ConvertLine4To16_555(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine4To16_555@16';
-procedure FreeImage_ConvertLine8To16_555(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine8To16_555@16';
-procedure FreeImage_ConvertLine16_565_To16_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16_565_To16_555@12';
-procedure FreeImage_ConvertLine24To16_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine24To16_555@12';
-procedure FreeImage_ConvertLine32To16_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine32To16_555@12';
+procedure FreeImage_ConvertLine1To16_555(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine1To16_555'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine4To16_555(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine4To16_555'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine8To16_555(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine8To16_555'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine16_565_To16_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16_565_To16_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine24To16_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine24To16_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine32To16_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine32To16_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
-procedure FreeImage_ConvertLine1To16_565(target, source : PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine1To16_565@16';
-procedure FreeImage_ConvertLine4To16_565(target, source : PBYTE; width_in_pixels : Integer; palette : PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine4To16_565@16';
-procedure FreeImage_ConvertLine8To16_565(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine8To16_565@16';
-procedure FreeImage_ConvertLine16_555_To16_565(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16_555_To16_565@12';
-procedure FreeImage_ConvertLine24To16_565(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine24To16_565@12';
-procedure FreeImage_ConvertLine32To16_565(target, source : PBYTE; width_in_pixels : Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine32To16_565@12';
+procedure FreeImage_ConvertLine1To16_565(target, source : PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine1To16_565'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine4To16_565(target, source : PBYTE; width_in_pixels : Integer; palette : PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine4To16_565'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine8To16_565(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine8To16_565'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine16_555_To16_565(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16_555_To16_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine24To16_565(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine24To16_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine32To16_565(target, source : PBYTE; width_in_pixels : Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine32To16_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
-procedure FreeImage_ConvertLine1To24(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine1To24@16';
-procedure FreeImage_ConvertLine4To24(target, source : PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine4To24@16';
-procedure FreeImage_ConvertLine8To24(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine8To24@16';
-procedure FreeImage_ConvertLine16To24_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To24_555@12';
-procedure FreeImage_ConvertLine16To24_565(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To24_565@12';
-procedure FreeImage_ConvertLine32To24(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine32To24@12';
+procedure FreeImage_ConvertLine1To24(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine1To24'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine4To24(target, source : PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine4To24'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine8To24(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine8To24'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine16To24_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To24_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine16To24_565(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To24_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine32To24(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine32To24'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
-procedure FreeImage_ConvertLine1To32(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine1To32@16';
-procedure FreeImage_ConvertLine4To32(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine4To32@16';
-procedure FreeImage_ConvertLine8To32(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); stdcall; external FIDLL name '_FreeImage_ConvertLine8To32@16';
-procedure FreeImage_ConvertLine16To32_555(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To32_555@12';
-procedure FreeImage_ConvertLine16To32_565(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine16To32_565@12';
-procedure FreeImage_ConvertLine24To32(target, source: PBYTE; width_in_pixels: Integer); stdcall; external FIDLL name '_FreeImage_ConvertLine24To32@12';
+procedure FreeImage_ConvertLine1To32(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine1To32'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine4To32(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine4To32'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine8To32(target, source: PBYTE; width_in_pixels: Integer; palette: PRGBQUAD); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine8To32'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+procedure FreeImage_ConvertLine16To32_555(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To32_555'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine16To32_565(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine16To32_565'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+procedure FreeImage_ConvertLine24To32(target, source: PBYTE; width_in_pixels: Integer); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertLine24To32'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Smart conversion routines ------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_ConvertTo4Bits(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertTo4Bits@4';
-function FreeImage_ConvertTo8Bits(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertTo8Bits@4';
-function FreeImage_ConvertToGreyscale(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertToGreyscale@4';
-function FreeImage_ConvertTo16Bits555(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertTo16Bits555@4';
-function FreeImage_ConvertTo16Bits565(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertTo16Bits565@4';
-function FreeImage_ConvertTo24Bits(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertTo24Bits@4';
-function FreeImage_ConvertTo32Bits(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertTo32Bits@4';
-function FreeImage_ColorQuantize(dib: PFIBITMAP; quantize: FREE_IMAGE_QUANTIZE): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ColorQuantize@8';
-function FreeImage_ColorQuantizeEx(dib: PFIBITMAP; quantize: FREE_IMAGE_QUANTIZE = FIQ_WUQUANT; PaletteSize: Integer = 256; ReserveSize: Integer = 0; ReservePalette: PRGBQuad = nil): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ColorQuantizeEx@20';
-function FreeImage_Threshold(dib: PFIBITMAP; T: Byte): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Threshold@8';
-function FreeImage_Dither(dib: PFIBITMAP; algorithm: FREE_IMAGE_DITHER): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Dither@8';
+function FreeImage_ConvertTo4Bits(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertTo4Bits'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ConvertTo8Bits(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertTo8Bits'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ConvertToGreyscale(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertToGreyscale'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ConvertTo16Bits555(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertTo16Bits555'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ConvertTo16Bits565(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertTo16Bits565'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ConvertTo24Bits(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertTo24Bits'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ConvertTo32Bits(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertTo32Bits'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_ColorQuantize(dib: PFIBITMAP; quantize: FREE_IMAGE_QUANTIZE): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ColorQuantize'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_ColorQuantizeEx(dib: PFIBITMAP; quantize: FREE_IMAGE_QUANTIZE = FIQ_WUQUANT; PaletteSize: Integer = 256; ReserveSize: Integer = 0; ReservePalette: PRGBQuad = nil): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ColorQuantizeEx'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
+function FreeImage_Threshold(dib: PFIBITMAP; T: Byte): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Threshold'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_Dither(dib: PFIBITMAP; algorithm: FREE_IMAGE_DITHER): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Dither'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
-function FreeImage_ConvertFromRawBits(bits: PBYTE; width, height, pitch: Integer; bpp, red_mask, green_mask, blue_mask: LongWord; topdown: Boolean): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertFromRawBits@36';
-procedure FreeImage_ConvertToRawBits(bits: PBYTE; dib: PFIBITMAP; pitch: Integer; bpp, red_mask, green_mask, blue_mask: LongWord; topdown: Boolean); stdcall; external FIDLL name '_FreeImage_ConvertToRawBits@32';
+function FreeImage_ConvertFromRawBits(bits: PBYTE; width, height, pitch: Integer; bpp, red_mask, green_mask, blue_mask: LongWord; topdown: Boolean): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertFromRawBits'{$IFNDEF FINoPrefix}+'@36'{$ENDIF};
+procedure FreeImage_ConvertToRawBits(bits: PBYTE; dib: PFIBITMAP; pitch: Integer; bpp, red_mask, green_mask, blue_mask: LongWord; topdown: Boolean); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertToRawBits'{$IFNDEF FINoPrefix}+'@32'{$ENDIF};
 
-function FreeImage_ConvertToRGBF(dib: PFIBITMAP): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertToRGBF@4';
+function FreeImage_ConvertToRGBF(dib: PFIBITMAP): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertToRGBF'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
-function FreeImage_ConvertToStandardType(src: PFIBITMAP; scale_linear: Boolean = True): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertToStandardType@8';
-function FreeImage_ConvertToType(src: PFIBITMAP; dst_type: FREE_IMAGE_TYPE; scale_linear: Boolean = True): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ConvertToType@12';
+function FreeImage_ConvertToStandardType(src: PFIBITMAP; scale_linear: Boolean = True): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertToStandardType'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_ConvertToType(src: PFIBITMAP; dst_type: FREE_IMAGE_TYPE; scale_linear: Boolean = True): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ConvertToType'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // tone mapping operators
-function FreeImage_ToneMapping(dib: PFIBITMAP; tmo: FREE_IMAGE_TMO; first_param: Double = 0; second_param: Double = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_ToneMapping@24';
-function FreeImage_TmoDrago03(src: PFIBITMAP; gamma: Double = 2.2; exposure: Double = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_TmoDrago03@20';
-function FreeImage_TmoReinhard05(src: PFIBITMAP; intensity: Double = 0; contrast: Double = 0): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_TmoReinhard05@20';
+function FreeImage_ToneMapping(dib: PFIBITMAP; tmo: FREE_IMAGE_TMO; first_param: Double = 0; second_param: Double = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ToneMapping'{$IFNDEF FINoPrefix}+'@24'{$ENDIF};
+function FreeImage_TmoDrago03(src: PFIBITMAP; gamma: Double = 2.2; exposure: Double = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_TmoDrago03'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
+function FreeImage_TmoReinhard05(src: PFIBITMAP; intensity: Double = 0; contrast: Double = 0): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_TmoReinhard05'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // ZLib interface -----------------------------------------------------------
 // --------------------------------------------------------------------------
 
-function FreeImage_ZLibCompress(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; stdcall; external FIDLL name '_FreeImage_ZLibCompress@16';
-function FreeImage_ZLibUncompress(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; stdcall; external FIDLL name '_FreeImage_ZLibUncompress@16';
+function FreeImage_ZLibCompress(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ZLibCompress'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_ZLibUncompress(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ZLibUncompress'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
 
-function FreeImage_ZLibGZip(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; stdcall; external FIDLL name '_FreeImage_ZLibGZip@16';
-function FreeImage_ZLibGUnzip(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; stdcall; external FIDLL name '_FreeImage_ZLibGUnzip@16';
-function FreeImage_ZLibCRC32(crc: DWORD; source: PByte; source_size: DWORD): DWORD; stdcall; external FIDLL name '_FreeImage_ZLibCRC32@12';
+function FreeImage_ZLibGZip(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ZLibGZip'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_ZLibGUnzip(target: PBYTE; target_size: DWORD; source: PBYTE; source_size: DWORD): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ZLibGUnzip'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_ZLibCRC32(crc: DWORD; source: PByte; source_size: DWORD): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_ZLibCRC32'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Metadata routines --------------------------------------------------------
 // --------------------------------------------------------------------------
 
 // tag creation / destruction
-function FreeImage_CreateTag: PFITAG; stdcall; external FIDLL name '_FreeImage_CreateTag@0';
-procedure FreeImage_DeleteTag(tag: PFITAG); stdcall; external FIDLL name '_FreeImage_DeleteTag@4';
-function FreeImage_CloneTag(tag: PFITAG): PFITAG; stdcall; external FIDLL name '_FreeImage_CloneTag@4';
+function FreeImage_CreateTag: PFITAG; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_CreateTag'{$IFNDEF FINoPrefix}+'@0'{$ENDIF};
+procedure FreeImage_DeleteTag(tag: PFITAG); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_DeleteTag'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_CloneTag(tag: PFITAG): PFITAG; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_CloneTag'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
 // tag getters and setters
-function FreeImage_GetTagKey(tag: PFITAG): PChar; stdcall; external FIDLL name '_FreeImage_GetTagKey@4';
-function FreeImage_GetTagDescription(tag: PFITAG): PChar; stdcall; external FIDLL name '_FreeImage_GetTagDescription@4';
-function FreeImage_GetTagID(tag: PFITAG): Word; stdcall; external FIDLL name '_FreeImage_GetTagID@4';
-function FreeImage_GetTagType(tag: PFITAG): FREE_IMAGE_MDTYPE; stdcall; external FIDLL name '_FreeImage_GetTagType@4';
-function FreeImage_GetTagCount(tag: PFITAG): DWORD; stdcall; external FIDLL name '_FreeImage_GetTagCount@4';
-function FreeImage_GetTagLength(tag: PFITAG): DWORD; stdcall; external FIDLL name '_FreeImage_GetTagLength@4';
-function FreeImage_GetTagValue(tag: PFITAG): Pointer; stdcall; external FIDLL name '_FreeImage_GetTagValue@4';
+function FreeImage_GetTagKey(tag: PFITAG): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagKey'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTagDescription(tag: PFITAG): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagDescription'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTagID(tag: PFITAG): Word; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagID'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTagType(tag: PFITAG): FREE_IMAGE_MDTYPE; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagType'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTagCount(tag: PFITAG): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagCount'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTagLength(tag: PFITAG): DWORD; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagLength'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetTagValue(tag: PFITAG): Pointer; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetTagValue'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
-function FreeImage_SetTagKey(tag: PFITAG; const key: PChar): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagKey@8';
-function FreeImage_SetTagDescription(tag: PFITAG; const description: PChar): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagDescription@8';
-function FreeImage_SetTagID(tag: PFITAG; id: Word): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagID@8';
-function FreeImage_SetTagType(tag: PFITAG; atype: FREE_IMAGE_MDTYPE): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagType@8';
-function FreeImage_SetTagCount(tag: PFITAG; count: DWORD): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagCount@8';
-function FreeImage_SetTagLength(tag: PFITAG; length: DWORD): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagLength@8';
-function FreeImage_SetTagValue(tag: PFITAG; const value: Pointer): Boolean; stdcall; external FIDLL name '_FreeImage_SetTagValue@8';
+function FreeImage_SetTagKey(tag: PFITAG; const key: PChar): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagKey'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetTagDescription(tag: PFITAG; const description: PChar): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagDescription'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetTagID(tag: PFITAG; id: Word): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagID'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetTagType(tag: PFITAG; atype: FREE_IMAGE_MDTYPE): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagType'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetTagCount(tag: PFITAG; count: DWORD): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagCount'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetTagLength(tag: PFITAG; length: DWORD): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagLength'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetTagValue(tag: PFITAG; const value: Pointer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetTagValue'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
 // iterator
-function FreeImage_FindFirstMetadata(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP; var tag: PFITAG): PFIMETADATA; stdcall; external FIDLL name '_FreeImage_FindFirstMetadata@12';
-function FreeImage_FindNextMetadata(mdhandle: PFIMETADATA; var tag: PFITAG): Boolean; stdcall; external FIDLL name '_FreeImage_FindNextMetadata@8';
-procedure FreeImage_FindCloseMetadata(mdhandle: PFIMETADATA); stdcall; external FIDLL name '_FreeImage_FindCloseMetadata@4';
+function FreeImage_FindFirstMetadata(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP; var tag: PFITAG): PFIMETADATA; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FindFirstMetadata'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_FindNextMetadata(mdhandle: PFIMETADATA; var tag: PFITAG): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FindNextMetadata'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+procedure FreeImage_FindCloseMetadata(mdhandle: PFIMETADATA); {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FindCloseMetadata'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
 
 // metadata setter and getter
-function FreeImage_SetMetadata(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP; const key: PChar; tag: PFITAG): Boolean; stdcall; external FIDLL name '_FreeImage_SetMetadata@16';
-function FreeImage_GetMetaData(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP; const key: PChar; var tag: PFITAG): Boolean; stdcall; external FIDLL name '_FreeImage_GetMetadata@16';
+function FreeImage_SetMetadata(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP; const key: PChar; tag: PFITAG): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetMetadata'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_GetMetaData(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP; const key: PChar; var tag: PFITAG): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetMetadata'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
 
 // helpers
-function FreeImage_GetMetadataCount(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP): Cardinal; stdcall; external FIDLL name '_FreeImage_GetMetadataCount@8';
+function FreeImage_GetMetadataCount(model: FREE_IMAGE_MDMODEL; dib: PFIBITMAP): Cardinal; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetMetadataCount'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
 
 // tag to C string conversion
-function FreeImage_TagToString(model: FREE_IMAGE_MDMODEL; tag: PFITAG; Make: PChar = nil): PChar; stdcall; external FIDLL name '_FreeImage_TagToString@12';
+function FreeImage_TagToString(model: FREE_IMAGE_MDMODEL; tag: PFITAG; Make: PChar = nil): PChar; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_TagToString'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // --------------------------------------------------------------------------
 // Image manipulation toolkit -----------------------------------------------
 // --------------------------------------------------------------------------
 
 // rotation and flipping
-function FreeImage_RotateClassic(dib: PFIBITMAP; angle: Double): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_RotateClassic@12';
-function FreeImage_RotateEx(dib: PFIBITMAP; angle, x_shift, y_shift, x_origin, y_origin: Double; use_mask: Boolean): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_RotateEx@48';
-function FreeImage_FlipHorizontal(dib: PFIBITMAP): Boolean; stdcall; external FIDLL name '_FreeImage_FlipHorizontal@4';
-function FreeImage_FlipVertical(dib: PFIBITMAP): Boolean; stdcall; external FIDLL name '_FreeImage_FlipVertical@4';
-function FreeImage_JPEGTransform(const src_file: PChar; const dst_file: PChar; operation: FREE_IMAGE_JPEG_OPERATION; perfect: Boolean = False): Boolean; stdcall; external FIDLL name '_FreeImage_JPEGTransform@16';
+function FreeImage_RotateClassic(dib: PFIBITMAP; angle: Double): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_RotateClassic'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_RotateEx(dib: PFIBITMAP; angle, x_shift, y_shift, x_origin, y_origin: Double; use_mask: Boolean): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_RotateEx@48';
+function FreeImage_FlipHorizontal(dib: PFIBITMAP): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FlipHorizontal'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_FlipVertical(dib: PFIBITMAP): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_FlipVertical'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_JPEGTransform(const src_file: PChar; const dst_file: PChar; operation: FREE_IMAGE_JPEG_OPERATION; perfect: Boolean = False): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_JPEGTransform'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
 
 // upsampling / downsampling
-function FreeImage_Rescale(dib: PFIBITMAP; dst_width, dst_height: Integer; filter: FREE_IMAGE_FILTER): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Rescale@16';
-function FreeImage_MakeThumbnail(dib: PFIBITMAP; max_pixel_size: Integer; convert:boolean = TRUE): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_MakeThumbnail@12'; 
+function FreeImage_Rescale(dib: PFIBITMAP; dst_width, dst_height: Integer; filter: FREE_IMAGE_FILTER): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Rescale'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
+function FreeImage_MakeThumbnail(dib: PFIBITMAP; max_pixel_size: Integer; convert:boolean = TRUE): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_MakeThumbnail'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // color manipulation routines (point operations)
-function FreeImage_AdjustCurve(dib: PFIBITMAP; LUT: PBYTE; channel: FREE_IMAGE_COLOR_CHANNEL): Boolean; stdcall; external FIDLL name '_FreeImage_AdjustCurve@12';
-function FreeImage_AdjustGamma(dib: PFIBITMAP; gamma: Double): Boolean; stdcall; external FIDLL name '_FreeImage_AdjustGamma@12';
-function FreeImage_AdjustBrightness(dib: PFIBITMAP; percentage: Double): Boolean; stdcall; external FIDLL name '_FreeImage_AdjustBrightness@12';
-function FreeImage_AdjustContrast(dib: PFIBITMAP; percentage: Double): Boolean; stdcall; external FIDLL name '_FreeImage_AdjustContrast@12';
-function FreeImage_Invert(dib: PFIBITMAP): Boolean; stdcall; external FIDLL name '_FreeImage_Invert@4';
-function FreeImage_GetHistogram(dib: PFIBITMAP; histo: PDWORD; channel: FREE_IMAGE_COLOR_CHANNEL = FICC_BLACK): Boolean; stdcall; external FIDLL name '_FreeImage_GetHistogram@12';
+function FreeImage_AdjustCurve(dib: PFIBITMAP; LUT: PBYTE; channel: FREE_IMAGE_COLOR_CHANNEL): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AdjustCurve'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_AdjustGamma(dib: PFIBITMAP; gamma: Double): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AdjustGamma'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_AdjustBrightness(dib: PFIBITMAP; percentage: Double): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AdjustBrightness'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_AdjustContrast(dib: PFIBITMAP; percentage: Double): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_AdjustContrast'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_Invert(dib: PFIBITMAP): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Invert'{$IFNDEF FINoPrefix}+'@4'{$ENDIF};
+function FreeImage_GetHistogram(dib: PFIBITMAP; histo: PDWORD; channel: FREE_IMAGE_COLOR_CHANNEL = FICC_BLACK): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetHistogram'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // channel processing routines
-function FreeImage_GetChannel(dib: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_GetChannel@8';
-function FreeImage_SetChannel(dib, dib8: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): Boolean; stdcall; external FIDLL name '_FreeImage_SetChannel@12';
-function FreeImage_GetComplexChannel(src: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_GetComplexChannel@8';
-function FreeImage_SetComplexChannel(src: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): Boolean; stdcall; external FIDLL name '_FreeImage_SetComplexChannel@12';
+function FreeImage_GetChannel(dib: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetChannel'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetChannel(dib, dib8: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetChannel'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
+function FreeImage_GetComplexChannel(src: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_GetComplexChannel'{$IFNDEF FINoPrefix}+'@8'{$ENDIF};
+function FreeImage_SetComplexChannel(src: PFIBITMAP; channel: FREE_IMAGE_COLOR_CHANNEL): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_SetComplexChannel'{$IFNDEF FINoPrefix}+'@12'{$ENDIF};
 
 // copy / paste / composite routines
 
-function FreeImage_Copy(dib: PFIBITMAP; left, top, right, bottom: Integer): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Copy@20';
-function FreeImage_Paste(dst, src: PFIBITMAP; left, top, alpha: Integer): Boolean; stdcall; external FIDLL name '_FreeImage_Paste@20';
-function FreeImage_Composite(fg: PFIBITMAP; useFileBkg: Boolean = False; appBkColor: PRGBQUAD = nil; bg: PFIBITMAP = nil): PFIBITMAP; stdcall; external FIDLL name '_FreeImage_Composite@16';
+function FreeImage_Copy(dib: PFIBITMAP; left, top, right, bottom: Integer): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Copy'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
+function FreeImage_Paste(dst, src: PFIBITMAP; left, top, alpha: Integer): Boolean; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Paste'{$IFNDEF FINoPrefix}+'@20'{$ENDIF};
+function FreeImage_Composite(fg: PFIBITMAP; useFileBkg: Boolean = False; appBkColor: PRGBQUAD = nil; bg: PFIBITMAP = nil): PFIBITMAP; {$IFDEF FIcdecl}cdecl{$ELSE}stdcall{$ENDIF}; external FIDLL name {$IFNDEF FINoPrefix}'_'+{$ENDIF}'FreeImage_Composite'{$IFNDEF FINoPrefix}+'@16'{$ENDIF};
   
 {$MINENUMSIZE 1}
 implementation
