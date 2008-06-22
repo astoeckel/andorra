@@ -28,7 +28,8 @@ uses
   AdShaderClasses,
   DX3DMain in 'DX3DMain.pas',
   DX3DShader in 'DX3DShader.pas',
-  DX3DShaderClasses in 'DX3DShaderClasses.pas';
+  DX3DShaderClasses in 'DX3DShaderClasses.pas',
+  DX3DHLSL in 'DX3DHLSL.pas';
 
 {$IFNDEF FPC}
   {$E .dll}

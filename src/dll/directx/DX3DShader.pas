@@ -20,7 +20,7 @@ interface
 
 uses
   Windows, AdTypes, AdClasses, AdShaderClasses, AdContainers,
-  DX3DShaderClasses, DX3DMain;
+  DX3DShaderClasses, DX3DMain, DX3DHLSL;
 
 type
   TDXShaderSystem = class(TAd2dShaderSystem)
@@ -65,7 +65,9 @@ begin
   begin
     if AID = 'hlsl' then
     begin
-      //Create hlsl context here
+      FEngine := TDXHLSLEngine.Create;
+      FEngine.ID := 'hlsl';
+      Initialize(FAppl);
     end else
     begin
       //Load shader plugin and create shader engine

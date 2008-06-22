@@ -746,7 +746,7 @@ begin
             TDXBitmapTexture(FTexture).SetFilter;
             
           Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
-          FLastTexture := FTexture;
+          FLastTexture := nil; //FTexture;
         end;
       end
       else
