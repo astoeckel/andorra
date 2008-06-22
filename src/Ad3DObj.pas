@@ -25,11 +25,11 @@ unit Ad3DObj;
 
 interface
 
-uses Classes, AdTypes, AdClasses, AdDraws;
+uses Classes, AdTypes, AdClasses, AdDraws, AdMath;
 
 type
   {This class represents a main 3D-object, which can be rotated scaled and translated.}
-  TAdMesh = class
+  TAdMesh = class(TAdRenderingObject)
     private
       FBuffer:TAd2DMesh;
       FParent:TAdDraw;
@@ -42,7 +42,7 @@ type
       FBlendMode:TAd2DBlendMode;
       FColor:TAndorraColor;
     protected
-      procedure Notify(ASender:TObject;AEvent:TSurfaceEventState);
+      procedure Notify(ASender:TObject; AEvent:TAdSurfaceEventState);
       procedure UpdateMatrix(Index:integer;Value:single);virtual;
       property Width:single index 9 read FWidth write UpdateMatrix;
       property Height:single index 10 read FHeight write UpdateMatrix;
@@ -154,7 +154,7 @@ end;
 
 procedure TAdMesh.Draw;
 begin
-  Buffer.SetMatrix(FMatrix);
+  Buffer.Matrix := FMatrix;
   Buffer.Draw(FBlendMode,FDrawMode);
 end;
 
@@ -206,14 +206,14 @@ begin
     AStream.Write(Buffer.Vertices[0],SizeOf(TAdVertex)*c)
   end;
   c := 0;
-  if Buffer.IndexBuffer <> nil then
+  if Buffer.Indices <> nil then
   begin
-    c := Length(Buffer.IndexBuffer);
+    c := Length(Buffer.Indices);
   end;
   AStream.Write(c,SizeOf(c));
-  if Buffer.IndexBuffer <> nil then
+  if Buffer.Indices <> nil then
   begin
-    AStream.Write(Buffer.IndexBuffer[0],SizeOf(TAdVertex)*c)
+    AStream.Write(Buffer.Indices[0],SizeOf(TAdVertex)*c)
   end;
 end;
 
@@ -222,14 +222,14 @@ var c:integer;
     vert:TAdVertexArray;
     inde:TAdIndexArray;
 begin
-  AStream.Read(c,SizeOf(c));
+{  AStream.Read(c,SizeOf(c));
   SetLength(Buffer.Vertices,c);
   AStream.Read(Buffer.Vertices[0],SizeOf(TAdVertex)*c);
   SetLength(Buffer.IndexBuffer,c);
-  AStream.Read(Buffer.IndexBuffer[0],SizeOf(TAdVertex)*c);
+  AStream.Read(Buffer.IndexBuffer[0],SizeOf(TAdVertex)*c);}
 end;
 
-procedure TAdMesh.Notify(ASender: TObject; AEvent: TSurfaceEventState);
+procedure TAdMesh.Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
 begin
   case AEvent of
     seInitialize: Initialize;
@@ -296,7 +296,7 @@ begin
   vert[3].Texture := AdVector2(1,0);
 
   Buffer.Vertices := vert;
-  Buffer.IndexBuffer := nil;
+  Buffer.Indices := nil;
   Buffer.PrimitiveCount := 2;
   Buffer.Update;
 

@@ -1901,7 +1901,7 @@ begin
   FHeight := Texture.Texture.BaseHeight;
 
   //Assign texture to mesh
-  AdMesh.Texture := Texture.Texture;
+//!  AdMesh.Texture := Texture.Texture;
 
   //Calculate patern rectangles from the given patern parameters
   CreatePatternRects;
