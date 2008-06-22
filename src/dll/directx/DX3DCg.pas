@@ -78,6 +78,8 @@ procedure TDXCGEngine.Finalize;
 begin
   inherited;
 
+  cgD3D9SetDevice(nil);
+
   if FContext <> nil then
     cgDestroyContext(FContext);
   FContext := nil;

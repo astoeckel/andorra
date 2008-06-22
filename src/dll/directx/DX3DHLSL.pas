@@ -115,6 +115,7 @@ var
   desc: TD3DXConstantDesc;
   i:integer;
   count: Cardinal;
+  buf: string;
 begin
   profile := nil;
 
@@ -134,9 +135,14 @@ begin
       AProgramName, profile, 0, @FBinCode, @log, @FConstantTable);
     if res <> D3D_OK then
     begin
-      FSystem.Log('Direct3D HLSL', lsError, log.GetBufferPointer);
+      FBinCode := nil;
+      buf := '[Load Program] Compiler error ' + #13#10 +
+        PChar(log.GetBufferPointer) + #13#10 +
+        '---------';
+      FSystem.Log('Direct3D HLSL', lsError, PChar(buf));
     end else
     begin
+      FSystem.Log('Direct3D HLSL', lsInfo, PChar(FProgramName + ' shader constants:'));
       FConstantTable.GetDesc(tbldesc);
       for i := 0 to tbldesc.Constants - 1 do
       begin

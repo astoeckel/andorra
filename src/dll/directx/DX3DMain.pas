@@ -609,9 +609,7 @@ procedure TDXApplication.SetUsePixelShader(AValue: boolean);
 begin
   FUsePixelShader := AValue;
   if FUsePixelShader then
-    FLastTexture := nil
-  else
-    Direct3DDevice9.SetTexture(0, nil);
+    FLastTexture := nil;
 end;
 
 procedure TDXApplication.WriteLog(ALogSeverity: TAd2dLogSeverity;
