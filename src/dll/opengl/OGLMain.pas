@@ -57,6 +57,9 @@ type
       FStencilPass: TGLEnum;
 
       FRenderingToFBO: boolean;
+
+      FUsePixelShader: boolean;
+      procedure SetUsePixelShader(AValue: boolean);
     protected
       procedure SetAmbientColor(AValue: TAndorraColor);override;
       procedure SetViewPort(AValue:TAdRect);override;
@@ -94,6 +97,8 @@ type
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
+
+      property UsePixelShader: boolean read FUsePixelShader write SetUsePixelShader;
   end;
 
   TOGLColorF = record
@@ -503,6 +508,13 @@ begin
   glLoadMatrixf(@AMatView);
 end;
 
+procedure TOGLApplication.SetUsePixelShader(AValue: boolean);
+begin
+  FUsePixelShader := AValue;
+  if FUsePixelShader then
+    FLastTexture := nil;
+end;
+
 procedure TOGLApplication.SetViewPort(AValue: TAdRect);
 begin
   inherited;
@@ -642,36 +654,39 @@ begin
       end;
 
       //Make texture settings
-      if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
+      if not UsePixelShader then
       begin
-
-        //Bind texture if neccessary
-        if (FTexture <> FLastTexture) then
+        if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
         begin
-          FLastTexture := FTexture;
-          glBindTexture(GL_TEXTURE_2D,PCardinal(FTexture.Texture)^);
+
+          //Bind texture if neccessary
+          if (FTexture <> FLastTexture) then
+          begin
+            FLastTexture := FTexture;
+            glBindTexture(GL_TEXTURE_2D,PCardinal(FTexture.Texture)^);
+          end;
+
+          //Set texture filter
+          if FTexture is TOGLBitmapTexture then
+            TOGLBitmapTexture(FTexture).SetFilter;
+
+          //Enable textures
+          glEnable(GL_TEXTURE_2D);
+
+          //Set texture matrix
+          glMatrixMode(GL_TEXTURE);
+          mat := FTextureMatrix;
+          mat[3, 0] := mat[2, 0];
+          mat[3, 1] := mat[2, 1];
+          glLoadMatrixf(@mat);
+        end
+        else
+        begin
+          FLastTexture := nil;
+          glDisable(GL_TEXTURE_2D);
         end;
-
-        //Set texture filter
-        if FTexture is TOGLBitmapTexture then
-          TOGLBitmapTexture(FTexture).SetFilter;
-
-        //Enable textures
-        glEnable(GL_TEXTURE_2D);
-
-        //Set texture matrix
-        glMatrixMode(GL_TEXTURE);
-        mat := FTextureMatrix;
-        mat[3, 0] := mat[2, 0];
-        mat[3, 1] := mat[2, 1];
-        glLoadMatrixf(@mat);
-      end
-      else
-      begin
-        FLastTexture := nil;
-        glDisable(GL_TEXTURE_2D);
       end;
-
+      
       case ADrawMode of
         adTriangleStrips:
         begin

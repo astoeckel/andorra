@@ -5,7 +5,7 @@ interface
 uses
   AdShaderClasses, AdClasses, AdTypes,
   OGLShaderClasses,
-  cg, cgGL;
+  cg, cgGL, dglOpenGL;
 
 type
   TOGLCgEngine = class(TOGLShaderEngine)
@@ -14,7 +14,8 @@ type
     protected
       function GetInitialized: boolean;override;
     public
-      procedure Initialize(ALogProc: TAd2dLogCallback);override;
+      procedure Initialize(ALogProc: TAd2dLogCallback;
+        AUsePixelShaderProc: TOGLUsePixelShaderCallback);override;
       procedure Finalize;override;
 
       function CreateShader: TAd2dShader;override;
@@ -71,11 +72,15 @@ begin
   result := FContext <> nil;
 end;
 
-procedure TOGLCgEngine.Initialize(ALogProc: TAd2dLogCallback);
+procedure TOGLCgEngine.Initialize(ALogProc: TAd2dLogCallback;
+  AUsePixelShaderProc: TOGLUsePixelShaderCallback);
 begin
   inherited;
 
   FContext := cgCreateContext;
+
+  InitOpenGL;
+  ReadExtensions;
 end;
 
 function TOGLCgEngine.CreateShader: TAd2dShader;
@@ -178,12 +183,18 @@ end;
 procedure TOGLCgShader.Unbind;
 begin
   cgGLDisableProfile(FProfile);
+
+  if FProgramType = astFragment then
+    FSystem.UsePixelShader(false);
 end;
 
 procedure TOGLCgShader.Bind;
 begin
   cgGLEnableProfile(FProfile);
   cgGLBindProgram(FProgram);
+
+  if FProgramType = astFragment then
+    FSystem.UsePixelShader(true);
 end;
 
 function TOGLCgShader.GetParameter(AName: PChar): Pointer;
@@ -205,7 +216,17 @@ end;
 
 procedure TOGLCgShader.SetParameter(AParam: Pointer; AValue: TAd2dTexture);
 begin
+  //Enable texturing
+  glEnable(GL_TEXTURE_2D);
+
+  //Bind texture and set texture parameters
+  glBindTexture(GL_TEXTURE_2D, PCardinal(AValue.Texture)^);
+  glTexParameteri( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+  //Enable texture
   cgGLSetTextureParameter(AParam, PCardinal(AValue.Texture)^);
+  cgGLenableTextureParameter(AParam);  
 end;
 
 end.

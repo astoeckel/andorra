@@ -35,6 +35,7 @@ type
     private
       FEngine: TOGLShaderEngine;
       FAppl: TAd2dApplication;
+      procedure SetUsePixelShader(AShader: boolean);
       function LoadShaderPlugin(AID: TAdVeryShortString): boolean;
     protected
       function GetInitialized: boolean;override;
@@ -108,7 +109,7 @@ begin
   //new application object or the engine is not initialized
   if (FEngine <> nil) then
   begin
-    FEngine.Initialize(AApplication.Log);
+    FEngine.Initialize(AApplication.Log, SetUsePixelShader);
   end;
 
   FAppl := AApplication;
@@ -156,5 +157,10 @@ begin
   end;
 end;
 
+
+procedure TOGLShaderSystem.SetUsePixelShader(AShader: boolean);
+begin
+  TOGLApplication(FAppl).UsePixelShader := AShader;
+end;
 
 end.

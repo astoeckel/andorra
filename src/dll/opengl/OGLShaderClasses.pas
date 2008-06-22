@@ -25,20 +25,25 @@ uses
   AdShaderClasses, AdClasses, AdTypes;
 
 type
+  TOGLUsePixelShaderCallback = procedure(AShader: boolean) of object;
+
   TOGLShaderEngine = class
     private
       FLogProc: TAd2dLogCallback;
+      FUsePixelShaderProc: TOGLUsePixelShaderCallback;
     protected
       function GetInitialized: boolean;virtual;abstract;
     public
       ID: TAdVeryShortString;
 
-      procedure Initialize(ALogProc: TAd2dLogCallback);virtual;
+      procedure Initialize(ALogProc: TAd2dLogCallback;
+        AUsePixelShaderProc: TOGLUsePixelShaderCallback);virtual;
       procedure Finalize;virtual;abstract;
 
       function CreateShader: TAd2dShader;virtual;abstract;
       property Log: TAd2dLogCallback read FLogProc;
       property Initialized: boolean read GetInitialized;
+      property UsePixelShader: TOGLUsePixelShaderCallback read FUsePixelShaderProc;
   end;
 
   TOGLCreateShaderEngineProc = function:TOGLShaderEngine;stdcall;
@@ -47,11 +52,13 @@ implementation
 
 { TOGLShaderEngine }
 
-procedure TOGLShaderEngine.Initialize(ALogProc: TAd2dLogCallback);
+procedure TOGLShaderEngine.Initialize(ALogProc: TAd2dLogCallback;
+  AUsePixelShaderProc: TOGLUsePixelShaderCallback);
 begin
   Finalize;
 
   FLogProc := ALogProc;
+  FUsePixelShaderProc := AUsePixelShaderProc;
 end;
 
 end.
