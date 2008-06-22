@@ -28,6 +28,7 @@ type
       FEngine: TDXShaderEngine;
       FAppl: TAd2dApplication;
       function LoadShaderPlugin(AID: TAdVeryShortString): boolean;
+      procedure UsePixelShader(AShader: boolean);
     protected
       function GetInitialized: boolean;override;
     public
@@ -104,7 +105,7 @@ begin
   begin
     FEngine.Initialize(
       TDXApplication(AApplication).Direct3DDevice9,
-      AApplication.Log);
+      AApplication.Log, UsePixelShader);
   end;
 
   FAppl := AApplication;
@@ -144,6 +145,11 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TDXShaderSystem.UsePixelShader(AShader: boolean);
+begin
+  TDXApplication(AdAppl).UsePixelShader := AShader;
 end;
 
 end.

@@ -31,7 +31,8 @@ type
       function GetInitialized: boolean;override;
     public
       procedure Initialize(ADevice: IDirect3DDevice9;
-        ALogProc: TAd2dLogCallback);override;
+        ALogProc: TAd2dLogCallback;
+        AUsePixelShaderProc: TDXUsePixelShaderCallback);override;
       procedure Finalize;override;
 
       function CreateShader: TAd2dShader;override;
@@ -88,7 +89,7 @@ begin
 end;
 
 procedure TDXCGEngine.Initialize(ADevice: IDirect3DDevice9;
-  ALogProc: TAd2dLogCallback);
+  ALogProc: TAd2dLogCallback; AUsePixelShaderProc: TDXUsePixelShaderCallback);
 begin
   inherited;
 
@@ -201,11 +202,15 @@ begin
     astVertex: FSystem.Device.SetVertexShader(nil);
     astFragment: FSystem.Device.SetPixelShader(nil);
   end;
+  if FProgramType = astFragment then
+    FSystem.UsePixelShader(false);
 end;
 
 procedure TDXCgShader.Bind;
 begin
   cgD3D9BindProgram(FProgram);
+  if FProgramType = astFragment then
+    FSystem.UsePixelShader(true);
 end;
 
 function TDXCgShader.GetParameter(AName: PChar): Pointer;

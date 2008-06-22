@@ -28,8 +28,6 @@ type
     protected
       function GetInitialized: boolean;override;
     public
-      procedure Initialize(ADevice: IDirect3DDevice9;
-        ALogProc: TAd2dLogCallback);override;
       procedure Finalize;override;
 
       function CreateShader: TAd2dShader;override;
@@ -41,12 +39,12 @@ type
       FBinCode: ID3DXBuffer;
       FProgramName: string;
       FProgramType: TAd2dShaderType;
-      FEngine: TDXHLSLEngine;
+      FSystem: TDXHLSLEngine;
       FConstantTable: ID3DXConstantTable;
     protected
       function GetLoaded: boolean;override;
     public
-      constructor Create(AEngine: TDXHLSLEngine);
+      constructor Create(ASystem: TDXHLSLEngine);
       destructor Destroy;override;
 
       procedure LoadProgramFromBuffer(ABuf: PChar;
@@ -70,11 +68,11 @@ implementation
 
 { TDXHLSLShader }
 
-constructor TDXHLSLShader.Create(AEngine: TDXHLSLEngine);
+constructor TDXHLSLShader.Create(ASystem: TDXHLSLEngine);
 begin
   inherited Create;
 
-  FEngine := AEngine;
+  FSystem := ASystem;
 end;
 
 destructor TDXHLSLShader.Destroy;
@@ -94,9 +92,9 @@ end;
 procedure TDXHLSLShader.Initialize;
 begin
   case FProgramType of
-    astVertex: FEngine.Device.CreateVertexShader(FBinCode.GetBufferPointer,
+    astVertex: FSystem.Device.CreateVertexShader(FBinCode.GetBufferPointer,
       IDirect3DVertexShader9(FProgram));
-    astFragment: FEngine.Device.CreatePixelShader(FBinCode.GetBufferPointer,
+    astFragment: FSystem.Device.CreatePixelShader(FBinCode.GetBufferPointer,
       IDirect3DPixelShader9(FProgram));
   end;
 end;
@@ -113,7 +111,10 @@ var
   profile: PAnsiChar;
   log: ID3DXBuffer;
   res: HResult;
-  s: string;
+  tbldesc: TD3DXConstantTableDesc;
+  desc: TD3DXConstantDesc;
+  i:integer;
+  count: Cardinal;
 begin
   profile := nil;
 
@@ -124,8 +125,8 @@ begin
   begin
     //Read the latest supported shader model profile depending on the program type
     case AShaderType of
-      astVertex: profile := D3DXGetVertexShaderProfile(FEngine.Device);
-      astFragment: profile := D3DXGetPixelShaderProfile(FEngine.Device);
+      astVertex: profile := D3DXGetVertexShaderProfile(FSystem.Device);
+      astFragment: profile := D3DXGetPixelShaderProfile(FSystem.Device);
     end;
 
     //Compile the shader
@@ -133,12 +134,18 @@ begin
       AProgramName, profile, 0, @FBinCode, @log, @FConstantTable);
     if res <> D3D_OK then
     begin
-      FEngine.Log('Direct3D HLSL', lsError, log.GetBufferPointer);
+      FSystem.Log('Direct3D HLSL', lsError, log.GetBufferPointer);
     end else
     begin
-      SetLength(s, FConstantTable.GetBufferSize);
-      Move(FConstantTable.GetBufferPointer^, s[1], FConstantTable.GetBufferSize);
-      
+      FConstantTable.GetDesc(tbldesc);
+      for i := 0 to tbldesc.Constants - 1 do
+      begin
+        FConstantTable.GetConstantDesc(
+          FConstantTable.GetConstant(nil, i),
+          @desc,
+          count);
+        FSystem.Log('Direct3D HLSL', lsInfo, PChar('cnst: ' + desc.Name));
+      end;
     end;
   end;
 end;
@@ -146,34 +153,44 @@ end;
 procedure TDXHLSLShader.Unbind;
 begin
   case FProgramType of
-    astVertex: FEngine.Device.SetVertexShader(nil);
-    astFragment: FEngine.Device.SetPixelShader(nil);
+    astVertex: FSystem.Device.SetVertexShader(nil);
+    astFragment:
+    begin
+      FSystem.UsePixelShader(false);
+      FSystem.Device.SetPixelShader(nil);
+    end;
   end;
 end;
 
 procedure TDXHLSLShader.Bind;
 begin
   case FProgramType of
-    astVertex: FEngine.Device.SetVertexShader(IDirect3DVertexShader9(FProgram));
-    astFragment: FEngine.Device.SetPixelShader(IDirect3DPixelShader9(FProgram));
+    astVertex: FSystem.Device.SetVertexShader(IDirect3DVertexShader9(FProgram));
+    astFragment:
+    begin
+      FSystem.UsePixelShader(true);
+      FSystem.Device.SetPixelShader(IDirect3DPixelShader9(FProgram));
+    end;
   end;
 end;
 
 function TDXHLSLShader.GetParameter(AName: PChar): Pointer;
 begin
-  result := FConstantTable.GetConstantByName(nil, AName);
+  result := FConstantTable.GetConstantByName(nil, PChar('$' + AName));
 end;
 
 procedure TDXHLSLShader.SetParameter(AParam: Pointer; AValue: PSingle;
   ACount: integer);
 begin
-  FConstantTable.SetFloatArray(FEngine.Device, AParam, @AValue^, ACount);
+  if AParam <> nil then
+    FConstantTable.SetFloatArray(FSystem.Device, AParam, @AValue^, ACount);
 end;
 
 procedure TDXHLSLShader.SetParameter(AParam: Pointer; AValue: PInteger;
   ACount: integer);
 begin
-  FConstantTable.SetIntArray(FEngine.Device, AParam, @AValue^, ACount);
+  if AParam <> nil then
+    FConstantTable.SetIntArray(FSystem.Device, AParam, @AValue^, ACount);
 end;
 
 procedure TDXHLSLShader.SetParameter(AParam: Pointer; AValue: TAd2dTexture);
@@ -181,11 +198,14 @@ var
   count: Cardinal;
   desc: TD3DXConstantDesc;
 begin
-  FConstantTable.GetConstantDesc(AParam, @desc, count);
-  if desc.RegisterSet = D3DXRS_SAMPLER then
+  if AParam <> nil then
   begin
-    TDXBitmapTexture(AValue).SetFilter;
-    FEngine.Device.SetTexture(desc.RegisterIndex, IDirect3DTexture9(AValue.Texture));
+    FConstantTable.GetConstantDesc(AParam, @desc, count);
+    if desc.RegisterSet = D3DXRS_SAMPLER then
+    begin
+      FSystem.Device.SetTexture(desc.RegisterIndex, IDirect3DTexture9(AValue.Texture));
+      TDXBitmapTexture(AValue).SetFilter;
+    end;
   end;
 end;
 
@@ -196,15 +216,9 @@ begin
   result := TDXHLSLShader.Create(self);
 end;
 
-procedure TDXHLSLEngine.Initialize(ADevice: IDirect3DDevice9;
-  ALogProc: TAd2dLogCallback);
-begin
-  inherited;
-end;
-
 procedure TDXHLSLEngine.Finalize;
 begin
-  inherited;
+//
 end;
 
 function TDXHLSLEngine.GetInitialized: boolean;

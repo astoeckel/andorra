@@ -38,6 +38,8 @@ type
       FVSync: boolean;
       FTextures: boolean;
       FMipmaps: boolean;
+      FUsePixelShader: boolean;
+      procedure SetUsePixelShader(AValue: boolean);
     protected
       procedure WriteLog(ALogSeverity: TAd2dLogSeverity; AMessage: string);
       procedure SetViewPort(AValue:TAdRect);override;
@@ -80,6 +82,8 @@ type
       procedure BeginScene;override;
       procedure EndScene;override;
       procedure Flip;override;
+
+      property UsePixelShader: boolean read FUsePixelShader write SetUsePixelShader;
   end;
 
   TDXMesh = class(TAd2DMesh)
@@ -601,6 +605,15 @@ begin
     Pos('tadhandlewindowframework',lowercase(AClassId)) > 0;
 end;
 
+procedure TDXApplication.SetUsePixelShader(AValue: boolean);
+begin
+  FUsePixelShader := AValue;
+  if FUsePixelShader then
+    FLastTexture := nil
+  else
+    Direct3DDevice9.SetTexture(0, nil);
+end;
+
 procedure TDXApplication.WriteLog(ALogSeverity: TAd2dLogSeverity;
   AMessage: string);
 begin
@@ -738,21 +751,24 @@ begin
       Direct3DDevice9.SetTransform(D3DTS_TEXTURE0, TD3DMatrix(FTextureMatrix));
 
       //Set texture
-      if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
+      if not UsePixelShader then
       begin
-        if (FTexture <> FLastTexture) then
+        if (FTexture <> nil) and (FTexture.Loaded) and (FParent.FTextures) then
         begin
-          if FTexture is TDXBitmapTexture then
-            TDXBitmapTexture(FTexture).SetFilter;
-            
-          Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
-          FLastTexture := nil; //FTexture;
+          if (FTexture <> FLastTexture) then
+          begin
+            if FTexture is TDXBitmapTexture then
+              TDXBitmapTexture(FTexture).SetFilter;
+
+            Direct3DDevice9.SetTexture(0,IDirect3DTexture9(FTexture.Texture));
+            FLastTexture := FTexture;
+          end;
+        end
+        else
+        begin
+          Direct3DDevice9.SetTexture(0,nil);
+          FLastTexture := nil;
         end;
-      end
-      else
-      begin
-        Direct3DDevice9.SetTexture(0,nil);
-        FLastTexture := nil;
       end;
 
       //Set vertex stream soure
@@ -782,8 +798,7 @@ begin
         begin
           Direct3DDevice9.SetRenderState( D3DRS_POINTSIZE, FloatToCardinal(Texture.Width));
         end;
-      end;
-
+      end; 
 
       //Render primitives
       if FIndices <> nil then

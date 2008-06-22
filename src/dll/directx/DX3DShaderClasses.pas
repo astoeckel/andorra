@@ -21,23 +21,28 @@ uses
   Direct3D9, AdShaderClasses, AdClasses, AdTypes;
 
 type
+  TDXUsePixelShaderCallback = procedure(AShader: boolean) of object;
+
   TDXShaderEngine = class
     private
       FDevice: IDirect3DDevice9;
       FLogProc: TAd2dLogCallback;
+      FUsePixelShaderProc: TDXUsePixelShaderCallback;
     protected
       function GetInitialized: boolean;virtual;abstract;
     public
       ID: TAdVeryShortString;
       
       procedure Initialize(ADevice: IDirect3DDevice9;
-        ALogProc: TAd2dLogCallback);virtual;
+        ALogProc: TAd2dLogCallback;
+        AUsePixelShaderProc: TDXUsePixelShaderCallback);virtual;
       procedure Finalize;virtual;abstract;
 
       function CreateShader: TAd2dShader;virtual;abstract;
       property Device: IDirect3DDevice9 read FDevice;
       property Log: TAd2dLogCallback read FLogProc;
       property Initialized: boolean read GetInitialized;
+      property UsePixelShader: TDXUsePixelShaderCallback read FUsePixelShaderProc;
   end;
 
   TDXCreateShaderEngineProc = function:TDXShaderEngine;stdcall;
@@ -47,12 +52,13 @@ implementation
 { TDXShaderEngine }
 
 procedure TDXShaderEngine.Initialize(ADevice: IDirect3DDevice9;
-  ALogProc: TAd2dLogCallback);
+  ALogProc: TAd2dLogCallback; AUsePixelShaderProc: TDXUsePixelShaderCallback);
 begin
   Finalize;
 
   FDevice := ADevice;
   FLogProc := ALogProc;
+  FUsePixelShaderProc := AUsePixelShaderProc;
 end;
 
 end.
