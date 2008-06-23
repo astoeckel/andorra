@@ -103,7 +103,7 @@ type
   end;
 
 const
-  path = '..\demos\SpriteEngine\WormHunter\';
+  path = './resources/';
 
 var
   Form1: TForm1;
@@ -146,7 +146,7 @@ begin
       Application.OnIdle := Idle;
 
       AdImageList := TAdImageList.Create(AdDraw);
-      AdImageList.LoadFromFile(path+'images.ail');
+      AdImageList.LoadFromFile(path+'demo_wormhunter.ail');
 
       AdPixelCollisionTester := TAdSpritePixelCollisionTester.Create(AdDraw);
 
@@ -156,11 +156,11 @@ begin
       AdSplatterEffect.LoadFromFile(path + 'splatter.apf');
       AdSplatterEffect.Texture := AdImageList.Find('particle').Texture;
       
-   {   with TBackgroundSprite.Create(AdSpriteEngine) do
+      with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
         Image := AdImageList.Find('gras');
         Z := -10000;
-      end;  }
+      end;
 
       MainCharacter := TMainCharacter.Create(AdSpriteEngine);
       with MainCharacter do

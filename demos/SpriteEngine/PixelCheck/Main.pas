@@ -42,7 +42,7 @@ var
   MainFrm: TMainFrm;
 
 const
-  path = '../demos/SpriteEngine/PixelCheck/';
+  path = './resources/';
 
 implementation
 
@@ -66,7 +66,7 @@ begin
     if AdDraw.Initialize then
     begin
       AdImageList := TAdImageList.Create(AdDraw);
-      AdImageList.LoadFromFile(path+'misc.ail');
+      AdImageList.LoadFromFile(path+'demo_pixelcheck.ail');
 
       ColTest := TAdSpritePixelCollisionTester.Create(AdDraw);
 
