@@ -58,7 +58,8 @@ type
   PRGBArray = ^TRGBArray;
 
   {Used to specifies the bit depth of a bitmap. Because bitmaps in Andorra 2D 
-   are allways RGBA, only 16 and 32 bits are supported.}
+   are allways RGBA, only 16 and 32 bits are supported. The ordinal values
+   of TAdBitDepth are equivalent to their logic value.}
   TAdBitDepth = (
     ad16Bit = 16,  //< The bit depth is 16 Bit
     ad32Bit = 32 //< The bit depth is 32 Bit

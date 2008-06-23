@@ -25,7 +25,11 @@
       <Projects Name="TextDemo.exe">Simple\TextDemo\TextDemo.bdsproj</Projects>
       <Projects Name="Spiral.exe">Simple\Spiral\Spiral.bdsproj</Projects>
       <Projects Name="VideoPlayer.exe">Advanced\VideoPlayer\VideoPlayer.bdsproj</Projects>
-      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe VideoPlayer.exe</Projects>
+      <Projects Name="Shader.exe">Advanced\Shader\Shader.bdsproj</Projects>
+      <Projects Name="Stencil.exe">Advanced\StencilBuffer\Stencil.bdsproj</Projects>
+      <Projects Name="Surfaces.exe">Advanced\Surfaces\Surfaces.bdsproj</Projects>
+      <Projects Name="NoVCL.exe">Simple\SimpleNonVCL\NoVCL.bdsproj</Projects>
+      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe VideoPlayer.exe Shader.exe Stencil.exe Surfaces.exe NoVCL.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>

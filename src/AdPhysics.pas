@@ -28,7 +28,9 @@ unit AdPhysics;
 
 interface
 
-uses AdClasses, AdDraws, AdSprites, NewtonImport, Classes, AdTypes, Math;
+uses
+  NewtonImport, Classes, Math,
+  AdClasses, AdDraws, AdSprites, AdTypes, AdMath;
 
 type
   //Contains data about a physical element.

@@ -1620,7 +1620,7 @@ begin
   mat1 := AdMatrix_Scale((DestRect.Right-DestRect.Left)/FWidth,(DestRect.Bottom-DestRect.Top)/FHeight,1);
   mat2 := AdMatrix_Multiply(mat1,mat2);
 
-  if (FloatsEqual(Rotation, 0, 0.001)) then
+  if (not FloatsEqual(Rotation, 0, 0.001)) then
   begin
     CurX := (DestRect.Right-DestRect.Left) * RotCenterX;
     CurY := (DestRect.Bottom-DestRect.Top) * RotCenterY;

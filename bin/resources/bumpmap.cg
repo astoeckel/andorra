@@ -1,0 +1,57 @@
+struct fs_res {
+  float4 color : COLOR;
+};
+
+float3 expand(float3 v)
+{
+  return (v - 0.5) * 2; // Expand a range-compressed vector
+}
+
+fs_res fragment_shader(
+  float2 colortexcoords: TEXCOORD0,
+  float3 lightdirection: TEXCOORD1,
+  float4 color: COLOR,
+  uniform sampler2D colormap,
+  uniform sampler2D normalmap,
+  uniform float  lightintensity,
+  uniform float4 ambientcolor  
+)
+{
+  fs_res OUT;
+  
+  float3 light = expand(lightdirection);
+  
+  float3 normaltex = tex2D(normalmap, colortexcoords).xyz;
+  float3 normal = expand(normaltex);      
+  
+  OUT.color = (dot(-normal, light) * lightintensity * color + ambientcolor) * tex2D(colormap, colortexcoords);  
+  
+  return OUT;
+}
+
+struct vs_res {
+  float4 position : POSITION;
+  float4 color    : COLOR;
+  float2 colortexcoords: TEXCOORD0;
+  float3 lightdirection: TEXCOORD1;
+};
+
+vs_res vertex_shader(
+  float3 position : POSITION,
+  float3 normal : NORMAL,
+  float4 color : COLOR,
+  float4 colortexcoords : TEXCOORD0,
+  uniform float4x4 modelview,
+  uniform float3 lightpos,
+  uniform float4 lightcolor  
+)
+{
+  vs_res OUT; 
+  
+  OUT.position = mul(modelview, float4(position, 1));
+  OUT.colortexcoords = colortexcoords;
+  OUT.color = color * lightcolor;
+  OUT.lightdirection = normalize(lightpos - position.xyz);
+  
+  return OUT;
+}

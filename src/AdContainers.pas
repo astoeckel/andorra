@@ -414,7 +414,7 @@ begin
   result := nil;
 
   //Search List Element
-  Pos := (AKey.Hash mod FCapacity);
+  Pos := (Abs(AKey.Hash) mod FCapacity);
   PList := FData;
   inc(PList,Pos);
 
@@ -442,7 +442,7 @@ begin
   result := false;
 
   //Search List Element
-  Pos := (AKey.Hash mod FCapacity);
+  Pos := (Abs(AKey.Hash) mod FCapacity);
   PList := FData;
   inc(PList,Pos);
 
@@ -512,7 +512,7 @@ begin
 
         //Insert element
         PList2 := PTmp;
-        Pos := (PCurItem^.Key.Hash mod ACapacity);
+        Pos := (Abs(PCurItem^.Key.Hash) mod ACapacity);
         Inc(PList2,Pos);
 
         PList2^.Add(PCurItem);
@@ -538,7 +538,7 @@ begin
   result := false;
 
   //Search List Element
-  Pos := (AKey.Hash mod FCapacity);
+  Pos := (Abs(AKey.Hash) mod FCapacity);
   PList := FData;
   inc(PList,Pos);
   

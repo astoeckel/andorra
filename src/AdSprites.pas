@@ -1159,7 +1159,7 @@ begin
       begin
         FImage.DrawRotate(Engine.Surface,BoundsRect.Left,BoundsRect.Top,
           BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
-          Trunc(AnimPos),0.5,0.5,Round(Angle));
+          Trunc(AnimPos),0.5,0.5, Round(Angle));
       end
       else
       begin

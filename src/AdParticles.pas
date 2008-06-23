@@ -354,7 +354,7 @@ type
 
       procedure Emit(ACount, AX, AY: integer);
 
-      procedure Draw(ADest: TAdSurface; AX, AY: integer; ABlendMode: TAd2dBlendMode = bmAdd);
+      procedure Draw(ADest: TAdSurface; AX, AY: double; ABlendMode: TAd2dBlendMode = bmAdd);
       procedure Move(ATimeGap: double);
 
       procedure SaveToXML(AName: string; ARoot: TAdSimpleXMLElem);
@@ -699,7 +699,7 @@ begin
   HighPerformance := APartSys.HighPerformance;
 end;
 
-procedure TAdParticleSystem.Draw(ADest: TAdSurface; AX, AY: integer; ABlendMode:
+procedure TAdParticleSystem.Draw(ADest: TAdSurface; AX, AY: double; ABlendMode:
   TAd2dBlendMode);
 begin
   if Initialized then

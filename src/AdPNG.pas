@@ -70,11 +70,11 @@ begin
   end;
 end;
 
-procedure GetRGB(APNG:TPNGObject;ABMP:TAdBitmap;SetAlpha:boolean=false);
+procedure GetRGB(APNG:TPNGObject; ABMP:TAdBitmap; SetAlpha:boolean=false);
 var
-  x,y:integer;
-  sl1:PRGBRec;
-  sl2:PRGBARec;
+  x, y: integer;
+  sl1: PRGBRec;
+  sl2: PRGBARec;
 begin
   sl2 := ABMP.ScanLine;
   for y := 0 to APNG.Height-1 do
@@ -285,8 +285,11 @@ begin
     else
     begin
       png.RemoveTransparency;
-      ABitmap.ReserveMemory(png.Width,png.Height);
-      GetRGB(png,ABitmap,true);
+      bmp := TBitmap.Create;
+      png.AssignTo(bmp);
+      bmp.Transparent := false;
+      ABitmap.Assign(bmp);
+      bmp.Free;
     end;
   except
     result := false;
