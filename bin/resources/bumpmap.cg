@@ -49,9 +49,13 @@ vs_res vertex_shader(
   vs_res OUT; 
   
   OUT.position = mul(modelview, float4(position, 1));
+  
+  //Transform lightposition to worldposition
+//  float4 lp = mul(modelview, float4(lightpos, 1));  
+ 
   OUT.colortexcoords = colortexcoords;
   OUT.color = color * lightcolor;
-  OUT.lightdirection = normalize(lightpos - position.xyz);
+  OUT.lightdirection = normalize(position.xyz - lightpos);
   
   return OUT;
 }
