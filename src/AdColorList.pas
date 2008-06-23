@@ -18,6 +18,12 @@
 {Contains a simple list that is capable of doing color interpolations.}
 unit AdColorList;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
+{$INCLUDE inc_andorra.inc}
+
 interface
 
 uses
@@ -59,7 +65,7 @@ end;
 
 function TAdColorList.GetColor(Max, Pos: double): TAndorraColor;
 
-  function ColorBetween(C1, C2 : TAndorraColor; blend:Double):TAndorraColor; inline;
+  function ColorBetween(C1, C2 : TAndorraColor; blend:Double):TAndorraColor; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
   begin
      result.r := Round(C1.r + (C2.r-C1.r) * blend);
      result.g := Round(C1.g + (C2.g-C1.g) * blend);

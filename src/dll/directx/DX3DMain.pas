@@ -16,9 +16,11 @@
 
 unit DX3DMain;
 
+{$INCLUDE inc_andorra.inc}
+
 interface
 
-uses                 
+uses
   SysUtils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
   AdTypes, AdBitmapClass;
 
@@ -699,7 +701,7 @@ begin
   inherited Destroy;
 end;
 
-function FloatToCardinal(AValue: single): Cardinal; inline;
+function FloatToCardinal(AValue: single): Cardinal; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 begin
   result := PCardinal(@AValue)^;
 end;

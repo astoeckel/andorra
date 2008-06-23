@@ -95,7 +95,7 @@ begin
     AdDraw.ClearSurface(clBlack);
     AdDraw.BeginScene;
 
-    lightpos := AdVector3(mx, my, -25);
+    lightpos := AdVector3(mx, 512 - my, 25);
 
     AdShader.VertexShader.SetParameter('lightpos', lightpos);
     AdShader.VertexShader.SetParameter('lightcolor', Ad_ARGB(255, 255, 255, 255));

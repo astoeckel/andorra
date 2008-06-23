@@ -21,6 +21,8 @@ unit AdTypes;
   {$MODE Delphi}
 {$ENDIF}
 
+{$INCLUDE inc_andorra.inc}
+
 interface
 
 type
@@ -229,17 +231,17 @@ function AdBoundsEx(X,Y,Width,Height:double):TAdRectEx;
 procedure AdOffsetRect(var Rect:TAdRect; X, Y:LongInt);
 
 {Returns a TAdRect.}
-function AdRect(X1,Y1,X2,Y2:LongInt):TAdRect;overload;inline;
+function AdRect(X1,Y1,X2,Y2:LongInt):TAdRect;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 {Returns a TAdRect by rounding the coordinates given}
-function AdRect(X1,Y1,X2,Y2:double):TAdRect;overload;inline;
+function AdRect(X1,Y1,X2,Y2:double):TAdRect;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
 {Returns a TAdRectEx}
-function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;inline;
+function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
 {Returns a TAdPoint}
-function AdPoint(X,Y:LongInt):TAdPoint;overload;inline;
+function AdPoint(X,Y:LongInt):TAdPoint;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 {Returns a TAdPoint by rounding the coordinates given}
-function AdPoint(X,Y:double):TAdPoint;overload;inline;
+function AdPoint(X,Y:double):TAdPoint;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
 {Returns true when the two rects have the same coordinates.}
 function CompareRects(const Rect1,Rect2:TAdRect):boolean;

@@ -20,6 +20,8 @@ unit AdParticles;
   {$MODE DELPHI}
 {$ENDIF}
 
+{$INCLUDE inc_andorra.inc}
+
 interface
 
 uses
@@ -197,7 +199,7 @@ type
       property Position: TAdVector3 read FPosition write FPosition;
       property Velocity: TAdVector3 read FVelocity write FVelocity;
 
-      function CalcValue(MaxTime, TimePos, StartPos, EndPos: double): double; inline;
+      function CalcValue(MaxTime, TimePos, StartPos, EndPos: double): double; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
       procedure ApplyVariation(var AVal: double; AVar: double);
       procedure ApplyVelVariation(var AVel: TAdParticleParameter);
     public
