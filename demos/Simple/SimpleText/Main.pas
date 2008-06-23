@@ -17,7 +17,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     timestr:string;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -39,17 +39,15 @@ begin
 
   AdPerCounter := TAdPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
+  AdDraw := TAdDraw.Create(self);
 
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw1;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
-    if AdDraw1.Initialize then
+    if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
 
@@ -71,18 +69,18 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    AdDraw1.ClearSurface(clBlack);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(clBlack);
+    AdDraw.BeginScene;
 
-    with AdDraw1.Fonts.GenerateFont('Verdana',36,[],clLime,128,-5,-5,5) do
+    with AdDraw.Fonts.GenerateFont('Verdana',36,[],clLime,128,-5,-5,5) do
     begin
       with TypeSetter as TAdSimpleTypeSetter do
       begin
@@ -92,8 +90,8 @@ begin
       TextOut(AdRect(0,0,ClientWidth,ClientHeight),timestr);
     end;
 
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdDraw.EndScene;
+    AdDraw.Flip;
   end;
 
   //Because we inserted a timer which uses a window message, OnIdle will

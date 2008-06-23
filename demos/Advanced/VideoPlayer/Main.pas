@@ -32,7 +32,7 @@ type
   end;
 
 const
-  Path = '../demos/Advanced/VideoPlayer/';
+  Path = './resources/';
 
 implementation
 

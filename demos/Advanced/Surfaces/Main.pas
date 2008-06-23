@@ -35,8 +35,9 @@ begin
   begin
     Pen.Style := apNone;
     Brush.Color := Ad_ARGB(255, 0, 0, 255);
-    Brush.GradientColor := Ad_ARGB(255, 255, 0, 255);
+    Brush.GradientColor := Ad_ARGB(255, 0, 255, 0);
     Rectangle(0, 0, Surface.Scene.Width, Surface.Scene.Height);
+    Textout(0, 64, 'Andorra 2D!!!');
     Release;   
   end;
   AdImage.Draw(Surface, 0, 0, 0);

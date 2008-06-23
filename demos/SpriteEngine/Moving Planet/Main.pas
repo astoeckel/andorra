@@ -91,7 +91,7 @@ type
   public
     Sun:TSun;
     Planet:TPlanet;
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdSpriteEngine:TSpriteEngine;
     AdImageList:TAdImageList;
@@ -104,7 +104,7 @@ var
   MainFrm: TMainFrm;
 
 const
-  path = '../demos/SpriteEngine/Moving Planet/';  
+  path = './resources/';  
 
 implementation
 
@@ -133,28 +133,26 @@ begin
 
   AdPerCounter := TAdPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.Options := AdDraw1.Options + [doMipmaps];
+  AdDraw := TAdDraw.Create(self);
+  AdDraw.Options := AdDraw.Options + [aoMipmaps];
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw1;
-  AdSetupDlg.Form := self;
 
   Paused := true;
   SimulationSpeed := 10;
 
   if AdSetupDlg.Execute then
   begin
-    if AdDraw1.Initialize then
+    if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
 
-      AdSpriteEngine := TSpriteEngine.Create(AdDraw1);
+      AdSpriteEngine := TSpriteEngine.Create(AdDraw);
       AdSpriteEngine.VisibilityTest := false;
 
-      AdImageList := TAdImageList.Create(AdDraw1);
-      AdImageList.LoadFromFile(path+'images.ail');
+      AdImageList := TAdImageList.Create(AdDraw);
+      AdImageList.LoadFromFile(path+'demo_movingplanet.ail');
 
       with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
@@ -163,15 +161,13 @@ begin
       end;
 
       Sun := TSun.Create(AdSpriteEngine);
-      Sun.ParticleSystem.DefaultParticle.LoadFromFile(path+'sun.apf');
+      Sun.ParticleSystem.LoadFromFile(path+'sun.apf');
       Sun.ParticleSystem.Texture := AdImageList.Find('particle').Texture;
 
-      AdDraw1.TextureFilter := atLinear;
       Planet := TPlanet.Create(AdSpriteEngine);
       Planet.Sun := Sun;
       Planet.Image := AdImageList.Find('earth');
       Planet.Reset;
-      AdDraw1.TextureFilter := atPoint;
     end
     else
     begin
@@ -192,7 +188,7 @@ begin
   AdImageList.Free;
   AdSpriteEngine.Free;
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TMainFrm.FormKeyDown(Sender: TObject; var Key: Word;
@@ -230,11 +226,11 @@ var
   strs:TStringList;
   p:PAnsiChar;
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    AdDraw1.ClearSurface(clBlack);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(clBlack);
+    AdDraw.BeginScene;
 
     if Paused then
       Planet.Speed := 0
@@ -247,7 +243,7 @@ begin
 
     strs := TStringList.Create;
 
-    with AdDraw1.Fonts.GenerateFont('MS Sans Serif', 12, []) do
+    with AdDraw.Fonts.GenerateFont('MS Sans Serif', 12, []) do
     begin
       with TypeSetter as TAdSimpleTypeSetter do
       begin
@@ -279,8 +275,8 @@ begin
       TextOut(0,ClientHeight - 32,'(c) by Andreas Stöckel');
     end;
 
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdDraw.EndScene;
+    AdDraw.Flip;
   end;
 
   Done := false;
@@ -543,7 +539,7 @@ begin
   X := Engine.SurfaceRect.Right div 2;
   Y := Engine.SurfaceRect.Bottom div 2;
 
-  FParticleSystem := TAdParticleSystem.Create(Engine.Surface);
+  FParticleSystem := TAdParticleSystem.Create(Engine.Surface.Parent);
 end;
 
 destructor TSun.Destroy;
@@ -563,7 +559,7 @@ begin
     Release;
   end;
   
-  FParticleSystem.Draw(X, Y);
+  FParticleSystem.Draw(Engine.Surface, X, Y);
 end;
 
 procedure TSun.DoMove(TimeGap: double);
@@ -573,12 +569,11 @@ begin
   FTime := FTime + TimeGap * 1000;
 
   FParticleSystem.Move(TimeGap);
-  FParticleSystem.Dead;
 
   if FTime > 10 then
   begin
-    FParticleSystem.CreateParticles(1, TAdParticle, 0,0);
-    FTime := 0;
+    FParticleSystem.Emit(1, 0,0);
+    FTime := FTime - 10;
   end;
 end;
 

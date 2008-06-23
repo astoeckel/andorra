@@ -28,7 +28,7 @@ var
   Form1: TForm1;
 
 const
-  path = '..\demos\Particles\Simple\';
+  path = './resources/';
 
 implementation
 
@@ -44,10 +44,8 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
@@ -63,7 +61,6 @@ begin
       end;
       PartSys := TAdParticleSystem.Create(AdDraw);
       PartSys.Texture := AdImageList.Items[0].Texture;
-      PartSys.LoadFromFile(path + 'part.xml');
     end
     else
     begin
@@ -93,7 +90,7 @@ procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   MouseX := X;
   MouseY := Y;
-  PartSys.Emit(1, MouseX, MouseY);
+  PartSys.Emit(5, MouseX, MouseY);
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
@@ -108,7 +105,6 @@ begin
 
     PartSys.Move(AdPerCounter.TimeGap / 1000);
 
-    PartSys.BlendMode := bmAdd;
     PartSys.Draw(AdDraw, 0, 0);
 
     with AdDraw.Canvas do

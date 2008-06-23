@@ -30,17 +30,14 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg : TAdSetup;
-  bmp:TBitmap;
 begin
   ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin

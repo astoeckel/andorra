@@ -60,7 +60,7 @@ var
   MainDlg: TMainDlg;
 
 const
-  path = '..\demos\SpriteEngine\Breakout\';
+  path = './resources/';
 
 implementation
 
@@ -98,8 +98,6 @@ end;
 
 procedure TMainDlg.FormCreate(Sender: TObject);
 var
-  bmp:TBitmap;
-  adbmp:TAdBitmap;
   AdSetupDlg:TAdSetup;
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
@@ -119,39 +117,26 @@ begin
 
       with AdImgLst.Add('bricks') do
       begin
-        Texture.LoadGraphicFromFile(path+'brick1.bmp',false,clNone);
+        Texture.LoadGraphicFromFile(path+'brick1.png', false, clNone);
       end;
 
       with AdImgLst.Add('ball') do
       begin
-        Texture.LoadGraphicFromFile(path+'ball.bmp',true,clFuchsia);
+        Texture.LoadGraphicFromFile(path+'small_ball.png', true, clFuchsia);
       end;
 
       with AdImgLst.Add('bat') do
       begin
-        Texture.LoadGraphicFromFile(path+'bat.bmp',false,clNone);
+        Texture.LoadGraphicFromFile(path+'bat.png', false, clNone);
       end;
 
-      bmp := TBitmap.Create;
-      bmp.LoadFromFile(path+'star.bmp');
-      adbmp := TAdBitmap.Create;
-      adbmp.Assign(bmp);
-      adbmp.AssignAlphaChannel(bmp);
-      with AdImgLst.Add('star') do
-      begin
-        Texture.Texture.LoadFromBitmap(adbmp, ad32Bit);
-      end;
-      adbmp.Free;
-      bmp.Free;
-    
       AdImgLst.Restore;
 
       AdSpriteEngine := TSpriteEngine.Create(nil);
       AdSpriteEngine.Surface := AdDraw;
 
       Randomize;
-      CreateLevel;
-
+      CreateLevel; 
 
       with TBall.Create(AdSpriteEngine) do
       begin

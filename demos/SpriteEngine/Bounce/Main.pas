@@ -54,7 +54,7 @@ var
   Form1: TForm1;
 
 const
-  path='..\demos\SpriteEngine\Bounce\';
+  path='./resources/';
 
 implementation
 
@@ -77,14 +77,14 @@ begin
 
     AdSpriteEngine.Dead;
 
-//    AdDraw.Options := AdDraw.Options - [doLights];
+    AdDraw.Options := AdDraw.Options - [aoLight];
     with AdDraw.Canvas do
     begin
       Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
       Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
       Release;
     end;
-//    AdDraw.Options := AdDraw.Options + [doLights];
+    AdDraw.Options := AdDraw.Options + [aoLight];
 
     AdDraw.EndScene;
     AdDraw.Flip;
@@ -103,18 +103,15 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
-//    AdDraw.Options := AdDraw.Options + [doLights, doMipMaps];
-    AdDraw.TextureFilter := atAnisotropic;
+    AdDraw.Options := AdDraw.Options + [aoLight, aoMipmaps];
     if AdDraw.Initialize then
     begin
-//      AdDraw.AmbientColor := RGB(96,96,96);
+      AdDraw.Scene.AmbientColor := Ad_ARGB(255, 96, 96, 96);
       AdPictureCollection := TAdImageList.Create(AdDraw);
       AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
 
@@ -223,28 +220,26 @@ end;
 
 procedure TForm1.LoadImages;
 begin
-  AdDraw.TextureFilter := atLinear;
   with AdPictureCollection.Add('wall')do
   begin
-    Texture.LoadGraphicFromFile(path+'texture.bmp',false,clWhite);
-    Details := 16;
+    Texture.LoadGraphicFromFile(path+'texture.png', false, clWhite);
   end;
   with AdPictureCollection.Add('wallgras')do
   begin
-    Texture.LoadGraphicFromFile(path+'texture2.bmp',false,clWhite);
-    Details := 16;
+    Texture.LoadGraphicFromFile(path+'texture2.png', false, clWhite);
   end;
   with AdPictureCollection.Add('ball') do
   begin
-    Texture.LoadGraphicFromFile(path+'ball.bmp',true,clYellow);
+    Texture.LoadGraphicFromFile(path+'ball.png', true, clYellow);
     PatternWidth := 32;
     PatternHeight := 32;
   end;
-  AdDraw.TextureFilter := atPoint;
   with AdPictureCollection.Add('stars')do
   begin
-    Texture.LoadGraphicFromFile(path+'stars.png',false,clWhite);
+    Texture.LoadGraphicFromFile(path+'stars.png', false, clWhite);
   end;
+
+  AdPictureCollection.Filter := atLinear;
 
   AdPictureCollection.Restore;
 end;
@@ -257,12 +252,12 @@ begin
   level := TStringList.Create;
   level.LoadFromFile(path+'level2.txt');
 
-  {with TBackgroundSprite.Create(AdSpriteEngine) do
+  with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
     Image := AdPictureCollection.Find('stars');
     z := -1;
     Depth := 10;
-  end;    }
+  end;
 
   for ay := 0 to level.Count - 1 do
   begin
@@ -391,11 +386,12 @@ begin
 end;
 
 procedure TBall.DoDraw;
+var
+  old: TAndorraColor;
 begin
   with Engine.Surface.Canvas do
   begin
     Brush.BlendMode := bmAdd;
-    DrawIn2D := false;
 
     Brush.Color := Ad_ARGB(round(Alpha/2),255,255,255);
     Brush.GradientColor := Ad_ARGB(0,255,255,255);
@@ -403,14 +399,13 @@ begin
     Circle(BoundsRect.Left+round(Width/2),BoundsRect.Top+round(Height/2),300);
     Release;
 
-    DrawIn2D := true;
     Brush.BlendMode := bmAlpha;
   end;
   Image.Color := Color;
-//  old := Engine.Surface.AmbientColor;
-//  Engine.Surface.AmbientColor := RGB(255,255,255);
+  old := Engine.Surface.Scene.AmbientColor;
+  Engine.Surface.Scene.AmbientColor := Ad_ARGB(255, 255, 255, 255);
   inherited DoDraw;
-//  Engine.Surface.AmbientColor := old;
+  Engine.Surface.Scene.AmbientColor := old;
 end;
 
 procedure TBall.DoMove(TimeGap: double);

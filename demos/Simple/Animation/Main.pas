@@ -29,7 +29,7 @@ var
   XSpeed:single;
 
 const
-  path = '..\demos\Simple\Animation\';
+  path = './resources/';
 
 implementation
 
@@ -61,10 +61,8 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
@@ -75,7 +73,7 @@ begin
       AdImageList1 := TAdImageList.Create(AdDraw);
       with AdImageList1.Add('figur') do
       begin
-        Texture.LoadGraphicFromFile(path+'boy.bmp',true,clFuchsia);
+        Texture.LoadGraphicFromFile(path+'boy.png',true,clFuchsia);
         PatternWidth := 96;
         PatternHeight := 96;
       end;

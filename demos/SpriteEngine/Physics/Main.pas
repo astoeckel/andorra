@@ -38,7 +38,7 @@ var
   Form1: TForm1;
 
 const
-  path = '..\demos\SpriteEngine\Physics\';
+  path = './resources/';
 
 implementation
 
@@ -54,10 +54,8 @@ begin
 
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw;
-  AdSetupDlg.Form := self;
   AdSetupDlg.Sections := AdSetupDlg.Sections - [dlgResolution];
 
   if AdSetupDlg.Execute then
@@ -70,7 +68,7 @@ begin
       AdSpriteEngine.Surface := AdDraw;
 
       AdImageList := TAdImageList.Create(AdDraw);
-      AdImageList.LoadFromFile(path+'main.ail');
+      AdImageList.LoadFromFile(path+'demo_physics.ail');
       AdImageList.Restore;
 
       with TPhysicalApplication.Create(AdSpriteEngine) do

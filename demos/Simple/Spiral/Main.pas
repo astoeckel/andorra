@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, StdCtrls, AdSetupNew, AdPng, AdCanvas,
+  Dialogs, AdDraws, AdClasses, StdCtrls, AdSetupDlg, AdPng, AdCanvas,
   AdPerformanceCounter, AdTypes;
 
 type
@@ -101,7 +101,7 @@ begin
       Pen.Width := 16;
       Pen.TextureMode := tmTile;
       Pen.TexturePosition := tpDynamic;
-      Pen.BlendMode := bmAdd;
+      Pen.BlendMode := bmAlpha;
 
       for i := start to start + 360 do
       begin

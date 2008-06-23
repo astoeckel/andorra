@@ -23,7 +23,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdImageList1:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
@@ -35,7 +35,7 @@ var
   Form1: TForm1;
 
 const
-  path = '..\demos\Simple\Animation\';
+  path = './resources/';
 
 implementation
 
@@ -48,30 +48,28 @@ var
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
+  AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(self);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.AdDraw := AdDraw1;
-  AdSetupDlg.Form := self;
 
   if AdSetupDlg.Execute then
   begin
-    if AdDraw1.Initialize then
+    if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
 
-      AdImageList1 := TAdImageList.Create(AdDraw1);
+      AdImageList1 := TAdImageList.Create(AdDraw);
       with AdImageList1.Add('figur') do
       begin
-        Texture.LoadGraphicFromFile(path+'boy.bmp',true,clFuchsia);
+        Texture.LoadGraphicFromFile(path+'boy.png', true, clFuchsia);
         PatternWidth := 96;
         PatternHeight := 96;
       end;
       AdImageList1.Restore;
 
       AdSpriteEngine := TSpriteEngine.Create(nil);
-      AdSpriteEngine.Surface := AdDraw1;
+      AdSpriteEngine.Surface := AdDraw;
 
       Randomize;
 
@@ -82,8 +80,8 @@ begin
           Image := AdImageList1.Find('figur');
           AnimActive := true;
           AnimLoop := true;
-          AnimSpeed := 15;
           XSpeed := -(random(100)+50);
+          AnimSpeed := Abs(XSpeed / 7.5);
           SetLine;
         end;
       end;
@@ -107,25 +105,25 @@ begin
   AdSpriteEngine.Free;
   AdImageList1.Free;
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
     Caption := 'FPS:'+inttostr(AdPerCounter.FPS);
 
-    AdDraw1.ClearSurface(clBlack);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(clBlack);
+    AdDraw.BeginScene;
 
     AdSpriteEngine.Move(AdPerCounter.TimeGap / 1000);
     AdSpriteEngine.Draw;
     AdSpriteEngine.Dead;
 
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdDraw.EndScene;
+    AdDraw.Flip;
 
     Done := false;
   end;
