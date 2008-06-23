@@ -340,14 +340,14 @@ begin
     begin
       AdPartSys.Emit(Round(Gap / EmissionTime), EmitterX, EmitterY);
       Gap := Gap - EmissionTime * Round(Gap / EmissionTime);
-    end;    
+    end;
   end else
   begin
     if AdPartSys.Items.Count = 0 then
     begin
       AdPartSys.Emit(EmissionCount, EmitterX, EmitterY);
     end;
-  end;  
+  end;
 end;
 
 procedure TMainFrm.FillClassCmb;

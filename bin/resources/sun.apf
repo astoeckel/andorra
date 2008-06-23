@@ -2,37 +2,37 @@
   <system>
     <particleclass>TAdBillboardParticle</particleclass>
     <TAdBillboardParticle>
-      <lifetime>1</lifetime>
+      <lifetime>0.800000000000</lifetime>
       <creationangle>0</creationangle>
       <creationanglerange>360</creationanglerange>
       <xvelocity>
-        <start>100</start>
-        <stop>0</stop>
-        <variation>0</variation>
+        <start>100.0</start>
+        <stop>0.0</stop>
+        <variation>0.0</variation>
       </xvelocity>
       <yvelocity>
-        <start>100</start>
-        <stop>0</stop>
-        <variation>0</variation>
+        <start>100.0</start>
+        <stop>0.0</stop>
+        <variation>0.0</variation>
       </yvelocity>
       <zvelocity>
-        <start>0</start>
-        <stop>0</stop>
-        <variation>0</variation>
+        <start>0.0</start>
+        <stop>0.0</stop>
+        <variation>0.0</variation>
       </zvelocity>
       <size>
-        <start>1</start>
-        <stop>1,5</stop>
-        <variation>0</variation>
+        <start>1.0</start>
+        <stop>1.500000000000</stop>
+        <variation>0.0</variation>
       </size>
       <angle>
-        <start>0</start>
-        <stop>0</stop>
-        <variation>0</variation>
+        <start>0.0</start>
+        <stop>3.140000000000</stop>
+        <variation>0.0</variation>
       </angle>
     </TAdBillboardParticle>
     <colors>
-      <color>FFFF8D00</color>
-      <color>00FF6200</color>
+      <color>FFFF6D2B</color>
+      <color>00FF6310</color>
     </colors>
   </system>

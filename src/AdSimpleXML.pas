@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.5 2008/05/26 19:52:44 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.6 2008/06/23 16:03:54 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -58,7 +58,6 @@ type
   {$IFDEF FPC}
   THashedStringList = class(TStringList);
   {$ENDIF}
-//  THandle = Longword;
   TAdSimpleXML = class;
 
   EAdSimpleXMLError = class(Exception);
@@ -533,6 +532,59 @@ resourcestring
 
 implementation
 
+function SecureFloatToStr(AFloat: Extended): string;
+begin
+  //Return the integer part of the number
+  result := IntToStr(trunc(AFloat)) + '.';
+
+  //Get the decimal places of the number
+  result := result + IntToStr(Round((AFloat - trunc(AFloat)) * 1000000000000));
+end;
+
+function SecureStrToFloat(AStr: string): Extended;
+var
+  predecimalpositions: string;
+  decimalplaces: string;
+  i: integer;
+  decimalposition: integer;
+
+const
+  decimalpoints = '.,';
+
+begin
+  predecimalpositions := '';
+  decimalplaces := '';
+
+  for i := 1 to Length(decimalpoints) do
+  begin
+    decimalposition := Pos(decimalpoints[i], AStr);
+    if decimalposition <> 0 then
+      break;
+  end;
+
+  if decimalposition <> 0 then
+  begin
+    predecimalpositions := Copy(AStr, 1, decimalposition - 1);
+    decimalplaces := Copy(AStr, decimalposition + 1, Length(AStr) - decimalposition);
+    result := StrToFloat(predecimalpositions) +
+      StrToFloat(decimalplaces) / Power(10, Length(decimalplaces));
+  end else
+  begin
+    result := StrToInt(AStr);
+  end;
+end;
+
+function TryStrToFloat(const S: string; out Value: Extended): Boolean;
+begin
+  Value := 0;
+  result := true;
+  try
+    Value := SecureStrToFloat(S);
+  except
+    result := false;
+  end;
+end;
+
 const
   AnsiLineFeed       = AnsiChar(#10);
   AnsiCarriageReturn = AnsiChar(#13);
@@ -795,19 +847,6 @@ begin
 end;
 
 {$ENDIF COMPILER5}
-
-{$IFDEF CLR}
-function TryStrToFloat(const S: string; out Value: Extended): Boolean;
-var
-  Temp: Double;
-begin
-  Result := SysUtils.TryStrToFloat(S, Temp);
-  if Result then
-    Value := Temp
-  else
-    Value := 0;
-end;
-{$ENDIF CLR}
 
 function SimpleXMLEncode(const S: string): string;
 const
@@ -1374,7 +1413,7 @@ end;
 
 function TAdSimpleXMLElem.GetFloatValue: Extended;
 begin
-  result := StrToFloat(Value);
+  result := SecureStrToFloat(Value);
 end;
 
 function TAdSimpleXMLElem.GetIntValue: Int64;
@@ -1436,7 +1475,7 @@ end;
 
 procedure TAdSimpleXMLElem.SetFloatValue(const Value: Extended);
 begin
-  FValue := FloatToStr(Value);
+  FValue := SecureFloatToStr(Value);
 end;
 
 procedure TAdSimpleXMLElem.SetIntValue(const Value: Int64);
@@ -1486,7 +1525,7 @@ end;
 function TAdSimpleXMLElems.Add(const Name: string;
   const Value: Extended): TAdSimpleXMLElemClassic;
 begin
-  Result := Add(Name, FloatToStr(Value));
+  Result := Add(Name, SecureFloatToStr(Value));
 end;
 
 function TAdSimpleXMLElems.Add(const Name: string;
@@ -2420,7 +2459,7 @@ end;
 
 procedure TAdSimpleXMLProp.SetFloatValue(const Value: Extended);
 begin
-  FValue := FloatToStr(Value);
+  FValue := SecureFloatToStr(Value);
 end;
 
 procedure TAdSimpleXMLProp.SetIntValue(const Value: Int64);
@@ -3647,6 +3686,7 @@ begin
 end;
 
 initialization
+
 finalization
   {$IFNDEF CLR}
   {$IFDEF COMPILER6_UP}
