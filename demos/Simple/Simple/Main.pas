@@ -3,7 +3,7 @@ unit Main;
 interface
 
 uses
-  Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,  
+  Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,
   AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, AdSprites,
   AdBitmap, AdCanvas;
 
@@ -16,8 +16,6 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    AdImage: TAdImage;
-
     procedure Idle(Sender: TObject; var Done: boolean);
   end;
 
@@ -32,30 +30,29 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetup: TAdSetup;
 begin
+  //Only for debuging - you can remove this line
   ReportMemoryLeaksOnShutdown := true;
 
+  //Create the performance counter. This class is used for measuring the time
+  //that passed between two frames.
   AdPerCounter := TAdPerformanceCounter.Create;
 
+  //Crate the main surface.
   AdDraw := TAdDraw.Create(self);
 
+  //Create the setup dialog and pass the main surface
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
+
   if AdSetup.Execute then
   begin
     if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
-
-      AdDraw.Scene.AmbientColor := Ad_ARGB(255, 255, 255, 255);
-
-      AdImage := TAdImage.Create(AdDraw);
-      AdImage.Texture.LoadGraphicFromFile('icon64.png');
-      AdImage.Restore;
     end
     else
     begin
-      ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
-                'mode or another video adapter.');
+      ShowMessage(AdDraw.GetLastError);
       halt;
     end;
   end else
@@ -68,7 +65,6 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdImage.Free;
   AdPerCounter.Free;
   AdDraw.Free;
 end;

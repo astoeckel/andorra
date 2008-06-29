@@ -12,7 +12,7 @@
 *Comment: Loads the Plugin-DLL
 }
 
-//Loads the plugin DLL
+{ Contains the class that cares of loading the graphic plugin library. }
 unit AdDLLLoader;
 
 {$IFDEF FPC}
@@ -23,20 +23,24 @@ interface
 
 uses 
   SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF},
-  AdClasses, AdShaderClasses;
+  AdClasses, AdShaderClasses, AdMessages;
 
-//This is the class which loads the plugin DLL
 type
+  {Exception class used for exceptions that occur in the dll loader class.}
   EAdDllLoaderException = class(Exception);
+  {Raised when the specified graphic library is incompatible to the current
+   Andorra 2D version.}
   EAdDllIncompatible = class(EAdDllLoaderException);
 
+  {Cares of loading the plugin dll.}
   TAdDllLoader = class
     private
       DllHandle:THandle;
     public
-      //The function which creates the application from the DLL
+      //Creates the TAd2dApplication interface.
       CreateApplication:TAdCreateApplicationProc;
 
+      //Creates the TAd2dShaderSystem interface.
       CreateShaderSystem:TAdCreateShaderProc;
 
       //Contains information about the loaded library
@@ -80,15 +84,16 @@ var
 begin
   if FileExists(afile) then
   begin
+    //If a library is already loaded, unload it
     if LibraryLoaded then
-    begin
       UnLoadLibrary;
-    end;
+
     {$IFDEF Win32}
       DllHandle := Windows.LoadLibrary(PChar(afile));
     {$ELSE}
       DllHandle := dynlibs.LoadLibrary(PChar(afile));
     {$ENDIF}
+
     if LibraryLoaded then
     begin
       @CreateApplication := GetProcAddress(DllHandle, 'CreateApplication');
@@ -97,7 +102,11 @@ begin
 
       //Get information
       @InfoProc := GetProcAddress(DllHandle, 'Andorra2DLibraryInformation');
-      InfoProc(LibInfo);
+
+      if Assigned(InfoProc) then
+        InfoProc(LibInfo)
+      else
+        raise EAdDllIncompatible.Create(MsgPluginInvalid);
 
       //Get library properties function
       @LibProperties := GetProcAddress(DllHandle, 'Andorra2DApplicationProperties');
@@ -105,9 +114,8 @@ begin
       if LibInfo.LibVersion <> LibraryVersion then
       begin
         UnLoadLibrary;
-        raise EAdDllIncompatible.Create('The version of the library (' +
-          AFile + ', ' + LibInfo.LibVersion + ') is incompatible to the current version ' +
-          LibraryVersion);
+        raise EAdDllIncompatible.CreateFmt(MsgPluginVersionIncompatible,
+          [AFile, LibInfo.LibVersion, LibraryVersion]);
       end;
     end;
   end;

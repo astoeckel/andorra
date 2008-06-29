@@ -26,7 +26,8 @@ unit AdBitmap;
 interface
 
 uses
-  SysUtils, Classes, AdTypes, AdBitmapClass, AdPersistent;
+  SysUtils, Classes,
+  AdTypes, AdBitmapClass, AdPersistent, AdMessages;
 
 type
   {This exception is raised when no proper compressor is found to load the
@@ -34,7 +35,7 @@ type
   ENoValidCompressor = class(Exception);
 
   {This exception is raised when no format loader is found to load the bitmap
-   data from the specified data source}
+   data from the specified data source.}
   ENoValidFormat = class(Exception);
 
   {TAdBitmap is the main bitmap class}
@@ -235,8 +236,10 @@ var
   tmp:TAdGraphicFormat;
 begin
   tmp := GetObjectFormat(AGraphic);
+
   if tmp = nil then
-    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.CreateFmt(MsgNoBitmapClassHandler, [AGraphic.ClassName]);
+
   tmp.Assign(self, AGraphic);
   tmp.Free;  
 end;
@@ -246,8 +249,10 @@ var
   tmp:TAdGraphicFormat;
 begin
   tmp := GetObjectFormat(AGraphic);
+
   if tmp = nil then
-    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.CreateFmt(MsgNoBitmapClassHandler, [AGraphic.ClassName]);
+
   tmp.AssignAlphaChannel(self, AGraphic);
   tmp.Free;
 end;
@@ -257,8 +262,10 @@ var
   tmp:TAdGraphicFormat;
 begin
   tmp := GetObjectFormat(AGraphic);
+
   if tmp = nil then
-    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.CreateFmt(MsgNoBitmapClassHandler, [AGraphic.ClassName]);
+
   tmp.AssignAlphaChannelTo(self, AGraphic);
   tmp.Free;                                
 end;
@@ -268,8 +275,10 @@ var
   tmp:TAdGraphicFormat;
 begin
   tmp := GetObjectFormat(AGraphic);
+
   if tmp = nil then
-    raise ENoValidFormat.Create('No handler for '+AGraphic.ClassName+' found');
+    raise ENoValidFormat.CreateFmt(MsgNoBitmapClassHandler, [AGraphic.ClassName]);
+
   tmp.AssignTo(self, AGraphic);
   tmp.Free;
 end;
@@ -295,7 +304,8 @@ begin
   end
   else
   begin
-    ENoValidCompressor.Create('No compressor not found');
+    raise
+      ENoValidCompressor.Create(MsgNoBitmapCompressor);
     ClearMemory;
   end;
 end;
@@ -373,7 +383,7 @@ begin
       tmp.Write(self, AStream);
     finally
       tmp.Free;
-    end;       
+    end;
   end;
 end;
 
@@ -409,7 +419,9 @@ begin
     end;
   end;
   
-  //! RAISE EXCEPTION HERE
+  //No loader has been found - raise an exception.
+  raise
+    ENoValidFormat.CreateFmt(MsgNoValidFileFormat, [AFile]); 
 end;
 
 initialization

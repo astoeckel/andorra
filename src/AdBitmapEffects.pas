@@ -68,6 +68,26 @@ type
       property LuminanceFactor: double read FLuminanceFactor write FLuminanceFactor;
   end;
 
+  {Makes a specific color of the bitmap transparent.}
+  TAdTransparencyFilter = class(TAdBitmapEffect)
+    private
+      FTransparent: boolean;
+      FTransparentColor: LongInt;
+    public
+      {Creates an instance of TAdTransparencyFilter}
+      constructor Create;
+
+      {Assigns the transparency effect to the bitmap}
+      procedure AssignEffect(Dest: TAd2dBitmap);override;
+
+      {Specifies whether the image should be made transparent. If false, the
+       alpha channel will be removed.}
+      property Transparent: boolean read FTransparent write FTransparent;
+      {Specifies the color that should be made transparent. If this value
+       is "clNone" ($1FFFFFFF) and transparent is true, nothing will be changed.}
+      property TransparentColor: LongInt read FTransparentColor write FTransparentColor;      
+  end;
+
 
 implementation
 
@@ -209,6 +229,37 @@ begin
   inherited;
 
   FLuminanceFactor := 1;
+end;
+
+{ TAdTransparencyFilter }
+
+constructor TAdTransparencyFilter.Create;
+begin
+  inherited;
+
+  FTransparent := true;
+  FTransparentColor := $1FFFFFFF;
+end;
+
+procedure TAdTransparencyFilter.AssignEffect(Dest: TAd2dBitmap);
+var
+  i: integer;
+  pixelptr: PRGBARec;
+begin
+  //The transparent color is "clNone", change nothing
+  if not (FTransparent and (FTransparentColor = $1FFFFFFF)) then
+  begin
+    pixelptr := Dest.ScanLine;
+    for i := 0 to (Dest.Size div 4) - 1 do
+    begin
+      if FTransparent and (FTransparentColor = RGB(pixelptr^.r, pixelptr^.g, pixelptr^.b)) then
+        pixelptr^.a := 0
+      else
+        pixelptr^.a := 255;
+
+      inc(PixelPtr);
+    end;      
+  end;  
 end;
 
 end.

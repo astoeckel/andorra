@@ -9,7 +9,7 @@
 *
 * Project: Andorra 2D
 * Author:  Andreas Stoeckel
-* File: AdPNGCompressor.pas
+* File: AdPNG.pas
 * Comment: A PNG compressor and loader for Andorra 2D. It needs the PNG Delphi Sources which are available
            at http://pngdelphi.sourceforge.net/
 }

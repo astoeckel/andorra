@@ -70,6 +70,7 @@ class procedure TAdVCLFormat.FileExts(strs: TStrings);
 begin
   strs.Add('.bmp');
   strs.Add('.dib');
+  strs.Add('.ico');
 end;
 
 function TAdVCLFormat.Assign(ABitmap: TAdBitmap; AGraphic: TObject): boolean;

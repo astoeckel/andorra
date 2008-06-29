@@ -25,14 +25,14 @@ unit AdDraws;
 
 interface
 
-{'$DEFINDE DO_NOT_INCLUDE_STD_FORMATS}
-{'$DEFINDE DO_NOT_INCLUDE_STD_WINDOWMGR}              
+{'$DEFINE DO_NOT_INCLUDE_STD_FORMATS}
+{'$DEFINE DO_NOT_INCLUDE_STD_WINDOWMGR}
 
 uses
 
   SysUtils, Classes,
   AdClasses, AdTypes, AdList, AdPersistent,
-  AdWindowFramework, AdDLLLoader, AdLog, AdMath,
+  AdWindowFramework, AdDLLLoader, AdLog, AdMath, AdMessages,
   AdCanvas, AdBitmap, AdFontFactory, AdFont, AdEvents
   {$IFNDEF DO_NOT_INCLUDE_STD_FORMATS}
   ,AdStandardFontGenerator, AdSimpleCompressors, AdFormats
@@ -44,6 +44,10 @@ uses
 type
 
   ELoad = class(Exception);
+  ELoadImage = class(ELoad);
+  ESaveImage = class(ELoad);
+  
+  EInterfaceCreation = class(Exception);
 
   TAdDraw = class;
   TAdCustomImage = class;
@@ -459,12 +463,16 @@ type
 
     FAdAppl: TAd2dApplication;
 
+    FLastError: string;
+
     procedure SetDllName(val : string);
     function SearchWindowFramework:boolean;
     procedure SetActiveSurface(ASurface:TAdSurface);
 
     procedure SetupDisplay;
     procedure InitDisplay;
+
+    procedure SetLastError(AError: string);
 
     function GetSurfaceRect: TAdRect;
   protected
@@ -493,7 +501,8 @@ type
      successfull. Remember to setup the display mode and the plugin dll before
      initializing TAdDraw. These steps can automatically be done by TAdSetup.
      Initialize will call the "seInitialize" surface event and after that the
-     "seInitialized" event.
+     "seInitialized" event. It an error occured, the result is false. The error
+     message can be obtained via the "GetLastError" method.
      @seealso(TAdSetup)
      @seealso(TAdDllExplorer)
      @seealso(TAdDisplay)
@@ -522,6 +531,12 @@ type
     {If TAdDraw created its own window, call the Run function to make the
      application actually run.}
     procedure Run;
+
+    {If an critical operation (e.g. initializing TAdDraw) failed (returned
+     "false"), the "GetLastError" returns the last error message, that may
+     be shown to the user. It such a critical error occurs, it is always logged
+     in the log file too.}
+    function GetLastError: string;
 
     {The filename of the graphic plugin that should be loaded.}
     property DllName : string read FDllName write SetDllName;
@@ -1222,16 +1237,20 @@ constructor TAdDraw.Create(AParent : Pointer);
 begin
 	inherited Create(nil);
 
+  //Store the parent control
   FParent := AParent;
 
+  //Create classes
   FDllLoader := TAdDllLoader.Create;
   FSurfaceEventList := TAdSurfaceEventList.Create;
   FProperties := TAdPluginPropertyList.Create;
   FLog := TAdLog.Create;
   FLog.AutoSave := true;
 
+  //Set display presets
   SetupDisplay;
 
+  //Set the TAdSurface "AdDraw" property
   AdDraw := self;
 end;
 
@@ -1313,9 +1332,19 @@ begin
     //Load the new Library
     FDllLoader.LoadLibrary(val);
 
-    //Read the plugin properties
-    FProperties.ReadProperties(FDllLoader);
+    if FDllLoader.LibraryLoaded then
+    begin
+      //Read the plugin properties
+      FProperties.ReadProperties(FDllLoader);
+    end;
   end;
+end;
+
+procedure TAdDraw.SetLastError(AError: string);
+begin
+  //Set the last error variable and log it.
+  FLastError := AError;
+  LogProc('TAdDraw', lsError, PChar(AError));
 end;
 
 function TAdDraw.SearchWindowFramework: boolean;
@@ -1428,11 +1457,26 @@ begin
           Setup2DScene;
 
         end else
-          FreeAndNil(FAdAppl);  
-          
+        begin
+          //Initialization failed
+          SetLastError(MsgInitializationFailed);
+          FreeAndNil(FAdAppl);
+        end;          
       end else
+      begin
+        //No window framework found
+        SetLastError(MsgNoWindowFramework);
         FreeAndNil(FAdAppl);
+      end;
+    end else
+    begin
+      //AdAppl is nil
+      SetLastError(MsgAdDrawInterfaceNotSupported);
     end;
+  end else
+  begin
+    //Library not loaded
+    SetLastError(MsgLibraryNotLoaded);
   end;
 end;
 
@@ -1443,10 +1487,10 @@ var
 begin
   //Set message data
   case ASeverity of
-    lsInfo: msg.Typ := 'Info';
-    lsWarning: msg.Typ := 'Warning';
-    lsError: msg.Typ := 'Error';
-    lsFatalError: msg.Typ := 'Fatal Error';
+    lsInfo: msg.Typ := MsgLogInfo;
+    lsWarning: msg.Typ := MsgLogWarning;
+    lsError: msg.Typ := MsgLogError;
+    lsFatalError: msg.Typ := MsgLogFatalError;
   end;
 
   msg.Sender := AModule;
@@ -1509,6 +1553,11 @@ end;
 function TAdDraw.GetHeight: integer;
 begin
   result := FWnd.ClientHeight;
+end;
+
+function TAdDraw.GetLastError: string;
+begin
+  result := FLastError;
 end;
 
 function TAdDraw.GetSurfaceRect: TAdRect;
@@ -1700,22 +1749,23 @@ end;
 
 procedure TAdCustomImage.BuildVertices;
 var
-  Vertices:TAdVertexArray;
-  Indices:TAdIndexArray;
-  i,x,y:integer;
-  ax,ay:double;
-  vc,ic:integer;
-  c:TAndorraColor;
+  Vertices: TAdVertexArray;
+  Indices: TAdIndexArray;
+  i, x, y: integer;
+  ax, ay: double;
+  vc, ic: integer;
+  c: TAndorraColor;
+  reciprocaldetails: double;
 begin
   if AdMesh <> nil then
   begin
-    vc := (FDetails+1)*(FDetails+1);
-    ic := FDetails*FDetails*6;
+    vc := sqr(FDetails+1);
 
-    SetLength(Vertices,vc);
-    SetLength(Indices,ic);
+    SetLength(Vertices, vc);
 
     c := GetColor;
+
+    reciprocaldetails := 1 / FDetails;
 
     //Set vertex coordinates
     i := 0;
@@ -1725,12 +1775,12 @@ begin
       begin
         ay := y*fheight/FDetails;
         ax := x*fwidth/FDetails;
-        Vertices[i].Position := AdVector3(ax,ay,0);
+        Vertices[i].Position := AdVector3(ax, ay, 0);
         Vertices[i].Color := c;
         Vertices[i].Texture := AdVector2(
-          (1 / FDetails) * x,
-          (1 / FDetails) * y);
-        Vertices[i].Normal := AdVector3(0,0,-1);
+          reciprocaldetails * x,
+          reciprocaldetails * y);
+        Vertices[i].Normal := AdVector3(0, 0, -1);
         i := i + 1;
       end;
     end;
@@ -1739,28 +1789,31 @@ begin
     //Create indices
     if FDetails > 1 then
     begin
+
+      //Create index array
+      ic := sqr(FDetails) * 6;
+      SetLength(Indices, ic);
+
       i := 0;
       for y := 0 to FDetails - 1 do
       begin
         for x := 0 to FDetails - 1 do
         begin
-          Indices[i] :=   y     * (FDetails+1) + x + 1;
-          Indices[i+1] := (y+1) * (FDetails+1) + x;
-          Indices[i+2] := y     * (FDetails+1) + x;
-          Indices[i+3] := y     * (FDetails+1) + x + 1;
-          Indices[i+4] := (y+1) * (FDetails+1) + x + 1;
-          Indices[i+5] := (y+1) * (FDetails+1) + x;
+          Indices[i] :=   y     * (FDetails + 1) + x + 1;
+          Indices[i+1] := (y+1) * (FDetails + 1) + x;
+          Indices[i+2] := y     * (FDetails + 1) + x;
+          Indices[i+3] := y     * (FDetails + 1) + x + 1;
+          Indices[i+4] := (y+1) * (FDetails + 1) + x + 1;
+          Indices[i+5] := (y+1) * (FDetails + 1) + x;
           i := i + 6;
         end;
       end;
       AdMesh.Indices := Indices;
     end
     else
-    begin
       AdMesh.Indices := nil;
-    end;
 
-    AdMesh.PrimitiveCount := sqr(FDetails)*2;
+    AdMesh.PrimitiveCount := sqr(FDetails) * 2;
     AdMesh.Update;
   end;
 end;
@@ -2142,7 +2195,7 @@ begin
   end
   else
   begin
-    raise ELoad.Create('This is not a vaild picture collection item.');
+    raise ELoadImage.Create(MsgNoValidImage);
   end;
 end;
 
@@ -2316,7 +2369,7 @@ begin
   end
   else
   begin
-    raise ELoad.Create('This is not a vaild Andorra Picture Library!');
+    raise ELoadImage.Create(MsgNoValidImage);
   end;
 end;
 
@@ -2959,8 +3012,7 @@ end;
 
 procedure TAdRenderingSurface.CanvasRelease(Sender: TObject);
 begin
-  if not Activated then
-    Activate;
+  Activate;
 end;
 
 procedure TAdRenderingSurface.ClearSurface(AColor: Integer);
@@ -3065,6 +3117,11 @@ procedure TAdRenderTargetTexture.Initialize;
 begin
   Finalize;
   FAd2dTexture := Parent.AdAppl.CreateRenderTargetTexture;
+
+  //Break here if the result was nil.
+  if FAd2dTexture = nil then
+    raise EInterfaceCreation(MsgSurfaceInterfaceNotAvailable);
+    
   FAd2dTexture.Filter := FFilter;
   UpdateSize;
 end;

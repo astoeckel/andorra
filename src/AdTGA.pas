@@ -24,7 +24,8 @@ unit AdTGA;
 interface
 
 uses
-  Classes, AdBitmap, AdTypes, AdTGAImage;
+  Classes,
+  AdBitmap, AdTypes, AdTGAImage;
 
 type
   {A compressor to store textures in the TGA format}
@@ -87,7 +88,7 @@ end;
 
 class procedure TAdTGAFormat.FileExts(strs: TStrings);
 begin
-  strs.Add('.TGA')
+  strs.Add('.tga')
 end;
 
 class function TAdTGAFormat.SupportsObject(AGraphic: TObject): boolean;

@@ -10,7 +10,7 @@
 *
 * Project: Andorra 2D
 * Author:  Manuel Eberl
-* File: AdTGAObject.pas
+* File: AdTGAImage.pas
 * Comment: Provides an image class to load and save TGA files.
 * Supported Formats to load:
 * o Indexed with 15, 16, 24 or 32 bits per palette entry and 8, 16, 24 or 32
