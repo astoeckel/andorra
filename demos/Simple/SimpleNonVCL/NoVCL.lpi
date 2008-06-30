@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="2"/>
+      <ActiveEditorIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value=""/>
@@ -29,23 +29,21 @@
         <PackageName Value="LazOpenGLContext"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="12">
+    <Units Count="16">
       <Unit0>
         <Filename Value="NoVCL.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="NoVCL"/>
-        <CursorPos X="55" Y="6"/>
+        <CursorPos X="1" Y="11"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="0"/>
         <UsageCount Value="38"/>
-        <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="41" Y="10"/>
+        <CursorPos X="25" Y="17"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="0"/>
         <UsageCount Value="21"/>
         <Loaded Value="True"/>
       </Unit1>
@@ -54,27 +52,21 @@
         <UnitName Value="AdSimpleXML"/>
         <CursorPos X="43" Y="1340"/>
         <TopLine Value="1395"/>
-        <EditorIndex Value="10"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="..\..\..\src\AdLCLOGLWindow.pas"/>
         <UnitName Value="AdLCLOGLWindow"/>
-        <CursorPos X="21" Y="112"/>
-        <TopLine Value="96"/>
-        <EditorIndex Value="9"/>
+        <CursorPos X="66" Y="69"/>
+        <TopLine Value="48"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="..\..\..\src\AdDraws.pas"/>
         <UnitName Value="AdDraws"/>
-        <CursorPos X="1" Y="2572"/>
-        <TopLine Value="2556"/>
-        <EditorIndex Value="6"/>
+        <CursorPos X="1" Y="2628"/>
+        <TopLine Value="2612"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\lcl\include\control.inc"/>
@@ -87,169 +79,89 @@
         <UnitName Value="AdFontFactory"/>
         <CursorPos X="20" Y="331"/>
         <TopLine Value="316"/>
-        <EditorIndex Value="5"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\..\src\AdSDLWindow.pas"/>
         <UnitName Value="AdSDLWindow"/>
         <CursorPos X="44" Y="30"/>
-        <TopLine Value="14"/>
-        <EditorIndex Value="4"/>
+        <TopLine Value="33"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\..\src\AdFreeImage.pas"/>
         <UnitName Value="AdFreeImage"/>
-        <CursorPos X="9" Y="185"/>
-        <TopLine Value="131"/>
-        <EditorIndex Value="2"/>
+        <CursorPos X="3" Y="133"/>
+        <TopLine Value="118"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\..\..\src\AdBitmap.pas"/>
         <UnitName Value="AdBitmap"/>
-        <CursorPos X="10" Y="395"/>
-        <TopLine Value="381"/>
-        <EditorIndex Value="8"/>
+        <CursorPos X="1" Y="410"/>
+        <TopLine Value="401"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\..\..\src\dll\opengl\OGLMain.pas"/>
         <UnitName Value="OGLMain"/>
         <CursorPos X="1" Y="952"/>
         <TopLine Value="936"/>
-        <EditorIndex Value="7"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\rtl\objpas\math.pp"/>
         <UnitName Value="math"/>
-        <CursorPos X="1" Y="848"/>
+        <CursorPos X="12" Y="835"/>
         <TopLine Value="832"/>
-        <EditorIndex Value="3"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit11>
+      <Unit12>
+        <Filename Value="..\..\..\lib\FreeImage.pas"/>
+        <UnitName Value="FreeImage"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\rtl\objpas\typinfo.pp"/>
+        <UnitName Value="typinfo"/>
+        <CursorPos X="1" Y="558"/>
+        <TopLine Value="542"/>
+        <UsageCount Value="10"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
+        <UnitName Value="AdVCLWindow"/>
+        <CursorPos X="6" Y="66"/>
+        <TopLine Value="65"/>
+        <UsageCount Value="10"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="..\..\..\src\AdVCLComponentWindow.pas"/>
+        <UnitName Value="AdVCLComponentWindow"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="57"/>
+        <UsageCount Value="10"/>
+      </Unit15>
     </Units>
-    <JumpHistory Count="28" HistoryIndex="27">
+    <JumpHistory Count="4" HistoryIndex="3">
       <Position1>
-        <Filename Value="..\..\..\src\AdSDLWindow.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="Main.pas"/>
+        <Caret Line="93" Column="1" TopLine="71"/>
       </Position1>
       <Position2>
         <Filename Value="Main.pas"/>
-        <Caret Line="10" Column="9" TopLine="1"/>
+        <Caret Line="93" Column="1" TopLine="71"/>
       </Position2>
       <Position3>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="132" Column="1" TopLine="116"/>
+        <Filename Value="Main.pas"/>
+        <Caret Line="10" Column="19" TopLine="1"/>
       </Position3>
       <Position4>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="134" Column="1" TopLine="118"/>
-      </Position4>
-      <Position5>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="135" Column="1" TopLine="119"/>
-      </Position5>
-      <Position6>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="137" Column="6" TopLine="122"/>
-      </Position6>
-      <Position7>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="141" Column="1" TopLine="125"/>
-      </Position7>
-      <Position8>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="142" Column="1" TopLine="126"/>
-      </Position8>
-      <Position9>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="144" Column="1" TopLine="128"/>
-      </Position9>
-      <Position10>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="146" Column="1" TopLine="130"/>
-      </Position10>
-      <Position11>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="158" Column="1" TopLine="134"/>
-      </Position11>
-      <Position12>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="161" Column="1" TopLine="149"/>
-      </Position12>
-      <Position13>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="167" Column="1" TopLine="147"/>
-      </Position13>
-      <Position14>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="170" Column="1" TopLine="154"/>
-      </Position14>
-      <Position15>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="171" Column="1" TopLine="155"/>
-      </Position15>
-      <Position16>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="178" Column="20" TopLine="157"/>
-      </Position16>
-      <Position17>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="175" Column="1" TopLine="163"/>
-      </Position17>
-      <Position18>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="176" Column="1" TopLine="160"/>
-      </Position18>
-      <Position19>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="178" Column="1" TopLine="162"/>
-      </Position19>
-      <Position20>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="183" Column="1" TopLine="167"/>
-      </Position20>
-      <Position21>
         <Filename Value="Main.pas"/>
-        <Caret Line="10" Column="41" TopLine="1"/>
-      </Position21>
-      <Position22>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="36" Column="15" TopLine="21"/>
-      </Position22>
-      <Position23>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="2572" Column="1" TopLine="2552"/>
-      </Position23>
-      <Position24>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="2659" Column="1" TopLine="2643"/>
-      </Position24>
-      <Position25>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="2660" Column="1" TopLine="2644"/>
-      </Position25>
-      <Position26>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="181" Column="28" TopLine="154"/>
-      </Position26>
-      <Position27>
-        <Filename Value="..\..\..\src\AdFreeImage.pas"/>
-        <Caret Line="132" Column="1" TopLine="119"/>
-      </Position27>
-      <Position28>
-        <Filename Value="..\..\..\..\..\..\..\..\..\..\Programme\lazarus\fpc\2.2.0\source\rtl\objpas\math.pp"/>
-        <Caret Line="850" Column="13" TopLine="832"/>
-      </Position28>
+        <Caret Line="10" Column="9" TopLine="1"/>
+      </Position4>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

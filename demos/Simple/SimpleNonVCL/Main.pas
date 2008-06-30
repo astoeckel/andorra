@@ -7,7 +7,7 @@ unit Main;
 interface
 
 uses
-  AdFreeImage, AdClasses, AdEvents, AdDraws, AdTypes, AdStdWindow;
+  AdVCLWindow, AdClasses, AdEvents, AdDraws, AdTypes;
 
 type
   TAdAppl = class
