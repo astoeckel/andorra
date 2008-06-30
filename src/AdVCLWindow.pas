@@ -74,6 +74,7 @@ end;
 destructor TAdVCLWindow.Destroy;
 begin
   ResetEvents;
+  
   if FForm <> nil then
     FForm.Free;
   inherited;

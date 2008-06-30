@@ -696,9 +696,12 @@ function TAdButton.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
-  result := true;
-  FState := bsDown;
+
+  if Button = abLeft then
+    FState := bsDown;
+
   GetStateNr;
+  result := true;
 end;
 
 function TAdButton.DoMouseEnter:boolean;
@@ -835,7 +838,7 @@ function TAdForm.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
   result := true;
-  if not DesignMode then
+  if (not DesignMode) and (Button = abLeft) then
   begin
     FMX := X;
     FMY := Y;
@@ -1011,15 +1014,19 @@ function TAdCheckBox.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState;
   X, Y: Integer):boolean;
 begin
   result := true;
-  FState := bsDown;
 
-  if GroupIndex = 0 then
+  if Button = abLeft then
   begin
-    Checked := not Checked;
-  end
-  else
-  begin
-    Checked := true;
+    FState := bsDown;
+
+    if GroupIndex = 0 then
+    begin
+      Checked := not Checked;
+    end
+    else
+    begin
+      Checked := true;
+    end;
   end;
 
 
@@ -1324,7 +1331,7 @@ function TAdBitmapButton.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftStat
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
   result := true;
-  if FImgDown.Loaded then
+  if (FImgDown.Loaded) and (Button = abLeft) then
   begin
     FState := bsDown;
     if FCheckButton and ((FGroupIndex = 0) or (not FDown)) then
@@ -2229,7 +2236,10 @@ function TAdSkinBtn.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
 begin
   inherited DoMouseDown(Button,Shift,X,Y);
   result := true;
-  FState := bsDown;
+
+  if Button = abLeft then
+    FState := bsDown;
+
   GetStateNr;
 end;
 

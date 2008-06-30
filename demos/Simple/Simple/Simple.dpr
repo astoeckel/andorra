@@ -2,9 +2,7 @@ program Simple;
 
 uses
   Forms,
-  Main in 'Main.pas' {Form1},
-  AdBMPImage in '..\..\..\src\AdBMPImage.pas',
-  AdBMP in '..\..\..\src\AdBMP.pas';
+  Main in 'Main.pas' {Form1};
 
 {$R *.res}
 

@@ -48,7 +48,7 @@ type
     AddRect:TAdRect;
     FirstPoint:boolean;
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdGUI:TAdGUI;
     AdImage:TAdImage;
@@ -266,15 +266,15 @@ procedure TDesignerDlg.FormCreate(Sender: TObject);
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
-  AdDraw1.DllName := 'AndorraOGL.dll';
-  if AdDraw1.Initialize then
+  AdDraw := TAdDraw.Create(self);
+  AdDraw.DllName := 'AndorraOGL.dll';
+  if AdDraw.Initialize then
   begin
     Application.OnIdle := Idle;
 
-    AdImage := TAdImage.Create(AdDraw1);
+    AdImage := TAdImage.Create(AdDraw);
 
-    AdGUI := TAdGUI.Create(AdDraw1);
+    AdGUI := TAdGUI.Create(AdDraw);
     AdGUI.Skin.LoadFromFile('sunna.axs');
     AdGUI.Cursors.LoadFromFile('cursors.xml');
     AdGUI.Cursors.Visible := false;
@@ -282,7 +282,7 @@ begin
     AdGUI.DesignMode := true;
 
     AdConnector := TAdGUIConnector.Create(AdGUI);
-    AdConnector.ConnectEventHandlers(AdDraw1.Window);
+    AdConnector.ConnectEventHandlers(AdDraw.Window);
 
     if Assigned(OnChangeList) then
       OnChangeList(self);
@@ -301,7 +301,7 @@ begin
   AdGUI.Free;
   AdPerCounter.Free;
   AdImage.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TDesignerDlg.FormKeyDown(Sender: TObject; var Key: Word;
@@ -368,7 +368,7 @@ var
 begin
   if (not AdConnector.Connected) and (AddComp = nil) then
   begin
-    AdConnector.ConnectEventHandlers(AdDraw1.Window);
+    AdConnector.ConnectEventHandlers(AdDraw.Window);
     AdGUI.MouseUp(abLeft,[asLeft],X,Y);
     b := false;
     Idle(nil,b);
@@ -430,7 +430,7 @@ begin
 
     AddComp := nil;
     FirstPoint := false;
-    AdConnector.ConnectEventHandlers(AdDraw1.Window);
+    AdConnector.ConnectEventHandlers(AdDraw.Window);
     Cursor := crDefault;
 
     if Assigned(OnChangeList) then
@@ -440,28 +440,28 @@ end;
 
 procedure TDesignerDlg.FormResize(Sender: TObject);
 begin
-  if AdDraw1.Initialized then
+  if AdDraw.Initialized then
   begin
-    AdDraw1.Setup2DScene(ClientWidth, ClientHeight);
+    AdDraw.Setup2DScene;
   end;
 end;
 
 procedure TDesignerDlg.Idle(Sender: TObject; var Done: boolean);
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    with AdDraw1 do
+    with AdDraw do
     begin
       ClearSurface(ColorToRGB(clBtnFace));
       BeginScene;
-      AdImage.StretchDraw(AdDraw1,AdDraw1.DisplayRect,0);
+      AdImage.StretchDraw(AdDraw,AdDraw.DisplayRect,0);
 
       AdGUI.Update(AdPerCounter.TimeGap / 1000);
 
       if (AddComp <> nil) and (FirstPoint) then
       begin
-        with AdDraw1.Canvas do
+        with AdDraw.Canvas do
         begin
           Pen.Color := Ad_ARGB(128,128,128,128);
           Brush.Color := Ad_ARGB(64,128,128,255);

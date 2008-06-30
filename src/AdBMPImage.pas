@@ -27,10 +27,14 @@ uses
   AdTypes, AdBitmap, AdMessages;
 
 type
-  EBMPImage = class(Exception);
-  EBMPInvalidHeaderSize = class(EBMPImage);
-  EBMPInvalidCompressorMode = class(EBMPImage);
-  EBMPInvalidBitDepth = class(EBMPImage);  
+  {Exception class used within the BMP loader module.}
+  EAdBMPImage = class(Exception);
+  {Raised when one of the headers has an invalid size.}
+  EAdBMPInvalidHeaderSize = class(EAdBMPImage);
+  {Raised when the bitmap has a not supported compressor mode.}
+  EAdBMPInvalidCompressorMode = class(EAdBMPImage);
+  {Raised when the specified bit depth is not supported.}
+  EAdBMPInvalidBitDepth = class(EAdBMPImage);
 
   {BMP header that describes the BMP file.}
   TAdBitmapFileHeader = packed record
@@ -200,17 +204,17 @@ begin
       end else
       begin
         raise
-          EBMPImage.Create(MsgNoBMP);
+          EAdBMPImage.Create(MsgNoBMP);
       end;
     end else
     begin
       raise
-        EBMPInvalidHeaderSize.Create(MsgInvalidHeaderSize);
+        EAdBMPInvalidHeaderSize.Create(MsgInvalidHeaderSize);
     end;
   end else
   begin
     raise
-      EBMPInvalidHeaderSize.Create(MsgInvalidHeaderSize);
+      EAdBMPInvalidHeaderSize.Create(MsgInvalidHeaderSize);
   end;
 end;
 
@@ -377,12 +381,12 @@ begin
     end else
     begin
       raise
-        EBMPInvalidBitDepth.Create(MsgInvalidBitDepth);
+        EAdBMPInvalidBitDepth.Create(MsgInvalidBitDepth);
     end;
   end else
   begin
     raise
-      EBMPInvalidCompressorMode.Create(MsgInvalidCompressor);
+      EAdBMPInvalidCompressorMode.Create(MsgInvalidCompressor);
   end;
 end;
 

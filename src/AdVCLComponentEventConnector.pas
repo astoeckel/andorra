@@ -50,6 +50,7 @@ type
       FOldActivate: TNotifyEvent;
       FOldDeactivate: TNotifyEvent;
       FOldClose: TCloseEvent;
+      FOldIdle: TIdleEvent;
 
       FClickComp: TControl;
       FDblClickComp: TControl;
@@ -89,6 +90,7 @@ type
       procedure Activate(Sender: TObject);
       procedure Deactivate(Sender: TObject);
       procedure Close(Sender: TObject; var Action: TCloseAction);
+      procedure Idle(Sender: TObject; var Done: boolean);
     protected      
       function ConvertButton(Button: TMouseButton): TAdMouseButton;
       function ConvertShift(Shift: TShiftState): TAdShiftState;
@@ -302,6 +304,10 @@ begin
     else
       Control := nil;
   end;
+
+  //Connect idle event
+  FOldIdle := Application.OnIdle;
+  Application.OnIdle := Idle;
 end;
 
 procedure TAdVCLComponentEventConnector.DisconnectEvents;
@@ -337,6 +343,9 @@ begin
     SetMethodProp(FDeactivateComp, 'OnDeactivate', TMethod(FOldDeactivate));
   if FCloseComp <> nil then
     SetMethodProp(FCloseComp, 'OnClose', TMethod(FOldClose));
+
+  //Reset Idle Event
+  Application.OnIdle := FOldIdle;
 end;
 
 function TAdVCLComponentEventConnector.ConvertButton(Button: TMouseButton): TAdMouseButton;
@@ -503,6 +512,16 @@ begin
 
   if Assigned(FOldClose) then
     FOldClose(Sender, Action);
+end;
+
+procedure TAdVCLComponentEventConnector.Idle(Sender: TObject;
+  var Done: boolean);
+begin
+  if Assigned(FFramework.Events.OnIdle) then
+    FFramework.Events.OnIdle(FFramework, Done);
+
+  if Assigned(FOldIdle) then
+    FOldIdle(Sender, Done);
 end;
 
 end.

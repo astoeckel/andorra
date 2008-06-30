@@ -22,8 +22,25 @@ unit AdEvents;
 interface
 
 type
-  TAdMouseButton = (abLeft, abRight, abMiddle);
-  TAdShiftStates = (asShift, asCtrl, asLeft, asRight, asMiddle, asAlt, asDouble);
+  {Represents one of three mouse buttons}
+  TAdMouseButton = (
+    abLeft, //< Left mouse button
+    abRight, //< Right mouse button
+    abMiddle //< Middle mouse button
+  );
+
+  {Represents the current special key state.}
+  TAdShiftStates = (
+    asShift, //< A shift key is pressed
+    asCtrl, //< A ctrl key is pressed
+    asLeft, //< The left mouse button is pressed
+    asRight, //< The right mouse button is pressed
+    asMiddle, //< The middle mouse button is pressed
+    asAlt, //< A alt key is pressed
+    asDouble //< The left mouse key double clicked
+  );
+
+  {Set of TAdShiftState.}
   TAdShiftState = set of TAdShiftStates;
 
   TAdNotifyEvent = procedure(Sender: TObject) of object;

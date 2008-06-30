@@ -52,6 +52,7 @@ end;
 
 implementation
 
+//Copys that alpha channel to an Andorra Bitmap
 procedure GetAlpha(APNG:TPNGObject; ABMP:TAdBitmap);
 var
   x,y:integer;
@@ -70,6 +71,7 @@ begin
   end;
 end;
 
+//Copies the RGB channel to an Andorra Bitmap
 procedure GetRGB(APNG:TPNGObject; ABMP:TAdBitmap; SetAlpha:boolean=false);
 var
   x, y: integer;

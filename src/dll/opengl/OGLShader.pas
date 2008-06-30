@@ -27,7 +27,7 @@ interface
 
 uses
   {$IFDEF WIN32}Windows{$ELSE}dynlibs, SysUtils {$ENDIF}, AdTypes, AdClasses,
-  AdShaderClasses, AdContainers,
+  AdShaderClasses,
   OGLShaderClasses, OGLMain;
 
 type

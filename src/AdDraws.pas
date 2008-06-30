@@ -43,11 +43,15 @@ uses
 
 type
 
-  ELoad = class(Exception);
-  ELoadImage = class(ELoad);
-  ESaveImage = class(ELoad);
-  
-  EInterfaceCreation = class(Exception);
+  {Exception class raised when having problems while loading/saving something
+   within AdDraws.pas}
+  EAdIO = class(Exception);
+  {Problem that occured while loading an image.}
+  EAdLoadImage = class(EAdIO);
+  {Problem that occured while saving an image.}
+  EAdSaveImage = class(EAdIO);
+  {Problem when creating an Andorra interface}
+  EAdInterfaceCreation = class(Exception);
 
   TAdDraw = class;
   TAdCustomImage = class;
@@ -2195,7 +2199,7 @@ begin
   end
   else
   begin
-    raise ELoadImage.Create(MsgNoValidImage);
+    raise EAdLoadImage.Create(MsgNoValidImage);
   end;
 end;
 
@@ -2369,7 +2373,7 @@ begin
   end
   else
   begin
-    raise ELoadImage.Create(MsgNoValidImage);
+    raise EAdLoadImage.Create(MsgNoValidImage);
   end;
 end;
 
@@ -2886,17 +2890,17 @@ end;
 
 procedure TAdSurface.DoActivation;
 begin
-  //
+  //Nothing to do in this class.
 end;
 
 procedure TAdSurface.DoDeactivation;
 begin
-  //
+  //Nothing to do in this class.
 end;
 
 procedure TAdSurface.Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
 begin
-  //
+  //Nothing to do in this class.
 end;
 
 procedure TAdSurface.ClearSurface(AColor: LongInt);
@@ -3116,11 +3120,12 @@ end;
 procedure TAdRenderTargetTexture.Initialize;
 begin
   Finalize;
+
   FAd2dTexture := Parent.AdAppl.CreateRenderTargetTexture;
 
   //Break here if the result was nil.
   if FAd2dTexture = nil then
-    raise EInterfaceCreation(MsgSurfaceInterfaceNotAvailable);
+    raise EAdInterfaceCreation(MsgSurfaceInterfaceNotAvailable);
     
   FAd2dTexture.Filter := FFilter;
   UpdateSize;

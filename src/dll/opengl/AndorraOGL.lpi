@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="2"/>
+      <ActiveEditorIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value="0.0.0.0"/>
@@ -41,8 +41,8 @@
       <Unit1>
         <Filename Value="OGLShader.pas"/>
         <UnitName Value="OGLShader"/>
-        <CursorPos X="8" Y="5"/>
-        <TopLine Value="1"/>
+        <CursorPos X="3" Y="31"/>
+        <TopLine Value="134"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
@@ -50,14 +50,55 @@
       <Unit2>
         <Filename Value="OGLMain.pas"/>
         <UnitName Value="OGLMain"/>
-        <CursorPos X="1" Y="467"/>
-        <TopLine Value="440"/>
+        <CursorPos X="5" Y="1170"/>
+        <TopLine Value="1154"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit2>
     </Units>
-    <JumpHistory Count="0" HistoryIndex="-1"/>
+    <JumpHistory Count="10" HistoryIndex="9">
+      <Position1>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="407" Column="47" TopLine="1"/>
+      </Position1>
+      <Position2>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="402" Column="18" TopLine="387"/>
+      </Position2>
+      <Position3>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="308" Column="24" TopLine="292"/>
+      </Position3>
+      <Position4>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="309" Column="24" TopLine="293"/>
+      </Position4>
+      <Position5>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="310" Column="24" TopLine="294"/>
+      </Position5>
+      <Position6>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="311" Column="24" TopLine="295"/>
+      </Position6>
+      <Position7>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="78" Column="31" TopLine="62"/>
+      </Position7>
+      <Position8>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="993" Column="3" TopLine="977"/>
+      </Position8>
+      <Position9>
+        <Filename Value="OGLMain.pas"/>
+        <Caret Line="1066" Column="5" TopLine="1050"/>
+      </Position9>
+      <Position10>
+        <Filename Value="OGLShader.pas"/>
+        <Caret Line="5" Column="8" TopLine="1"/>
+      </Position10>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="5"/>
@@ -73,6 +114,10 @@
       <Generate Value="Faster"/>
     </CodeGeneration>
     <Linking>
+      <Debugging>
+        <StripSymbols Value="True"/>
+      </Debugging>
+      <LinkSmart Value="True"/>
       <Options>
         <ExecutableType Value="Library"/>
       </Options>

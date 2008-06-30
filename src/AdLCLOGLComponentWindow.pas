@@ -22,7 +22,7 @@ interface
 
 uses
   Interfaces, Classes, Controls, Forms, OpenGLContext,
-  AdEvents, AdTypes, AdWindowFramework;
+  AdEvents, AdTypes, AdWindowFramework, AdVCLComponentEventConnector;
   
 type
 
@@ -34,39 +34,7 @@ type
       FContext:TOpenGLControl;
       FBinded:boolean;
       FInitialized:boolean;
-
-      FMouseX, FMouseY : integer;
-
-      FIdle : TIdleEvent;
-
-      function ConvertShift(Shift: TShiftState):TAdShiftState;
-      function ConvertButton(Button : TMouseButton):TAdMouseButton;
-
-      procedure SetupEvents;
-
-      {Event handle methods}
-
-      procedure Idle(Sender:TObject; var Done:boolean);
-      procedure Paint(Sender:TObject);
-      procedure Resize(Sender:TObject);
-      procedure Activate(Sender:TObject);
-      procedure Deactivate(Sender:TObject);
-      procedure Close(Sender: TObject; var Action: TCloseAction);
-
-      procedure Click(Sender: TObject);
-      procedure DblClick(Sender: TObject);
-      procedure MouseDown(Sender: TObject; Button: TMouseButton;
-        Shift: TShiftState; X, Y: integer);
-      procedure MouseUp(Sender: TObject; Button: TMouseButton;
-        Shift: TShiftState; X, Y: integer);
-      procedure MouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-      procedure MouseWheel(Sender: TObject; Shift: TShiftState;
-        WheelDelta: integer; MousePos:TPoint; var Handled:boolean);
-
-      procedure KeyDown(Sender: TObject; var Key: Word; Shift:TShiftState);
-      procedure KeyUp(Sender: TObject; var Key: Word; Shift:TShiftState);
-      procedure KeyPress(Sender: TObject; var Key: Char);
-
+      FConnector: TAdVCLComponentEventConnector;
     protected
       procedure SetTitle(AValue:string);override;
 
@@ -100,6 +68,10 @@ destructor TAdLCLOGLComponentWindow.Destroy;
 begin
   if FContext <> nil then
     FContext.Free;
+    
+  if FConnector <> nil then
+    FConnector.Free;
+    
   inherited;
 end;
 
@@ -142,8 +114,8 @@ begin
     FInitialized := true;
 
     SetCursorVisible(true);
-
-    SetupEvents;
+    
+    FConnector := TAdVCLComponentEventConnector.Create(FContext, self);
   end;
 end;
 
@@ -184,170 +156,6 @@ procedure TAdLCLOGLComponentWindow.SetTitle(AValue: string);
 begin
   inherited;
   Application.Title := AValue;
-end;
-
-procedure TAdLCLOGLComponentWindow.SetupEvents;
-var
-  FForm : TForm;
-begin
-  FForm := nil;
-  if FControl.Owner is TForm then
-    FForm := TForm(FControl.Owner)
-  else
-    exit;
-
-  //Store old event handlers
-  FIdle := Application.OnIdle;
-
-  //Set new event handlers
-  Application.OnIdle := Idle;
-
-  FContext.OnPaint := Paint;
-  FContext.OnResize := Resize;
-  FForm.OnDeactivate := Deactivate;
-  FForm.OnActivate := Activate;
-  FForm.OnClose := Close;
-
-  FContext.OnClick := Click;
-  FContext.OnDblClick := DblClick;
-  FContext.OnMouseMove := MouseMove;
-  FContext.OnMouseDown := MouseDown;
-  FContext.OnMouseUp := MouseUp;
-  FContext.OnMouseWheel := MouseWheel;
-
-  FContext.OnKeyDown := KeyDown;
-  FContext.OnKeyPress := KeyPress;
-  FContext.OnKeyUp := KeyUp;
-end;
-
-function TAdLCLOGLComponentWindow.ConvertButton(Button: TMouseButton): TAdMouseButton;
-begin
-  result := TAdMouseButton(ord(Button));
-end;
-
-function TAdLCLOGLComponentWindow.ConvertShift(Shift: TShiftState): TAdShiftState;
-begin
-  result := [];
-  if ssShift in Shift then result := result + [asShift];
-  if ssCtrl in Shift then result := result + [asCtrl];
-  if ssAlt in Shift then result := result + [asAlt];
-  if ssDouble in Shift then result := result + [asDouble];
-  if ssLeft in Shift then result := result + [asLeft];
-  if ssRight in Shift then result := result + [asRight];
-  if ssMiddle in Shift then result := result + [asMiddle];
-end;
-
-{TAdLCLOGLComponentWindow Event handlers}
-
-procedure TAdLCLOGLComponentWindow.Idle(Sender: TObject; var Done: boolean);
-begin
-  if Assigned(Events.OnIdle) then
-    Events.OnIdle(Self, Done);
-  if Assigned(FIdle) then
-    FIdle(Self, Done);
-end;
-
-procedure TAdLCLOGLComponentWindow.Deactivate(Sender: TObject);
-begin
-  if Assigned(Events.OnDeactivate) then
-    Events.OnDeactivate(self);
-end;
-
-procedure TAdLCLOGLComponentWindow.Activate(Sender: TObject);
-begin
-  if Assigned(Events.OnActivate) then
-    Events.OnActivate(self);
-end;
-
-procedure TAdLCLOGLComponentWindow.Click(Sender: TObject);
-begin
-  if Assigned(Events.OnClick) then
-    Events.OnClick(self, FMouseX, FMouseY);
-end;
-
-procedure TAdLCLOGLComponentWindow.DblClick(Sender: TObject);
-begin
-  if Assigned(Events.OnClick) then
-    Events.OnDblClick(self, FMouseX, FMouseY);
-end;
-
-procedure TAdLCLOGLComponentWindow.Close(Sender: TObject; var Action: TCloseAction);
-var
-  canclose:boolean;
-begin
-  if Assigned(Events.OnClose) then
-  begin
-    canclose := false;
-    Events.OnClose(self, canclose);
-    if canclose then
-      Action := caFree
-    else
-      Action := caNone;
-  end;
-end;
-
-procedure TAdLCLOGLComponentWindow.KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if Assigned(Events.OnKeyDown) then
-    Events.OnKeyDown(self, Key, ConvertShift(Shift));
-end;
-
-procedure TAdLCLOGLComponentWindow.KeyPress(Sender: TObject; var Key: Char);
-begin
-  if Assigned(Events.OnKeyPress) then
-    Events.OnKeyPress(self, Key);
-end;
-
-procedure TAdLCLOGLComponentWindow.KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if Assigned(Events.OnKeyUp) then
-    Events.OnKeyUp(self, Key, ConvertShift(Shift));
-end;
-
-procedure TAdLCLOGLComponentWindow.MouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  if Assigned(Events.OnMouseDown) then
-    Events.OnMouseDown(self, ConvertButton(Button), ConvertShift(Shift), X, Y);
-end;
-
-procedure TAdLCLOGLComponentWindow.MouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: integer);
-begin
-  FMouseX := X; FMouseY := Y;
-  if Assigned(Events.OnMouseMove) then
-    Events.OnMouseMove(self, ConvertShift(Shift), X, Y);
-end;
-
-procedure TAdLCLOGLComponentWindow.MouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-begin
-  if Assigned(Events.OnMouseUp) then
-    Events.OnMouseUp(self, ConvertButton(Button), ConvertShift(Shift), X, Y);
-end;
-
-procedure TAdLCLOGLComponentWindow.MouseWheel(Sender: TObject; Shift: TShiftState;
-  WheelDelta: integer; MousePos:TPoint; var Handled:boolean);
-begin
-  Handled := false;
-  if Assigned(Events.OnMouseWheel) then
-  begin
-    Handled := true;
-    Events.OnMouseWheel(self, ConvertShift(Shift), WheelDelta, MousePos.X,
-      MousePos.Y);
-  end;
-end;
-
-procedure TAdLCLOGLComponentWindow.Paint(Sender: TObject);
-begin
-  if Assigned(Events.OnPaint) then
-    Events.OnPaint(self);
-end;
-
-procedure TAdLCLOGLComponentWindow.Resize(Sender: TObject);
-begin
-  if Assigned(Events.OnResize) then
-    Events.OnResize(self);
 end;
 
 initialization
