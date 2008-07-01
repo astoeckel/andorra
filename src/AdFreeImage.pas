@@ -129,7 +129,7 @@ var
   mem : PByte;
   typ:FREE_IMAGE_TYPE;
 begin
-  result := false;
+  result := true;
   
   pdib1 := nil;
   pdib2 := nil;
@@ -178,9 +178,7 @@ begin
       Move(FreeImage_GetScanline(pdib1, y)^, mem^, 4 * w);
       Inc(mem, 4 * w);
     end;
-    
-    result := true;
-    
+
   finally
     if pdib1 <> nil then FreeImage_UnLoad(pdib1);
     if pdib2 <> nil then FreeImage_UnLoad(pdib2);

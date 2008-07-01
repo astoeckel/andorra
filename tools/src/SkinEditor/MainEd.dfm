@@ -454,15 +454,13 @@ object MainDlg: TMainDlg
             BevelOuter = bvNone
             BorderStyle = bsNone
             TabOrder = 0
-            ExplicitLeft = 6
-            ExplicitTop = 16
             DesignSize = (
               185
               292)
             object Button9: TSpeedButton
               Left = 4
               Top = 3
-              Width = 178
+              Width = 161
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Add Element'
@@ -494,11 +492,12 @@ object MainDlg: TMainDlg
                 A6FF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF
                 00FFFF00FFFF00FF2F31A4020EAAFF00FFFF00FFFF00FFFF00FF}
               OnClick = Button9Click
+              ExplicitWidth = 178
             end
             object Button10: TSpeedButton
               Left = 4
               Top = 34
-              Width = 178
+              Width = 161
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Delete Element'
@@ -531,11 +530,12 @@ object MainDlg: TMainDlg
                 FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF
                 00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FF}
               OnClick = Button10Click
+              ExplicitWidth = 178
             end
             object SpeedButton6: TSpeedButton
               Left = 4
               Top = 65
-              Width = 178
+              Width = 161
               Height = 25
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Wizzard....'
@@ -569,11 +569,12 @@ object MainDlg: TMainDlg
                 0202020248363C34344744566463424C0202020202583D3A3E37373737394D02
                 020202020202494B53023B38450202020202}
               OnClick = SpeedButton6Click
+              ExplicitWidth = 178
             end
             object GroupBox7: TGroupBox
               Left = 5
               Top = 96
-              Width = 177
+              Width = 160
               Height = 104
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Anchors:'
@@ -618,7 +619,7 @@ object MainDlg: TMainDlg
             object GroupBox8: TGroupBox
               Left = 5
               Top = 203
-              Width = 177
+              Width = 160
               Height = 133
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Position:'
@@ -700,23 +701,22 @@ object MainDlg: TMainDlg
             object GroupBox9: TGroupBox
               Left = 4
               Top = 336
-              Width = 178
+              Width = 161
               Height = 283
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Images:'
               TabOrder = 1
               DesignSize = (
-                178
+                161
                 283)
               object GroupBox3: TGroupBox
                 Left = 3
                 Top = 16
-                Width = 167
+                Width = 150
                 Height = 113
                 Anchors = [akLeft, akTop, akRight]
                 Caption = 'Source rectangle:'
                 TabOrder = 0
-                ExplicitWidth = 109
                 object Label6: TLabel
                   Left = 16
                   Top = 16
@@ -785,14 +785,13 @@ object MainDlg: TMainDlg
               object GroupBox11: TGroupBox
                 Left = 5
                 Top = 135
-                Width = 165
+                Width = 148
                 Height = 138
                 Anchors = [akLeft, akTop, akRight]
                 Caption = 'Image:'
                 TabOrder = 1
-                ExplicitWidth = 107
                 DesignSize = (
-                  165
+                  148
                   138)
                 object Label10: TLabel
                   Left = 16
@@ -811,26 +810,24 @@ object MainDlg: TMainDlg
                 object ComboBox1: TComboBox
                   Left = 16
                   Top = 43
-                  Width = 133
+                  Width = 116
                   Height = 21
                   Style = csDropDownList
                   Anchors = [akLeft, akTop, akRight]
                   ItemHeight = 13
                   TabOrder = 0
                   OnChange = ComboBox1Change
-                  ExplicitWidth = 75
                 end
                 object ComboBox2: TComboBox
                   Left = 16
                   Top = 91
-                  Width = 133
+                  Width = 116
                   Height = 21
                   Style = csDropDownList
                   Anchors = [akLeft, akTop, akRight]
                   ItemHeight = 13
                   TabOrder = 1
                   OnChange = ComboBox2Change
-                  ExplicitWidth = 75
                 end
               end
             end

@@ -15,7 +15,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
 
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -39,21 +39,20 @@ begin
 
   AdPerCounter := TAdPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(self);
+  AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(AdDraw1);
+  AdSetupDlg := TAdSetup.Create(AdDraw);
   AdSetupDlg.Image := 'logo1.png';
 
   if AdSetupDlg.Execute then
   begin
-    if AdDraw1.Initialize then
+    if AdDraw.Initialize then
     begin
       Application.OnIdle := Idle;
     end
     else
     begin
-      ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
-                  'mode or another video adapter.');
+      ShowMessage(AdDraw.GetLastError);
       halt;
     end;
   end
@@ -67,7 +66,7 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdPerCounter.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -83,11 +82,11 @@ var
   i: integer;
   start:integer;
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
-    AdDraw1.ClearSurface(clBlack);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(clBlack);
+    AdDraw.BeginScene;
 
     cx := w;
     cy := h;
@@ -96,7 +95,7 @@ begin
 
     start := round(s);
 
-    with AdDraw1.Canvas do
+    with AdDraw.Canvas do
     begin
       Pen.Width := 16;
       Pen.TextureMode := tmTile;
@@ -142,8 +141,8 @@ begin
 
     Caption := 'FPS: '+IntToStr(AdPerCounter.FPS);
 
-    AdDraw1.EndScene;
-    AdDraw1.Flip; 
+    AdDraw.EndScene;
+    AdDraw.Flip; 
   end;
   Done := false;
 end;

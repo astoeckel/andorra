@@ -30,8 +30,6 @@ object MainDlg: TMainDlg
     OnMouseMove = Panel1MouseMove
     OnMouseUp = Panel1MouseUp
     OnResize = Panel1Resize
-    ExplicitTop = 29
-    ExplicitHeight = 656
   end
   object Panel2: TPanel
     Left = 0
@@ -42,8 +40,6 @@ object MainDlg: TMainDlg
     BevelOuter = bvNone
     BorderWidth = 3
     TabOrder = 1
-    ExplicitTop = 29
-    ExplicitHeight = 656
     object Splitter1: TSplitter
       Left = 3
       Top = 471
@@ -71,7 +67,6 @@ object MainDlg: TMainDlg
       Padding.Right = 2
       Padding.Bottom = 2
       TabOrder = 0
-      ExplicitHeight = 471
       object Image2: TImage
         Left = 120
         Top = 240
@@ -159,7 +154,6 @@ object MainDlg: TMainDlg
       Padding.Bottom = 3
       TabOrder = 1
       Visible = False
-      ExplicitTop = 477
       object ListView2: TListView
         Left = 5
         Top = 42

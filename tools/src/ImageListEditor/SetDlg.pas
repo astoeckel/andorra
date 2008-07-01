@@ -166,13 +166,13 @@ end;
 function TSettings.InspectImage(AImage: TAdImage):TModalResult;
 var bmp:TBitmap;
     adbmp:TAdBitmap;
-    bits:byte;
+    bits: TAdBitDepth;
 begin
   Setting := true;
   Edit1.Text := AImage.Name;
   case AImage.Texture.BitDepth of
-    16:Radiogroup1.ItemIndex := 0;
-    32:Radiogroup1.ItemIndex := 1;
+    ad16Bit: Radiogroup1.ItemIndex := 0;
+    ad32Bit: Radiogroup1.ItemIndex := 1;
   end;
   if AImage.Texture.Compressor <> nil then  
     ListBox1.ItemIndex := ListBox1.Items.IndexOf(AImage.Texture.Compressor.ClassName);
@@ -201,10 +201,10 @@ begin
   begin
     AImage.Name := Edit1.Text;
     case RadioGroup1.ItemIndex of
-      0:bits := 16;
-      1:bits := 32;
+      0:bits := ad16Bit;
+      1:bits := ad32Bit;
     else
-      bits := 32;
+      bits := ad32Bit;
     end;
 
     if AImage.Texture.BitDepth <> bits then
@@ -238,7 +238,7 @@ begin
       adbmp := TAdBitmap.Create;
       adbmp.Assign(Image1.Picture.Bitmap);
       adbmp.AssignAlphaChannel(Image2.Picture.Bitmap);
-      AImage.Texture.Texture.LoadFromBitmap(AdBmp,AImage.Parent.GetTextureParams(bits));
+      AImage.Texture.Texture.LoadFromBitmap(AdBmp, bits);
       adbmp.Free;
     end;
     AImage.Restore;

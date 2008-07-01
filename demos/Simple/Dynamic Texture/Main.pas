@@ -64,7 +64,7 @@ begin
     end
     else
     begin
-      ShowMessage('Unable to initialize Andorra 2D');
+      ShowMessage(AdDraw.GetLastError);
       halt;
     end;
   end

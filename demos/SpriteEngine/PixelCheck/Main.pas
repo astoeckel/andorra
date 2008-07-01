@@ -97,7 +97,7 @@ begin
     end
     else
     begin
-      ShowMessage('Andorra 2D couldn''t be initialized. Please try another display mode or adapter');
+      ShowMessage(AdDraw.GetLastError);
       halt;
     end;
   end

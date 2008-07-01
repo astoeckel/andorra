@@ -155,7 +155,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdSkin:TAdSkin;
     Color:TColor;
     SelItem:TAdSkinItem;
@@ -482,7 +482,7 @@ end;
 
 procedure TMainDlg.DrawHandeledRect(ARect:TAdRect);
 begin
-  with AdDraw1.Canvas do
+  with AdDraw.Canvas do
   begin
     Rectangle(ARect);
     Brush.Style := abSolid;
@@ -541,8 +541,8 @@ end;
 
 procedure TMainDlg.FormCreate(Sender: TObject);
 begin
-  AdDraw1 := TAdDraw.Create(Panel10);
-  AdDraw1.DllName := 'AndorraOGL.dll'; 
+  AdDraw := TAdDraw.Create(Panel10);
+  AdDraw.DllName := 'AndorraOGL.dll';
 
   HandleList := THandleList.Create;
 
@@ -550,10 +550,10 @@ begin
 
   Saved := true;
 
-  if AdDraw1.Initialize then
+  if AdDraw.Initialize then
   begin
     Application.OnIdle := Idle;
-    AdSkin := TAdSkin.Create(AdDraw1);
+    AdSkin := TAdSkin.Create(AdDraw);
     Color := ColorToRGB(clBtnFace);
     Select;
     SelectElem;
@@ -569,7 +569,7 @@ procedure TMainDlg.FormDestroy(Sender: TObject);
 begin
   HandleList.Free;
   AdSkin.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 function TMainDlg.GetSnapPoint(P: TPoint): TPoint;
@@ -630,9 +630,9 @@ procedure TMainDlg.Idle(Sender: TObject; var Done: boolean);
 var i,state:integer;
     cx,cy:integer;
 begin
-  AdDraw1.BeginScene;
+  AdDraw.BeginScene;
 
-  AdDraw1.ClearSurface(Color);
+  AdDraw.ClearSurface(Color);
 
   if SelItem <> nil then
   begin
@@ -645,7 +645,7 @@ begin
       Draw(state,cx,cy,BaseWidth,BaseHeight);
     end;
 
-    with AdDraw1.Canvas do
+    with AdDraw.Canvas do
     begin
       if ChangedSize then
       begin
@@ -685,8 +685,8 @@ begin
     end;
   end;
 
-  AdDraw1.EndScene;
-  AdDraw1.Flip;
+  AdDraw.EndScene;
+  AdDraw.Flip;
 
   //Done := false;
 end;
@@ -890,9 +890,9 @@ end;
 
 procedure TMainDlg.Panel10Resize(Sender: TObject);
 begin
-  if AdDraw1.Initialized then
+  if AdDraw.Initialized then
   begin
-    AdDraw1.Setup2DScene(Panel10.ClientWidth, Panel10.ClientHeight);
+    AdDraw.Setup2DScene;
   end;
 end;
 

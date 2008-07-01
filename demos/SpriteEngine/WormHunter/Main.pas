@@ -191,10 +191,12 @@ begin
     end
     else
     begin
-      ShowMessage('Error while initializing Andorra 2D. Try to use another display'+
-                  'mode or another video adapter.');
+      ShowMessage(AdDraw.GetLastError);
       halt;
     end;
+  end else
+  begin
+    halt;
   end;
 end;
 

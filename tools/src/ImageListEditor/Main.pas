@@ -119,7 +119,7 @@ type
   private
     { Private-Deklarationen }
   public
-    AdDraw1:TAdDraw;
+    AdDraw:TAdDraw;
     AdImageList:TAdImageList;
     AdPerCounter:TAdPerformanceCounter;
     Tiles:TAdImage;
@@ -189,7 +189,7 @@ begin
         adbmp.ReserveMemory(basewidth, baseheight);
         SaveToBitmap(adbmp);
         adbmp.ClearAlphaChannel;
-        LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(AdImageList[i].Texture.BitDepth));
+        LoadFromBitmap(adbmp, AdImageList[i].Texture.BitDepth);
       end;
       adbmp.Free;
     end;
@@ -302,7 +302,7 @@ begin
 
   with AdImageList.Add('animation') do
   begin
-    Texture.Texture.LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(32));
+    Texture.Texture.LoadFromBitmap(adbmp, ad32Bit);
     PatternWidth := w;
     PatternHeight := h;
     Restore;
@@ -426,17 +426,17 @@ begin
 
   AdPerCounter := TAdPerformanceCounter.Create;
 
-  AdDraw1 := TAdDraw.Create(Panel1);
-  AdDraw1.DllName := 'AndorraDX93D.dll';
-  if AdDraw1.Initialize then
+  AdDraw := TAdDraw.Create(Panel1);
+  AdDraw.DllName := 'AndorraOGL.dll';
+  if AdDraw.Initialize then
   begin
     Application.OnIdle := Idle;
-    AdImageList := TAdImageList.Create(AdDraw1);
+    AdImageList := TAdImageList.Create(AdDraw);
     AColor := ColorToRGB(clBtnFace);
 
     CreateFilter;
 
-    Tiles := TAdImage.Create(AdDraw1);
+    Tiles := TAdImage.Create(AdDraw);
     Tiles.Texture.LoadFromGraphic(Image2.Picture.Bitmap);    
     Tiles.Restore;
 
@@ -449,7 +449,7 @@ begin
   end
   else
   begin
-    ShowMessage('Couldn''t initialize Andorra 2D.');
+    ShowMessage(AdDraw.GetLastError);
     Close;
   end;
 end;
@@ -459,23 +459,26 @@ begin
   Tiles.Free;
   AdPerCounter.Free;
   AdImageList.Free;
-  AdDraw1.Free;
+  AdDraw.Free;
 end;
 
 procedure TMainDlg.Idle(Sender: TObject; var Done: boolean);
 var
   c:TAndorraColor;
 begin
-  if AdDraw1.CanDraw then
+  if AdDraw.CanDraw then
   begin
     AdPerCounter.Calculate;
 
-    AdDraw1.ClearSurface(AColor);
-    AdDraw1.BeginScene;
+    AdDraw.ClearSurface(AColor);
+    AdDraw.BeginScene;
 
     if TiledBackground1.Checked then
     begin
-      Tiles.StretchBltAlpha(AdDraw1,AdRect(0,0,Panel1.Width,Panel1.Height),AdRect(0,0,Panel1.Width,Panel1.Height),0.5,0.5,0,255);
+      Tiles.DrawEx(AdDraw,
+        AdRect(0,0,Panel1.Width,Panel1.Height),
+        AdRect(0,0,Panel1.Width,Panel1.Height), 0.5, 0.5, 0, 255,
+        bmAlpha);
     end;
     
     if ListView1.ItemIndex <> -1 then
@@ -493,11 +496,11 @@ begin
           Done := true;
         end;
 
-        Draw(AdDraw1,(AdDraw1.Window.ClientWidth - Width) div 2 + OffsetX,(AdDraw1.Window.ClientHeight - Height) div 2 + OffsetY,round(pattern));
+        Draw(AdDraw,(AdDraw.Window.ClientWidth - Width) div 2 + OffsetX,(AdDraw.Window.ClientHeight - Height) div 2 + OffsetY,round(pattern));
       end;
     end;
 
-    with AdDraw1.Canvas do
+    with AdDraw.Canvas do
     begin
       c := ColorToAdColor(ColorToRGB(clBtnFace));
       Brush.Color := c;
@@ -511,8 +514,8 @@ begin
       Release;
     end;
 
-    AdDraw1.EndScene;
-    AdDraw1.Flip;
+    AdDraw.EndScene;
+    AdDraw.Flip;
   end;
 end;
 
@@ -726,9 +729,9 @@ end;
 
 procedure TMainDlg.Panel1Resize(Sender: TObject);
 begin
-  if AdDraw1.Initialized then
+  if AdDraw.Initialized then
   begin
-    AdDraw1.Setup2DScene(Panel1.ClientWidth, Panel1.ClientHeight);
+    AdDraw.Setup2DScene;
   end;
 end;
 
@@ -758,7 +761,7 @@ begin
           adbmp.ReserveMemory(basewidth, baseheight);
           SaveToBitmap(adbmp);
           adbmp.AssignAlphaChannel(bmp);
-          LoadFromBitmap(adbmp, AdDraw1.GetTextureParams(AdImageList[i].Texture.BitDepth));
+          LoadFromBitmap(adbmp, AdImageList[i].Texture.BitDepth);
         end;
         adbmp.Free;
       end;
