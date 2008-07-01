@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, AdSprites, AdPng, AdSetupDlg, AdPerformanceCounter;
+  Dialogs, AdDraws, AdClasses, AdSprites, AdPng, AdSetupDlg, AdPerformanceCounter,
+  AdCanvas, AdTypes, AdSpriteEngineEx;
 
 type
   TAdTestSprite = class(TImageSpriteEx)
@@ -154,13 +155,16 @@ begin
     Color := rgb(200,200,200);
   inherited;
   Color := rgb(255,255,255);
+
 end;
 
 procedure TAdTestSprite.DoMove(timegap: double);
 begin
   inherited;
   col := false;
-  Angle := Angle + timegap * 10;
+  Angle := Angle + timegap * 50;
+  RotationCenterX := 0;
+  RotationCenterY := 0;
 end;
 
 { TAdCursorSprite }
