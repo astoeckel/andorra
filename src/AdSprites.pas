@@ -355,11 +355,20 @@ type
       FRotationCenterX:double;
       FRotationCenterY:double;
       FColor:LongInt;
+      FBoundsRect:TAdRect;
+      FChangedRotation: boolean;
+      procedure RecalcBoundsRect;
+      procedure RotatePoint(cx, cy: integer; var p: TAdPoint);
     protected
       procedure DoDraw;override;
+      procedure SetHeight(AValue:double);override;
+      procedure SetWidth(AValue:double);override;
       procedure SetAlpha(AValue:double);virtual;
       procedure SetAngle(AValue:double);virtual;
       procedure SetColor(AValue:longint);virtual;
+      procedure SetRotationCenterX(AValue: double);virtual;
+      procedure SetRotationCenterY(AValue: double);virtual;
+      function GetBoundsRect:TAdRect;override;
     public
       //Creates an instance of TImageSpriteEx
       constructor Create(AParent:TSprite);override;
@@ -371,9 +380,9 @@ type
       //The color of the sprite
       property Color:LongInt read FColor write SetColor;
       //The x-rotation center
-      property RotationCenterX:double read FRotationCenterX write FRotationCenterX;
+      property RotationCenterX:double read FRotationCenterX write SetRotationCenterX;
       //The y-rotation center
-      property RotationCenterY:double read FRotationCenterY write FRotationCenterY;
+      property RotationCenterY:double read FRotationCenterY write SetRotationCenterY;
   end;
 
   {A sprite which draws the background of a scene.}
@@ -1131,22 +1140,31 @@ begin
   inherited Create(AParent);
   FAlpha := 255;
   FColor := $FFFFFF;
-  FRotationCenterX := 1;
+  FRotationCenterX := 0.5;
   FRotationCenterY := 0.5;
+  FChangedRotation := true;
 end;
 
 procedure TImageSpriteEx.DoDraw;
 begin
   if FImage <> nil then
   begin
+    if FChangedRotation then
+    begin
+      RecalcBoundsRect;
+      FChangedRotation := false;
+    end;
+    
     FImage.Color := FColor;
     if Alpha <> 255 then
     begin
       if Angle <> 0 then
       begin
-        FImage.DrawRotateAlpha(Engine.Surface, BoundsRect.Left, BoundsRect.Top,
-          BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
-          Trunc(AnimPos),FRotationCenterX,FRotationCenterY,Round(Angle),Round(Alpha));
+        FImage.DrawRotateAlpha(Engine.Surface,
+          round(WorldX), round(WorldY),
+          round(Width), round(Height),
+          Trunc(AnimPos),
+          FRotationCenterX, FRotationCenterY, Round(Angle), Round(Alpha));
       end
       else
       begin
@@ -1157,15 +1175,83 @@ begin
     begin
       if Angle <> 0 then
       begin
-        FImage.DrawRotate(Engine.Surface,BoundsRect.Left,BoundsRect.Top,
-          BoundsRect.Right-BoundsRect.Left,BoundsRect.Bottom-BoundsRect.Top,
-          Trunc(AnimPos),0.5,0.5, Round(Angle));
+        FImage.DrawRotate(Engine.Surface,
+          round(WorldX), round(WorldY),
+          round(Width), round(Height),
+          Trunc(AnimPos),
+          FRotationCenterX, FRotationCenterY, Round(Angle));
       end
       else
       begin
-        FImage.StretchDraw(Engine.Surface,BoundsRect,Trunc(AnimPos));
+        FImage.StretchDraw(Engine.Surface, BoundsRect, Trunc(AnimPos));
       end;
     end;
+  end;
+end;
+
+function TImageSpriteEx.GetBoundsRect: TAdRect;
+begin
+  result :=
+    AdRect(
+      WorldX + FBoundsRect.Left,
+      WorldY + FBoundsRect.Top,
+      WorldX + FBoundsRect.Right,
+      WorldY + FBoundsRect.Bottom)
+end;
+
+procedure TImageSpriteEx.RotatePoint(cx, cy: integer; var p: TAdPoint);
+var
+  alpha:double;
+  distance:double;
+begin
+  p.X := p.X - cx;
+  p.Y := p.Y - cy;
+    
+  //Calculate point polar coordinates
+  distance := sqrt(sqr(p.X) + sqr(p.Y));
+  alpha := arctan(p.Y/p.X);
+  if p.X < 0 then
+    alpha := alpha + PI;
+
+  //Rotate point
+  alpha := alpha + (FAngle / 180 * PI);
+  p.x := round(cos(alpha) * distance);
+  p.y := round(sin(alpha) * distance);
+
+  p.X := p.X + cx;
+  p.Y := p.Y + cy;
+end;
+
+procedure TImageSpriteEx.RecalcBoundsRect;
+var
+  ps: array[0..3] of TAdPoint;
+  i: integer;
+begin
+  if not FloatsEqual(FAngle, 0, 0.001) then
+  begin
+    ps[0] := AdPoint(0, 0);
+    ps[1] := AdPoint(Width, 0);
+    ps[2] := AdPoint(0, Height);
+    ps[3] := AdPoint(width, Height);
+
+    for i := 0 to 3 do
+      RotatePoint(
+        round(FRotationCenterX * Width),
+        round(FRotationCenterY * Height),
+        ps[i]);
+
+    for i := 0 to 3 do
+    begin
+      if (i = 0) or (ps[i].X > FBoundsRect.Right)  then FBoundsRect.Right  := ps[i].X;
+      if (i = 0) or (ps[i].X < FBoundsRect.Left)   then FBoundsRect.Left   := ps[i].X;
+      if (i = 0) or (ps[i].Y > FBoundsRect.Bottom) then FBoundsRect.Bottom := ps[i].Y;
+      if (i = 0) or (ps[i].Y < FBoundsRect.Top)    then FBoundsRect.Top    := ps[i].Y;
+    end;
+      
+  end else
+  begin
+    FBoundsRect :=
+      AdRect(0, 0, Width, Height);
   end;
 end;
 
@@ -1176,12 +1262,52 @@ end;
 
 procedure TImageSpriteEx.SetAngle(AValue: double);
 begin
-  FAngle := AValue;
+  if FAngle <> AValue then
+  begin
+    FAngle := AValue;
+    FChangedRotation := true;
+  end;
 end;
 
 procedure TImageSpriteEx.SetColor(AValue: Integer);
 begin
   FColor := AValue;
+end;
+
+procedure TImageSpriteEx.SetWidth(AValue: double);
+begin
+  if AValue <> Width then
+  begin
+    inherited;
+    FChangedRotation := true;
+  end;
+end;
+
+procedure TImageSpriteEx.SetHeight(AValue: double);
+begin
+  if AValue <> Height then
+  begin
+    inherited;
+    FChangedRotation := true;
+  end;
+end;
+
+procedure TImageSpriteEx.SetRotationCenterX(AValue: double);
+begin
+  if AValue <> FRotationCenterX then
+  begin
+    FRotationCenterX := AValue;
+    FChangedRotation := true;
+  end;
+end;
+
+procedure TImageSpriteEx.SetRotationCenterY(AValue: double);
+begin
+  if AValue <> FRotationCenterY then
+  begin
+    FRotationCenterY := AValue;
+    FChangedRotation := true;
+  end;
 end;
 
 { TBackgroundSprite }
