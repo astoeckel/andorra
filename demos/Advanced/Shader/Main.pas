@@ -64,7 +64,17 @@ begin
       AdTextureImage.Texture.LoadGraphicFromFile(path + 'colormap.png');
       AdTextureImage.Details := 8;
       AdTextureImage.Restore;
+    end else
+    begin
+      AdDraw.Free;
+      AdSetup.Free;
+      ShowMessage(AdDraw.GetLastError);
+      halt;
     end;
+  end else
+  begin
+    AdSetup.Free;
+    halt;
   end;
 
   AdSetup.Free;
