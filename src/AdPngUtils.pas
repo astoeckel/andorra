@@ -15,7 +15,7 @@
 
 {Contains some helper functions for working with png images. Those functions 
  are used by various png loaders.}
-unit AdPNGUtils;
+unit AdPngUtils;
 
 {$IFDEF FPC}
   {$MODE DELPHI}
