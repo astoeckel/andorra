@@ -7,13 +7,14 @@ unit Main;
 interface
 
 uses
-  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes;
+  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes, AdParticles;
 
 type
   TAdAppl = class
     private
       AdDraw:TAdDraw;
       AdImage:TAdImage;
+      AdPartSys: TAdParticleSystem;
     public
       MouseX, MouseY : integer;
       procedure Idle(Sender:TObject; var Done:boolean);
@@ -40,12 +41,16 @@ begin
       TextOut(MouseX, MouseY, 'Andorra 2D ['+AdDraw.DllName+','+AdDraw.Window.ClassName+']');
       Release;
     end;
+    
+    AdPartSys.Emit(1, 0, 0);
+    AdPartSys.Move(0.001);
+    AdPartSys.Draw(AdDraw, MouseX, MouseY, bmAlpha);
 
     AdDraw.EndScene;
     AdDraw.Flip;
   end;
 
-  Done := true;
+  Done := false;
 end;
 
 procedure TAdAppl.KeyDown(Sender: TObject; Key: Word; Shift: TAdShiftState);
@@ -92,9 +97,15 @@ begin
     AdImage := TAdImage.Create(AdDraw);
     AdImage.Texture.LoadGraphicFromFile('icon64.png');
     AdImage.Restore;
+    
+    AdPartSys := TAdParticleSystem.Create(AdDraw);
+    AdPartSys.DefaultParticle := TAdBillboardParticle.Create(AdPartSys);
+    AdPartSys.Texture := AdImage.Texture;
 
     AdDraw.Run;
 
+    AdPartSys.DefaultParticle.Free;
+    AdPartSys.Free;
     AdImage.Free;
   end;
   AdDraw.Free;

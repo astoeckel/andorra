@@ -590,7 +590,7 @@ procedure TAdFont.SetColor(AValue: TAndorraColor);
 var
   i:integer;
 begin
-  if (not CompareColors(AValue,FColor)) and (FMesh.Loaded) then
+  if (not CompareColors(AValue, FColor)) and (FMesh.Loaded) then
   begin
     for i := 0 to High(FMesh.Vertices) do
     begin

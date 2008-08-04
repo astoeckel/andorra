@@ -10,3 +10,6 @@ You also should have recieved a copy of this license with this file.
 If not, see http://www.gnu.org/licenses/gpl.txt for more information.
 
 (c) by Andreas Stöckel 2006-2007
+
+Those license informations apply to all files of the Andorra 2D Library source code, demos etc. If another license is specified in a specific source file, the file stands under the specified license.
+Please remember, that 3rd-Party libraries/files (e.g. Acinerella, FreeImage, PNGDelphi, the DirectX and OpenGL headers) have other licenses.

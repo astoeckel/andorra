@@ -32,23 +32,36 @@ type
   TAdVideoInfo = record
     Width: integer; {< Width of the video frame in memory}
     Height: Integer; {< Height of the video frame in memory}
-    FPS: Byte; {< Frequency the frames should change}
+    FPS: Double; {< Frequency the frames should change}
     PixelAspect: Double; {< Some video formats are streched, like the PAL 
       16/9 Video. PixelAspect specifies the relative width of one pixel: A 
       value of 1.2 eg. means that a pixel is streched to 120% if its original
       size.}
   end;
+  {Pointer on TAdVideoInfo.}
+  PAdVideoInfo = ^TAdVideoInfo;
+
+  {Contains information about an audio stream.}
+  TAdAudioInfo = record
+    SampleRate: Cardinal; {< Count of samples per second.}
+    BitDepth: Cardinal; {< Bits per sample.}
+    Channels: Cardinal; {< Count of channels.}
+  end;
+  {Pointer on TAdAudioInfo.}
+  PAdAudioInfo = ^TAdAudioInfo;
+
 
   {Specifies the current position of the video.}
   TAdVideoPosition = record
     Hour: Byte; {< Time in hours.}
     Minute: Byte; {< Time in minutes.}
     Second: Byte; {< Time in seconds.}
-    Frame: Byte; {< The frame number}
+    Frame: Integer; {< The frame number or the sample number.}
+    Timecode: double; {< The current frame position in seconds - unseperated.}
   end;
 
   {Current video decoding state of the video decoder plugin.}
-  TAdVideoDecoderState = (
+  TAdMediaDecoderState = (
     vdIncomplete, {< The frame data was incomplete, we have to transfer more
       data to the video decoder.}
     vdHasFrame, {< The video decoder found a frame in the data we provided.
@@ -57,40 +70,123 @@ type
       the video has come to an end.}
   );
 
+  {Represents the type of an media stream that is opened using the Andorra
+   Video Player interface.}
+  TAdMediaStreamType = (
+    {This stream is an video stream and contains video data.}
+    amVideo,
+    {This stream is an audio stream and contains audio data.}
+    amAudio,
+    {This stream is an stream that may contain any data (e.g. subtitles).}
+    amData
+  );
+
+  {Represents an decoded media package that is recived from the decoder.}
+  TAdMediaPacket = record
+    {Type of the decoded data.}
+    StreamType: TAdMediaStreamType;
+    {Stream the packet belongs to.}
+    StreamIndex: integer;
+    {Position of the packet on the video timeline.}
+    Timecode: TAdVideoPosition;
+    {May contains information about the video.}
+    Info: array[0..127] of Char;
+    {Size of the buffer.}
+    BufferSize: integer;
+    {Pointer to the buffer.}
+    Buffer: PChar;
+  end;
+
+  TAdMediaDecoder = class;
+
+  {Contains information about all media streams in a media file and gives the
+   possibility to activate or deactivate specific streams. By default the
+   first media stream with the type "amVideo" is activated.}
+  TAdMediaStream = class
+    private
+      FStreamType: TAdMediaStreamType;
+      FParent: TAdMediaDecoder;
+      FActive: boolean;
+      FIndex: integer;
+      procedure SetActive(AValue: boolean);
+    protected
+      procedure SetActiveBySender(AValue: boolean; ASender: TAdMediaStream);
+    public
+      {Creates an instance of TAdMedia stream.}
+      constructor Create(AParent: TAdMediaDecoder; AIndex: integer;
+        AStreamType: TAdMediaStreamType);
+
+      {Sepcifies whether this media stream is currently active. Is this is the
+       case, the media decoder will decode this stream and send decoded data
+       to the decoder thread.}
+      property Active: boolean read FActive write SetActive;
+      {Specifies the type of the media stream.}
+      property StreamType: TAdMediaStreamType read FStreamType;
+      {Specifies the index of the stream}
+      property StreamIndex: integer read FIndex;
+  end;
+
+  {Contains a list of media streams that have been found in the media file.}
+  TAdMediaStreamList = class(TList)
+    private
+      function GetItem(AIndex: integer): TAdMediaStream;
+    protected
+      procedure Notify(ptr: Pointer; Action: TListNotification);override;
+    public
+      {Provides access on the media stream items.}
+      property Items[AIndex: integer]: TAdMediaStream read GetItem; default;
+  end;
+
+  {Procedure that is used by the video decder thread to copy undecoded video
+   data from file/stream etc. to the video decoder.}
+  TAdMediaReadproc = function(const Dest: Pointer; const Size:Cardinal): integer of object;
+
   {Abstract video decoder class that can be implemented to provide a new video
    decoder class. Call the "RegisterVideoDecoder" procedure to register your
    new video decoder class.}
-  TAdVideoDecoder = class(TAdPersistent)
+  TAdMediaDecoder = class(TAdPersistent)
+    private
+      FStreams: TAdMediaStreamList;
+      FReadProc: TAdMediaReadproc;
+    protected
+      {Activates a specific media stream.}
+      procedure SetStreamActive(AStreamIndex: integer; AActive: boolean);virtual;abstract;
     public
       {Creates an instance of TAdVideoDecoder.}
-      constructor Create; virtual;
+      constructor Create(AReadProc: TAdMediaReadproc); virtual;
+      {Destorys the instance of TAdVideoDecoder.}
+      destructor Destroy; override;
 
-      {Returns whether this file format is supported.
-       @param(ABuf is the pointer to the first byte of the data in memory)
-       @param(ASize is the size of the data in memory)
-       @returns(true, if the video format is known and can be loaded)}
-      class function SupportsFile(ABuf: Pointer; ASize: Cardinal):boolean;virtual;abstract;
-
-      {Tells the decoder to read a buffer from memory.
-       @param(ABuf is the pointer to the first byte of the data in memory)
-       @param(ASize is the size of the data in memory)
+      {Tells the decoder to go on decoding. When data is needed, the specified
+       callback should be called.
+       @param(ACallback is the callback that is called by the decoder when data
+        is needed.)
        @returns(The current decoder state)
-       @seealso(TAdVideoDecoderState)}
-      function ReadBuffer(ABuf: Pointer; ASize: Cardinal): TAdVideoDecoderState;virtual;abstract;
-      {Returns the video information for the current frame loaded.
-       @seealso(TAdVideoInfo)}
-      function GetVideoInfo: TAdVideoInfo;virtual;abstract;
-      {Returns the current position of the video.
-       @seealso(TAdVideoPosition)}
-      function GetVideoPosition: TAdVideoPosition;virtual;abstract;
-      {If ReadBuffer returned "vdHasFrame", this method will fill the given buffer
-       with video data. The buffer has already allocated and can be filled with
-       FrameWidth * FrameHeight * 4 Bytes. The video format is 32Bit, RGBA.}
-      procedure FillBuffer(ABuffer: Pointer);virtual;abstract;
+       @seealso(TAdVideoDecoderState)
+       @seealso(GetPacket)}
+      function Decode: TAdMediaDecoderState;virtual;abstract;
+
+      {If Decoder returned "vdHasFrame", this method will fill information about
+       the decoded buffer and a pointer to this buffer in the packet structure.}
+      procedure GetPacket(var Packet: TAdMediaPacket);virtual;abstract;
+
+      {Initializes the decoder and stores all streams, that were found in the
+       "MediaStreams" property.}
+      procedure OpenDecoder;virtual;abstract;
+
+      {Closes the decoder.}
+      procedure CloseDecoder;virtual;abstract;
+
+      {A list that gives an overview over all media streams that have been found in
+       the media file.}
+      property MediaStreams: TAdMediaStreamList read FStreams;
+
+      {Pointer to the read callback procedure}
+      property ReadProc: TAdMediaReadproc read FReadProc;
   end;
   
   {Class decleration for video decorders}
-  TAdVideoDecoderClass = class of TAdVideoDecoder;
+  TAdVideoDecoderClass = class of TAdMediaDecoder;
 
   {This class represents an element in the video decoder thread buffer.}
   TAdVideoMemory = class
@@ -105,7 +201,7 @@ type
        video buffer object.}
       CriticalSection: TCriticalSection;
 
-      {If this flag is set, this element in the buffer queue is the last one.}
+      {If this flag is set, this element in the buffer queue will be the last one.}
       StreamEnd: boolean;
       {Video information that has been received from the video decoder when
        saving the video data.}
@@ -113,6 +209,9 @@ type
       {Video position information that has been received when saving the video
        data.}
       Time: TAdVideoPosition;
+
+      {Idicates whether this video memory element has been used and can be overwritten.}
+      Used: boolean;
 
       {Creates an instance of the video memory}
       constructor Create;
@@ -126,39 +225,71 @@ type
       procedure ClearMemory;
   end;
 
-  {Procedure that is used by the video decder thread to copy undecoded video
-   data from file/stream etc. to the video decoder.}
-  TAdVideoReadproc = procedure(const Dest: Pointer; var Size:Cardinal) of object;
+  {Event class trigerred when a non-video media packet is decoded by the
+   video decoder thread.}
+  TAdDecodeMediaPacketEvent = procedure(Sender: TObject; APckt: TAdMediaPacket) of object;
 
-  {Video decoder thread that is internally used by TAdCustomVideoTexture. The
-   video decoder thread decodes up to 4 frames in the background while the 
-   video is playing.}
-  TAdVideoDecoderThread = class(TThread)
+  TAdMediaHandler = class
+    public
+      procedure FeedPackage(var APckt: TAdMediaPacket);virtual; abstract;
+      procedure Notify(AState: TAdMediaDecoderState);virtual; abstract;
+      procedure FlushBuffer; virtual; abstract;
+      function NeedsData: Boolean; virtual; abstract;
+      function Overflow: Boolean; virtual; abstract;
+  end;
+
+  TAdMediaDecoderThread = class(TThread)
     private
-      FVideoMem: array of TAdVideoMemory;
-      FVideoMemIndex: integer;
-      FVideoMemQueue: TObjectQueue;
-      FReadProc: TAdVideoReadProc;
-      FDecoder: TAdVideoDecoder;
+      FDecoder: TAdMediaDecoder;
+      FMediaHandlers: TList;
       FCriticalSection: TCriticalSection;
-      FBufferSize: Cardinal;
     protected
       procedure Execute;override;
     public
-      {Creates an instance of TAdVideoDecoderThread.
-       @param(ABufferSize specifies the size of the buffer the thread should use
-         to transfer undecoded video data to the video decoder.)
-       @param(AReadProc specifies the method that should be called when undecoded
-         video data should be read.)}
-      constructor Create(ABufferSize: Cardinal; AReadProc: TAdVideoReadProc;
-        ADecoder: TAdVideoDecoder);
-      {Destroys this instance of TAdVideoDecoderThread.}
+      constructor Create(ADecoder: TAdMediaDecoder);
       destructor Destroy;override;
+
+      procedure RegisterMediaHandler(AHandler: TAdMediaHandler);
+      procedure FlushBuffers;
+
+      property MediaHandlers: TList read FMediaHandlers;
+      property CriticalSection: TCriticalSection read FCriticalSection;
+      property Decoder: TAdMediaDecoder read FDecoder;
+  end;
+
+  TAdVideoHandler = class(TAdMediaHandler)
+    private
+      FVideoMemQueue: TList;
+      FBufferSize: Integer;
+      FFreeBufferCount: Integer;
+      FCriticalSection: TCriticalSection;
+      FStreamIndex: Integer;
+      procedure ClearMem;
+      function GetLastQueueItem: TAdVideoMemory;
+      procedure CleanUp;
+    public
+      {Creates an instance of TAdVideoHandler.
+       @param(ABufferSize specifies the number of frames that should at least be
+        buffered)
+       @param(AStreamIndex specifies the index of the media stream the video handler
+        should take care of. The stream index can be changed over the "StreamIndex"
+        property. TAdVideoHandler doesn't activate the stream, you have to do
+        this yourself.)}
+      constructor Create(ABufferSize: Integer; AStreamIndex: Integer);
+      destructor Destroy; override;
+      
+      procedure FeedPackage(var APckt: TAdMediaPacket); override;
+      procedure Notify(AState: TAdMediaDecoderState); override;
+      procedure FlushBuffer; override;
+      function NeedsData: boolean; override;
+      function Overflow: Boolean; override;
+
       {Returns the next frame in the video memory queue that can be processed by
-       the graphic engine.}
+       the graphic engine. Returns nil if no frame is available.}
       function GetNextFrame: TAdVideoMemory;
-      {Buffers in queue are marked as invalid, so that the queue is filled new.}
-      procedure InvalidateBuffers;
+
+      property CriticalSection: TCriticalSection read FCriticalSection;
+      property StreamIndex: Integer read FStreamIndex write FStreamIndex;
   end;
 
   {Represents the state of a video player.}
@@ -183,22 +314,24 @@ type
 
       FParent: TAd2dApplication;
 
-      FDecoder: TAdVideoDecoder;
-      FDecoderThread: TAdVideoDecoderThread;
+      FDecoder: TAdMediaDecoder;
+      FDecoderThread: TAdMediaDecoderThread;
+      FVideoHandler: TAdVideoHandler;
 
       FInfo: TAdVideoInfo;
       FTime: TAdVideoPosition;
       FStreamEnd: boolean;
       FHasFrame: boolean;
 
-      procedure VideoDecoderThreadTerminate(Sender: TObject);
     protected
       function SearchDecoder: boolean;
 
       function GetOpened: boolean; virtual;
-      procedure ReadData(const Dest: Pointer; var Size: Cardinal);virtual;
+      function ReadData(const Dest: Pointer; const Size: Cardinal): integer;virtual;
       procedure ResetData;virtual;
       function NextFrame:boolean;virtual;
+
+      procedure RegisterHandlers; virtual;
 
       procedure InitPlayer;virtual;
       procedure ClearData;virtual;
@@ -206,7 +339,9 @@ type
       property Texture: TAd2dBitmapTexture read FTexture;
       property Info: TAdVideoInfo read FInfo write FInfo;
       property Time: TAdVideoPosition read FTime write FTime;
-      property Decoder: TAdVideoDecoder read FDecoder write FDecoder;
+      property Decoder: TAdMediaDecoder read FDecoder write FDecoder;
+      property DecoderThread: TAdMediaDecoderThread read FDecoderThread;
+      property VideoHandler: TAdVideoHandler read FVideoHandler;
       property StreamEnd: boolean read FStreamEnd write FStreamEnd;
       property HasFrame: boolean read FHasFrame;
     public
@@ -246,6 +381,8 @@ type
       procedure DoStop;virtual;
       procedure DoNextFrame;virtual;
       procedure DoClose;virtual;
+
+      property TimeGap: double read FTimeGap;
     public
       {Creates an instance of TAdVideoTexture.}
       constructor Create(AParent: TAd2dApplication);
@@ -302,12 +439,22 @@ var
  initialization section of the corresponding unit.}
 procedure RegisterVideoDecoder(AVideoDecoder: TAdVideoDecoderClass);
 
+{Calculates the hour, minute and the seconds value from the timecode value.}
+procedure FillTimeInfo(var ATimeInfo: TAdVideoPosition);
+
 implementation
 
 procedure RegisterVideoDecoder(AVideoDecoder: TAdVideoDecoderClass);
 begin
   RegisteredVideoDecoders.Add(AVideoDecoder.ClassName);
   AdRegisterClass(AVideoDecoder);
+end;
+
+procedure FillTimeInfo(var ATimeInfo: TAdVideoPosition);
+begin
+  ATimeInfo.Hour := round(ATimeInfo.Timecode) div 3600;
+  ATimeInfo.Minute := round(ATimeInfo.Timecode) div 60 mod 60;
+  ATimeInfo.Second := round(ATimeInfo.Timecode) mod 60;
 end;
 
 { TAdVideoPlayer }
@@ -345,23 +492,30 @@ begin
   FHasFrame := false;
   if (GetOpened) then
   begin
-    ResetData;
-    
     try
       FDecoderThread.OnTerminate := nil;
       FDecoderThread.Terminate;
       FDecoderThread.Free;
     finally
-      FDecoderThread :=nil;
+      FDecoderThread := nil;
     end;
+
+    //Destroy the video handler
+    if FVideoHandler <> nil then
+      FVideoHandler.Free;
+
+    FVideoHandler := nil;
   end;
 end;
 
 procedure TAdCustomVideoTexture.InitPlayer;
 begin
-  FDecoderThread := TAdVideoDecoderThread.Create(
-    FBufferSize, ReadData, FDecoder);
-  FDecoderThread.OnTerminate := VideoDecoderThreadTerminate;
+  //Create the decoder thread
+  FDecoderThread := TAdMediaDecoderThread.Create(FDecoder);
+
+  RegisterHandlers;
+
+  //Start the decoder thread.
   FDecoderThread.Resume;
 end;
 
@@ -371,9 +525,9 @@ var
   buf: TAdVideoMemory;
 begin
   result := false;
-  if FDecoderThread <> nil then
+  if FVideoHandler <> nil then
   begin
-    buf := FDecoderThread.GetNextFrame;
+    buf := FVideoHandler.GetNextFrame;
     if buf <> nil then
     begin
       buf.CriticalSection.Enter;
@@ -403,16 +557,37 @@ begin
   end;
 end;
 
-procedure TAdCustomVideoTexture.ReadData(const Dest: Pointer; var Size: Cardinal);
+function TAdCustomVideoTexture.ReadData(const Dest: Pointer; const Size: Cardinal): integer;
 begin
-  //
+  //Children of this class should actually read the data
+  result := 0;
+end;
+
+procedure TAdCustomVideoTexture.RegisterHandlers;
+var
+  i: integer;
+begin
+  //Search for a video stream. If one exists, create the video stream handler.
+  //If no video stream exists, ancestor classes may handle the other types of
+  //data in the media file (e.g. audio or subtitle data).
+  for i := 0 to FDecoder.MediaStreams.Count - 1 do
+    if FDecoder.MediaStreams[i].FStreamType = amVideo then
+    begin
+      //Create and register the video handler in the decoder thread. The decoder
+      //thread will now send information to the video handler whenever a piece of
+      //the media file has been decoded.
+      FVideoHandler := TAdVideoHandler.Create(3, i);
+      FDecoderThread.RegisterMediaHandler(FVideoHandler);
+
+      break;
+    end;
 end;
 
 procedure TAdCustomVideoTexture.ResetData;
 begin
   if GetOpened then
   begin
-    FDecoderThread.InvalidateBuffers;
+    FDecoderThread.FlushBuffers;
   end;
   FStreamEnd := false;
   FHasFrame := false;
@@ -422,8 +597,6 @@ function TAdCustomVideoTexture.SearchDecoder: boolean;
 var
   i: integer;
   cref: TAdVideoDecoderClass;
-  buf: PByte;
-  size: Cardinal;
 begin
   result := false;
 
@@ -433,32 +606,27 @@ begin
     FDecoder := nil;
   end;
 
-  GetMem(buf, 128);
-
-  Size := 128;
-  ReadData(buf, size);
   ResetData;
 
   for i := 0 to RegisteredVideoDecoders.Count - 1 do
   begin
     cref := TAdVideoDecoderClass(AdGetClass(RegisteredVideoDecoders[i]));
-    result := cref.SupportsFile(buf, size);
-    if result then
+    //Create an instance of the decoder
+    FDecoder := cref.Create(ReadData);
+
+    //Initialize the decoder and check whether media streams have been
+    //found.
+    FDecoder.OpenDecoder;
+    if FDecoder.MediaStreams.Count = 0 then
     begin
-      FDecoder := cref.Create;
+      //No streams have been found. The decoder doesn't support the media data
+      FDecoder.Free;
+      FDecoder := nil;
+    end else
+    begin
+      result := true;
       break;
     end;
-  end;
-
-  FreeMem(buf, 128);
-end;
-
-procedure TAdCustomVideoTexture.VideoDecoderThreadTerminate(Sender: TObject);
-begin
-  TAdVideoDecoderThread(Sender).Free;
-  if Sender = FDecoderThread then
-  begin
-    FDecoderThread := nil;
   end;
 end;
 
@@ -502,149 +670,19 @@ begin
   end;
 end;
 
-{ TAdVideoDecoderThread }
+{ TAdMediaDecoder }
 
-constructor TAdVideoDecoderThread.Create(ABufferSize: Cardinal;
-  AReadProc: TAdVideoReadProc; ADecoder: TAdVideoDecoder);
-var
-  i: integer;
-begin
-  inherited Create(true);
-
-  FBufferSize := ABufferSize;
-  FReadProc := AReadProc;
-  FDecoder := ADecoder;
-
-  FreeOnTerminate := false;
-
-  FCriticalSection := TCriticalSection.Create;
-  FVideoMemQueue := TObjectQueue.Create;
-
-  SetLength(FVideoMem, 4);
-  for i := 0 to High(FVideoMem) do
-    FVideoMem[i] := TAdVideoMemory.Create;
-
-  FVideoMemIndex := 0;
-end;
-
-destructor TAdVideoDecoderThread.Destroy;
-var
-  i: integer;
-begin
-  for i := 0 to High(FVideoMem) do
-    FVideoMem[i].Free;
-    
-  FVideoMemQueue.Free;
-  FCriticalSection.Free;
-  
-  inherited;
-end;
-
-procedure TAdVideoDecoderThread.Execute;
-var
-  buf: Pointer;
-  state: TAdVideoDecoderState;
-  ainfo: TAdVideoInfo;
-  size: Cardinal;
-  cansleep: boolean;
-begin
-  GetMem(buf, FBufferSize);
-  try
-    while not Terminated do
-    begin
-      cansleep := false;
-      FCriticalSection.Enter;
-      if FVideoMemQueue.Count < Length(FVideoMem) then
-      begin
-        //Read Buffer
-        size := FBufferSize;
-        FReadProc(buf, size);
-        if size <> 0 then
-        begin
-          state := FDecoder.ReadBuffer(buf, size);
-          if state = vdHasFrame then
-          begin
-            ainfo := FDecoder.GetVideoInfo;
-            with FVideoMem[FVideoMemIndex] do
-            begin
-              CriticalSection.Enter;
-              Time := FDecoder.GetVideoPosition;
-              VideoInfo := ainfo;
-              StreamEnd := false;
-
-              ReserveMemory(ainfo.Width, ainfo.Height);
-              FDecoder.FillBuffer(Memory);
-
-              CriticalSection.Leave;
-            end;
-
-            FVideoMemQueue.Push(FVideoMem[FVideoMemIndex]);
-
-            FVideoMemIndex := FVideoMemIndex + 1;
-            if FVideoMemIndex > High(FVideoMem) then
-              FVideoMemIndex := 0;
-          end else
-          if state = vdEnd then
-          begin
-            with FVideoMem[FVideoMemIndex] do
-            begin
-              CriticalSection.Enter;
-              StreamEnd := true;
-              CriticalSection.Leave;
-            end;
-            FVideoMemQueue.Push(FVideoMem[FVideoMemIndex]);
-          end;
-        end else
-        begin
-          with FVideoMem[FVideoMemIndex] do
-          begin
-            CriticalSection.Enter;
-            StreamEnd := true;
-            CriticalSection.Leave;
-          end;
-          FVideoMemQueue.Push(FVideoMem[FVideoMemIndex]);
-        end;
-
-      end else
-        CanSleep := true;
-      FCriticalSection.Leave;
-
-      if CanSleep then
-        Sleep(1);
-    end;
-  finally
-    FreeMem(buf, FBufferSize);
-  end;
-end;
-
-function TAdVideoDecoderThread.GetNextFrame: TAdVideoMemory;
-begin
-  result := nil;
-  FCriticalSection.Enter;
-  try
-    if FVideoMemQueue.Count > 0 then
-      result := TAdVideoMemory(FVideoMemQueue.Pop);
-  finally
-    FCriticalSection.Leave;
-  end;
-end;
-
-procedure TAdVideoDecoderThread.InvalidateBuffers;
-begin
-  FCriticalSection.Enter;
-  try
-    while FVideoMemQueue.Count > 0 do
-      FVideoMemQueue.Pop;
-  finally
-    FCriticalSection.Leave;
-  end;
-end;
-
-{ TAdVideoDecoder }
-
-constructor TAdVideoDecoder.Create;
+constructor TAdMediaDecoder.Create(AReadProc: TAdMediaReadproc);
 begin
   inherited Create;
+  FStreams := TAdMediaStreamList.Create;
+  FReadProc := AReadProc;
+end;
+
+destructor TAdMediaDecoder.Destroy;
+begin
+  FStreams.Free;
+  inherited;
 end;
 
 { TAdVideoTexure }
@@ -697,6 +735,10 @@ procedure TAdVideoTexture.Pause;
 begin
   if FState = vpPlaying then
   begin
+    //Pause video decoder thread
+    if DecoderThread <> nil then
+      FDecoderThread.Suspend;
+      
     FState := vpPaused;
     DoPause;
   end;
@@ -708,6 +750,11 @@ begin
   begin
     FStreamEnd := false;
     FState := vpPlaying;
+
+    //Resume video decoder
+    if DecoderThread <> nil then
+      DecoderThread.Resume;
+
     DoPlay;
   end;
 end;
@@ -756,6 +803,335 @@ begin
       FTmpTime := 0;
     end;
   end;
+end;
+
+{ TAdMediaStream }
+
+constructor TAdMediaStream.Create(AParent: TAdMediaDecoder; AIndex: integer;
+  AStreamType: TAdMediaStreamType);
+begin
+  inherited Create;
+  FIndex := AIndex;
+  FParent := AParent;
+  FStreamType := AStreamType;
+end;
+
+procedure TAdMediaStream.SetActive(AValue: boolean);
+begin
+  SetActiveBySender(AValue, self);
+end;
+
+procedure TAdMediaStream.SetActiveBySender(AValue: boolean;
+  ASender: TAdMediaStream);
+var
+  i: integer;
+begin
+  //Only one audio and one video stream can be active at once. If you don't belive
+  //this, try to activate two audio streams in VLC...
+  if FStreamType <> amData then
+    for i := 0 to FParent.MediaStreams.Count - 1 do
+      if (FParent.MediaStreams[i].FStreamType = ASender.FStreamType) and
+         (FParent.MediaStreams[i] <> self) and
+         (FParent.MediaStreams[i] <> ASender) then
+      begin
+        FParent.SetStreamActive(i, false);
+        FParent.MediaStreams[i].FActive := false;
+      end;
+
+  if AValue <> FActive then
+    FParent.SetStreamActive(FIndex, AValue);
+
+  FActive := AValue;
+end;
+
+{ TAdMediaStreamList }
+
+function TAdMediaStreamList.GetItem(AIndex: integer): TAdMediaStream;
+begin
+  result := inherited Items[AIndex];
+end;
+
+procedure TAdMediaStreamList.Notify(ptr: Pointer; Action: TListNotification);
+begin
+  if Action = lnDeleted then
+  begin
+    TAdMediaStream(ptr).Active := false;
+    TAdMediaStream(ptr).Free;
+  end;
+end;
+
+{ TAdMediaDecoderThread }
+
+constructor TAdMediaDecoderThread.Create(ADecoder: TAdMediaDecoder);
+begin
+  inherited Create(true);
+
+  FCriticalSection := TCriticalSection.Create;
+  FMediaHandlers := TList.Create;
+  FDecoder := ADecoder;
+
+  //Start the thread
+  Resume;
+end;
+
+destructor TAdMediaDecoderThread.Destroy;
+begin
+  //Wait for the decoder thread to be ready.
+  FCriticalSection.Enter; FCriticalSection.Leave;
+  FMediaHandlers.Free;
+  FCriticalSection.Free;
+  inherited Destroy;
+end;
+
+procedure TAdMediaDecoderThread.Execute;
+var
+  needframe: boolean;
+  i: integer;
+  state: TAdMediaDecoderState;
+  pckt: TAdMediaPacket;
+begin
+  try
+    while (not Terminated) and (FDecoder <> nil) do
+    begin
+      //Search for a media handler that needs new buffer data
+      needframe := false;
+
+      FCriticalSection.Enter;
+      try
+        for i := 0 to FMediaHandlers.Count - 1 do
+          if TAdMediaHandler(FMediaHandlers[i]).NeedsData then
+          begin
+            //At least one decoder needs new decoded data.
+            needframe := true;
+            break;
+          end;
+
+        for i := 0 to FMediaHandlers.Count - 1 do
+          if TAdMediaHandler(FMediaHandlers[i]).Overflow then
+          begin
+            //At least one decoder is flooded with data!
+            needframe := false;
+            break;
+          end;
+      finally
+        FCriticalSection.Leave;
+      end;
+
+      //If a frame is needed, decode a new one - else sleep a while
+      if needframe then
+      begin
+        //Decode a frame
+        state := FDecoder.Decode;
+
+        FCriticalSection.Enter;
+        try
+          case state of
+            vdHasFrame:
+            begin
+              FDecoder.GetPacket(pckt);
+              for i := 0 to FMediaHandlers.Count - 1 do
+                TAdMediaHandler(FMediaHandlers[i]).FeedPackage(pckt);
+            end;
+            vdEnd:
+            begin
+              for i := 0 to FMediaHandlers.Count - 1 do
+                TAdMediaHandler(FMediaHandlers[i]).Notify(state);
+
+              //Close thread
+              Terminate;
+            end;
+          end;
+        finally
+          FCriticalSection.Leave;
+        end;
+      end else
+        Sleep(5);
+    end;
+  finally
+    //
+  end;
+end;
+
+procedure TAdMediaDecoderThread.FlushBuffers;
+var
+  i: Integer;
+begin
+  FCriticalSection.Enter;
+  try
+    for i := 0 to FMediaHandlers.Count - 1 do
+      TAdMediaHandler(FMediaHandlers[i]).FlushBuffer;
+  finally
+    FCriticalSection.Leave;
+  end;
+end;
+
+procedure TAdMediaDecoderThread.RegisterMediaHandler(AHandler: TAdMediaHandler);
+begin
+  FCriticalSection.Enter;
+  try
+    FMediaHandlers.Add(AHandler);
+  finally
+    FCriticalSection.Leave;
+  end;
+end;
+
+{ TAdVideoHandler }
+
+constructor TAdVideoHandler.Create(ABufferSize: Integer; AStreamIndex: Integer);
+begin
+  inherited Create;
+
+  FBufferSize := ABufferSize;
+  FStreamIndex := AStreamIndex;
+  FFreeBufferCount := 0;
+
+  FVideoMemQueue := TList.Create;
+  FCriticalSection := TCriticalSection.Create;
+end;
+
+destructor TAdVideoHandler.Destroy;
+begin
+  ClearMem;
+  
+  FVideoMemQueue.Free;
+  FCriticalSection.Free;
+  
+  inherited;
+end;
+
+procedure TAdVideoHandler.CleanUp;
+begin
+  if (FVideoMemQueue.Count > 0) and
+     (TAdVideoMemory(FVideoMemQueue[FVideoMemQueue.Count - 1]).Used) then
+  begin
+    TAdVideoMemory(FVideoMemQueue[FVideoMemQueue.Count - 1]).Free;
+    FVideoMemQueue.Delete(FVideoMemQueue.Count - 1);
+    FFreeBufferCount := FFreeBufferCount - 1;
+  end;
+end;
+
+procedure TAdVideoHandler.ClearMem;
+var
+  i: integer;
+begin
+  //Free the video memory entries
+  for i := 0 to FVideoMemQueue.Count - 1 do
+    TAdVideoMemory(FVideoMemQueue[i]).Free;
+
+  //Clear the memory queue
+  FVideoMemQueue.Clear;
+end;
+
+function TAdVideoHandler.GetLastQueueItem: TAdVideoMemory;
+var
+  i: integer;
+begin
+  result := nil;
+
+  FCriticalSection.Enter;
+  try
+    //Search the last free video memory item in the queue...
+    for i := 0 to FVideoMemQueue.Count - 1 do
+      if TAdVideoMemory(FVideoMemQueue[i]).Used then
+      begin
+        result := TAdVideoMemory(FVideoMemQueue[i]);
+        break;
+      end;
+
+    //... if no item has been found, create a new one and add it to the queue
+    if result = nil then
+    begin
+      result := TAdVideoMemory.Create;
+      FVideoMemQueue.Add(result);
+    end else
+      //The returned buffer will be (or at least should be) used to store data in.
+      //So after this, we have one buffer less, that is free.
+      if FFreeBufferCount > 0 then      
+        FFreeBufferCount := FFreeBufferCount - 1;
+
+    //Reset the "used" flag of the package.
+    result.Used := false;
+  finally
+    FCriticalSection.Leave;
+  end;
+end;
+
+procedure TAdVideoHandler.FeedPackage(var APckt: TAdMediaPacket);
+begin
+  //Break if the specified package isn't a video frame or has the wrong stream
+  //index.
+  if not ((APckt.StreamIndex = FStreamIndex) and (APckt.StreamType = amVideo)) then
+    exit;
+    
+  with GetLastQueueItem do
+  begin
+    //Enter the critical section of the video frame buffer
+    CriticalSection.Enter;
+
+    try
+      Time := APckt.Timecode;
+      VideoInfo := PAdVideoInfo(@APckt.Info)^;
+      StreamEnd := false;
+
+      //Copy the video packet data into the video buffer
+      ReserveMemory(VideoInfo.Width, VideoInfo.Height);
+      Move(APckt.Buffer^, Memory^, APckt.BufferSize);
+    finally
+      CriticalSection.Leave;
+    end;
+  end;
+end;
+
+procedure TAdVideoHandler.FlushBuffer;
+begin
+  ClearMem;
+end;
+
+function TAdVideoHandler.GetNextFrame: TAdVideoMemory;
+begin
+  FCriticalSection.Enter;
+  try         
+    if FVideoMemQueue.Count > FBufferSize * 1.5 then
+      CleanUp;
+
+    result := nil;
+    if (FVideoMemQueue.Count > 0) and
+       (not TAdVideoMemory(FVideoMemQueue[0]).Used) then
+    begin
+      result := TAdVideoMemory(FVideoMemQueue[0]);
+      result.Used := true;
+
+      FFreeBufferCount := FFreeBufferCount + 1;
+
+      //Remove the item from the queue list and add it to the end.
+      FVideoMemQueue.Delete(0);
+      FVideoMemQueue.Add(result);
+    end;
+  finally
+    FCriticalSection.Leave;
+  end;
+end;
+
+function TAdVideoHandler.NeedsData: boolean;
+begin
+  result := (FVideoMemQueue.Count < FBufferSize) or (FFreeBufferCount >= FBufferSize);
+end;
+
+procedure TAdVideoHandler.Notify(AState: TAdMediaDecoderState);
+begin
+  FCriticalSection.Enter;
+  try
+    //Indicate the next buffer frame as last frame.
+    if AState = vdEnd then
+      GetLastQueueItem.StreamEnd := true;
+  finally
+    FCriticalSection.Leave;
+  end;
+end;
+
+function TAdVideoHandler.Overflow: Boolean;
+begin
+  result := (FVideoMemQueue.Count > FBufferSize * 5);
 end;
 
 initialization

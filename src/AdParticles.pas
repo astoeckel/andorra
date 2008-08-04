@@ -123,6 +123,7 @@ type
         particle calculation thread.}
       procedure StoreData(AData: PAdParticleData);virtual;abstract;
 
+      { Updates the particle system boundsrect. }
       procedure StoreMinMax(AData: PAdParticleData);virtual;abstract;
 
       { Returns whether the particle is marked as dead. }

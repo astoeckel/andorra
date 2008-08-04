@@ -534,7 +534,7 @@ begin
   Clear;
   FList.Free;
   FSpriteField.Free;
-  inherited Create;
+  inherited;
 end;
 
 procedure TSprite.Clear;

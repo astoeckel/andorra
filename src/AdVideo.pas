@@ -23,7 +23,7 @@ unit AdVideo;
 interface
 
 uses
-  SysUtils, Classes,
+  SysUtils, Classes, SyncObjs,
   AdTypes, AdClasses, AdDraws, AdVideoTexture;
 
 type
@@ -47,7 +47,7 @@ type
       destructor Destroy;override;
 
       {Draws the video on a surface and }
-      procedure Draw(ASurface: TAdDraw; ADestRect: TAdRect);
+      procedure Draw(ASurface: TAdDraw; ADestRect: TAdRect);virtual;
 
       {Specifies wheter the image should be streched propertional.}
       property Proportional: boolean read FProportional write FProportional;
@@ -67,16 +67,29 @@ type
     private
       FStream: TStream;
       FOwnStream: boolean;
+      FCriticalSection: TCriticalSection;
+      function GetSize: int64;
+      function GetPos: int64;
     protected
       function GetOpened:boolean;override;
       procedure ClearData;override;
-      procedure ReadData(const Dest: Pointer; var Size: Cardinal);override;
+      function ReadData(const Dest: Pointer; const Size: Cardinal): integer;override;
       procedure ResetData;override;
     public
+      {Creates an instance of TAdCustomVideoPlayer}
+      constructor Create(AParent: TAdDraw);
+      {Destroys the instance of TAdCustomVideoPlayer and all created objects.}
+      destructor Destroy;override;
       {Opens a file.}
       procedure Open(AFile: string);overload;
       {Opens a stream. Do not free the stream before the video is closed.}
       procedure Open(AStream: TStream);overload;
+      {Seeks to another position in the media stream.}
+      procedure Seek(APos: int64);
+      {Returns the size of the stream.}
+      property Size: int64 read GetSize;
+      {Returns the current stream position.}
+      property Pos: int64 read GetPos;
   end;
 
 implementation
@@ -186,16 +199,43 @@ procedure TAdVideoPlayer.ClearData;
 begin
   inherited;
   if FOwnStream and (FStream <> nil) then
-  begin
     FStream.Free;
-  end;
+
   FStream := nil;
   FOwnStream := false;
+end;
+
+constructor TAdVideoPlayer.Create(AParent: TAdDraw);
+begin
+  inherited; 
+  FCriticalSection := TCriticalSection.Create;
+end;
+
+destructor TAdVideoPlayer.Destroy;
+begin
+  FCriticalSection.Free;
+  inherited;
 end;
 
 function TAdVideoPlayer.GetOpened: boolean;
 begin
   result := inherited GetOpened and (FStream <> nil);
+end;
+
+function TAdVideoPlayer.GetPos: int64;
+begin
+  if FStream <> nil then
+    result := FStream.Position
+  else
+    result := 0;
+end;
+
+function TAdVideoPlayer.GetSize: int64;
+begin
+  if FStream <> nil then  
+    result := FStream.Size
+  else
+    result := 0;
 end;
 
 procedure TAdVideoPlayer.Open(AFile: string);
@@ -224,17 +264,38 @@ begin
     ClearData;
 end;
 
-procedure TAdVideoPlayer.ReadData(const Dest: Pointer; var Size: Cardinal);
+function TAdVideoPlayer.ReadData(const Dest: Pointer; const Size: Cardinal): integer;
 begin
-  Size := FStream.Read(Dest^, Size);
+  if FStream <> nil then
+  begin
+    FCriticalSection.Enter;
+    try
+      result := FStream.Read(Dest^, Size);
+    finally
+      FCriticalSection.Leave;
+    end;
+  end else
+    result := 0;
 end;
 
 procedure TAdVideoPlayer.ResetData;
 begin
   inherited;
+
+  if FStream <> nil then
+    FStream.Position := 0;
+end;
+
+procedure TAdVideoPlayer.Seek(APos: int64);
+begin
   if FStream <> nil then
   begin
-    FStream.Position := 0;
+    FCriticalSection.Enter;
+    try
+      FStream.Position := APos;
+    finally
+      FCriticalSection.Leave;
+    end;
   end;
 end;
 

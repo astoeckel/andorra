@@ -29,7 +29,7 @@
         <PackageName Value="LazOpenGLContext"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="16">
+    <Units Count="19">
       <Unit0>
         <Filename Value="NoVCL.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -41,8 +41,8 @@
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="25" Y="17"/>
-        <TopLine Value="1"/>
+        <CursorPos X="71" Y="102"/>
+        <TopLine Value="82"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="21"/>
         <Loaded Value="True"/>
@@ -144,24 +144,87 @@
         <TopLine Value="57"/>
         <UsageCount Value="10"/>
       </Unit15>
+      <Unit16>
+        <Filename Value="..\..\..\src\AdTypes.pas"/>
+        <UnitName Value="AdTypes"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="313"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="..\..\..\src\AdClasses.pas"/>
+        <UnitName Value="AdClasses"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="441"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="..\..\..\src\AdParticles.pas"/>
+        <UnitName Value="AdParticles"/>
+        <CursorPos X="1" Y="1415"/>
+        <TopLine Value="1390"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit18>
     </Units>
-    <JumpHistory Count="4" HistoryIndex="3">
+    <JumpHistory Count="13" HistoryIndex="12">
       <Position1>
         <Filename Value="Main.pas"/>
-        <Caret Line="93" Column="1" TopLine="71"/>
+        <Caret Line="90" Column="1" TopLine="74"/>
       </Position1>
       <Position2>
         <Filename Value="Main.pas"/>
-        <Caret Line="93" Column="1" TopLine="71"/>
+        <Caret Line="92" Column="1" TopLine="76"/>
       </Position2>
       <Position3>
         <Filename Value="Main.pas"/>
-        <Caret Line="10" Column="19" TopLine="1"/>
+        <Caret Line="93" Column="1" TopLine="77"/>
       </Position3>
       <Position4>
         <Filename Value="Main.pas"/>
-        <Caret Line="10" Column="9" TopLine="1"/>
+        <Caret Line="94" Column="1" TopLine="78"/>
       </Position4>
+      <Position5>
+        <Filename Value="Main.pas"/>
+        <Caret Line="95" Column="1" TopLine="79"/>
+      </Position5>
+      <Position6>
+        <Filename Value="Main.pas"/>
+        <Caret Line="97" Column="1" TopLine="79"/>
+      </Position6>
+      <Position7>
+        <Filename Value="Main.pas"/>
+        <Caret Line="98" Column="1" TopLine="79"/>
+      </Position7>
+      <Position8>
+        <Filename Value="Main.pas"/>
+        <Caret Line="99" Column="1" TopLine="79"/>
+      </Position8>
+      <Position9>
+        <Filename Value="Main.pas"/>
+        <Caret Line="101" Column="1" TopLine="79"/>
+      </Position9>
+      <Position10>
+        <Filename Value="Main.pas"/>
+        <Caret Line="103" Column="1" TopLine="79"/>
+      </Position10>
+      <Position11>
+        <Filename Value="Main.pas"/>
+        <Caret Line="43" Column="35" TopLine="19"/>
+      </Position11>
+      <Position12>
+        <Filename Value="Main.pas"/>
+        <Caret Line="102" Column="50" TopLine="79"/>
+      </Position12>
+      <Position13>
+        <Filename Value="Main.pas"/>
+        <Caret Line="107" Column="35" TopLine="80"/>
+      </Position13>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

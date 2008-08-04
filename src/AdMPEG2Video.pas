@@ -27,47 +27,41 @@ uses
 
 type
   {@exclude}
-  TAdMPEG2Decoder = class(TAdVideoDecoder)
+  TAdMPEG2Decoder = class(TAdMediaDecoder)
     private
       FDecoder: PMPEG2_Decoder;
       FInfo: PMPEG2_Info;
+      FReadProc: TAdMediaReadproc;
 
       buf: TAd2dBitmap;
+      src_buf: PByte;
+      src_buf_size: Cardinal;
 
-      procedure WriteBitmap(AWidth, AHeight:integer; AMem: Pointer); 
-
-      procedure CloseDecoder;
-      procedure OpenDecoder;    
+      procedure WriteBitmap(AWidth, AHeight:integer; AMem: Pointer);
     public
-      constructor Create;override;
+      constructor Create(AReadProc: TAdMediaReadproc);override;
       destructor Destroy;override;
-      
-      class function SupportsFile(ABuf: Pointer; ASize: Cardinal):boolean; override;
 
-      function ReadBuffer(ABuf: Pointer; ASize: Cardinal): TAdVideoDecoderState; override;
-      function GetVideoInfo: TAdVideoInfo; override;
-      function GetVideoPosition: TAdVideoPosition; override;
-      procedure FillBuffer(ABuffer: Pointer); override;
-  end;
+      procedure CloseDecoder;override;
+      procedure OpenDecoder;override;
+
+      function Decode: TAdMediaDecoderState; override;
+      procedure GetPacket(var APacket: TAdMediaPacket); override;
+    end;
 
 implementation
 
+const
+  default_buf_size = 1024;
+
 { TAdMPEG2Decoder }
 
-procedure TAdMPEG2Decoder.CloseDecoder;
+constructor TAdMPEG2Decoder.Create(AReadProc: TAdMediaReadproc);
 begin
-  if FDecoder <> nil then
-  begin
-    mpeg2_close(FDecoder);
-    FDecoder := nil;
-    FInfo := nil;
-  end;
-end;
-
-constructor TAdMPEG2Decoder.Create;
-begin
-  inherited Create;
+  inherited;
   buf := TAd2dBitmap.Create;
+
+  FReadProc := AReadProc;
 end;
 
 destructor TAdMPEG2Decoder.Destroy;
@@ -76,47 +70,62 @@ begin
   inherited;
 end;
 
-procedure TAdMPEG2Decoder.FillBuffer(ABuffer: Pointer);
+procedure TAdMPEG2Decoder.GetPacket(var APacket: TAdMediaPacket);
 begin
-  if buf.Loaded then
-    Move(buf.Scanline^, ABuffer^, buf.Size);
-end;
-
-function TAdMPEG2Decoder.GetVideoInfo: TAdVideoInfo;
-begin
-  with result do
+  if (FInfo <> nil) then
   begin
-    Width := 0;
-    Height := 0;
-    FPS := 0;
-    PixelAspect := 1;
-    
-    if (FInfo <> nil) and (FInfo^.sequence <> nil) then
+    if (FInfo^.sequence <> nil) then
     begin
-      Width := FInfo^.sequence^.width;
-      Height := FInfo^.sequence^.height;
-      FPS := 25;
-      PixelAspect := FInfo^.sequence^.pixel_width / FInfo^.sequence^.pixel_height;
+      with PAdVideoInfo(@APacket.Info)^ do
+      begin
+        Width := FInfo^.sequence^.width;
+        Height := FInfo^.sequence^.height;
+        FPS := 25;
+        PixelAspect := FInfo^.sequence^.pixel_width / FInfo^.sequence^.pixel_height;
+      end;
     end;
+    if (FInfo^.gop <> nil) then
+    begin
+      with APacket.Timecode do
+      begin
+        Hour := FInfo^.gop^.hours;
+        Minute := FInfo^.gop^.minutes;
+        Second := FInfo^.gop^.seconds;
+        Frame := FInfo^.gop^.pictures;
+        Timecode := (Hour * 3600) + (Minute * 60) + Second + (Frame / 25);
+      end;
+    end;
+
+    APacket.StreamType := amVideo;
+    APacket.StreamIndex := 0;
+    APacket.Buffer := buf.ScanLine;
+    APacket.BufferSize := buf.Size;
   end;
 end;
 
-function TAdMPEG2Decoder.GetVideoPosition: TAdVideoPosition;
+procedure TAdMPEG2Decoder.CloseDecoder;
 begin
-  with result do
+  MediaStreams.Clear;
+  
+  if FDecoder <> nil then
   begin
-    Hour := 0; Minute := 0; Second := 0; Frame := 0;
-    if (FInfo <> nil) and (FInfo^.gop <> nil) then
+    mpeg2_close(FDecoder);
+    FDecoder := nil;
+    FInfo := nil;
+
+    if src_buf <> nil then
     begin
-      Hour := FInfo^.gop^.hours;
-      Minute := FInfo^.gop^.minutes;
-      Second := FInfo^.gop^.seconds;
-      Frame := FInfo^.gop^.pictures;
+      //Free reserved memory
+      FreeMemory(src_buf);
+
+      src_buf := nil;
     end;
   end;
 end;
 
 procedure TAdMPEG2Decoder.OpenDecoder;
+var
+  tmp: TAdMediaStream;
 begin
   CloseDecoder;
 
@@ -124,20 +133,23 @@ begin
   if FDecoder <> nil then
   begin
     FInfo := mpeg2_info(FDecoder);
+
+    //Reserve read memory
+    GetMem(src_buf, default_buf_size);
+    src_buf_size := default_buf_size;
+
+    tmp := TAdMediaStream.Create(self, 0, amVideo);
+    MediaStreams.Add(tmp);
   end;
 end;
 
-function TAdMPEG2Decoder.ReadBuffer(ABuf: Pointer;
-  ASize: Cardinal): TAdVideoDecoderState;
+function TAdMPEG2Decoder.Decode: TAdMediaDecoderState;
 var
   pstart, pend: PByte;
   state: TMPEG2_State;
+  size: Cardinal;
 begin
-  if FDecoder = nil then
-    OpenDecoder;
-
-  result := vdIncomplete;
-
+  result := vdIncomplete;     
 
   while true do
   begin
@@ -145,11 +157,15 @@ begin
     case state of
       STATE_BUFFER:
       begin
-        pstart := ABuf;
-        pend := ABuf;
+        //Read data...
+        size := FReadProc(src_buf, src_buf_size);
 
-        inc(pend, ASize);
+        pstart := src_buf;
+        pend := src_buf;
 
+        inc(pend, size);
+
+        //...and decode it
         mpeg2_buffer(FDecoder, pstart, pend);
 
         Break;
@@ -175,12 +191,6 @@ begin
       end;
     end;
   end;
-end;
-
-class function TAdMPEG2Decoder.SupportsFile(ABuf: Pointer;
-  ASize: Cardinal): boolean;
-begin
-  result := true;
 end;
 
 procedure TAdMPEG2Decoder.WriteBitmap(AWidth, AHeight: integer; AMem: Pointer);

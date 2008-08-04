@@ -3231,7 +3231,10 @@ end;
 procedure TAdPluginPropertyList.WriteProperties(AAppl: TAd2DApplication);
 begin
   //Store the values in the Ad2dAppliation instance
-  AAppl.SetProperties(Length(FValues), @FValues[0]);
+  if length(FValues) > 0 then
+  begin
+    AAppl.SetProperties(Length(FValues), @FValues[0]);
+  end;
 end;
 
 function TAdPluginPropertyList.GetProperty(Index: integer): TAd2dProperty;
