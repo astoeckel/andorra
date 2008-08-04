@@ -8,8 +8,12 @@ interface
 
 uses
   SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
-  AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
-  AdMPEG2Video, AdGUI, AdComponents, AdGUIConnector, AdEvents, AdSetupDlg;
+  AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo, 
+  AdGUI, AdComponents, AdGUIConnector, AdEvents, AdSetupDlg,
+
+  //Select one of the following video decoders here
+  AdAcinerella; {GPL only!}
+  //AdMPEG2Video;
 
 type
   TAdAppl = class
@@ -43,6 +47,8 @@ begin
     AdPerCounter.Calculate;
     AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
+
+    Sleep(10);
 
     AdVideo.Move(AdPerCounter.TimeGap / 1000);
     AdVideo.Image.Filter := atLinear;
@@ -82,6 +88,7 @@ var
   od: TOpenDialog;
 begin
   od := TOpenDialog.Create(nil);
+  od.Options := od.Options + [ofNoChangeDir];
   if od.Execute then
   begin
     AdVideo.Open(od.FileName);
