@@ -381,18 +381,20 @@ end;
 
 function OverlapRect(const Rect1, Rect2: TAdRect): Boolean;
 begin
-  Result:=(Rect1.Left<Rect2.Right)and
-    (Rect1.Right>Rect2.Left)and
-    (Rect1.Top<Rect2.Bottom)and
-    (Rect1.Bottom>Rect2.Top);
+  Result:=
+    (Rect1.Left < Rect2.Right) and
+    (Rect1.Right > Rect2.Left) and
+    (Rect1.Top < Rect2.Bottom) and
+    (Rect1.Bottom > Rect2.Top);
 end;
 
 function CompareRects(const Rect1,Rect2:TAdRect):boolean;
 begin
-  result := (Rect1.Left = Rect2.Left) and
-            (Rect1.Right = Rect2.Right) and
-            (Rect1.Top = Rect2.Top) and
-            (Rect1.Bottom = Rect2.Bottom);
+  result :=
+    (Rect1.Left = Rect2.Left) and
+    (Rect1.Right = Rect2.Right) and
+    (Rect1.Top = Rect2.Top) and
+    (Rect1.Bottom = Rect2.Bottom);
 end;
 
 function InRect(const X, Y: integer; const Rect:TAdRect):boolean;

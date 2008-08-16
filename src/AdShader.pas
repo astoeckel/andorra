@@ -524,9 +524,15 @@ var
   mat: TAdMatrix;
 begin
   mat := AdMatrix_Transpose(AModelViewProjection);
-  FVertexShader.SetParameter('modelview', mat);
-  FVertexShader.BindEffect;
-  FFragmentShader.BindEffect;
+  if FVertexShader.Shader <> nil then
+  begin
+    FVertexShader.SetParameter('modelview', mat);
+    FVertexShader.BindEffect;
+  end;
+  if FFragmentShader.Shader <> nil then
+  begin
+    FFragmentShader.BindEffect;
+  end;
 end;
 
 procedure TAdShaderEffect.EndRender(Sender: TObject);

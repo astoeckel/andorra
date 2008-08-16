@@ -566,7 +566,7 @@ begin
   FData := AValue;
 end;
 
-//Make floating point operations more accurate on a 386-CPU
+//Make floating point operations more accurate on a x86-CPU
 
 {$IFDEF FPC}
   {$IFDEF CPU386}

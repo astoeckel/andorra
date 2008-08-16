@@ -168,25 +168,12 @@ begin
 end;
 
 function TAd2dBitmap.GetPixelMemory(X, Y: integer): PAndorraColor;
-var
-  dif:integer;
 begin
   result := nil;
   if (X >= 0) and (Y >= 0) and (X < Width) and (Y < Height) then
   begin
-    if (FCurrentPixelPointer = nil) or (FLastX = -1) or (FLastY = -1) then
-    begin
-      FCurrentPixelPointer := ScanLine;
-      Inc(FCurrentPixelPointer, Y * Width + X);
-    end
-    else
-    begin
-      dif := (Y - FLastY) * Height + (X - FLastX);
-      if dif > 0 then
-        Inc(FCurrentPixelPointer, dif);
-      if dif < 0 then
-        Dec(FCurrentPixelPointer, -dif);
-    end;
+    FCurrentPixelPointer := ScanLine;
+    Inc(FCurrentPixelPointer, Y * Width + X);
     FLastX := X;
     FLastY := Y;
     result := FCurrentPixelPointer;
