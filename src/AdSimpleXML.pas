@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.6 2008/06/23 16:03:54 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.7 2008/08/29 16:00:42 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -52,7 +52,7 @@ interface
 
 uses
   {$IFDEF Win32}Windows, {$ENDIF}
-  SysUtils, Classes, Variants, IniFiles, Math;
+  SysUtils, Classes, Variants, IniFiles;
 
 type
   {$IFDEF FPC}
@@ -533,12 +533,34 @@ resourcestring
 implementation
 
 function SecureFloatToStr(AFloat: Extended): string;
+var
+  i,zp: integer;
 begin
+  //Set sign
+  if AFloat < 0 then
+    result := '-'
+  else
+    result := '';
+    
   //Return the integer part of the number
-  result := IntToStr(trunc(AFloat)) + '.';
+  result := result + IntToStr(Abs(trunc(AFloat))) + '.';
 
   //Get the decimal places of the number
-  result := result + IntToStr(Round((AFloat - trunc(AFloat)) * 1000000000000));
+  result := result + FormatFloat('0000000000', Abs(Round((AFloat - trunc(AFloat)) * 10000000000)));
+
+  //Cut last zeros
+  zp := Length(result);
+
+  for i := Length(result) downto 1 do
+    if result[i] <> '0' then
+    begin
+      zp := i;
+      break;
+    end;
+
+  result := copy(result, 1, zp);
+  if result[Length(result)] = '.' then
+    result := copy(result, 1, zp - 1);
 end;
 
 function SecureStrToFloat(AStr: string): Extended;
@@ -547,6 +569,16 @@ var
   decimalplaces: string;
   i: integer;
   decimalposition: integer;
+  predec: Double;
+
+  function Power10(exp: integer): Extended;
+  var
+    i: integer;
+  begin
+    result := 1;
+    for i := 0 to exp - 1 do
+      result := result * 10;
+  end;
 
 const
   decimalpoints = '.,';
@@ -555,6 +587,7 @@ begin
   predecimalpositions := '';
   decimalplaces := '';
 
+  //Find position of the decimal point
   for i := 1 to Length(decimalpoints) do
   begin
     decimalposition := Pos(decimalpoints[i], AStr);
@@ -564,12 +597,28 @@ begin
 
   if decimalposition <> 0 then
   begin
-    predecimalpositions := Copy(AStr, 1, decimalposition - 1);
-    decimalplaces := Copy(AStr, decimalposition + 1, Length(AStr) - decimalposition);
-    result := StrToFloat(predecimalpositions) +
-      StrToFloat(decimalplaces) / Power(10, Length(decimalplaces));
+    //Copy the predecimal digits
+    predecimalpositions :=
+      Copy(AStr, 1, decimalposition - 1);
+      
+    //Copy the decimal digits
+    decimalplaces :=
+      Copy(AStr, decimalposition + 1, Length(AStr) - decimalposition);
+
+    //Calculate the value of the predecimal positions
+    predec := StrToInt(predecimalpositions);
+
+    //Calculate the value
+    result := Abs(predec);
+    if decimalplaces <> '' then
+      result := result + StrToInt(decimalplaces) / Power10(length(decimalplaces));
+
+    //Set sign
+    if AStr[1] = '-' then
+      result := -result;
   end else
   begin
+    //If no decimal place was found, it is an integer
     result := StrToInt(AStr);
   end;
 end;

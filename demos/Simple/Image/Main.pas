@@ -33,6 +33,7 @@ var
 begin
   ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TAdPerformanceCounter.Create;
+  AdPerCounter.MaximumFrameRate := 60;
 
   AdDraw := TAdDraw.Create(self);
 

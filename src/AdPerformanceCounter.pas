@@ -20,7 +20,7 @@ interface
 
 {$IFNDEF WIN32}
 uses
-  LclIntf;
+  SysUtils, LclIntf;
 {$ENDIF}
 
 type
@@ -34,15 +34,18 @@ type
   {Class for calculating the FPS and the TimeGap.}
   TAdPerformanceCounter = class
     private
-      FTimeGap:Double;
-      FFPS:integer;
-      FInterpolate:boolean;
-      FState:TAdPerformanceCounterState;
-      FLastTickCount:Double;
-      FTempTime:Double;
-      FTempFPS:integer;
-      FInterpolationFactor:integer;
-      FMaximumTimeGap:double;
+      FTimeGap: double;
+      FFPS: integer;
+      FInterpolate: boolean;
+      FState: TAdPerformanceCounterState;
+      FLastTickCount: double;
+      FTempTime: double;
+      FTempFPS: integer;
+      FInterpolationFactor: integer;
+      FMaximumTimeGap: double;
+      FMaximumFrameRate: integer;
+      FLastSleep: Double;
+      procedure LimitFrameRate(atd: double);
     public
       {Creates a new instance of TAdPerformanceCounter.
        @param(ACreatePaused can be true, in order to create the performance counter
@@ -79,7 +82,18 @@ type
       {If TimeGap exceeds MaximumTimeGap, TimeGap will be set to this value. This
        is for preventing the game logic from e.g. collision bugs beause TimeGap
        got to big.}
-      property MaximumTimeGap:double read FMaximumTimeGap write FMaximumTimeGap;      
+      property MaximumTimeGap:double read FMaximumTimeGap write FMaximumTimeGap;
+      {Use this property to set the maximum framerate that should be achieved.
+       Setting this value will also help to save cpu workload, what means less
+       power comsumption.
+       Remember that Maximumframerate is not really percise, do not replace
+       time based moving by this method.
+       If maximum frame rate is activated, a "sleep" will be added to the
+       "calculate" function. So if you want to use the time while the
+       program sleeps, you have to use threads.
+       If Maximum Frame Rate is smaller or equals zero, frame rate limitation
+       will be disabled.}
+      property MaximumFrameRate:integer read FMaximumFrameRate write FMaximumFrameRate;
   end;
 
 implementation
@@ -89,7 +103,8 @@ implementation
 {$IFDEF WIN32}
 var
   Frequency:int64 = 0;
-  
+
+procedure Sleep(ms: Cardinal); stdcall; external 'kernel32.dll';
 function QueryPerformanceCounter(var lpPerformanceCount: int64): boolean; stdcall; external 'kernel32.dll';
 function QueryPerformanceFrequency(var lpFrequency: int64): boolean; stdcall; external 'kernel32.dll';
 
@@ -123,7 +138,21 @@ begin
   FLastTickCount := GetTickCount;
   FInterpolate := true;
   FInterpolationFactor := 5;
-  FMaximumTimeGap := 50; 
+  FMaximumTimeGap := 50;
+  FLastSleep := 0;
+end;
+
+procedure TAdPerformanceCounter.LimitFrameRate(atd: double);
+var
+  sleeptime: Double;
+begin
+  sleeptime := 1000 / FMaximumFrameRate - (atd - FLastSleep);
+  if sleeptime > 0 then
+  begin
+    Sleep(round(sleeptime));
+    FLastSleep := sleeptime;
+  end else
+    FLastSleep := 0;
 end;
 
 procedure TAdPerformanceCounter.Calculate;
@@ -133,6 +162,10 @@ begin
   //Calculate time difference
   tc := GetTickCount;
   td := tc - FLastTickCount;
+
+  //Limit framerate
+  if FMaximumFrameRate > 0 then
+    LimitFrameRate(td);
 
   if FState = psRunning then
   begin

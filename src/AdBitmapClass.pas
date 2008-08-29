@@ -158,7 +158,7 @@ begin
   if ay < Height then
   begin
     ptr := FMemory;
-    inc(ptr,AY*4*FWidth);
+    inc(ptr, AY*4*FWidth);
     result := ptr;
   end
   else
