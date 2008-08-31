@@ -39,6 +39,7 @@ type
       FStretch: boolean;
       FCenter: boolean;
     protected
+      procedure Notify(ASender:TObject;AEvent:TAdSurfaceEventState);
       function DestinationRect(ADestRect: TAdRect):TAdRect;
     public
       {Creates an instance of TAdCustomVideoPlayer}
@@ -101,6 +102,7 @@ begin
   inherited Create(AParent.AdAppl);
 
   FParent := AParent;
+  FParent.RegisterNotifyEvent(Notify);
   FImage := TAdImage.Create(FParent);
 
   FImage.Texture.Texture := Texture;
@@ -176,6 +178,7 @@ end;
 
 destructor TAdCustomVideoPlayer.Destroy;
 begin
+  FParent.UnRegisterNotifyEvent(Notify);
   FImage.Free;
   inherited;
 end;
@@ -191,6 +194,20 @@ begin
     FImage.Restore;
 
   FImage.StretchDraw(ASurface, DestinationRect(ADestRect), 0);
+end;
+
+procedure TAdCustomVideoPlayer.Notify(ASender: TObject;
+  AEvent: TAdSurfaceEventState);
+begin
+  case AEvent of
+    seInitialize:
+    begin
+      InitializeTexture(FParent.AdAppl);
+      FImage.Texture.Texture := Texture;
+    end;
+    seFinalize:
+      FinalizeTexture;
+  end;
 end;
 
 { TAdVideoPlayer }

@@ -149,7 +149,7 @@ begin
   sleeptime := 1000 / FMaximumFrameRate - (atd - FLastSleep);
   if sleeptime > 0 then
   begin
-    Sleep(round(sleeptime));
+    Sleep(trunc(sleeptime));
     FLastSleep := sleeptime;
   end else
     FLastSleep := 0;

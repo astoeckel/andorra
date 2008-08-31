@@ -35,6 +35,8 @@ type
    ensure that your program is successfully compiled.}
   EShaderNotLoaded = class(EShader);
 
+  TAdShader = class;
+
   {Andorra 2D's main shader system class. This class wraps around the the
    TAd2dShaderSystem class, that is returned by the Andorra 2D graphic plugin.
    TAdShaderSystem ensures that a new instance of TAd2dShaderSystem is created
@@ -48,6 +50,7 @@ type
       FDraw: TAdDraw;
       FSystem: TAd2dShaderSystem;
       FDllName: string;
+      FShaders: TList;
       function GetInitialized: boolean;
     protected
       procedure Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
@@ -96,8 +99,13 @@ type
       FShaderSystem: TAdShaderSystem;
       FParameterList: THashedStringList;
       FShader: TAd2dShader;
+      FShaderType: TAd2dShaderType;
+      FShaderLanguage: TAdVeryShortString;
+      FProgramName: string;
       FProgBuf: string;
     protected
+      function Initialize: boolean;
+      procedure Finalize;
       procedure Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
       procedure FreeShader;
       function GetParameter(AName: string): Pointer;
@@ -195,6 +203,13 @@ type
        you're doing.
        @seealso(TAd2dShader)}
       property Shader: TAd2dShader read FShader;
+
+      {The language the loaded shader is written in.}
+      property ShaderLanguage: TAdVeryShortString read FShaderLanguage;
+      {The type of the currently loaded shader - vertex or fragment shader.}
+      property ShaderType: TAd2dShaderType read FShaderType;
+      {The name of the currently loaded shader main function.}
+      property ProgramName: string read FProgramName;
   end;
 
   TAdShaderEffect = class
@@ -226,15 +241,19 @@ begin
   FDraw := ADraw;
   FDraw.RegisterNotifyEvent(Notify);
 
+  FShaders := TList.Create;
+
   Initialize;
 end;
 
 destructor TAdShaderSystem.Destroy;
 begin
   FDraw.UnRegisterNotifyEvent(Notify);
-  
+
   if FSystem <> nil then
     FSystem.Free;
+
+  FShaders.Free;
 
   inherited;
 end;
@@ -261,7 +280,7 @@ end;
 
 procedure TAdShaderSystem.Finalize;
 begin
-  if FSystem <> nil then
+  if (FSystem <> nil) and FSystem.Initialized then
     FSystem.Finalize;
 end;
 
@@ -273,8 +292,10 @@ end;
 procedure TAdShaderSystem.Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
 begin
   case AEvent of
-    seInitialize: Initialize;
-    seFinalize: Finalize;
+    seInitialize:
+      Initialize;
+    seFinalize:
+      Finalize;
   end;
 end;
 
@@ -305,19 +326,18 @@ end;
 procedure TAdShader.FreeShader;
 begin
   if FShader <> nil then
-    FShader.Free;
+    FreeAndNil(FShader);
 
   FParameterList.Clear;
 end;
 
 procedure TAdShader.Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
 begin
-  if FShader <> nil then
-  begin
-    case AEvent of
-      seInitialize: FShader.Initialize;
-      seFinalize: FShader.Finalize;
-    end;
+  case AEvent of
+    seInitialized:
+      Initialize;
+    seFinalize:
+     Finalize;
   end;
 end;
 
@@ -341,26 +361,45 @@ end;
 function TAdShader.CompileProgram(AShaderLanguage: TAdVeryShortString;
   AProgramName: string; AShaderType: TAd2dShaderType): boolean;
 begin
-  result := false;
-
   //Free the existing instance of our shader object
   FreeShader;
 
-  FShader := FShaderSystem.ShaderSystem.CreateShader(Lowercase(AShaderLanguage));
-  if FShader <> nil then
-  begin
-    FShader.LoadProgramFromBuffer(PChar(FProgBuf),
-      assSource, PChar(AProgramName), AShaderType);
+  //Set program settings...
+  FShaderType := AShaderType;
+  FShaderLanguage := AShaderLanguage;
+  FProgramName := AProgramName;
 
-    //If compiling was successful, initialize shader 
-    if FShader.Loaded then
+  //...and load it!
+  result := Initialize;
+end;
+
+procedure TAdShader.Finalize;
+begin
+  //Free our shader
+  FreeShader;
+end;
+
+function TAdShader.Initialize: boolean;
+begin
+  result := false;
+  if (FProgBuf <> '') and (FShaderLanguage <> '') and (FProgramName <> '') then
+  begin
+    FShader := FShaderSystem.ShaderSystem.CreateShader(Lowercase(FShaderLanguage));
+    if FShader <> nil then
     begin
-      FShader.Initialize;
-      result := true;
-    end;
-  end else
-    raise EUnsupportedShaderLanguage.CreateFmt(
-      MsgShaderLanguageNotSupported, [AShaderLanguage]);
+      FShader.LoadProgramFromBuffer(PChar(FProgBuf),
+        assSource, PChar(FProgramName), FShaderType);
+
+      //If compiling was successful, initialize shader
+      if FShader.Loaded then
+      begin
+        FShader.Initialize;
+        result := true;
+      end;
+    end else
+      raise EUnsupportedShaderLanguage.CreateFmt(
+      MsgShaderLanguageNotSupported, [FShaderLanguage]);
+  end;
 end;
 
 procedure TAdShader.LoadFromFile(AFile: string);

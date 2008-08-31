@@ -515,6 +515,8 @@ type
     function Initialize: boolean;
     {Finalizes the surface. The "seFinalize" surface event is called.}
     procedure Finalize;
+    {Restores the surface (e.g. after a window resize).}
+    procedure Restore;
 
     {Exchanges the front- and the backbuffer.}
     procedure Flip;
@@ -1260,6 +1262,10 @@ end;
 
 destructor TAdDraw.Destroy;
 begin
+  //Destroy the window object
+  if FWnd <> nil then
+    FreeAndNil(FWnd);
+
   //Free all loaded objects
   if AdAppl <> nil then
     Finalize;
@@ -1359,6 +1365,19 @@ begin
   //Assume that no framework is found
   result := false;
 
+  //If a window frame work is still loaded, check whether this is compatible
+  if FWnd <> nil then
+  begin
+    if AdAppl.SupportsWindowFramework(FWnd.IdentStr) then
+    begin
+      //The window framework is still compatible - continue
+      result := true;
+      exit;
+    end
+    else
+      FreeAndNil(FWnd);
+  end;
+
   //Iterate through the registered frameworks
   RegisteredWindowFrameworks.StartIteration;
   while not RegisteredWindowFrameworks.ReachedEnd do
@@ -1375,7 +1394,10 @@ begin
     begin
       FWnd.Free; FWnd := nil;
     end else
+    begin
+      InitDisplay;
       exit;
+    end;
   end;
 end;
 
@@ -1428,11 +1450,9 @@ begin
 
     if AdAppl <> nil then
     begin
+      //Search and initialize a window framework
       if SearchWindowFramework then
       begin
-        //Initialize the window
-        InitDisplay;
-
         //Store settings in the plugin
         FProperties.WriteProperties(AdAppl);
 
@@ -1446,13 +1466,13 @@ begin
           //Create the font system
           FFonts := TAdFontFactory.Create(AdAppl);
 
-          //Call all registered initialization routines
-          CallNotifyEvent(seInitialize);
-          CallNotifyEvent(seInitialized);
-
           //Initialization did not fail - congratulations
           result := true;
           FInitialized := true;
+
+          //Call all registered initialization routines
+          CallNotifyEvent(seInitialize);
+          CallNotifyEvent(seInitialized);
 
           //Store options
           AdAppl.SetOptions(FOptions);
@@ -1507,27 +1527,33 @@ end;
 procedure TAdDraw.Finalize;
 begin
   //Call the "OnFinalize" Event
+
   if Assigned(FFinalize) then
     FFinalize(Self);
-
-  //Destroy the window object
-  if FWnd <> nil then
-    FreeAndNil(FWnd);
 
   //Destroy the fonts object
   if FFonts <> nil then
     FreeAndNil(FFonts);
 
-  //Destroy the AdAppl object
-  if AdAppl <> nil then
-  begin
-    AdAppl.Finalize;
-    AdAppl.Free;
-  end;
-
-  //Tell everybody that this instance of TAdDraw is no longer initialized
+  //Tell everybody that this instance of TAdDraw will be no longer initialized
   FInitialized := false;
   CallNotifyEvent(seFinalize);
+
+  //Destroy the AdAppl object
+  if FAdAppl <> nil then
+  begin
+    FAdAppl.Finalize;
+    FreeAndNil(FAdAppl);
+  end;
+end;
+
+procedure TAdDraw.Restore;
+begin
+  if Initialized then
+  begin
+    Finalize;
+    Initialize;
+  end;
 end;
 
 procedure TAdDraw.BeginScene;
@@ -2510,7 +2536,8 @@ begin
   FOwnTexture := false;
   FAd2dTexture := AValue;
 
-  FBitDepth := AValue.BitDepth;
+  SetBitDepth(FAd2dTexture.BitDepth);
+  SetFilter(FFilter);
 end;
 
 procedure TAdCustomTexture.SetBitDepth(AValue: TAdBitDepth);
@@ -2538,6 +2565,7 @@ end;
 destructor TAdTexture.Destroy;
 begin
   Parent.UnRegisterNotifyEvent(Notify);
+  Clear;
   inherited Destroy;
 end;
 
@@ -2550,7 +2578,6 @@ end;
 
 procedure TAdTexture.Finalize;
 begin
-  Clear;
   if (FOwnTexture) and (FAd2dTexture <> nil) then
   begin
     FAd2dTexture.Free;
@@ -2561,13 +2588,10 @@ end;
 procedure TAdTexture.Clear;
 begin
   if FCache <> nil then
-  begin
     FreeAndNil(FCache);
-  end;
+
   if Texture <> nil then
-  begin
     Texture.FlushTexture;
-  end;
 end;
 
 procedure TAdTexture.SaveToFile(AFile: string);

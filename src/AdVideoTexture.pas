@@ -336,6 +336,9 @@ type
       procedure InitPlayer;virtual;
       procedure ClearData;virtual;
 
+      procedure InitializeTexture(AParent: TAd2DApplication);
+      procedure FinalizeTexture;
+
       property Texture: TAd2dBitmapTexture read FTexture;
       property Info: TAdVideoInfo read FInfo write FInfo;
       property Time: TAdVideoPosition read FTime write FTime;
@@ -463,9 +466,7 @@ constructor TAdCustomVideoTexture.Create(AParent: TAd2dApplication);
 begin
   inherited Create;
 
-  FParent := AParent;
-
-  FTexture := FParent.CreateBitmapTexture;
+  InitializeTexture(AParent);
 
   FBufferSize := 4096;
 end;
@@ -474,12 +475,25 @@ destructor TAdCustomVideoTexture.Destroy;
 begin
   ClearData;
 
-  FTexture.Free;
+  FinalizeTexture;
   
   if FDecoder <> nil then
     FDecoder.Free;
 
   inherited;
+end;
+
+procedure TAdCustomVideoTexture.FinalizeTexture;
+begin
+  if FTexture <> nil then
+    FreeAndNil(FTexture);
+end;
+
+procedure TAdCustomVideoTexture.InitializeTexture(AParent: TAd2DApplication);
+begin
+  FinalizeTexture;
+  FParent := AParent;
+  FTexture := FParent.CreateBitmapTexture;
 end;
 
 function TAdCustomVideoTexture.GetOpened: boolean;

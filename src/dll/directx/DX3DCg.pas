@@ -123,7 +123,8 @@ end;
 
 procedure TDXCgShader.Finalize;
 begin
-  cgD3D9UnloadProgram(FProgram);
+  if (FProgram <> nil) and (FSystem.Initialized) then  
+    cgD3D9UnloadProgram(FProgram);
 end;
 
 procedure TDXCgShader.Initialize;
