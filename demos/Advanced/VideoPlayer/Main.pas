@@ -31,7 +31,7 @@ type
     procedure PauseClick(Sender: TObject);
     procedure StopClick(Sender: TObject);
     procedure CheckBoxClick(Sender: TObject);
-
+ 
     procedure Run;
   end;
 

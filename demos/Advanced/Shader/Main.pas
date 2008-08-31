@@ -11,6 +11,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormResize(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -78,6 +79,7 @@ begin
   end;
 
   AdSetup.Free;
+  BorderStyle := bsSizeable;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -94,6 +96,11 @@ procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   mx := x;
   my := y;
+end;
+
+procedure TForm1.FormResize(Sender: TObject);
+begin
+  AdDraw.Restore;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
