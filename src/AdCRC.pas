@@ -18,7 +18,7 @@ unit AdCRC;
 
 interface
 
-uses SysUtils;
+uses SysUtils, Classes;
 
 const CRCTABLE: array[Byte] of Cardinal =
 	(
@@ -91,7 +91,8 @@ const CRCTABLE: array[Byte] of Cardinal =
   CRC_INIT: Cardinal=$FFFFFFFF;
 
 
-function CRC32(const Buffer; const Size: Cardinal): Cardinal;
+function CRC32(const Buffer; const Size: Cardinal): Cardinal; overload;
+function CRC32(const AStream: TStream; const Size: Int64): Cardinal; overload;
 
 implementation
 
@@ -107,6 +108,24 @@ begin
   begin
     Result:=CRCTABLE[Byte((Result xor p^) and $FF)] xor (Result shr 8);
     inc(p);
+  end;
+
+  Result:=not Result;
+
+end;
+
+function CRC32(const AStream: TStream; const Size: Int64): Cardinal;
+var I: Integer;
+    b: Byte;
+begin
+
+  p:=@Buffer;
+  Result:=CRC_INIT;
+
+  for I := 1 to Size do
+  begin
+    AStream.Read(b, 1);
+    Result:=CRCTABLE[Byte((Result xor b) and $FF)] xor (Result shr 8);
   end;
 
   Result:=not Result;
