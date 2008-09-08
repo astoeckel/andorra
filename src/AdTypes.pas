@@ -249,6 +249,9 @@ function CompareRects(const Rect1,Rect2:TAdRect):boolean;
 function OverlapRect(const Rect1, Rect2: TAdRect): boolean;
 {Returns true, if the point lies within the rect}
 function InRect(const X, Y: integer; const Rect: TAdRect): boolean;
+{AO contains the intersection rectangle of the two rectangles. The function
+ returns false if the two rectangles do not overlapp.}
+function CalcOverlapRect(out AO: TAdRect; const AR1, AR2: TAdRect): boolean;
 
 {Returns a vector with three components.}
 function AdVector3(AX,AY,AZ:double):TAdVector3;overload;
@@ -388,6 +391,43 @@ begin
     (Rect1.Bottom > Rect2.Top);
 end;
 
+function CalcOverlapRect(out AO: TAdRect; const AR1, AR2: TAdRect): boolean;
+begin
+  if OverlapRect(AR1, AR2) then
+  begin
+    result := true;
+
+    //--------
+    //|A1----|----
+    //|  | AO|   |
+    //-------- A2|
+    //   |       |
+    //   ---------
+
+    if AR1.Left > AR2.Left then
+      AO.Left := AR1.Left
+    else
+      AO.Left := AR2.Left;
+
+    if AR1.Top > AR2.Top then
+      AO.Top := AR1.Top
+    else
+      AO.Top := AR2.Top;
+
+    if AR1.Bottom < AR2.Bottom then
+      AO.Bottom := AR1.Bottom
+    else
+      AO.Bottom := AR2.Bottom;
+
+    if AR1.Right < AR2.Right then
+      AO.Right := AR1.Right
+    else
+      AO.Right := AR2.Right;       
+
+  end else
+    result := false;
+end;
+
 function CompareRects(const Rect1,Rect2:TAdRect):boolean;
 begin
   result :=
@@ -402,8 +442,7 @@ begin
   result := (
      (Y >= Rect.Top)  and (Y <= Rect.Bottom) and
      (X >= Rect.Left) and (X <= Rect.Right));
-end;
- 
+end;      
 
 function AdVector3(AX,AY,AZ:double):TAdVector3;
 begin
@@ -483,24 +522,14 @@ begin
   result := (AColor shr 16) and 255;
 end;  
 
-function ByteToHex(aval:Byte):ShortString;
+function ByteToHex(aval:byte): ShortString; 
+const
+  Digits: array[0..15] of char = '0123456789ABCDEF';
+begin 
+  result := digits[aval shr 4] + digits[aval and $0F];
+end; 
 
-  function ValueToChar(aval:Byte):char;
-  begin
-    result := '0';
-    if (aval <= 9) then
-      result := chr(aval + $30) else
-    if (aval >= 10) and (aval <= 15) then
-      result := chr(aval + $37);
-  end;
-
-begin
-  SetLength(result, 2);
-  result[1] := ValueToChar(aval div 16);
-  result[2] := ValueToChar(aval mod 16);
-end;
-
-function CharToValue(achar:Char):byte;
+function CharToValue(achar: Char):byte;
 begin
   result := 0;
   if achar in ['0'..'9'] then
@@ -515,7 +544,7 @@ begin
     ByteToHex(AColor.a) + ByteToHex(AColor.r) + ByteToHex(AColor.g) + ByteToHex(AColor.b);
 end;
 
-function StringToAdColor(AString:string):TAndorraColor;
+function StringToAdColor(AString: string):TAndorraColor;
 begin
   if length(AString) <> 8 then exit;  
   result.a :=

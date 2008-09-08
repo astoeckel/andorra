@@ -8,7 +8,7 @@
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 *
 * Project: Andorra 2D
-* Author:  Andreas Stoeckel
+* Author:  Manuel Eberl
 * File: AdCRC.pas
 * Comment: Contains a function for calculating CRC32 checksums.
 }

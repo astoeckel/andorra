@@ -173,7 +173,7 @@ end;
 
 function TAdVCLComponentWindow.ChangeResolution(width, height, bitdepth: LongWord):boolean;
 var
-  DeviceMode: TDeviceModeA;
+  DeviceMode: TDevMode;
   i:integer;
 begin
   result := false;

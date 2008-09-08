@@ -16,6 +16,7 @@ type
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdImageList1:TAdImageList;
+    ms: TMemoryStream;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
@@ -83,7 +84,13 @@ begin
     AdDraw.BeginScene;
 
     AdImageList1.Find('logo').Draw(AdDraw,0,0,0);
-    
+
+    with AdDraw.Canvas do
+    begin
+      MoveTo(0,0);
+      LineTo(100,100);
+    end;
+
     AdDraw.EndScene;
     AdDraw.Flip;
 

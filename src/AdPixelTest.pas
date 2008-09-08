@@ -56,7 +56,6 @@ type
       FCount: integer;
 
       procedure Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
-      function CalcOverlapRect(out AO: TAdRect; const AR1, AR2: TAdRect): boolean;
       procedure Clear;
       function AddTestItem: PAdCollisionTesterItem;
     protected
@@ -262,44 +261,6 @@ begin
   end;
 
   FCount := FCount + 1;
-end;
-
-function TAdPixelCollisionTester.CalcOverlapRect(out AO: TAdRect; const AR1,
-  AR2: TAdRect): boolean;
-begin
-  if OverlapRect(AR1, AR2) then
-  begin
-    result := true;
-
-    //--------
-    //|A1----|----
-    //|  | AO|   |
-    //-------- A2|
-    //   |       |
-    //   ---------
-
-    if AR1.Left > AR2.Left then
-      AO.Left := AR1.Left
-    else
-      AO.Left := AR2.Left;
-
-    if AR1.Top > AR2.Top then
-      AO.Top := AR1.Top
-    else
-      AO.Top := AR2.Top;
-
-    if AR1.Bottom < AR2.Bottom then
-      AO.Bottom := AR1.Bottom
-    else
-      AO.Bottom := AR2.Bottom;
-
-    if AR1.Right < AR2.Right then
-      AO.Right := AR1.Right
-    else
-      AO.Right := AR2.Right;       
-
-  end else
-    result := false;
 end;
 
 end.

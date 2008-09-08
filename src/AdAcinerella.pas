@@ -50,7 +50,7 @@ type
 
 implementation
 
-function read_proc(sender: Pointer; buf: PChar; size: integer): integer; cdecl;
+function read_proc(sender: Pointer; buf: PByte; size: integer): integer; cdecl;
 begin
   result := TAdAcinerellaDecoder(sender).ReadProc(buf, size);
 end;

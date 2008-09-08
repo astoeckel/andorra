@@ -29,7 +29,8 @@ uses
   Classes, AdTypes, AdClasses, AdFont, AdFontGenerator, AdBitmap;
 
 type
-  {A font generator that creates a font from a saved Andorra font.}
+  {A font generator that creates a font from a saved Andorra font.
+   @seealso(TAdFontList)}
   TAdRAWFontData = class(TAdFontGenerator)
     public
       procedure Generate(AData:Pointer;ASize:Cardinal;
@@ -37,7 +38,10 @@ type
       function IsValidData(AData:Pointer;ASize:Cardinal):boolean;override;
   end;
 
-{Saves a specific font to a data stream.}
+{Saves a specific font to a data stream. The first four byte of the data stream
+ contain its size as a cardinal. Remember to skip those bytes if you try to load
+ the raw data again.
+ @seealso(TAdFontList)}
 procedure SaveRAWFontData(AFont:TAdFont; AStream:TStream);
 
 implementation

@@ -90,7 +90,7 @@ type
     {Position of the packet on the video timeline.}
     Timecode: TAdVideoPosition;
     {May contains information about the video.}
-    Info: array[0..127] of Char;
+    Info: array[0..127] of Byte;
     {Size of the buffer.}
     BufferSize: integer;
     {Pointer to the buffer.}

@@ -163,6 +163,10 @@ type
        @param(ATransparentColor)}
       procedure LoadGraphicFromFile(AFile:string;
         ATransparent:Boolean=true; ATransparentColor:LongInt=0);
+
+      {Draws another bitmap to the specified position.}
+      procedure DrawBitmap(AX, AY: integer; ABmp: TAd2dBitmap;
+        AUseAlpha: boolean = true);
         
       {Set the compressor class you want to use to compress the bitmap data
        here. If "Compressor" is nil, the bitmap will store the RAW bitmap data.}
@@ -212,6 +216,62 @@ end;
 destructor TAdBitmap.Destroy;
 begin
   inherited;
+end;
+
+procedure TAdBitmap.DrawBitmap(AX, AY: integer; ABmp: TAd2dBitmap;
+  AUseAlpha: boolean);
+var
+  ro: TAdRect;
+  x, y: integer;
+  v: byte;
+  rgba1, rgba2: PRGBARec;
+begin
+  if CalcOverlapRect(ro, AdRect(0, 0, FWidth, FHeight),
+     AdBounds(AX, AY, ABmp.Width, ABmp.Height)) then
+  begin
+    for y := ro.Top to ro.Bottom - 1 do
+    begin
+      //Get the adress of the first pixel line
+      rgba1 := Scanline(y);
+      inc(rgba1, ro.Left);
+
+      //Get the adress of the second pixel line
+      rgba2 := abmp.Scanline(y - AY);
+      inc(rgba2, ro.Left - AX);
+
+      if not AUseAlpha then
+      begin
+        for x := ro.Left to ro.Right - 1 do
+        begin
+          rgba1^ := rgba2^;
+          inc(rgba1);
+          inc(rgba2);
+        end;
+      end else
+      begin
+        for x := ro.Left to ro.Right - 1 do
+        begin
+          with rgba1^ do
+          begin
+            //Do alphablending
+            case rgba2^.a of
+              0:;
+              255: rgba1^ := rgba2^;
+            else
+              v := 255 - rgba2^.a; 
+              a := cut(a + rgba2^.a);
+              r := (r * v + rgba2^.r * rgba2^.a) shr 8;
+              g := (g * v + rgba2^.g * rgba2^.a) shr 8;
+              b := (b * v + rgba2^.b * rgba2^.a) shr 8;
+            end;
+          end;
+
+          inc(rgba1);
+          inc(rgba2);
+        end;
+      end;
+    end;
+  end;
 end;
 
 function TAdBitmap.GetObjectFormat(AObj:TObject): TAdGraphicFormat;
@@ -317,7 +377,9 @@ begin
   ms := TMemoryStream.Create;
   ms.LoadFromFile(AFile);
   ms.Position := 0;
+
   LoadFromStream(ms);
+
   ms.Free;
 end;
 

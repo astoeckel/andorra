@@ -194,7 +194,7 @@ var
   y:integer;
   p1:PByte;
   count:integer;
-  chars: string[4];
+  chars: TAdVeryShortString;
 begin
   ms := TMemoryStream.Create;
 
@@ -228,7 +228,7 @@ begin
   SetLength(chars, 4);
 
   repeat
-    ms.Read(chars[1],4);
+    ms.Read(chars[1], 4);
     ms.Position := ms.Position - 3;
   until (chars = 'IEND') or (ms.Position >= ms.Size);
   count := ms.Position + 7;                          

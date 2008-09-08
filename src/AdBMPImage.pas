@@ -11,7 +11,7 @@
 * Project: Andorra 2D
 * Author:  Andreas Stöckel
 * File: AdBMPImage.pas
-* Comment: Provides an image class to load and save TGA files.
+* Comment: Provides an image class to load and save BMP files.
 * Supported Formats to load:
 * o Indexed with 24 bits per palette entry without RLE
 * o RGB(A) with 16, 24 or 32 bits, without RLE

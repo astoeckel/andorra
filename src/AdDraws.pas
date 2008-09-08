@@ -1143,7 +1143,7 @@ type
    of TAdImages.}
   TAdImage = class(TAdCustomImage)
     private
-      FName:string;
+      FName:AnsiString;
       function GetTexture:TAdTexture;
       procedure SetTexture(AValue:TAdTexture);
     public
@@ -1757,6 +1757,10 @@ var
   texw, texh: integer;
   rectw, recth: integer;
   mat: TAdMatrix;
+
+const
+  add = 0;
+  
 begin
   texw := Texture.Texture.Width;
   texh := Texture.Texture.Height;
@@ -1767,12 +1771,12 @@ begin
   mat := AdMatrix_Identity;
 
   //Scale the texture
-  mat[0,0] := rectw / texw;
-  mat[1,1] := recth / texh;
+  mat[0,0] := (rectw) / texw;
+  mat[1,1] := (recth) / texh;
 
   //Translate the texture
-  mat[2,0] := FSrcRect.Left / texw;
-  mat[2,1] := FSrcRect.Top / texh;
+  mat[2,0] := (FSrcRect.Left + add) / texw;
+  mat[2,1] := (FSrcRect.Top + add) / texh;
 
   AdMesh.TextureMatrix := mat;
 end;
@@ -2190,8 +2194,8 @@ end;
 
 procedure TAdImage.LoadFromStream(AStream: TStream);
 var
-  s:string;
-  c:char;
+  s:AnsiString;
+  c:AnsiChar;
   l:integer;
 begin
   s := '';
@@ -2231,7 +2235,7 @@ end;
 
 procedure TAdImage.SaveToStream(AStream: TStream);
 var
-  c:char;
+  c: AnsiChar;
   l:integer;
 begin
   c := 'P'; AStream.Write(c,1);
@@ -2266,8 +2270,11 @@ end;
 function TAdImageList.Add(AName: string): TAdImage;
 begin
   result := TAdImage.Create(FParent);
+
+  result.Filter := FFilter;
   result.Name := AName;
   result.FreeByList := self;
+
   inherited Add(result);
 end;
 
@@ -2658,8 +2665,8 @@ end;
 
 procedure TAdTexture.LoadFromStream(AStream: TStream);
 var
-  c:char;
-  bmp:TAdBitmap;
+  c: AnsiChar;
+  bmp: TAdBitmap;
 begin
   AStream.Read(c,1);
   if c = 'T' then
@@ -2679,9 +2686,10 @@ begin
 end;
 
 procedure TAdTexture.SaveToStream(AStream: TStream);
-var c:char;
-    bmp:TAdBitmap;
-    bits: TAdBitDepth;
+var
+  c: AnsiChar;
+  bmp: TAdBitmap;
+  bits: TAdBitDepth;
 begin
   if (Texture.Loaded) then
   begin

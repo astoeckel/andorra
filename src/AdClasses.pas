@@ -519,9 +519,9 @@ const
   {The current Andorra 2D version. If version between Plugin and Source is different,
    loading stops.}
 {$IFDEF FPC}
-  LibraryVersion = 'VER 0.4.0 FPC';
+  LibraryVersion = 'VER 0.5.0 FPC';
 {$ELSE}
-  LibraryVersion = 'VER 0.4.0.100';
+  LibraryVersion = 'VER 0.5.0.001';
 {$ENDIF}
 
 implementation

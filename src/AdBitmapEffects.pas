@@ -62,10 +62,26 @@ type
       {Creates an instance of TAdLfilter}
       constructor Create;
       
-      {Applies the effect to a bitmap}      
+      {Applies the effect to a bitmap}
       procedure AssignEffect(Dest: TAd2dBitmap);override;
       {The factor the luminance of the picture should be multiplied with.}
       property LuminanceFactor: double read FLuminanceFactor write FLuminanceFactor;
+  end;
+
+  TAdAntialiasFilter = class(TAdBitmapEffect)
+    private
+      FStrength: double;
+      FThreshold: integer;
+    public
+      constructor Create;
+
+      {Applies the effect to a bitmap}
+      procedure AssignEffect(Dest: TAd2dBitmap);override;
+
+      {The value pixels are blended by}
+      property Strength: double read FStrength write FStrength;
+      {The minimum alpha difference threshold}
+      property Threshold: integer read FThreshold write FThreshold;
   end;
 
   {Makes a specific color of the bitmap transparent.}
@@ -260,6 +276,75 @@ begin
       inc(PixelPtr);
     end;      
   end;  
+end;
+
+{ TAdAntialiasFilter }
+
+procedure TAdAntialiasFilter.AssignEffect(Dest: TAd2dBitmap);
+var
+  x, y: integer;
+  pc1, pc2: TAndorraColor;
+  src: TAd2DBitmap;
+begin
+  src := TAd2DBitmap.Create;
+  src.ReserveMemory(Dest.Width, Dest.Height);
+  Move(Dest.Scanline^, src.Scanline^, Dest.Size);
+
+  //Blend vertically
+  for y := 1 to Dest.Height - 2 do
+  begin
+    for x := 0 to Dest.Width - 1 do
+    begin
+      pc1 := src.Pixels[x, y];
+      pc2 := src.Pixels[x, y-1];
+
+      if pc1.a - pc2.a > FThreshold then
+      begin
+        pc1.a := round(pc1.a * (1 - FStrength));
+        Dest.Pixels[x, y] := pc1;
+      end;
+
+      pc2 := src.Pixels[x, y+1];
+      if pc1.a - pc2.a > FThreshold then
+      begin
+        pc1.a := round(pc1.a * (1 - FStrength));
+        Dest.Pixels[x, y] := pc1;
+      end;
+    end;
+  end;
+
+  //Blend horizontally
+  for y := 0 to Dest.Height - 1 do
+  begin
+    for x := 1 to Dest.Width - 2 do
+    begin
+      pc1 := src.Pixels[x, y];
+      pc2 := src.Pixels[x-1, y];
+
+      if pc1.a - pc2.a > FThreshold then
+      begin
+        pc1.a := round(pc1.a * (1 - FStrength));
+        Dest.Pixels[x, y] := pc1;
+      end;
+
+      pc2 := src.Pixels[x+1, y];
+      if pc1.a - pc2.a > FThreshold then
+      begin
+        pc1.a := round(pc1.a * (1 - FStrength));
+        Dest.Pixels[x, y] := pc1;
+      end;
+    end;
+  end;
+
+  src.Free;
+end;
+
+constructor TAdAntialiasFilter.Create;
+begin
+  inherited;
+
+  FStrength := 0.5;
+  FThreshold := 64;
 end;
 
 end.

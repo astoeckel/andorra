@@ -196,8 +196,9 @@ end;
 
 class procedure TAdGZIPFile.ReadNullTerminatedString(const AStream: TStream;
   var Str: String);
-var c: Char;
-  	start: Int64;
+var
+  c: AnsiChar;
+  start: Int64;
 begin
   start:=AStream.Position;
   repeat

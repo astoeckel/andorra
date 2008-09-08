@@ -33,23 +33,23 @@ type
   EAdTarFileTooBigError = class(Exception);
 
   TAdTarHeader = packed record
-    Name: array[1..100] of Char;
-    Mode: array[1..8] of Char;
-    UID, GID: array[1..8] of Char;
-    Size, Modified: array[1..12] of Char;
-    Checksum: array[1..8] of Char;
-    Link: Char;
-    LinkName: array[1..100] of Char;
+    Name: array[1..100] of AnsiChar;
+    Mode: array[1..8] of AnsiChar;
+    UID, GID: array[1..8] of AnsiChar;
+    Size, Modified: array[1..12] of AnsiChar;
+    Checksum: array[1..8] of AnsiChar;
+    Link: AnsiChar;
+    LinkName: array[1..100] of AnsiChar;
   end;
 
   PAdTarHeader = ^TAdTarHeader;
 
   TAdUSTARHeader = packed record
-    Magic: array[1..6] of Char;
-    Version: array[1..2] of Char;
-    UName, GName: array[1..32] of Char;
-    DevMajor, DevMinor: array[1..8] of Char;
-    Prefix: array[1..155] of Char;
+    Magic: array[1..6] of AnsiChar;
+    Version: array[1..2] of AnsiChar;
+    UName, GName: array[1..32] of AnsiChar;
+    DevMajor, DevMinor: array[1..8] of AnsiChar;
+    Prefix: array[1..155] of AnsiChar;
   end;
 
   PAdUSTARHeader = ^TAdUSTARHeader;

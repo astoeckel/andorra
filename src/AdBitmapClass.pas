@@ -36,8 +36,6 @@ type
    picture.}
   TAd2DBitmap = class
     private
-      FLastX, FLastY:int64;
-      FCurrentPixelPointer:PAndorraColor;
       function GetPixelMemory(X, Y:integer):PAndorraColor;
       function GetPixel(X, Y:integer):TAndorraColor;
       procedure SetPixel(X, Y:integer; Value:TAndorraColor);
@@ -57,6 +55,12 @@ type
        important when loading bitmap data from a plugin dll via
        TAd2dTexture.SaveToBitmap. }
       procedure ReserveMemory(AWidth,AHeight:integer);
+
+      {Removes the loaded bitmap data from the memory. After calling this
+       procedure the old content of the bitmap is no more existent. The memory
+       occupied by the data can now be used for other purposes. Remember that
+       all pointers on the bitmap data (from scanline) are invalid now.}
+      procedure Clear;
 
       {This procedure resets the alpha channel of the bitmap to 255.}
       procedure ClearAlphaChannel;
@@ -90,15 +94,17 @@ begin
   FHeight := 0;
   FSize := 0;
   FMemory := nil;
-  FCurrentPixelPointer := nil;
-  FLastX := -1;
-  FLastY := -1;
 end;
 
 destructor TAd2dBitmap.Destroy;
 begin
   ClearMemory;
   inherited;
+end;
+
+procedure TAd2DBitmap.Clear;
+begin
+  ClearMemory;
 end;
 
 procedure TAd2dBitmap.ClearAlphaChannel;
@@ -133,17 +139,17 @@ end;
 
 procedure TAd2dBitmap.ClearMemory;
 begin
+  //Free loaded memory...
   if Loaded then
   begin
-    FreeMem(FMemory,FSize);
+    FreeMem(FMemory, FSize);
     FMemory := nil;
   end;
+  
+  //Reset all properties of the bitmaps
   FSize := 0;
   FWidth := 0;
   FHeight := 0;
-  FCurrentPixelPointer := nil;
-  FLastX := 0;
-  FLastY := 0;
 end;
 
 function TAd2dBitmap.ScanLine: Pointer;
@@ -172,11 +178,8 @@ begin
   result := nil;
   if (X >= 0) and (Y >= 0) and (X < Width) and (Y < Height) then
   begin
-    FCurrentPixelPointer := ScanLine;
-    Inc(FCurrentPixelPointer, Y * Width + X);
-    FLastX := X;
-    FLastY := Y;
-    result := FCurrentPixelPointer;
+    result := ScanLine;
+    Inc(result, Y * Width + X);
   end;
 end;
 

@@ -30,7 +30,7 @@ type
   {A record that represents a png chunk.}
   TPngChunk = packed record
     Length : LongWord; //< The length of the chunk
-    Name : array[0..3] of Char; //< The name of the chunk
+    Name : array[0..3] of AnsiChar; //< The name of the chunk
   end;
 
   {Exception that is raised when you call the ExtractPng procedure, but no png
