@@ -459,6 +459,7 @@ begin
   else
     ReadUninterlacedPixels(Data);
 
+  Data.Free;
 end;
 
 procedure TAdPNGImage.ReadUninterlacedPixels(const AStream: TStream);

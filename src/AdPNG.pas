@@ -16,7 +16,7 @@ unit AdPNG;
 interface
 
 uses
-  Classes, AdBitmap, AdTypes, AdVCLFormats, AdPNGImage;
+  Classes, AdBitmap, AdTypes, AdPNGImage, AdSimpleCompressors;
 
 
 type
@@ -64,16 +64,32 @@ begin
 end;
 
 procedure TAdPNGCompressor.Write(ABitmap:TAdBitmap; AStream:TStream);
+{var
+  PNG:TAdPNGImage;}
 var
-  PNG:TAdPNGImage;
+  comp: TAdBMPCompressor;
+  str: TAdVeryShortString;
 begin
-  PNG := TAdPNGImage.Create;
+{  PNG := TAdPNGImage.Create;
   try
     PNG.Bitmap:=ABitmap;
   	PNG.SaveToStream(AStream);
   finally
     PNG.Free;
-  end;
+  end;  }
+{$MESSAGE HINT 'PNG compressing using the AdPNG.pas is currently disabled. Use AdFreeImage or AdDevIL instead.'}
+  //! Temporally use the TAdBMPCompressor instead.
+
+  //Rewind four bytes...
+  AStream.Position := AStream.Position - 4;
+
+  //... and write the bmp compressor ID
+  str := TAdBMPCompressor.ID;
+  AStream.Write(str[1], 4);
+
+  comp := TAdBMPCompressor.Create;
+  comp.Write(ABitmap, AStream);
+  comp.Free;
 end;
 
 { TPNGFormat }

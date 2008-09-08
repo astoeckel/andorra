@@ -97,8 +97,9 @@ function CRC32(const AStream: TStream; const Size: Int64): Cardinal; overload;
 implementation
 
 function CRC32(const Buffer; const Size: Cardinal): Cardinal;
-var p: PByte;
-  	I: Integer;
+var
+  p: PByte;
+  I: Integer;
 begin
 
   p:=@Buffer;
@@ -115,11 +116,11 @@ begin
 end;
 
 function CRC32(const AStream: TStream; const Size: Int64): Cardinal;
-var I: Integer;
-    b: Byte;
+var
+  I: Integer;
+  b: Byte;
 begin
 
-  p:=@Buffer;
   Result:=CRC_INIT;
 
   for I := 1 to Size do
@@ -129,7 +130,6 @@ begin
   end;
 
   Result:=not Result;
-
 end;
 
 end.
