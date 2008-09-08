@@ -23,7 +23,8 @@ unit AdDeflate;
 
 interface
 
-uses SysUtils, Classes, AdDeflateConsts;
+uses
+  SysUtils, Classes, AdDeflateConsts;
 
 const
 	WINDOWSIZE = 32768; //This must be 32768 or higher according to RFC 1951

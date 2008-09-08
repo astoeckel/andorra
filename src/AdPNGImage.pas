@@ -18,7 +18,8 @@ unit AdPNGImage;
 
 interface
 
-uses SysUtils, Classes, Math, AdTypes, AdBitmap, Graphics, AdCRC, AdDeflate;
+uses
+  SysUtils, Classes, Math, AdTypes, AdBitmap, AdCRC, AdDeflate;
 
 const
   HIGH_COLORS: array[0..31] of Byte =
@@ -160,7 +161,6 @@ type
     procedure AssignAlphaChannel(const ABitmap: TAdBitmap);
     procedure AssignAlphaChannelTo(const ABitmap: TAdBitmap);
     procedure RemoveAlphaChannel;
-    procedure AssignToBitmap(const ABitmap: TBitmap);
 
     property Width: Integer read FWidth;
     property Height: Integer read FHeight;
@@ -761,23 +761,6 @@ begin
       p2^[3]:=p1^[3];
       inc(p1, 4);
       inc(p2, 4);
-    end;
-  end;
-end;
-
-procedure TAdPNGImage.AssignToBitmap(const ABitmap: TBitmap);
-var p1, p2: PCardinal;
-  	I, J: Integer;
-begin
-  for I := 0 to FHeight-1 do
-  begin
-    p1:=FBitmap.ScanLine(I);
-    p2:=ABitmap.ScanLine[I];
-    for J := 0 to FWidth-1 do
-    begin
-      p2^:=p1^;
-      inc(p1);
-      inc(p2);
     end;
   end;
 end;

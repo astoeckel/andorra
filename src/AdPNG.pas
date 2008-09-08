@@ -16,7 +16,8 @@ unit AdPNG;
 interface
 
 uses
-  Classes, AdBitmap, AdTypes, AdPNGImage, AdSimpleCompressors;
+  Classes,
+  AdTypes, AdBitmap, AdPNGImage, AdSimpleCompressors;
 
 
 type
