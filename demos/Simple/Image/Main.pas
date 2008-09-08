@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Dialogs, SysUtils, Graphics, Classes, Forms,
-  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter;
+  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter, PNGImage;
 
 type
   TForm1 = class(TForm)
@@ -16,7 +16,6 @@ type
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
     AdImageList1:TAdImageList;
-    ms: TMemoryStream;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
   end;
