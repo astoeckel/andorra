@@ -23,7 +23,8 @@ unit AdVCLFormats;
 interface
 
 uses
-  Graphics, Classes, AdBitmap, AdTypes, AdPersistent;
+  {$IFDEF WIN32}Windows{$ELSE}Types{$ENDIF}, SysUtils, Graphics, Classes,
+  AdBitmap, AdTypes, AdPersistent, AdMessages;
 
 type
  {@exclude}
@@ -37,6 +38,43 @@ type
       function AssignTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
       function AssignAlphaChannel(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
       function AssignAlphaChannelTo(ABitmap:TAdBitmap; AGraphic:TObject):boolean;override;
+  end;
+
+  {@exclude}
+  TAdVCLBitmap = class(TGraphic)
+    private
+      FBitmap: TBitmap;
+      FCompressor: TAdGraphicCompressorClass;
+    protected
+      procedure Changed(Sender: TObject); override;      
+      procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
+      function Equals(Graphic: TGraphic): Boolean; override;
+      function GetEmpty: Boolean; override;
+      function GetHeight: Integer; override;
+      function GetPalette: HPALETTE; override;
+      function GetTransparent: Boolean; override;
+      function GetWidth: Integer; override;
+      procedure SetHeight(Value: Integer); override;
+      procedure SetWidth(Value: Integer); override;
+    public
+      constructor Create; override;
+      destructor Destroy; override;
+
+      procedure LoadFromFile(const Filename: string); override;
+      procedure SaveToFile(const Filename: string); override;
+      procedure LoadFromStream(Stream: TStream); override;
+      procedure SaveToStream(Stream: TStream); override;
+      procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle;
+        APalette: HPALETTE); override;
+      procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle;
+        var APalette: HPALETTE); override;
+
+      class procedure RegisterHandler;
+      class procedure UnregisterHandler;
+      class procedure FormatListChange(Sender: TObject);
+
+      property Compressor: TAdGraphicCompressorClass
+        read FCompressor write FCompressor;
   end;
 
 implementation
@@ -247,7 +285,199 @@ begin
   bmp.Free;
 end;
 
+{ TAdVCLBitmap }
+
+procedure TAdVCLBitmap.Changed(Sender: TObject);
+begin
+  inherited;
+  //
+end;
+
+constructor TAdVCLBitmap.Create;
+begin
+  inherited;
+
+  FBitmap := TBitmap.Create;
+  FBitmap.PixelFormat := pf32Bit;
+  FCompressor := nil;
+end;
+
+destructor TAdVCLBitmap.Destroy;
+begin
+  FBitmap.Free;
+
+  inherited;
+end;
+
+procedure TAdVCLBitmap.Draw(ACanvas: TCanvas; const Rect: TRect);
+begin
+  ACanvas.StretchDraw(Rect, FBitmap);
+end;
+
+function TAdVCLBitmap.Equals(Graphic: TGraphic): Boolean;
+begin
+  result := false;
+end;
+
+function TAdVCLBitmap.GetEmpty: Boolean;
+begin
+  result := (FBitmap.Width = 0) and (FBitmap.Height = 0);
+end;
+
+function TAdVCLBitmap.GetHeight: Integer;
+begin
+  result := FBitmap.Height;
+end;
+
+function TAdVCLBitmap.GetWidth: Integer;
+begin
+  result := FBitmap.Width;
+end;
+
+function TAdVCLBitmap.GetPalette: HPALETTE;
+begin
+  result := 0;
+end;
+
+function TAdVCLBitmap.GetTransparent: Boolean;
+begin
+  result := true;
+end;
+
+procedure TAdVCLBitmap.LoadFromClipboardFormat(AFormat: Word; AData: THandle;
+  APalette: HPALETTE);
+var
+  bmp: TBitmap;
+begin
+  bmp := TBitmap.Create;
+  try
+    bmp.LoadFromClipboardFormat(AFormat, AData, APalette);
+    bmp.PixelFormat := pf32Bit;
+    FBitmap.Assign(bmp);
+  finally
+    bmp.Free;
+  end;
+end;
+
+procedure TAdVCLBitmap.SaveToClipboardFormat(var AFormat: Word;
+  var AData: THandle; var APalette: HPALETTE);
+begin
+  FBitmap.SaveToClipboardFormat(AFormat, AData, APalette);
+end;
+
+procedure TAdVCLBitmap.LoadFromFile(const Filename: string);
+var
+  abmp: TAdBitmap;
+begin
+  //Temproally unregister handlers to prevent infinite recursion
+  UnregisterHandler;
+
+  abmp := TAdBitmap.Create;
+  try
+    abmp.LoadGraphicFromFile(Filename, true, clNone);
+    abmp.AssignTo(FBitmap);
+  finally
+    abmp.Free;
+    RegisterHandler;
+  end;
+end;
+
+procedure TAdVCLBitmap.LoadFromStream(Stream: TStream);
+var
+  abmp: TAdBitmap;
+begin
+  abmp := TAdBitmap.Create;
+  try
+    abmp.LoadFromStream(Stream);
+    abmp.AssignTo(FBitmap);
+  finally
+    abmp.Free;
+  end;
+end;
+
+procedure TAdVCLBitmap.SaveToFile(const Filename: string);
+var
+  fs: TFileStream;
+begin
+  fs := TFileStream.Create(Filename, fmOpenWrite or fmShareDenyWrite);
+  try
+    LoadFromStream(fs);
+  finally
+    fs.Free;
+  end;
+end;
+
+procedure TAdVCLBitmap.SaveToStream(Stream: TStream);
+var
+  abmp: TAdBitmap;
+begin
+  abmp := TAdBitmap.Create;
+  abmp.Assign(FBitmap);
+  try
+    abmp.Compressor := FCompressor;
+    abmp.SaveToStream(Stream);
+  finally
+    abmp.Free;
+  end;
+end;
+
+procedure TAdVCLBitmap.SetHeight(Value: Integer);
+begin
+  FBitmap.Height := Value;
+end;
+
+procedure TAdVCLBitmap.SetWidth(Value: Integer);
+begin
+  FBitmap.Width := Value;
+end;
+
+class procedure TAdVCLBitmap.RegisterHandler;
+var
+  i, j: integer;
+  cls: TAdGraphicFormatClass;
+  strs: TStringList;
+  s: string;
+begin
+  strs := TStringList.Create;
+
+  //Iterate through all registered graphic format classes
+  for i := 0 to RegisteredGraphicFormats.Count - 1 do
+  begin
+    strs.Clear;
+
+    //Get all available file extensions for this class
+    cls := TAdGraphicFormatClass(
+      AdGetClass(RegisteredGraphicFormats[i]));
+    if cls <> nil then
+    begin
+      cls.FileExts(strs);
+
+      for j := 0 to strs.Count - 1 do
+      begin
+        s := strs[j]; Delete(s, 1, 1);
+        s := UpperCase(s);
+        TPicture.RegisterFileFormat(s, s + ' file format', TAdVCLBitmap);
+      end;
+    end;
+  end;
+
+  strs.Free;
+end;
+
+class procedure TAdVCLBitmap.UnregisterHandler;
+begin
+  TPicture.UnregisterGraphicClass(TAdVCLBitmap);
+end;
+
+class procedure TAdVCLBitmap.FormatListChange(Sender: TObject);
+begin
+  //Refresh the handlers
+  UnregisterHandler;
+  RegisterHandler;
+end;
+
 initialization
   RegisterGraphicFormat(TAdVCLFormat);
+  RegisteredGraphicFormats.OnChange := TAdVCLBitmap.FormatListChange;
 
 end.
