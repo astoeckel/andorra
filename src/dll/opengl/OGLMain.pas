@@ -57,6 +57,7 @@ type
       FStencilPass: TGLEnum;
 
       FRenderingToFBO: boolean;
+      FCanUseFBO: boolean;
 
       FUsePixelShader: boolean;
       procedure SetUsePixelShader(AValue: boolean);
@@ -250,6 +251,11 @@ begin
     //Read the header extensions
     ReadExtensions;
 
+    FCanUseFBO := GL_EXT_framebuffer_object;
+    if not FCanUseFBO then
+      Log('OpenGL', lsWarning, 'Frambuffers are disabled. This might result in '+
+        'problems with the application if FBOs are used.');
+
     FWnd := AWnd;
 
     {$IFDEF WIN32}
@@ -264,6 +270,7 @@ begin
       FHeight := FWnd.ClientHeight;
 
       ActivateRenderingContext(FDC,FRC);
+      Log('OpenGL', lsInfo, 'Rendercontext successfully created.');
     end else{$ENDIF}
     begin
       ReadImplementationProperties;
@@ -376,20 +383,21 @@ begin
   if FRenderingToFBO then
     ResetRenderTarget;
 
-  if ATarget <> nil then
+  if (ATarget <> nil) and (FCanUseFBO) then
   begin
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, TOGLFBORenderTargetTexture(ATarget).FBO);
     FRenderingToFBO := true;
 
     FWidth := ATarget.BaseWidth;
     FHeight := ATarget.BaseHeight;
-  end;
+  end;  
 end;
 
 procedure TOGLApplication.ResetRenderTarget;
 begin
   //Use the default surface now
-  glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+  if FCanUseFBO then  
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
   FRenderingToFBO := false;
 
   FWidth := FWnd.ClientWidth;
@@ -554,7 +562,7 @@ end;
 
 procedure TOGLApplication.EndScene;
 begin
-  ResetRenderTarget;
+  //ResetRenderTarget;
 end;
 
 procedure TOGLApplication.Flip;

@@ -94,7 +94,7 @@ type
     {Size of the buffer.}
     BufferSize: integer;
     {Pointer to the buffer.}
-    Buffer: PChar;
+    Buffer: PByte;
   end;
 
   TAdMediaDecoder = class;
