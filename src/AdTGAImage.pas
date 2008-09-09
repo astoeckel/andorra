@@ -30,7 +30,8 @@ unit AdTGAImage;
 interface
 
 uses 
-  SysUtils, Classes, AdTypes, AdBitmap;
+  SysUtils, Classes,
+  AdTypes, AdBitmap;
 
 const
   HIGH_COLORS: array[0..31] of Byte =

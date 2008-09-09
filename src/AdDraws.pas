@@ -659,8 +659,12 @@ type
       {Destroys the instance of TAdRenderTargetTexture.}
       destructor Destroy;override;
 
+      {Removes the texture from the memory.}
       procedure Clear;override;
+
+      {Initializes a new texture object.}
       procedure Initialize;override;
+      {Destroys the created texture object.}
       procedure Finalize;override;
 
       property Texture:TAd2dRenderTargetTexture read GetTexture write SetTexture;
@@ -3144,9 +3148,7 @@ end;
 procedure TAdRenderTargetTexture.Clear;
 begin
   if Texture <> nil then
-  begin
     Texture.FlushMemory;
-  end;
 end;
 
 procedure TAdRenderTargetTexture.Initialize;

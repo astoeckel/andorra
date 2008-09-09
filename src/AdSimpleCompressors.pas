@@ -23,7 +23,8 @@ unit AdSimpleCompressors;
 interface
 
 uses
-  Classes, AdBitmap, AdTypes, Huffman;
+  Classes,
+  AdBitmap, AdTypes, Huffman;
 
 type
   {A Andorra 2D graphic compressor class, that saves the graphic data in a 
