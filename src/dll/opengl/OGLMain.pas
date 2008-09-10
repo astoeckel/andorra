@@ -251,11 +251,6 @@ begin
     //Read the header extensions
     ReadExtensions;
 
-    FCanUseFBO := GL_EXT_framebuffer_object;
-    if not FCanUseFBO then
-      Log('OpenGL', lsWarning, 'Frambuffers are disabled. This might result in '+
-        'problems with the application if FBOs are used.');
-
     FWnd := AWnd;
 
     {$IFDEF WIN32}
@@ -274,7 +269,12 @@ begin
     end else{$ENDIF}
     begin
       ReadImplementationProperties;
-    end;    
+    end;
+
+    FCanUseFBO := GL_EXT_framebuffer_object;
+    if not FCanUseFBO then
+      Log('OpenGL', lsWarning, 'Frambuffers are disabled. This might result in '+
+        'problems with the application if FBOs are used.');
 
     result := true;
 
