@@ -97,6 +97,8 @@ type
     Particleorign1: TMenuItem;
     Boundsrect1: TMenuItem;
     ColorDialog1: TColorDialog;
+    btn_up: TSpeedButton;
+    btn_down: TSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure edt_emitcountChange(Sender: TObject);
@@ -122,6 +124,8 @@ type
     procedure Close1Click(Sender: TObject);
     procedure Boundsrect1Click(Sender: TObject);
     procedure Setbackgroundcolor1Click(Sender: TObject);
+    procedure btn_upClick(Sender: TObject);
+    procedure btn_downClick(Sender: TObject);
     private
       FMX, FMY: integer;
       JvInspector: TJvInspector;
@@ -197,9 +201,16 @@ begin
 end;
 
 procedure TMainFrm.btn_addClick(Sender: TObject);
+var
+  newindex: integer;
 begin
   Saved := false;
-  AdPartSys.Colors.Add(Ad_ARGB(255, 255, 255, 255));
+  newindex := lb_colors.ItemIndex;
+  if newindex = -1 then
+    newindex := AdPartSys.Colors.Count + 1;
+
+  AdPartSys.Colors.Insert(newindex, Ad_ARGB(255, 255, 255, 255));
+  
   UpdateColorListBox;
   UpdateStatusbar;
 end;
@@ -220,6 +231,38 @@ begin
     end;
     lb_colorsClick(nil);
     Saved := false;
+    UpdateStatusbar;
+  end;
+end;
+
+procedure TMainFrm.btn_downClick(Sender: TObject);
+var
+  newindex: integer;
+begin
+  if (lb_colors.ItemIndex >= 0) and
+     (lb_colors.ItemIndex < AdPartSys.Colors.Count - 1) and
+     (lb_colors.ItemIndex <> -1) then
+  begin
+    newindex := lb_colors.ItemIndex + 1;
+    AdPartSys.Colors.Exchange(lb_colors.ItemIndex, newindex);
+    UpdateColorListBox;
+    lb_colors.ItemIndex := newindex;
+    UpdateStatusbar;
+  end;
+end;
+
+procedure TMainFrm.btn_upClick(Sender: TObject);
+var
+  newindex: integer;
+begin
+  if (lb_colors.ItemIndex > 0) and
+     (lb_colors.ItemIndex < AdPartSys.Colors.Count) and
+     (lb_colors.ItemIndex <> -1) then
+  begin
+    newindex := lb_colors.ItemIndex - 1;
+    AdPartSys.Colors.Exchange(lb_colors.ItemIndex, newindex);
+    UpdateColorListBox;
+    lb_colors.ItemIndex := newindex;
     UpdateStatusbar;
   end;
 end;
@@ -476,10 +519,10 @@ procedure TMainFrm.lb_colorsDrawItem(Control: TWinControl; Index: Integer;
 begin
   with lb_colors.Canvas do
   begin
-    if (odSelected in State) or (odFocused in State) or (SelectedColorIndex = Index) then
+    if (odSelected in State) or (odFocused in State) then
       Brush.Color := clHighlight
     else
-      Brush.Color := clWhite;
+      Brush.Color := clWindow;
 
     FillRect(Rect);
     Pen.Color := clBlack;
