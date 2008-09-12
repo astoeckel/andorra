@@ -44,7 +44,9 @@ type
       //Returns a mixed color value
       function GetColor(Max,Pos:double):TAndorraColor;
       //Add a color
-      procedure Add(AColor:TAndorraColor);
+      function Add(AColor:TAndorraColor): integer;
+      //Inserts a color to the specified position
+      procedure Insert(AIndex: integer; AColor: TAndorraColor);
       //Save the color list to the stream
       procedure SaveToStream(AStream:TStream);
       //Load the color list from a stream
@@ -55,12 +57,28 @@ implementation
 
 { TAdColorList }
 
-procedure TAdColorList.Add(AColor: TAndorraColor);
-var temp:pAndorraColor;
+function TAdColorList.Add(AColor: TAndorraColor): integer;
+var
+  temp: pAndorraColor;
 begin
   new(temp);
   temp^ := AColor;
-  inherited Add(temp);
+  result := inherited Add(temp);
+end;
+
+procedure TAdColorList.Insert(AIndex: integer; AColor: TAndorraColor);
+var
+  temp: pAndorraColor;
+begin
+  if AIndex < 0 then
+    AIndex := 0;
+
+  if AIndex > Count then
+    AIndex := Count;
+    
+  new(temp);
+  temp^ := AColor;
+  inherited Insert(AIndex, temp);
 end;
 
 function TAdColorList.GetColor(Max, Pos: double): TAndorraColor;
