@@ -39,7 +39,6 @@ object MainFrm: TMainFrm
     EdgeBorders = [ebBottom]
     Images = ImageList1
     TabOrder = 0
-    ExplicitWidth = 796
     object ToolButton1: TToolButton
       Left = 0
       Top = 0
@@ -82,10 +81,6 @@ object MainFrm: TMainFrm
     OnMouseDown = SurfaceMouseDown
     OnMouseMove = SurfaceMouseMove
     OnResize = SurfaceResize
-    ExplicitLeft = 254
-    ExplicitTop = 27
-    ExplicitWidth = 543
-    ExplicitHeight = 572
   end
   object Panel2: TPanel
     Left = 0
@@ -96,7 +91,6 @@ object MainFrm: TMainFrm
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 2
-    ExplicitHeight = 572
     object GroupBox1: TGroupBox
       Left = 2
       Top = 2
@@ -138,18 +132,15 @@ object MainFrm: TMainFrm
       Top = 93
       Width = 246
       Height = 417
-      ActivePage = tbs_Colors
+      ActivePage = tbs_Particle
       Align = alClient
       TabOrder = 1
-      ExplicitHeight = 477
       object tbs_Particle: TTabSheet
         Caption = 'Default Particle'
-        ExplicitHeight = 449
       end
       object tbs_Colors: TTabSheet
         Caption = 'Colors'
         ImageIndex = 1
-        ExplicitHeight = 449
         object GroupBox4: TGroupBox
           Left = 0
           Top = 0
@@ -178,7 +169,6 @@ object MainFrm: TMainFrm
           Align = alClient
           Caption = 'Color control'
           TabOrder = 1
-          ExplicitHeight = 235
           DesignSize = (
             238
             175)
@@ -297,7 +287,6 @@ object MainFrm: TMainFrm
             TabOrder = 0
             OnClick = lb_colorsClick
             OnDrawItem = lb_colorsDrawItem
-            ExplicitHeight = 169
           end
           object btn_delete: TButton
             Left = 160
@@ -309,7 +298,6 @@ object MainFrm: TMainFrm
             Enabled = False
             TabOrder = 2
             OnClick = btn_deleteClick
-            ExplicitTop = 199
           end
           object btn_add: TButton
             Left = 80
@@ -320,7 +308,6 @@ object MainFrm: TMainFrm
             Caption = 'Add color'
             TabOrder = 1
             OnClick = btn_addClick
-            ExplicitTop = 199
           end
         end
         object GroupBox6: TGroupBox
@@ -331,7 +318,6 @@ object MainFrm: TMainFrm
           Align = alBottom
           Caption = 'Mixer'
           TabOrder = 2
-          ExplicitTop = 292
           DesignSize = (
             238
             157)
@@ -506,6 +492,9 @@ object MainFrm: TMainFrm
       object tbs_Editor: TTabSheet
         Caption = 'Editor'
         ImageIndex = 2
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
         ExplicitHeight = 449
         object Label2: TLabel
           Left = 0
@@ -671,8 +660,6 @@ object MainFrm: TMainFrm
     Height = 19
     Panels = <>
     SimplePanel = True
-    ExplicitTop = 605
-    ExplicitWidth = 796
   end
   object MainMenu1: TMainMenu
     Left = 264

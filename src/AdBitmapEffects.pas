@@ -263,19 +263,23 @@ var
   pixelptr: PRGBARec;
 begin
   //The transparent color is "clNone", change nothing
-  if not (FTransparent and (FTransparentColor = $1FFFFFFF)) then
+  if FTransparent then
   begin
-    pixelptr := Dest.ScanLine;
-    for i := 0 to (Dest.Size div 4) - 1 do
+    if not (FTransparent and (FTransparentColor = aclNone)) then
     begin
-      if FTransparent and (FTransparentColor = RGB(pixelptr^.r, pixelptr^.g, pixelptr^.b)) then
-        pixelptr^.a := 0
-      else
-        pixelptr^.a := 255;
+      pixelptr := Dest.ScanLine;
+      for i := 0 to (Dest.Size div 4) - 1 do
+      begin
+        if FTransparent and (FTransparentColor = RGB(pixelptr^.r, pixelptr^.g, pixelptr^.b)) then
+          pixelptr^.a := 0
+        else
+          pixelptr^.a := 255;
 
-      inc(PixelPtr);
-    end;      
-  end;  
+        inc(PixelPtr);
+      end;
+    end;
+  end else
+    Dest.ClearAlphaChannel;
 end;
 
 { TAdAntialiasFilter }

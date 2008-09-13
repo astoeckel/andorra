@@ -304,6 +304,14 @@ type
       property Surface:TAdRenderingSurface read FSurface write SetSurface;
   end;
 
+  {Type that defines the event that happened when the TImageSprite DoAnimEvent
+   method is called.}
+  TAdAnimEvent = (
+    aaeStart,//< The animation starts to playback the first time
+    aaeStop,//< The playback of the animation stopped
+    aaeLoop//< The playback of the animation starts again
+  );
+
   {A sprite which draws sprites.}
   TImageSprite = class(TSprite)
     private
@@ -314,6 +322,7 @@ type
       FAnimStart: Integer;
       FAnimStop: Integer;
       FAnimActive: Boolean;
+      FNewAnim: Boolean;
       function GetAnimCount:integer;
       procedure SetAnimStart(AValue:integer);
       procedure SetAnimStop(AValue:integer);
@@ -323,6 +332,7 @@ type
       procedure SetWidth(AValue:double);override;
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
+      procedure DoAnim(AAnimEvent: TAdAnimEvent);virtual;
     public
       //Creates an instance of TImageSprite
       constructor Create(AParent:TSprite);override;
@@ -1054,6 +1064,11 @@ begin
   inherited;
 end;
 
+procedure TImageSprite.DoAnim(AAnimEvent: TAdAnimEvent);
+begin
+  //Do nothing here
+end;
+
 procedure TImageSprite.DoDraw;
 begin
   if FImage <> nil then
@@ -1066,16 +1081,24 @@ procedure TImageSprite.DoMove(TimeGap: double);
 begin
   if AnimActive then
   begin
-    AnimPos := AnimPos + AnimSpeed*TimeGap;
+    if FNewAnim then
+    begin
+      DoAnim(aaeStart);
+      FNewAnim := false;
+    end;
+
+    AnimPos := AnimPos + AnimSpeed * TimeGap;
     if trunc(AnimPos) > AnimStop then
     begin
       if AnimLoop then
       begin
         AnimPos := AnimStart;
+        DoAnim(aaeLoop);
       end
       else
       begin
         AnimActive := False;
+        DoAnim(aaeStop);
       end;
     end;
   end;
@@ -1119,6 +1142,7 @@ begin
       FAnimStart := 0;
       FAnimStop := AValue.PatternCount-1;
     end;
+    FNewAnim := true;
   end;
   FImage := AValue;
 end;

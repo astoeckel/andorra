@@ -17,7 +17,7 @@ interface
 
 uses
   Classes,
-  AdTypes, AdBitmap, AdPNGImage, AdSimpleCompressors;
+  AdTypes, AdBitmap, AdBitmapEffects, AdPNGImage, AdSimpleCompressors;
 
 
 type
@@ -162,12 +162,23 @@ function TAdPNGFormat.LoadFromFile(ABitmap:TAdBitmap; AFile:string;
         ATransparent:Boolean; ATransparentColor:LongInt): boolean;
 var
   PNG: TAdPNGImage;
+  eff: TAdTransparencyFilter;
 begin
   result := true;
   PNG := TAdPNGImage.Create;
   try
-    PNG.LoadFromFile(AFile);
+    PNG.LoadFromFile(AFile); 
     Assign(ABitmap, PNG);
+
+    //Make the bitmap transparent
+    eff := TAdTransparencyFilter.Create;
+    try
+      eff.Transparent := true;
+      eff.TransparentColor := ATransparentColor;
+      eff.AssignEffect(ABitmap);
+    finally
+      eff.Free;
+    end;       
   finally
     PNG.Free;
   end;

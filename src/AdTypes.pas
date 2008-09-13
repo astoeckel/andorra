@@ -219,7 +219,10 @@ type
   TAd2dShaderType = (
     astVertex, //< This program is a vertex program
     astFragment //< This program is a fragment (pixel) program
-  );  
+  );
+
+const
+  aclNone = $1FFFFFFF;
 
 
 //Creates a rectangle of the type "TAdRect"  with specific x/y coordinates and a specific width/height
