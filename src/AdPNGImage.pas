@@ -33,7 +33,7 @@ const
 
   BITMASKS: array[1..4] of Byte = ($01, $03, $07, $0F);
 
-  HEADERBYTES = #$89#$50#$4E#$47#$0D#$A#$1A#$0A;
+  HEADERBYTES: AnsiString = #$89#$50#$4E#$47#$0D#$A#$1A#$0A;
 
 type
   EAdPNGInvalidHeaderBytes = class(Exception);
@@ -45,10 +45,10 @@ type
 
   TAdPNGChunk = packed record
     DataLength: LongWord;
-    ID: array[1..4] of Char;
+    ID: array[1..4] of AnsiChar;
     Data: array of Byte;
     CRC: LongWord;
-    ChunkType: String;
+    ChunkType: AnsiString;
   end;
 
 
@@ -131,10 +131,10 @@ type
     procedure SkipChunk(const AStream: TStream);
 		function CheckChunk(const AStream: TStream;
 				const AChunk: TAdPNGChunk): Boolean;
-    function ChunkIsOptional(const ID: String): Boolean;
+    function ChunkIsOptional(const ID: AnsiString): Boolean;
 
     procedure DecompressData(const Input, Output: TStream);
-    procedure ProcessChunk(const AStream: TStream; const ID: String);
+    procedure ProcessChunk(const AStream: TStream; const ID: AnsiString);
 
 		function ReadSamples(const Scanline: TAdPNGScanline): TAdPNGSamples;
 
@@ -213,8 +213,8 @@ type
   TPixelArray = array[0..3] of Byte;
   PPixelArray = ^TPixelArray;
   
-var HeaderByteBuffer: array[1..8] of Char;
-    id: array[1..4] of Char;
+var HeaderByteBuffer: array[1..8] of AnsiChar;
+    id: array[1..4] of AnsiChar;
     I, J: Integer;
     p: PPixelArray;
 begin
@@ -271,7 +271,7 @@ begin
 end;
 
 procedure TAdPNGImage.ProcessChunk(const AStream: TStream;
-		const ID: String);
+		const ID: AnsiString);
 type
   TRGB = packed record
     R, G, B: Byte;
@@ -321,7 +321,7 @@ function TAdPNGImage.ReadChunk(const AStream: TStream;
 		ReadData: Boolean = False): TAdPNGChunk;
 begin
   AStream.Read(Result, 8);
-  Result.ChunkType:=Result.ID;
+  Result.ChunkType := Result.ID;
   ConvertLongWord(Result.DataLength);
 
   if ReadData then
@@ -775,7 +775,7 @@ begin
   Result:=CRC32(buffer[0], AChunk.DataLength+4)=AChunk.CRC;
 end;
 
-function TAdPNGImage.ChunkIsOptional(const ID: String): Boolean;
+function TAdPNGImage.ChunkIsOptional(const ID: AnsiString): Boolean;
 begin
   Result:=(Ord(ID[1]) shr 5) and 1=1;
 end;

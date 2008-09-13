@@ -35,7 +35,7 @@ uses
   IniFiles,
   {$IFNDEF FPC}XPMan, {$ELSE}lMessages, {$ENDIF}
   {$IFDEF WIN32}Windows,{$ENDIF}
-  AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages;
+  AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages, AdStrUtils;
 
 const
   {A window message that is sent to the setup dlg form. This message tells the
@@ -885,42 +885,9 @@ begin
   end;
 end; 
 
-type
-  TStringArray = array of string;
-
-procedure DevideString(AString:string;AChar:char;var AResult:TStringArray);
-var
-  s:string;
-  p:integer;
-begin
-  SetLength(AResult,0);
-
-  while length(AString) > 0 do
-  begin
-    //Search the next place where "AChar" apears in "AString"
-    p := Pos(AChar,AString);
-
-    if p = 0 then
-    begin
-      //If not found copy the whole string
-      s := copy(AString,1,length(AString));
-      AString := '';
-    end
-    else
-    begin
-      s := copy(AString,1,p-1);
-      AString := copy(AString,p+1,length(AString)-p+1);
-    end;
-
-    //Add item
-    SetLength(AResult,Length(AResult)+1);
-    AResult[high(AResult)] := s;
-  end;
-end;
-
 procedure TAdSetup.ResolutionChange(Sender: TObject);
 var
-  strs: TStringArray;
+  strs: TAdStringArray;
 begin
   //Get Resolution
   DevideString(FResolutionCombobox.Items[FResolutionCombobox.ItemIndex],'x',strs);

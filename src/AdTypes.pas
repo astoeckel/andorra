@@ -177,7 +177,7 @@ type
   {--- Types used for storing data in streams ---}
 
   {A string with the length of five bytes.}
-  TAdVeryShortString = string[4];
+  TAdVeryShortString = string[4];  //This type should also have five bytes under Delphi2009
 
   {--- Triangle and polygon types ---}
   
@@ -272,9 +272,9 @@ function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 {Creates an andorra color with the given components and alpha is set to 255}
 function Ad_RGB(r,g,b:byte):TAndorraColor;
 {Converts a color to a string}
-function AdColorToString(AColor:TAndorraColor):string;
+function AdColorToString(AColor:TAndorraColor): AnsiString;
 {Converts a string to a color}
-function StringToAdColor(AString:string):TAndorraColor;
+function StringToAdColor(AString: AnsiString):TAndorraColor;
 {Converts an Andorra color into a TColor.}
 function AdColorToColor(AAdColor:TAndorraColor):Longint;
 {Converts a TColor value into an andorra color and sets alpha to 255.}
@@ -527,12 +527,12 @@ end;
 
 function ByteToHex(aval:byte): ShortString; 
 const
-  Digits: array[0..15] of char = '0123456789ABCDEF';
+  Digits: array[0..15] of AnsiChar = '0123456789ABCDEF';
 begin 
   result := digits[aval shr 4] + digits[aval and $0F];
 end; 
 
-function CharToValue(achar: Char):byte;
+function CharToValue(achar: AnsiChar): byte;
 begin
   result := 0;
   if achar in ['0'..'9'] then
@@ -541,13 +541,13 @@ begin
     result := ord(achar) - 55;
 end;
 
-function AdColorToString(AColor:TAndorraColor):string;
+function AdColorToString(AColor:TAndorraColor): AnsiString;
 begin
   result :=
     ByteToHex(AColor.a) + ByteToHex(AColor.r) + ByteToHex(AColor.g) + ByteToHex(AColor.b);
 end;
 
-function StringToAdColor(AString: string):TAndorraColor;
+function StringToAdColor(AString: AnsiString): TAndorraColor;
 begin
   if length(AString) <> 8 then exit;  
   result.a :=

@@ -33,7 +33,7 @@ type
   TAdDLLExplorer = class
     private
       FStrings:TStrings;
-      procedure StringsCallback(DllFileName:string;DllInfo:TAd2DLibInfo);
+      procedure StringsCallback(DllFileName:string; DllInfo:TAd2DLibInfo);
     public
       {Returns all plugins in the StringList "Plugins" within the specific
        directory. Extension must include the trailing point. E.g. ".so" or ".dll"}
@@ -97,7 +97,7 @@ begin
   GetPlugins(StringsCallback, Dir, Extension);
 end;
 
-procedure TAdDLLExplorer.StringsCallback(DllFileName: string;
+procedure TAdDLLExplorer.StringsCallback(DllFileName: String;
   DllInfo: TAd2DLibInfo);
 begin
   FStrings.Add(DllInfo.LibTitle+'='+DllFileName);

@@ -1,7 +1,5 @@
 program Image;
 
-{$APPTYPE CONSOLE}
-
 uses
   Forms,
   Main in 'Main.pas' {Form1};

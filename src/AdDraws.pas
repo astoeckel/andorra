@@ -140,7 +140,7 @@ type
       FPtrs: array of TAdPluginPropertyListPointerSet;
       FCount: integer;
       function GetProperty(Index: integer): TAd2dProperty;
-      procedure AddValue(AName: string; var AValue; ASize: Integer);
+      procedure AddValue(AName: AnsiString; var AValue; ASize: Integer);
       procedure AddProp(AProp: TAd2dProperty);
     public
       {Creates an instance of TAdPluginPropertyList. Properties from the plugin
@@ -163,16 +163,16 @@ type
 
       {Sets a boolean property. Properties are stored when the "WriteProperties"
        method is called.}
-      procedure SetProp(AName: string; AValue: boolean);overload;
+      procedure SetProp(AName: AnsiString; AValue: boolean);overload;
       {Sets a integer property. Properties are stored when the "WriteProperties"
        method is called.}
-      procedure SetProp(AName: string; AValue: integer);overload;
+      procedure SetProp(AName: AnsiString; AValue: integer);overload;
       {Sets a resolution property. Properties are stored when the
        "WriteProperties" method is called.}
-      procedure SetProp(AName: string; AValue: TAd2dResolution);overload;
+      procedure SetProp(AName: AnsiString; AValue: TAd2dResolution);overload;
 
       {Returns whether a certain property exists.}
-      function PropertyExists(AName: string): boolean;
+      function PropertyExists(AName: AnsiString): boolean;
 
       {Allows to read plugin the properties directly.}
       property Items[Index: integer]: TAd2dProperty read GetProperty; default;
@@ -1147,7 +1147,7 @@ type
    of TAdImages.}
   TAdImage = class(TAdCustomImage)
     private
-      FName:AnsiString;
+      FName: AnsiString;
       function GetTexture:TAdTexture;
       procedure SetTexture(AValue:TAdTexture);
     public
@@ -1173,7 +1173,7 @@ type
 
       {Name of the image in the imagelist. The find procedure of the imagelist
        uses this property.}
-      property Name: string read FName write FName;
+      property Name: AnsiString read FName write FName;
 
       {Access to the texture abstraction layer.}
       property Texture: TAdTexture read GetTexture write SetTexture;
@@ -1207,15 +1207,15 @@ type
       {Creates and adds a new image item to the list. This item will automatically
        freed by the list.
        @seealso(TAdImage.FreeByList)}
-      function Add(AName:string):TAdImage;overload;
+      function Add(AName: AnsiString):TAdImage;overload;
       {Searches for an item by name and returns its index.}
-      function IndexOf(AName:string):integer;
+      function IndexOf(AName: AnsiString):integer;
       {Finds an image in the list by its name.}
-      function Find(AName:string):TAdImage;
+      function Find(AName: AnsiString):TAdImage;
 
       {Returns a new imagelist, that contains all images containing the given
        substring. The returned imagelist has to be freed manually.}
-      function FindEx(ASubStr:string):TAdImageList;
+      function FindEx(ASubStr: AnsiString):TAdImageList;
       {Calls the restore function of every item in the list.}
       procedure Restore;
 
@@ -2271,7 +2271,7 @@ end;
 
 { TAdImageList }
 
-function TAdImageList.Add(AName: string): TAdImage;
+function TAdImageList.Add(AName: AnsiString): TAdImage;
 begin
   result := TAdImage.Create(FParent);
 
@@ -2293,7 +2293,7 @@ begin
   inherited Destroy;
 end;
 
-function TAdImageList.Find(AName: string): TAdImage;
+function TAdImageList.Find(AName: AnsiString): TAdImage;
 var i:integer;
 begin
   result := nil;
@@ -2304,7 +2304,7 @@ begin
   end;
 end;
 
-function TAdImageList.FindEx(ASubStr: string): TAdImageList;
+function TAdImageList.FindEx(ASubStr: AnsiString): TAdImageList;
 var
   i:integer;
 begin
@@ -2318,7 +2318,7 @@ begin
   end;
 end;
 
-function TAdImageList.IndexOf(AName: string): integer;
+function TAdImageList.IndexOf(AName: AnsiString): integer;
 var i:integer;
 begin
   result := -1;
@@ -3276,7 +3276,7 @@ begin
   result := FProps[Index];
 end;
 
-function TAdPluginPropertyList.PropertyExists(AName: string): boolean;
+function TAdPluginPropertyList.PropertyExists(AName: AnsiString): boolean;
 var
   i: integer;
 begin
@@ -3292,17 +3292,17 @@ begin
   end;
 end;
 
-procedure TAdPluginPropertyList.SetProp(AName: string; AValue: integer);
+procedure TAdPluginPropertyList.SetProp(AName: AnsiString; AValue: integer);
 begin
   AddValue(AName, AValue, SizeOf(Integer));
 end;
 
-procedure TAdPluginPropertyList.SetProp(AName: string; AValue: boolean);
+procedure TAdPluginPropertyList.SetProp(AName: AnsiString; AValue: boolean);
 begin
   AddValue(AName, AValue, SizeOf(Boolean));
 end;
 
-procedure TAdPluginPropertyList.SetProp(AName: string; AValue: TAd2dResolution);
+procedure TAdPluginPropertyList.SetProp(AName: AnsiString; AValue: TAd2dResolution);
 begin
   AddValue(AName, AValue, SizeOf(TAd2dResolution));
 end;
@@ -3316,7 +3316,7 @@ begin
   FCount := FCount + 1;
 end;
 
-procedure TAdPluginPropertyList.AddValue(AName: string; var AValue; ASize: Integer);
+procedure TAdPluginPropertyList.AddValue(AName: AnsiString; var AValue; ASize: Integer);
 var
   ptr: Pointer;
 begin

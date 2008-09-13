@@ -24,7 +24,7 @@ interface
 
 uses
   {$IFDEF WIN32}Windows{$ELSE}Types{$ENDIF}, SysUtils, Graphics, Classes,
-  AdBitmap, AdTypes, AdPersistent, AdMessages;
+  AdBitmap, AdTypes, AdPersistent, AdMessages, AdStrUtils, AdBitmapEffects;
 
 type
  {@exclude}
@@ -56,6 +56,8 @@ type
       function GetWidth: Integer; override;
       procedure SetHeight(Value: Integer); override;
       procedure SetWidth(Value: Integer); override;
+
+      procedure AssignTo(Dest: TPersistent); override;
     public
       constructor Create; override;
       destructor Destroy; override;
@@ -105,10 +107,19 @@ begin
 end;
 
 class procedure TAdVCLFormat.FileExts(strs: TStrings);
+var
+  i: integer;
+  elems: TAdStringArray;
+
+const
+  MaskDiv = ';';
+  MaskEnd = '*';
+
 begin
-  strs.Add('.bmp');
-  strs.Add('.dib');
-  strs.Add('.ico');
+  //Get all file types that are registered with TGraphic
+  DevideString(GraphicFileMask(TGraphic), MaskDiv, elems);
+  for i := 0 to High(elems) do
+    strs.Add(Copy(elems[i], 2, Length(elems[i]) - 1));
 end;
 
 function TAdVCLFormat.Assign(ABitmap: TAdBitmap; AGraphic: TObject): boolean;
@@ -127,33 +138,41 @@ begin
     bmp.Assign(TGraphic(AGraphic));
   end
   else
-  begin
     bmp := TBitmap(AGraphic);
-  end;
+
   ABitmap.ReserveMemory(bmp.Width, bmp.Height);
 
-  tr := GetRValue(bmp.TransparentColor);
-  tg := GetGValue(bmp.TransparentColor);
-  tb := GetBValue(bmp.TransparentColor);
-
-  bmp.PixelFormat := pf24Bit;
-
-  p2 := ABitmap.ScanLine;
-  for y := 0 to bmp.Height - 1 do
+  //If the bitmap is not in the 32-Bit mode, copy the bitmap without alphachannel
+  if bmp.PixelFormat <> pf32Bit then
   begin
-    p1 := bmp.ScanLine[y];
-    for x := 0 to bmp.Width - 1 do
+    bmp.PixelFormat := pf24Bit;
+
+    tr := GetRValue(bmp.TransparentColor);
+    tg := GetGValue(bmp.TransparentColor);
+    tb := GetBValue(bmp.TransparentColor);
+
+    p2 := ABitmap.ScanLine;
+    for y := 0 to bmp.Height - 1 do
     begin
-      p2^.r := p1^.r;
-      p2^.g := p1^.g;
-      p2^.b := p1^.b;
-      if bmp.Transparent and (p1^.r = tb) and (p1^.g = tg) and (p1^.b = tr) then  //GBR(!)
-        p2^.a := 0
-      else
-        p2^.a := 255;
-      inc(p1);
-      inc(p2);
+      p1 := bmp.ScanLine[y];
+      for x := 0 to bmp.Width - 1 do
+      begin
+        p2^.r := p1^.r;
+        p2^.g := p1^.g;
+        p2^.b := p1^.b;
+        if bmp.Transparent and (p1^.r = tb) and (p1^.g = tg) and (p1^.b = tr) then  //GBR(!)
+          p2^.a := 0
+        else
+          p2^.a := 255;
+        inc(p1);
+        inc(p2);
+      end;
     end;
+  end else
+  begin
+    //The bitmap we got has 32-Bits - we are able to copy its memory directly.
+    for y := 0 to bmp.Height - 1 do
+      Move(bmp.ScanLine[y]^, ABitmap.ScanLine(y)^, ABitmap.Width * 4);
   end;
 
   if not (AGraphic is TBitmap) then
@@ -267,25 +286,69 @@ end;
 function TAdVCLFormat.LoadFromFile(ABitmap: TAdBitmap; AFile: string;
   ATransparent: Boolean; ATransparentColor: LongInt): boolean;
 var
-  pict:TPicture;
-  bmp:TBitmap;
+  pict: TPicture;
+  bmp: TBitmap;
+  i: integer;
+  cls: TAdGraphicFormatClass;
+  str: TStringList;
+  transeff: TAdTransparencyFilter;
 begin
+  //Search for a Andorra-Native handler first
+  str := TStringList.Create;
+  for i := 0 to RegisteredGraphicFormats.Count - 1 do
+  begin
+    str.Clear;
+    cls := TAdGraphicFormatClass(AdGetClass(RegisteredGraphicFormats[i]));
+    if (cls <> nil) and (cls <> TAdVCLFormat) then
+    begin
+      cls.FileExts(str);
+      if str.IndexOf(ExtractFileExt(AFile)) <> -1 then
+      begin
+        result := false;
+        str.Free;
+        exit;
+      end;
+    end;
+  end;
+  str.Free;
+
+  //If no handler has been found, utilize the VCL to load the bitmap
   result := true;
-  
+
   pict := TPicture.Create;
-  pict.LoadFromFile(AFile);
-  bmp := TBitmap.Create;
-  bmp.Assign(pict.Graphic);
-  bmp.Transparent := ATransparent;
-  bmp.TransparentColor := ATransparentColor;
-  pict.Free;
+  try
+    pict.LoadFromFile(AFile);
 
-  Assign(ABitmap, bmp);
+    bmp := TBitmap.Create;
+    try
+      //Copy the graphic to the bitmap
+      bmp.Assign(pict.Graphic);
+      Assign(ABitmap, bmp);
 
-  bmp.Free;
+      //Apply the transparency settings given as parameters to the bitmap
+      transeff := TAdTransparencyFilter.Create;
+      try
+        transeff.Transparent := ATransparent;
+        transeff.TransparentColor := ATransparentColor;
+        transeff.AssignEffect(ABitmap);
+      finally
+        transeff.Free;
+      end;
+    finally
+      bmp.Free;
+    end;
+  finally
+    pict.Free;
+  end;
 end;
 
 { TAdVCLBitmap }
+
+procedure TAdVCLBitmap.AssignTo(Dest: TPersistent);
+begin
+  if Dest is TBitmap then
+    TBitmap(Dest).Assign(FBitmap);
+end;
 
 procedure TAdVCLBitmap.Changed(Sender: TObject);
 begin
@@ -375,6 +438,10 @@ begin
   abmp := TAdBitmap.Create;
   try
     abmp.LoadGraphicFromFile(Filename, true, clNone);
+{    FBitmap.Width := abmp.Width;
+    FBitmap.Height := abmp.Height;
+    FBitmap.PixelFormat := pf32bit;
+    Move(abmp.Scanline^, FBitmap.Scanline[FBitmap.Height - 1]^, abmp.Size);}
     abmp.AssignTo(FBitmap);
   finally
     abmp.Free;
@@ -438,6 +505,8 @@ var
   strs: TStringList;
   s: string;
 begin
+  UnregisterHandler;
+
   strs := TStringList.Create;
 
   //Iterate through all registered graphic format classes
@@ -448,7 +517,7 @@ begin
     //Get all available file extensions for this class
     cls := TAdGraphicFormatClass(
       AdGetClass(RegisteredGraphicFormats[i]));
-    if cls <> nil then
+    if (cls <> nil) and (cls <> TAdVCLFormat) then
     begin
       cls.FileExts(strs);
 
@@ -472,7 +541,6 @@ end;
 class procedure TAdVCLBitmap.FormatListChange(Sender: TObject);
 begin
   //Refresh the handlers
-  UnregisterHandler;
   RegisterHandler;
 end;
 

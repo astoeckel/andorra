@@ -4,8 +4,7 @@ interface
 
 uses
   Windows, Dialogs, SysUtils, Graphics, Classes, Forms,
-  AdTGA, AdBMP,
-  AdDraws, AdClasses, AdPNG, AdSetupDlg, AdPerformanceCounter;
+  AdDraws, AdClasses, AdSetupDlg, AdPerformanceCounter, PNGImage;
 
 type
   TForm1 = class(TForm)
@@ -82,6 +81,8 @@ begin
 
     AdDraw.ClearSurface(clSilver);
     AdDraw.BeginScene;
+
+    AdDraw.Canvas.TextOut(0,0,'Dies ist ein Test!');
 
     AdImageList1.Find('logo').Draw(AdDraw,0,0,0);
 

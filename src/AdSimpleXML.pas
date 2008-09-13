@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.7 2008/08/29 16:00:42 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.8 2008/09/13 18:54:49 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -40,6 +40,7 @@ Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 //  -  Removed loading from resource
 //  -  Moved some "Ansi"-Constants from "JclBase"/"JclStrings" to "AdSimpleXml"
 //  -  Added FPC compiler directives
+//  -  Replaced "string" with "AnsiString" to have Delphi2009 compatibility
 
 {$IFDEF FPC}
   {$MODE Delphi}
@@ -47,6 +48,8 @@ Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 
 {Unit which is used for parsing XML-Files. Originally "JclSimpleXML.pas".}
 unit AdSimpleXML;
+
+{$I inc_andorra.inc}
 
 interface
 
@@ -75,8 +78,8 @@ type
   TAdSimpleXMLElemText = class;
   TAdSimpleXMLElemHeader = class;
   TAdSimpleXMLElemSheet = class;
-  TAdOnSimpleXMLParsed = procedure(Sender: TObject; Name: string) of object;
-  TAdOnValueParsed = procedure(Sender: TObject; Name, Value: string) of object;
+  TAdOnSimpleXMLParsed = procedure(Sender: TObject; Name: String) of object;
+  TAdOnValueParsed = procedure(Sender: TObject; Name, Value: String) of object;
   TAdOnSimpleProgress = procedure(Sender: TObject; const Position, Total: Integer) of object;
 
   //Those hash stuffs are for future use only
