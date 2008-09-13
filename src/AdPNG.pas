@@ -170,10 +170,10 @@ begin
     PNG.LoadFromFile(AFile); 
     Assign(ABitmap, PNG);
 
-    //Make the bitmap transparent
+    //Apply transparency effect
     eff := TAdTransparencyFilter.Create;
     try
-      eff.Transparent := true;
+      eff.Transparent := ATransparent;
       eff.TransparentColor := ATransparentColor;
       eff.AssignEffect(ABitmap);
     finally
