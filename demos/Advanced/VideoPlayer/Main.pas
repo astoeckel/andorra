@@ -7,8 +7,8 @@ interface
 {$ENDIF}
 
 uses
-  SysUtils, Dialogs, AdStdWindow, {$IFNDEF FPC}AdPNG,{$ELSE}AdDevIL, {$ENDIF}
-  AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdVideo, 
+  SysUtils, Dialogs, AdStdWindow, AdDraws, AdPNG,
+  AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
   AdGUI, AdComponents, AdGUIConnector, AdEvents, AdSetupDlg,
 
   //Select one of the following video decoders here
@@ -47,8 +47,6 @@ begin
     AdPerCounter.Calculate;
     AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
-
-    Sleep(10);
 
     AdVideo.Move(AdPerCounter.TimeGap / 1000);
     AdVideo.Image.Filter := atLinear;
@@ -111,6 +109,7 @@ var
   AdSetup: TAdSetup;
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
+//  AdPerCounter.MaximumFrameRate := 100;
 
   AdDraw := TAdDraw.Create(nil);
   
