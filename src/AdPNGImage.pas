@@ -209,14 +209,10 @@ begin
 end;
 
 procedure TAdPNGImage.LoadFromStream(AStream: TStream);
-type
-  TPixelArray = array[0..3] of Byte;
-  PPixelArray = ^TPixelArray;
-  
 var HeaderByteBuffer: array[1..8] of AnsiChar;
     id: array[1..4] of AnsiChar;
     I, J: Integer;
-    p: PPixelArray;
+    p: PRGBARec;
 begin
   FPalette:=nil;
   FDataStream:=TMemoryStream.Create;
@@ -255,13 +251,13 @@ begin
 
   for I := 0 to FBitmap.Height - 1 do
   begin
-    p := PPixelArray(FBitmap.ScanLine(I));
+    p := FBitmap.ScanLine(I);
     for J := 0 to FBitmap.Width - 1 do
     begin
-      p^[0] := FPixels[J, I].b;
-      p^[1] := FPixels[J, I].g;
-      p^[2] := FPixels[J, I].r;
-      p^[3] := FPixels[J, I].a;
+      p^.r := FPixels[J, I].b;
+      p^.g := FPixels[J, I].g;
+      p^.b := FPixels[J, I].r;
+      p^.a := FPixels[J, I].a;
       inc(p);
     end;
   end;
@@ -272,16 +268,10 @@ end;
 
 procedure TAdPNGImage.ProcessChunk(const AStream: TStream;
 		const ID: AnsiString);
-type
-  TRGB = packed record
-    R, G, B: Byte;
-  end;
-  PRGB = ^TRGB;
-
 var
 	I: Integer;
   Chunk: TAdPNGChunk;
-  p: PRGB;
+  p: PRGBRec;
 begin
 
   if id='PLTE' then
@@ -307,7 +297,10 @@ begin
     FDataStream.Write(Chunk.Data[0], Chunk.DataLength);
 
   end else if id='IEND' then
-  	exit
+  begin
+    SkipChunk(AStream); //The stream has to be spooled to its end to prevent it from binary inconsistence
+  	exit;
+  end
   else if ChunkIsOptional(id) then
     SkipChunk(AStream)
   else

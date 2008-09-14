@@ -2198,8 +2198,8 @@ end;
 
 procedure TAdImage.LoadFromStream(AStream: TStream);
 var
-  s:AnsiString;
-  c:AnsiChar;
+  s: AnsiString;
+  c: AnsiChar;
   l:integer;
 begin
   s := '';
@@ -2338,7 +2338,8 @@ begin
 end;
 
 procedure TAdImageList.SaveToFile(AFile: string);
-var ms:TMemoryStream;
+var
+  ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
   SaveToStream(ms);
@@ -2347,7 +2348,8 @@ begin
 end;
 
 procedure TAdImageList.LoadFromFile(AFile: string);
-var ms:TMemoryStream;
+var
+  ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
   ms.LoadFromFile(AFile);
@@ -2357,10 +2359,11 @@ begin
 end;
 
 procedure TAdImageList.SaveToStream(AStream: TStream);
-var i:integer;
-    s:string;
-    ms:TMemoryStream;
-    size:int64;
+var
+  i: integer;
+  s: AnsiString;
+  ms: TMemoryStream;
+  size: int64;
 begin
   s := 'TADPictCol';
   AStream.Write(s[1],10);
@@ -2379,11 +2382,12 @@ begin
 end;
 
 procedure TAdImageList.LoadFromStream(AStream: TStream);
-var i,c:integer;
-    s:string;
-    ms:TMemoryStream;
-    size:int64;
-    temp:TAdImage;
+var
+  i, c: integer;
+  s: AnsiString;
+  ms: TMemoryStream;
+  size: int64;
+  temp: TAdImage;
 begin
   SetLength(s,10);
   AStream.Read(s[1],10);
@@ -2678,7 +2682,7 @@ begin
     bmp := TAdBitmap.Create;
     try
       bmp.LoadFromStream(AStream);
-      AStream.Read(FBitDepth,1);
+      AStream.Read(FBitDepth, 1);
 
       Texture.LoadFromBitmap(bmp, ad32Bit);
       bmp.Free;

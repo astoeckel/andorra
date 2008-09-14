@@ -83,7 +83,7 @@ begin
     FillChar(Chunk, SizeOf(Chunk), 0);
     Start := Src.Position - 8;
     
-    //Iterate through the png chunks until the end chink is found
+    //Iterate through the png chunks until the end chunk is found
     repeat
       //Read a chunk
       Src.Read(Chunk, SizeOf(Chunk));

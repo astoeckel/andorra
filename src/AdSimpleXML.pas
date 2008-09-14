@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.8 2008/09/13 18:54:49 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.9 2008/09/14 15:59:17 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -401,7 +401,7 @@ type
 
   TAdSimpleXMLOptions = set of (sxoAutoCreate, sxoAutoIndent, sxoAutoEncodeValue,
     sxoAutoEncodeEntity, sxoDoNotSaveProlog, sxoTrimPrecedingTextWhitespace);
-  TAdSimpleXMLEncodeEvent = procedure(Sender: TObject; var Value: string) of object;
+  TAdSimpleXMLEncodeEvent = procedure(Sender: TObject; var Value: AnsiString) of object;
   TAdSimpleXMLEncodeStreamEvent = procedure(Sender: TObject; InStream, OutStream: TStream) of object;
 
   TAdSimpleXML = class(TObject)
@@ -428,8 +428,8 @@ type
     procedure DoSaveProgress;
     procedure DoTagParsed(const AName: string);
     procedure DoValueParsed(const AName, AValue: string);
-    procedure DoEncodeValue(var Value: string); virtual;
-    procedure DoDecodeValue(var Value: string); virtual;
+    procedure DoEncodeValue(var Value: AnsiString); virtual;
+    procedure DoDecodeValue(var Value: AnsiString); virtual;
   public
     constructor Create;
     destructor Destroy; override;
@@ -496,21 +496,21 @@ function VarXML: TVarType;
 // any character <= #127 is preserved
 // all other characters are converted to hex notation except
 // for some special characters that are converted to XML entities
-function SimpleXMLEncode(const S: string): string;
+function SimpleXMLEncode(const S: AnsiString): AnsiString;
 // Decodes a string encoded with SimpleXMLEncode:
 // any character <= #127 is preserved
 // all other characters and substrings are converted from
 // the special XML entities to characters or from hex to characters
 // NB! Setting TrimBlanks to true will slow down the process considerably
-procedure SimpleXMLDecode(var S: string; TrimBlanks: Boolean);
+procedure SimpleXMLDecode(var S: AnsiString; TrimBlanks: Boolean);
 
-function XMLEncode(const S: string): string;
-function XMLDecode(const S: string): string;
+function XMLEncode(const S: AnsiString): AnsiString;
+function XMLDecode(const S: AnsiString): AnsiString;
 
 // Encodes special characters (', ", <, > and &) into XML entities (@apos;, &quot;, &lt;, &gt; and &amp;)
-function EntityEncode(const S: string): string;
+function EntityEncode(const S: AnsiString): AnsiString;
 // Decodes XML entities (@apos;, &quot;, &lt;, &gt; and &amp;) into special characters (', ", <, > and &)
-function EntityDecode(const S: string): string;
+function EntityDecode(const S: AnsiString): AnsiString;
 
 resourcestring
   RsEInvalidXMLElementUnexpectedCharacte =
@@ -688,10 +688,10 @@ end;
 {$ENDIF COMPILER6_UP}
 {$ENDIF !CLR}
 
-function EntityEncode(const S: string): string;
+function EntityEncode(const S: AnsiString): AnsiString;
 var
   I, J, K, L: Integer;
-  tmp: string;
+  tmp: AnsiString;
 begin
   SetLength(Result, Length(S) * 6); // worst case
   J := 1;
@@ -726,7 +726,7 @@ begin
     SetLength(Result, 0);
 end;
 
-function EntityDecode(const S: string): string;
+function EntityDecode(const S: AnsiString): AnsiString;
 var
   I, J, L: Integer;
 begin
@@ -792,7 +792,7 @@ begin
     SetLength(Result, 0);
 end;
 
-function ReadCharsFromStream(Stream: TStream; var Buf: array of Char; BufSize: Integer): Integer;
+function ReadCharsFromStream(Stream: TStream; var Buf: array of AnsiChar; BufSize: Integer): Integer;
 {$IFDEF CLR}
 var
   Bytes: TBytes;
@@ -807,7 +807,7 @@ begin
   {$ENDIF CLR}
 end;
 
-function WriteStringToStream(Stream: TStream; const Buf: string; BufSize: Integer): Integer;
+function WriteStringToStream(Stream: TStream; const Buf: AnsiString; BufSize: Integer): Integer;
 begin
   {$IFDEF CLR}
   Result := Stream.Write(BytesOf(Buf), BufSize);
@@ -900,12 +900,12 @@ end;
 
 {$ENDIF COMPILER5}
 
-function SimpleXMLEncode(const S: string): string;
+function SimpleXMLEncode(const S: AnsiString): AnsiString;
 const
   NoConversion = [#0..#127] - ['"', '&', #39, '<', '>'];
 var
   I, J, K: Integer;
-  tmp: string;
+  tmp: AnsiString;
 begin
   SetLength(Result, Length(S) * 6); // worst case
   J := 1;
@@ -944,11 +944,11 @@ begin
     SetLength(Result, 0);
 end;
 
-procedure SimpleXMLDecode(var S: string; TrimBlanks: Boolean);
+procedure SimpleXMLDecode(var S: AnsiString; TrimBlanks: Boolean);
 var
   StringLength, ReadIndex, WriteIndex: Cardinal;
 
-  procedure DecodeEntity(var S: string; StringLength: Cardinal;
+  procedure DecodeEntity(var S: AnsiString; StringLength: Cardinal;
     var ReadIndex, WriteIndex: Cardinal);
   const
     cHexPrefix: array [Boolean] of string[1] = ('', '$');
@@ -967,7 +967,7 @@ var
       begin
         Value := StrToIntDef(cHexPrefix[IsHex] + Copy(S, I, ReadIndex - I), -1); // no characters are less than 0
         if Value > 0 then
-          S[WriteIndex] := Chr(Value)
+          S[WriteIndex] := AnsiChar(Chr(Value))
         else
           ReadIndex := I - (2 + Cardinal(IsHex)); // reset to start
         Exit;
@@ -977,7 +977,7 @@ var
     ReadIndex := I - (2 + Cardinal(IsHex)); // reset to start
   end;
 
-  procedure SkipBlanks(var S: string; StringLength: Cardinal; var ReadIndex: Cardinal);
+  procedure SkipBlanks(var S: AnsiString; StringLength: Cardinal; var ReadIndex: Cardinal);
   begin
     while ReadIndex < StringLength do
     begin
@@ -1071,12 +1071,12 @@ begin
 //    S := AdjustLineBreaks(S);
 end;
 
-function XMLEncode(const S: string): string;
+function XMLEncode(const S: AnsiString): AnsiString;
 begin
   Result := SimpleXMLEncode(S);
 end;
 
-function XMLDecode(const S: string): string;
+function XMLDecode(const S: AnsiString): AnsiString;
 begin
   Result := S;
   SimpleXMLDecode(Result, False);
@@ -1101,7 +1101,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TAdSimpleXML.DoDecodeValue(var Value: string);
+procedure TAdSimpleXML.DoDecodeValue(var Value: AnsiString);
 begin
   if sxoAutoEncodeValue in Options then
     SimpleXMLDecode(Value, False)
@@ -1112,7 +1112,7 @@ begin
     FOnDecodeValue(Self, Value);
 end;
 
-procedure TAdSimpleXML.DoEncodeValue(var Value: string);
+procedure TAdSimpleXML.DoEncodeValue(var Value: AnsiString);
 begin
   if Assigned(FOnEncodeValue) then
     FOnEncodeValue(Self, Value);
@@ -1832,11 +1832,11 @@ type
 var
   I, lStreamPos, Count: Integer;
   lPos: TReadStatus;
-  lBuf: array [0..cBufferSize - 1] of Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
   St: string;
   Po: string;
   lElem: TAdSimpleXMLElem;
-  Ch: Char;
+  Ch: AnsiChar;
   lTrimWhiteSpace, lContainsWhiteSpace: Boolean;
   lStartOfContentPos, lTempStreamPos: Integer;
 begin
@@ -2319,10 +2319,10 @@ type
 var
   lPos: TPosType;
   I, lStreamPos, Count: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
-  lName, lValue, lNameSpace: string;
-  lPropStart: Char;
-  Ch: Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
+  lName, lValue, lNameSpace: AnsiString;
+  lPropStart: AnsiChar;
+  Ch: AnsiChar;
 begin
   lStreamPos := Stream.Position;
   lValue := '';
@@ -2486,7 +2486,7 @@ end;
 function TAdSimpleXMLProp.SaveToString: string;
 var
   AEncoder: TAdSimpleXML;
-  tmp:string;
+  tmp: AnsiString;
 begin
   AEncoder := GetSimpleXML;
   tmp := FValue;
@@ -2537,9 +2537,9 @@ procedure TAdSimpleXMLElemClassic.LoadFromStream(const Stream: TStream; AParent:
 //<xml:element Prop="foo" Prop='bar'>foor<b>beuh</b>bar</element>
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
-  St, lName, lValue, lNameSpace: string;
-  Ch: Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
+  St, lName, lValue, lNameSpace: AnsiString;
+  Ch: AnsiChar;
 begin
   lStreamPos := Stream.Position;
   St := '';
@@ -2651,8 +2651,8 @@ end;
 
 procedure TAdSimpleXMLElemClassic.SaveToStream(const Stream: TStream; const Level: string; AParent: TAdSimpleXML);
 var
-  St, AName, tmp: string;
-  LevelAdd: string;
+  St, AName, tmp: AnsiString;
+  LevelAdd: AnsiString;
 begin
   if(NameSpace <> '') then
   begin
@@ -2717,11 +2717,11 @@ end;
 procedure TAdSimpleXMLElemComment.LoadFromStream(const Stream: TStream; AParent: TAdSimpleXML);
 //<!-- declarations for <head> & <body> -->
 const
-  CS_START_COMMENT = '<!--';
-  CS_STOP_COMMENT = '    -->';
+  CS_START_COMMENT: AnsiString = '<!--';
+  CS_STOP_COMMENT: AnsiString = '    -->';
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
   St: string;
   lOk: Boolean;
 begin
@@ -2807,11 +2807,11 @@ end;
 procedure TAdSimpleXMLElemCData.LoadFromStream(const Stream: TStream; AParent: TAdSimpleXML);
 //<![CDATA[<greeting>Hello, world!</greeting>]]>
 const
-  CS_START_CDATA = '<![CDATA[';
-  CS_STOP_CDATA =  '         ]]>';
+  CS_START_CDATA: AnsiString = '<![CDATA[';
+  CS_STOP_CDATA: AnsiString =  '         ]]>';
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
   St: string;
   lOk: Boolean;
 begin
@@ -2895,8 +2895,8 @@ end;
 procedure TAdSimpleXMLElemText.LoadFromStream(const Stream: TStream; AParent: TAdSimpleXML);
 var
   I, lStreamPos, Count: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
-  St: string;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
+  St: AnsiString;
   StLength: Integer;
 begin
   lStreamPos := Stream.Position;
@@ -2943,7 +2943,7 @@ end;
 
 procedure TAdSimpleXMLElemText.SaveToStream(const Stream: TStream; const Level: string; AParent: TAdSimpleXML);
 var
-  St, tmp: string;
+  St, tmp: AnsiString;
 begin
   if Value <> '' then
   begin
@@ -2981,11 +2981,11 @@ end;
 procedure TAdSimpleXMLElemHeader.LoadFromStream(const Stream: TStream; AParent: TAdSimpleXML);
 //<?xml version="1.0" encoding="iso-xyzxx" standalone="yes"?>
 const
-  CS_START_HEADER = '<?xml';
-  CS_STOP_HEADER = '     ?>';
+  CS_START_HEADER: AnsiString = '<?xml';
+  CS_STOP_HEADER: AnsiString = '     ?>';
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
   lOk: Boolean;
 begin
   lStreamPos := Stream.Position;
@@ -3081,13 +3081,13 @@ procedure TAdSimpleXMLElemDocType.LoadFromStream(const Stream: TStream; AParent:
 <!DOCTYPE greeting SYSTEM "hello.dtd">
 }
 const
-  CS_START_DOCTYPE = '<!DOCTYPE';
+  CS_START_DOCTYPE: AnsiString = '<!DOCTYPE';
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
   lOk: Boolean;
-  lChar: Char;
-  St: string;
+  lChar: AnsiChar;
+  St: AnsiString;
 begin
   lStreamPos := Stream.Position;
   lPos := 1;
@@ -3164,11 +3164,11 @@ procedure TAdSimpleXMLElemSheet.LoadFromStream(const Stream: TStream;
   AParent: TAdSimpleXML);
 //<?xml-stylesheet alternate="yes" type="text/xsl" href="sheet.xsl"?>
 const
-  CS_START_PI = '<?xml-stylesheet';
-  CS_STOP_PI = '                ?>';
+  CS_START_PI: AnsiString = '<?xml-stylesheet';
+  CS_STOP_PI: AnsiString = '                ?>';
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
   lOk: Boolean;
 begin
   lStreamPos := Stream.Position;
@@ -3292,8 +3292,8 @@ function TAdSimpleXMLElemsProlog.LoadFromStream(
 }
 var
   I, lStreamPos, Count, lPos: Integer;
-  lBuf: array [0..cBufferSize - 1] of Char;
-  St: string;
+  lBuf: array [0..cBufferSize - 1] of AnsiChar;
+  St: AnsiString;
   lEnd: Boolean;
   lElem: TAdSimpleXMLElem;
 begin

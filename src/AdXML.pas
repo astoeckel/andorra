@@ -26,17 +26,17 @@ uses
   AdSimpleXML, Classes, SysUtils;
 
 {Writes a stream into a string encoding it as hexadecimal values.}
-function WriteStreamToString(AStream:TStream):string;
+function WriteStreamToString(AStream:TStream): AnsiString;
 {Reads and decodes hexadecimal values from a string and stores them in a stream.}
-procedure ReadStreamFromString(AStream:TStream;AString:string);
+procedure ReadStreamFromString(AStream:TStream;AString:AnsiString);
 {Writes a stream into a xml node. @param(ElemName specifies the name of the element the string is stored into.)}
-procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
+procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:AnsiString='data');
 {Reads a stream writen by @seealso(WriteStream) from a xml node. Please note, that "ReadStream" will first search for an element named "source", which may specify the path to a file which is loaded instead.}
-procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
+procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:AnsiString='data');
 
 implementation
 
-function WriteStreamToString(AStream:TStream):string;
+function WriteStreamToString(AStream:TStream): AnsiString;
 var
   i:integer;
   b:byte;
@@ -49,7 +49,7 @@ begin
   end;
 end;
 
-procedure ReadStreamFromString(AStream:TStream;AString:string);
+procedure ReadStreamFromString(AStream:TStream; AString:AnsiString);
 var
   i:integer;
   b:byte;
@@ -61,13 +61,13 @@ begin
   end;
 end;
 
-procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
+procedure WriteStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName: AnsiString='data');
 begin
   AStream.Position := 0;
   XMLElem.Properties.Add(ElemName,WriteStreamToString(AStream));
 end;
 
-procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName:string='data');
+procedure ReadStream(AStream:TStream;XMLElem:TAdSimpleXMLElem;ElemName: AnsiString='data');
 var
   ms:TMemoryStream;
 begin

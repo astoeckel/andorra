@@ -251,36 +251,24 @@ end;
 function TAdVCLFormat.AssignTo(ABitmap: TAdBitmap;
   AGraphic: TObject): boolean;
 var
-  bmp:TBitmap;
-  x, y:integer;
-  p1:PRGBRec;
-  p2:PRGBARec;
-  a:single;
+  bmp: TBitmap;
+  y: integer;
 begin
   result := true;
   
   bmp := TBitmap.Create;
-  bmp.PixelFormat := pf24Bit;
-  bmp.Width := ABitmap.Width;
-  bmp.Height := ABitmap.Height;
+  try
+    bmp.PixelFormat := pf32Bit;
+    bmp.Width := ABitmap.Width;
+    bmp.Height := ABitmap.Height;
 
-  p2 := ABitmap.ScanLine;
-  for y := 0 to bmp.Height - 1 do
-  begin
-    p1 := bmp.ScanLine[y];
-    for x := 0 to bmp.Width - 1 do
-    begin
-      a := p2^.a / 255;;
-      p1^.r := round((p1^.r * (1-a)) + ((p2^.r) * a));
-      p1^.g := round((p1^.g * (1-a)) + ((p2^.g) * a));
-      p1^.b := round((p1^.b * (1-a)) + ((p2^.b) * a));
-      inc(p1);
-      inc(p2);
-    end;
-  end;            
+    for y := 0 to bmp.Height - 1 do
+      Move(ABitmap.ScanLine(y)^, bmp.ScanLine[y]^, ABitmap.Width * 4);
 
-  TGraphic(AGraphic).Assign(bmp);
-  bmp.Free;
+    TGraphic(AGraphic).Assign(bmp);
+  finally
+    bmp.Free;
+  end;
 end;
 
 function TAdVCLFormat.LoadFromFile(ABitmap: TAdBitmap; AFile: string;
@@ -438,10 +426,6 @@ begin
   abmp := TAdBitmap.Create;
   try
     abmp.LoadGraphicFromFile(Filename, true, clNone);
-{    FBitmap.Width := abmp.Width;
-    FBitmap.Height := abmp.Height;
-    FBitmap.PixelFormat := pf32bit;
-    Move(abmp.Scanline^, FBitmap.Scanline[FBitmap.Height - 1]^, abmp.Size);}
     abmp.AssignTo(FBitmap);
   finally
     abmp.Free;

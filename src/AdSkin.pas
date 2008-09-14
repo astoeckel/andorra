@@ -217,7 +217,6 @@ begin
   FBaseHeight := 100;
 
   FImages := TAdImageList.Create(FParent);
-  FImages.Filter := atLinear;
 
   FStates := TStringlist.Create;
   FStates.OnChange := ChangeStates;
