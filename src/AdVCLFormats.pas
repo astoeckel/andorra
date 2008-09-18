@@ -170,6 +170,8 @@ begin
     end;
   end else
   begin
+    bmp.PixelFormat := pf32Bit;
+
     //The bitmap we got has 32-Bits - we are able to copy its memory directly.
     for y := 0 to bmp.Height - 1 do
       Move(bmp.ScanLine[y]^, ABitmap.ScanLine(y)^, ABitmap.Width * 4);

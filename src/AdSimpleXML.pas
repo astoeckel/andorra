@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.9 2008/09/14 15:59:17 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.10 2008/09/18 18:21:32 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -176,7 +176,7 @@ type
   public
     constructor Create(Parent: TAdSimpleXMLElem);
     destructor Destroy; override;
-    function Add(const Name, Value: string): TAdSimpleXMLProp; overload;
+    function Add(const Name, Value: AnsiString): TAdSimpleXMLProp; overload;
     function Add(const Name: string; const Value: Int64): TAdSimpleXMLProp; overload;
     function Add(const Name: string; const Value: Boolean): TAdSimpleXMLProp; overload;
     function Insert(const Index: Integer; const Name, Value: string): TAdSimpleXMLProp; overload;
@@ -2107,7 +2107,7 @@ end;
 
 //=== { TAdSimpleXMLProps } =================================================
 
-function TAdSimpleXMLProps.Add(const Name, Value: string): TAdSimpleXMLProp;
+function TAdSimpleXMLProps.Add(const Name, Value: AnsiString): TAdSimpleXMLProp;
 var
   Elem: TAdSimpleXMLProp;
 begin

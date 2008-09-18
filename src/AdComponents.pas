@@ -195,7 +195,7 @@ type
   TAdButton = class(TAdComponent)
     private
       FSkinItem:TAdSkinItem;
-      FCaption:string;
+      FCaption: string;
       FState:TAdButtonState;
       FStateNr:integer;
     protected
@@ -300,9 +300,9 @@ type
       {Draws the image somewhere on the screen}
       procedure Draw(X,Y:integer);
       {Loads the picture data from a string}
-      procedure LoadFromString(AString:string);
+      procedure LoadFromString(AString: AnsiString);
       {Saves the picture data to a string}
-      function SaveToString:string;
+      function SaveToString: AnsiString;
       {Loads the picture data from a stream.}
       procedure LoadFromStream(AStream:TStream);
       {Saves the picture data to a stream.}
@@ -772,7 +772,7 @@ begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
   begin
-    Add('caption',FCaption);
+    Add('caption', FCaption);
   end;
 end;
 
@@ -1169,7 +1169,7 @@ begin
   FTransparentColor := clNone;
 end;
 
-function TAdResourceImage.SaveToString: string;
+function TAdResourceImage.SaveToString: AnsiString;
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1179,9 +1179,9 @@ begin
   ms.Free;
 end;
 
-procedure TAdResourceImage.LoadFromString(AString: string);
+procedure TAdResourceImage.LoadFromString(AString: AnsiString);
 var
-  ms:TMemoryStream;
+  ms: TMemoryStream;
 begin
   if AString <> '' then
   begin
@@ -1864,11 +1864,11 @@ begin
   result := inherited SaveToXML(aroot);
   with result.Properties do
   begin
-    Add('center',FCenter);
-    Add('stretch',FStretch);
-    Add('proportional',FProportional);
-    Add('autosize',FAutoSize);
-    Add('picture',FPicture.SaveToString);
+    Add('center', FCenter);
+    Add('stretch', FStretch);
+    Add('proportional', FProportional);
+    Add('autosize', FAutoSize);
+    Add('picture', FPicture.SaveToString);
   end;
 end;
 

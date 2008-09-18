@@ -1,4 +1,9 @@
 {
+* EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, THE PROGRAM IS PROVIDED ON
+* AN "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS
+* OR IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF
+* TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+*
 * This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
