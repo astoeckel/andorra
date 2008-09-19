@@ -24,7 +24,7 @@ unit AdDeflate;
 interface
 
 uses
-  SysUtils, Classes, AdDeflateConsts;
+  SysUtils, Classes, AdDeflateConsts, AdBuffer;
 
 const
 	WINDOWSIZE = 32768; //This must be 32768 or higher according to RFC 1951
@@ -57,10 +57,6 @@ type
     FWindow: array of Byte;
     FWindowPos: Integer;
 
-    FInputBuffer: array of Byte;
-    FInputBufferPos: Integer;
-    FStartPos, FBytesRead, FEndOfInput: Int64;
-
     FBitBuffer: LongWord;
     FBitsLoaded: Cardinal;
 
@@ -72,9 +68,6 @@ type
 			ACount: Cardinal): Cardinal;
     function ReadWord(const AStream: TStream): Cardinal;
     procedure ClearBits;
-
-    procedure LoadInputBuffer(const AStream: TStream);
-    procedure CheckInputBuffer(const AStream: TStream);
 
     function GetFixedCode(const AStream: TStream): Cardinal;
     procedure ProcessStaticBlock(const Input, Output: TStream);
@@ -105,15 +98,6 @@ implementation
 
 { TAdDeflate }
 
-procedure TAdDeflateDecompressor.CheckInputBuffer(const AStream: TStream);
-begin
-  if FInputBufferPos=INPUTBUFFERSIZE then
-  begin
-    LoadInputBuffer(AStream);
-    inc(FBytesRead, INPUTBUFFERSIZE);
-  end;
-end;
-
 procedure TAdDeflateDecompressor.ClearBits;
 begin
   FBitBuffer:=0;
@@ -126,7 +110,6 @@ var I, J: Integer;
   	c, MaxBits: Cardinal;
     blcounts, nextcodes: array of Cardinal;
 begin
-
   MaxBits:=0;
 
   for I := 0 to ACount-1 do
@@ -191,69 +174,61 @@ begin
 
 end;
 
-procedure TAdDeflateDecompressor.LoadInputBuffer(const AStream: TStream);
-begin
-  FEndOfInput:=AStream.Read(FInputBuffer[0], INPUTBUFFERSIZE);
-  FInputBufferPos:=0;
-end;
-
 procedure TAdDeflateDecompressor.Decompress(const Input, Output: TStream);
 var c: Cardinal;
     len, nlen: Word;
     bfinal: Boolean;
+    str: TStream;
 begin
+  str := Input;
+  //Buffer the input stream for high speed read access
+  QueryBufferedStream(str);
 
-  setlength(FInputBuffer, INPUTBUFFERSIZE);
-  setlength(FWindow, WINDOWSIZE);
+  try
+    SetLength(FWindow, WINDOWSIZE);
 
-  FStartPos:=Input.Position;
-  FBytesRead:=0;
+    InitCodeTables;
 
-  InitCodeTables;
-  LoadInputBuffer(Input);
+    bfinal:=False;
 
-  bfinal:=False;
+    while (not bfinal) and (not (str.Position >= str.Size))  do
+    begin
+      bfinal:=ReadBits(str, 1)=1;
+      c:=ReadBits(str, 2);
 
-  while not bfinal and (FInputBufferPos<FEndOfInput) do
-  begin
-    bfinal:=ReadBits(Input, 1)=1;
-    c:=ReadBits(Input, 2);
+      case c of
+        0:
+        begin
+          ClearBits;
+          len:=ReadWord(str);
+          nlen:=ReadWord(str);
+          if len<>not nlen then
+            raise EAdDeflateInvalidDataException.Create(
+              'Invalid block in input.');
+          Write(str, Output, len);
+        end;
 
-    case c of
-    	0:
-      begin
-        ClearBits;
-        len:=ReadWord(Input);
-        nlen:=ReadWord(Input);
-        if len<>not nlen then
-          raise EAdDeflateInvalidDataException.Create(
-          	'Invalid block in input.');
-        Write(Input, Output, len);
+        1: ProcessDynamicBlock(str, Output);
+
+        2: ProcessStaticBlock(str, Output);
+
+        3: raise EAdDeflateUnsupportedFormatError.Create(
+          'Unsupported compression type.');
       end;
-
-      1: ProcessDynamicBlock(Input, Output);
-
-      2: ProcessStaticBlock(Input, Output);
-
-      3: raise EAdDeflateUnsupportedFormatError.Create(
-      	'Unsupported compression type.');
     end;
-  end;
 
-  FreeCodeTables;
+    FreeCodeTables;
 
-  inc(FBytesRead, FInputBufferPos);
-  Input.Seek(FStartPos+FBytesRead, soBeginning);
+    if not bfinal then
+      raise EAdDeflateInvalidDataException.Create('Unexpected end of input.');
 
-  if not bfinal then
-    raise EAdDeflateInvalidDataException.Create('Unexpected end of input.');
+    if FWindowPos>0 then
+      Output.Write(FWindow[0], FWindowPos);
 
-  if FWindowPos>0 then
-    Output.Write(FWindow[0], FWindowPos);
-
-  setlength(FWindow, 0);
-  setlength(FInputBuffer, 0);
-    
+    SetLength(FWindow, 0);
+  finally
+    FreeBufferedStream(str);
+  end;    
 end;
 
 procedure TAdDeflateDecompressor.ProcessDynamicBlock(const Input, Output: TStream);
@@ -325,22 +300,21 @@ end;
 
 function TAdDeflateDecompressor.ReadBits(const AStream: TStream;
 	ACount: Cardinal): Cardinal;
-var b: Byte;
-  	count: Cardinal;
+var
+  b: Byte;
+  count: Cardinal;
 begin
-	Result:=0;
-  while ACount>0 do
+	Result := 0;
+  while ACount > 0 do
   begin
-    if ACount>8 then
-    	count:=8
+    if ACount > 8 then
+    	count := 8
     else
-      count:=ACount;
+      count := ACount;
 
-	  if count>FBitsLoaded then
+	  if count > FBitsLoaded then
   	begin
-      b:=FInputBuffer[FInputBufferPos];
-      inc(FInputBufferPos);
-      CheckInputBuffer(AStream);      
+      AStream.Read(b, 1);
 	    FBitBuffer:=(FBitBuffer shl 8) or DEFLATE_REVERSE[b];
   	  inc(FBitsLoaded, 8);
 	  end;
@@ -354,9 +328,10 @@ end;
 
 function TAdDeflateDecompressor.ReadBitsReverse(const AStream: TStream;
 	ACount: Cardinal): Cardinal;
-var b: Byte;
-  	count, buffer: Cardinal;
-    bitsinresult: Integer;
+var
+  b: Byte;
+  count, buffer: Cardinal;
+  bitsinresult: Integer;
 begin
 	Result:=0;
   bitsinresult:=0;
@@ -368,9 +343,7 @@ begin
       count:=ACount;
     if count>FBitsLoaded then
     begin
-    	b:=FInputBuffer[FInputBufferPos];
-      inc(FInputBufferPos);
-      CheckInputBuffer(AStream);
+      AStream.Read(b, 1);
       FBitBuffer:=(FBitBuffer shl 8) or DEFLATE_REVERSE[b];
       inc(FBitsLoaded, 8);
     end;
@@ -464,13 +437,13 @@ begin
 end;
 
 function TAdDeflateDecompressor.ReadWord(const AStream: TStream): Cardinal;
+var
+  b: Byte;
 begin
-  Result:=FInputBuffer[FInputBufferPos];
-  inc(FInputBufferPos);
-  CheckInputBuffer(AStream);
-  Result:=Result or (FInputBuffer[FInputBufferPos] shl 8);
-  inc(FInputBufferPos);
-  CheckInputBuffer(AStream);
+  AStream.Read(b, 1);
+  result := b;
+  AStream.Read(b, 1);
+  result := result or (b shl 8);
 end;
 
 procedure TAdDeflateDecompressor.WriteByte(const Output: TStream; const Data: Byte);
@@ -486,25 +459,26 @@ end;
 
 procedure TAdDeflateDecompressor.Write(const Input, Output: TStream;
 	const Size: Integer);
-var I, Remaining, Bytes: Integer;
+var
+  I, Remaining, Bytes: Integer;
+  b: Byte;
 begin
   Remaining:=Size;
 
   while Remaining>0 do
   begin
     Bytes:=Remaining;
-    if Bytes+FInputBufferPos>INPUTBUFFERSIZE then
-      Bytes:=INPUTBUFFERSIZE-FInputBufferPos;
-    if Bytes+FWindowPos>WINDOWSIZE then
-      Bytes:=WINDOWSIZE-FWindowPos;
+    if Bytes + FWindowPos > WINDOWSIZE then
+      Bytes := WINDOWSIZE - FWindowPos;
 
 		for I := 0 to Bytes-1 do
-      FWindow[FWindowPos+I]:=FInputBuffer[FInputBufferPos+I];
+    begin
+      Input.Read(b, 1);
+      FWindow[FWindowPos+I] := b;
+    end;
 
-    inc(FInputBufferPos, Bytes);
     inc(FWindowPos, Bytes);
 
-    CheckInputBuffer(Input);
     if FWindowPos=WINDOWSIZE then
     begin
       Output.Write(FWindow[0], WINDOWSIZE);
