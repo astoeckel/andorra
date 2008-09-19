@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Menus, ComCtrls, XPMan, Designer, FontCollection, ImgList, Objects,
-  Structure, ExtDlgs, ImageEditor, AdClasses, AdPNG, AdTypes, PngImage,
+  Structure, ExtDlgs, ImageEditor, AdClasses, AdPNG, AdTypes,
   ExtCtrls, AdPersistent,
 
   //Add all units with components here
@@ -473,16 +473,12 @@ end;
 procedure TMainDlg.DblClickImage(Sender: TObject);
 var
   dlg:TImages;
-  png:TPngObject;
 begin
-  png := nil;
   dlg := TImages.Create(nil);
 
   if TAdResourceImage(Sender).Loaded then
   begin
-    png := TPngObject.Create;
-    TAdResourceImage(Sender).Picture.Texture.SaveToGraphic(png);
-    dlg.Image1.Picture.Graphic := png;
+    TAdResourceImage(Sender).Picture.Texture.SaveToGraphic(dlg.Image1.Picture.Bitmap);
   end;
 
   if dlg.ShowModal = mrOk then
@@ -506,10 +502,6 @@ begin
     end;
   end;
 
-  if png <> nil then
-  begin
-    png.Free;
-  end;
   dlg.Free;
 end;
 

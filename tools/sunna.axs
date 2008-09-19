@@ -266,12 +266,12 @@
             <stateimg index="0"/>
           </images>
         </element>
-        <element x1="0" y1="30" x2="5" y2="70" imgsrcx1="0" imgsrcy1="30" imgsrcx2="5" imgsrcy2="331" clientrect="0" typ="dtStretch" anchors="aaLeft;aaTop;aaBottom;">
+        <element x1="0" y1="30" x2="5" y2="71" imgsrcx1="0" imgsrcy1="30" imgsrcx2="5" imgsrcy2="331" clientrect="0" typ="dtStretch" anchors="aaLeft;aaTop;aaBottom;">
           <images>
             <stateimg index="0"/>
           </images>
         </element>
-        <element x1="0" y1="70" x2="8" y2="79" imgsrcx1="0" imgsrcy1="331" imgsrcx2="8" imgsrcy2="339" clientrect="0" typ="dtStretch" anchors="aaLeft;aaBottom;">
+        <element x1="0" y1="71" x2="8" y2="79" imgsrcx1="0" imgsrcy1="331" imgsrcx2="8" imgsrcy2="339" clientrect="0" typ="dtStretch" anchors="aaLeft;aaBottom;">
           <images>
             <stateimg index="0"/>
           </images>
