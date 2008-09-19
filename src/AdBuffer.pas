@@ -137,25 +137,26 @@ type
       property CurrentTag: Cardinal read FCurrentTag;
   end;
 
-  {TAdBufferedFileStram is a class that provides high speed read access on files,
-   even if you are only reading single bytes from the stream.}
-  TAdBufferedFileStream = class(TStream)
+  {TAdBufferedFileStram is a class that provides high speed read access on streams,
+   by buffering parts of the stream.
+   Instead of using this class directly, you may also use the QueryBufferedStream
+   and the FreeBufferedStream classes.}
+  TAdBufferStreamAdapter = class(TStream)
     private
       FBuffer: TAdBuffer;
-      FFileStream: TFileStream;
+      FStream: TStream;
       FMem: PByte;
       FPosition: int64;
       FNewSeekPos: int64;
-      procedure Init;
+      FInstanceCount: integer;
       procedure DoSeek;
     protected
       procedure SetSize(const NewSize: Int64); override;
     public
-      {Creates a new instance of TAdBufferedFileStream.}
-      constructor Create(const AFileName: string; Mode: Word); overload;
-      {Creates a new instance of TAdBufferedFileStream.}
-      constructor Create(const AFileName: string; Mode: Word; Rights: Cardinal); overload;
-      {Destroys the instance of TAdBufferedFileStream.}
+      {Creates a new instance of TAdBufferStreamAdapter.
+       @param(AStream specifies the stream that should be buffered.)}
+      constructor Create(AStream: TStream);
+      {Destroys the instance of TAdBufferStreamAdapter.}
       destructor Destroy; override;
       
       {Reads "Count" bytes to the specified buffer and returns the count of bytes
@@ -166,12 +167,78 @@ type
       function Write(const Buffer; Count: Longint): Longint; override;
       {Seeks to the specified position in the stream.}
       function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+
+      {Property that is used by the QueryBufferedStream and FreeBufferedStream
+       functions. InstanceCount gets incremented with every call of
+       QueryBufferedStream and decremented with every call of FreeBufferedStream.
+       If InstanceCount reaches zero, the instance of TAdBufferStreamAdapter
+       is freed.}
+      property InstanceCount: integer read FInstanceCount write FInstanceCount;
+      {The source stream the TAdBufferStreamAdapter uses.}
+      property AdaptedStream: TStream read FStream;
   end;
+
+  {TAdBufferedFileStream is a class, that descends from TAdBufferStreamAdapter to
+   provide high speed access on a file stream.}
+  TAdBufferedFileStream = class(TAdBufferStreamAdapter)
+    private
+      FFileStream: TFileStream;
+    public
+      {Creates a instance of TAdBufferedFileStream. See your help on TFileStream
+       for more info.}
+      constructor Create(const AFileName: string; Mode: Word); overload;
+      {Creates a instance of TAdBufferedFileStream. See your help on TFileStream
+       for more info.}
+      constructor Create(const AFileName: string; Mode: Word; Rights: Cardinal); overload;
+      destructor Destroy; override;
+  end;
+
+{Speeds up the given stream using the TAdBufferStreamAdapter class. Simply call
+ this method and use the stream you want to accelerate as parameter. Calls of
+ QueryBufferedStream and FreeBufferedStream may be cascading.}
+procedure QueryBufferedStream(var AStream: TStream);
+{Frees a buffered stream and returns the original stream. Calls of
+ QueryBufferedStream and FreeBufferedStream may be cascading.}
+procedure FreeBufferedStream(var AStream: TStream);
 
 implementation
 
 const
   AdBufferSize = 4096;
+
+procedure QueryBufferedStream(var AStream: TStream);
+begin
+  //We don't have to buffer TMemoryStream because its data already is "buffered"
+  if not (AStream is TMemoryStream) then
+  begin
+    //If AStream already is a TAdBufferStreamAdapter, increment its "InstanceCount" property
+    if AStream is TAdBufferStreamAdapter then
+    begin
+      with TAdBufferStreamAdapter(AStream) do
+        InstanceCount := InstanceCount + 1;
+    end else
+      AStream := TAdBufferStreamAdapter.Create(AStream); //InstanceCount is set to 1
+  end;
+end;
+
+procedure FreeBufferedStream(var AStream: TStream);
+begin
+  if AStream is TAdBufferStreamAdapter then
+  begin
+    with AStream as TAdBufferStreamAdapter do
+    begin
+      InstanceCount := InstanceCount - 1;
+      if InstanceCount = 0 then
+      begin
+        //Return the adapted stream
+        AStream := AdaptedStream;
+
+        //Free the adapter
+        Free;
+      end;
+    end;
+  end;
+end;
 
 { TAdCacheBucket }
 
@@ -471,34 +538,28 @@ end;
 
 { TAdBufferedFileStream }
 
-constructor TAdBufferedFileStream.Create(const AFileName: string; Mode: Word);
+constructor TAdBufferStreamAdapter.Create(AStream: TStream);
 begin
   inherited Create;
-  FFileStream := TFileStream.Create(AFileName, Mode);
 
-  Init; 
+  FStream := AStream;
+
+  FPosition := 0;
+  FNewSeekPos := -1;
+  FBuffer := TAdBuffer.Create;
+  GetMem(FMem, AdBufferSize);
+  FInstanceCount := 1;
 end;
 
-constructor TAdBufferedFileStream.Create(const AFileName: string; Mode: Word;
-  Rights: Cardinal);
-begin
-  inherited Create;
-  FFileStream := TFileStream.Create(AFileName, Mode, Rights);
-
-  Init;
-end;
-
-destructor TAdBufferedFileStream.Destroy;
+destructor TAdBufferStreamAdapter.Destroy;
 begin
   FBuffer.Free;
-  FFileStream.Free;
-
   FreeMem(FMem);
   
   inherited;
 end;
 
-procedure TAdBufferedFileStream.DoSeek;
+procedure TAdBufferStreamAdapter.DoSeek;
 begin
   if FNewSeekPos <> -1 then
   begin
@@ -507,7 +568,7 @@ begin
       if not FBuffer.Seek(FNewSeekPos - FPosition) then
       begin
         FBuffer.Clear;
-        FFileStream.Position := FNewSeekPos;
+        FStream.Position := FNewSeekPos;
       end;
       FPosition := FNewSeekPos;
     end;
@@ -515,15 +576,7 @@ begin
   end;
 end;
 
-procedure TAdBufferedFileStream.Init;
-begin
-  FPosition := 0;
-  FNewSeekPos := -1;
-  FBuffer := TAdBuffer.Create;
-  GetMem(FMem, AdBufferSize);
-end;
-
-function TAdBufferedFileStream.Read(var Buffer; Count: Integer): Longint;
+function TAdBufferStreamAdapter.Read(var Buffer; Count: Integer): Longint;
 var
   size: Longint;
 begin
@@ -531,7 +584,7 @@ begin
   
   while (FBuffer.Filled < Count) do
   begin
-    size := FFileStream.Read(FMem^, AdBufferSize);
+    size := FStream.Read(FMem^, AdBufferSize);
     FBuffer.Write(FMem, size);
     if size < Count then
       break;
@@ -541,7 +594,7 @@ begin
   FPosition := FPosition + Count;
 end;
 
-function TAdBufferedFileStream.Seek(const Offset: Int64;
+function TAdBufferStreamAdapter.Seek(const Offset: Int64;
   Origin: TSeekOrigin): Int64;
 var
   newpos: Int64;
@@ -551,34 +604,34 @@ begin
   case Origin of
     soBeginning: newpos := Offset;
     soCurrent: newpos := FPosition + Offset;
-    soEnd: newpos := FFileStream.Size + Offset; //Offset is < 0
+    soEnd: newpos := FStream.Size + Offset; //Offset is < 0
   end;
 
   //Fit "newpos" to the stream size bounds
   if newpos <= 0 then
     newpos := 0
-  else if newpos > FFileStream.Size then
-    newpos := FFileStream.Size;  
+  else if newpos > FStream.Size then
+    newpos := FStream.Size;  
 
   //Return the new position
   result := newpos;
   FNewSeekPos := newpos;
 end;
 
-procedure TAdBufferedFileStream.SetSize(const NewSize: Int64);
+procedure TAdBufferStreamAdapter.SetSize(const NewSize: Int64);
 begin
   //Clear the buffer if
   if FBuffer.Filled > 0 then
     FBuffer.Clear;
     
   //Set the new size
-  FFileStream.Size := NewSize;
+  FStream.Size := NewSize;
 
   //Set the new position
-  FPosition := FFileStream.Position;
+  FPosition := FStream.Position;
 end;
 
-function TAdBufferedFileStream.Write(const Buffer; Count: Integer): Longint;
+function TAdBufferStreamAdapter.Write(const Buffer; Count: Integer): Longint;
 begin
   DoSeek;
 
@@ -587,9 +640,30 @@ begin
   if FBuffer.Filled > 0 then  
     FBuffer.Clear;
 
-  FFileStream.Position := FPosition;
-  result := FFileStream.Write(Buffer, Count);
+  FStream.Position := FPosition;
+  result := FStream.Write(Buffer, Count);
   FPosition := FPosition + Count;
+end;
+
+{ TAdBufferedFileStream }
+
+constructor TAdBufferedFileStream.Create(const AFileName: string; Mode: Word);
+begin
+  FFileStream := TFileStream.Create(AFileName, Mode);
+  inherited Create(FFileStream);
+end;
+
+constructor TAdBufferedFileStream.Create(const AFileName: string; Mode: Word;
+  Rights: Cardinal);
+begin
+  FFileStream := TFileStream.Create(AFileName, Mode, Rights);
+  inherited Create(FFileStream);
+end;
+
+destructor TAdBufferedFileStream.Destroy;
+begin
+  FFileStream.Free;
+  inherited;
 end;
 
 end.
