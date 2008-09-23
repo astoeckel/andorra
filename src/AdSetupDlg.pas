@@ -600,7 +600,7 @@ procedure TAdSetup.CreateAdvancedControls;
 
   //Returns a existing section with the specified section. If the section
   //does not exist, a new one is created. 
-  function GetSection(ACaption: string): TAdSetupSection;
+  function GetSection(ACaption: ShortString): TAdSetupSection;
   var
     i: integer;
   begin

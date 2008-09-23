@@ -300,9 +300,9 @@ type
       {Draws the image somewhere on the screen}
       procedure Draw(X,Y:integer);
       {Loads the picture data from a string}
-      procedure LoadFromString(AString: AnsiString);
+      procedure LoadFromString(AString: String);
       {Saves the picture data to a string}
-      function SaveToString: AnsiString;
+      function SaveToString: String;
       {Loads the picture data from a stream.}
       procedure LoadFromStream(AStream:TStream);
       {Saves the picture data to a stream.}
@@ -1169,7 +1169,7 @@ begin
   FTransparentColor := clNone;
 end;
 
-function TAdResourceImage.SaveToString: AnsiString;
+function TAdResourceImage.SaveToString: String;
 var ms:TMemoryStream;
 begin
   ms := TMemoryStream.Create;
@@ -1179,7 +1179,7 @@ begin
   ms.Free;
 end;
 
-procedure TAdResourceImage.LoadFromString(AString: AnsiString);
+procedure TAdResourceImage.LoadFromString(AString: String);
 var
   ms: TMemoryStream;
 begin

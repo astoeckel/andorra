@@ -28,7 +28,6 @@ uses
 
 const
 	WINDOWSIZE = 32768; //This must be 32768 or higher according to RFC 1951
-  INPUTBUFFERSIZE = 32768;
 
 type
 	EAdDeflateUnsupportedFormatError = class(Exception);

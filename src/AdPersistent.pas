@@ -39,7 +39,7 @@ type
 {Registeres a persistent class within the Andorra class registration map. @seealso(AdGetClass)}
 procedure AdRegisterClass(AClass:TAdPersistentClass);
 {Returns a registered class by passing the classname. Returns nil, if the class isn't found. @seealso(AdRegisterClass)}
-function AdGetClass(AName:ShortString):TAdPersistentClass;
+function AdGetClass(AName:String):TAdPersistentClass;
 
 implementation
 
@@ -51,7 +51,7 @@ type
 
   TAdClassKey = class(TAdMapKey)
     public
-      Value:ShortString;
+      Value:String;
       function Hash:integer;override;
       function Equal(AItem:TAdMapKey):boolean;override;
   end;
@@ -68,7 +68,7 @@ begin
   ClassMap.Insert(Key, TObject(AClass));
 end;
 
-function AdGetClass(AName:ShortString):TAdPersistentClass;
+function AdGetClass(AName:String):TAdPersistentClass;
 var
   Key:TAdClassKey;
   p:TObject;

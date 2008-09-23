@@ -203,6 +203,8 @@ begin
   result := '';
   while aclass <> TObject do
   begin
+    //We have to use a short string here, because the string is exchanged between
+    //plugin and host.
     result := result + '.' + aclass.ClassName;
     aclass := aclass.ClassParent;
   end;

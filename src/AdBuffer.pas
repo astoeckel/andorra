@@ -1,8 +1,8 @@
 {
-* EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, THE PROGRAM IS PROVIDED ON
-* AN "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS
-* OR IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF
-* TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+* THIS PROGRAM IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED INCLUDING, WITHOUT
+* LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE, NON-INFRINGEMENT,
+* MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 *
 * This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
@@ -41,7 +41,7 @@ type
   TAdBufferBucket = class
     private
       FIsFree: boolean;
-      FMemory: PChar;
+      FMemory: PByte;
       FMemorySize: Integer;
       FFilledSize: Integer;
       FReadPos: Integer;
@@ -63,7 +63,7 @@ type
        so that the next call will read the data from that position.}
       function ReadData(ABuf: PByte; ASize: Integer): Integer;
       {Seeks the internall read pointer of the bucket forward or backward.}
-      procedure Seek(AOffset: integer);
+      function Seek(AOffset: integer): integer;
 
       {Returns whether all data from the item has been read.}
       property IsFree: boolean read FIsFree;
@@ -270,7 +270,7 @@ end;
 
 function TAdBufferBucket.ReadData(ABuf: PByte; ASize: Integer): Integer;
 var
-  ptr: PChar;
+  ptr: PByte;
 begin
   //Go to the read position
   ptr := FMemory;
@@ -289,26 +289,20 @@ begin
   FIsFree := FFilledSize = 0;
 end;
 
-procedure TAdBufferBucket.Seek(AOffset: integer);
-
-  procedure SetBounds(var Val: integer);
-  begin
-    if Val > FDataSize then
-      Val := FDataSize
-    else if Val < 0 then
-      Val := 0;
-  end;
-
+function TAdBufferBucket.Seek(AOffset: integer): integer;
 begin
+  if AOffset + FReadPos > FDataSize then
+    AOffset := FDataSize - FReadPos
+  else if AOffset + FReadPos < 0 then
+    AOffset := -FReadPos;
+
   //If we seek back, the block gets more filled, if we seek forward, the block
   //gets less filled.
   FFilledSize := FFilledsize - AOffset;
-  SetBounds(FFilledSize);
-
   FReadPos := FReadPos + AOffset;
-  SetBounds(FReadPos);
 
   FIsFree := FFilledSize = 0;
+  result := AOffset;
 end;
 
 procedure TAdBufferBucket.WriteData(ABuf: PByte; ASize: Integer);
@@ -443,7 +437,7 @@ begin
         if bckt.Position >= startpos then
         begin
           //Tell the bucket to seek forward...
-          bckt.Seek(Offset);         
+          Offset := Offset - bckt.Seek(Offset);         
 
           //...if it came to its outer boundaries, the bucket is now free and we
           //have to continue seeking - if it didn't we finished seeking.
@@ -478,7 +472,7 @@ begin
         if bckt.Position <= startpos then
         begin
           //Tell the bucket to seek backward...
-          bckt.Seek(Offset);         
+          Offset := Offset - bckt.Seek(Offset);         
 
           //...if it came to its outer boundaries, the bucket is now fully used
           //and we have to continue seeking - if it didn't we finished seeking.
@@ -601,6 +595,7 @@ var
 begin
   newpos := 0;
   
+  //Calculate the new seek position depending on the given origin.
   case Origin of
     soBeginning: newpos := Offset;
     soCurrent: newpos := FPosition + Offset;
