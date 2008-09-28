@@ -1965,6 +1965,7 @@ var
   curxpos, curxpos2:integer;
   curheight:integer;
   y1pos, y2pos:integer;
+
 begin
   if FSkinItem <> nil then
   begin
@@ -2001,7 +2002,11 @@ begin
       begin
         Pen.Style := apNone;
         Brush.Color := Ad_ARGB(200,128,128,128);
-        Rectangle(curxpos,y1pos,curxpos2,y2pos);
+        if curxpos2 > curxpos then
+          Rectangle(curxpos,y1pos,curxpos2,y2pos)
+        else
+          Rectangle(curxpos2,y1pos,curxpos,y2pos);
+          
         Release;
         Pen.Style := apSolid;
       end;

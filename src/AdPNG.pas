@@ -10,7 +10,9 @@
 * Project: Andorra 2D
 * Author:  Manuel Eberl
 * File: AdPNG.pas
+* Comment: Adds png loading capabilities to Andorra 2D
 }
+{Adds png loading capabilities to Andorra 2D.}
 unit AdPNG;
 
 interface

@@ -56,7 +56,7 @@ var
   fileinfo:TAndorra2DLibraryInformation;
   info:TAd2DLibInfo;
 begin
-  res := FindFirst(dir+'*Andorra*'+Extension,faAnyFile, searchrec);
+  res := FindFirst(dir+'*Andorra*'+Extension, faAnyFile, searchrec);
   ahandle := 0;
   while (res = 0) do
   begin

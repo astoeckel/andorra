@@ -31,7 +31,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg : TAdSetup;
 begin
-  ReportMemoryLeaksOnShutdown := true;
+//  ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
@@ -81,8 +81,6 @@ begin
 
     AdDraw.ClearSurface(clSilver);
     AdDraw.BeginScene;
-
-    AdDraw.Canvas.TextOut(0,0,'Dies ist ein Test!');
 
     AdImageList1.Find('logo').Draw(AdDraw,0,0,0);
 

@@ -5,9 +5,9 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ImgList, ComCtrls, Menus, ToolWin, ExtCtrls, XPMan, StdCtrls,
-  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdPNG, AdJPEG, 
+  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdDevIL,
   AdCanvas, AdBitmap, AdVCLFormats, AdSimpleCompressors, AdTypes, AdPerformanceCounter,
-  Progress, AdPersistent, AdTGA;
+  Progress, AdPersistent;
 
 type
   TMainDlg = class(TForm)

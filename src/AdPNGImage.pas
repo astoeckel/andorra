@@ -12,6 +12,8 @@
 * File: AdPNGImage.pas
 * Comment: Provides an image class to load and save PNG files.
 }
+
+{Provides an image class to load and save PNG files.}
 unit AdPNGImage;
 
 {$DEFINE LITTLE_ENDIAN}
@@ -42,7 +44,6 @@ type
   EAdPNGUnsupportedFormatException = class(Exception);
   EAdPNGUnknownChunkException = class(Exception);
 
-
   TAdPNGChunk = packed record
     DataLength: LongWord;
     ID: array[1..4] of AnsiChar;
@@ -50,7 +51,6 @@ type
     CRC: LongWord;
     ChunkType: AnsiString;
   end;
-
 
   TAdPNGColorType = set of (pctPalette = 0, pctColor = 1, pctAlpha = 2);
   TAdPNGCompressionMethod = (pcDeflate);

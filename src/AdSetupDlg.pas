@@ -600,7 +600,7 @@ procedure TAdSetup.CreateAdvancedControls;
 
   //Returns a existing section with the specified section. If the section
   //does not exist, a new one is created. 
-  function GetSection(ACaption: ShortString): TAdSetupSection;
+  function GetSection(ACaption: String): TAdSetupSection;
   var
     i: integer;
   begin
@@ -714,7 +714,7 @@ begin
   if FOwnIni then
   begin
     if FIni <> nil then
-      FIni.Free;  
+      FIni.Free;
     FIni := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'adsettings.ini');
   end;
 

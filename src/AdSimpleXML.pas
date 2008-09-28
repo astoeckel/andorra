@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.11 2008/09/23 13:25:21 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.12 2008/09/28 12:42:00 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -41,6 +41,7 @@ Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 //  -  Moved some "Ansi"-Constants from "JclBase"/"JclStrings" to "AdSimpleXml"
 //  -  Added FPC compiler directives
 //  -  Updated read/write functions for Delphi 2009 compatibility
+//  -  Removed CLR and Delphi <6 compatiblity code as it isn't supported by Andorra at all.
 
 {$IFDEF FPC}
   {$MODE Delphi}
@@ -55,7 +56,7 @@ interface
 
 uses
   {$IFDEF Win32}Windows, {$ENDIF}
-  SysUtils, Classes, Variants, IniFiles;
+  SysUtils, Classes, IniFiles, AdBuffer;
 
 type
   {$IFDEF FPC}
@@ -85,24 +86,6 @@ type
   //Those hash stuffs are for future use only
   //Plans are to replace current hash by this mechanism
   TAdHashKind = (hkList, hkDirect);
-  {$IFDEF CLR}
-  TAdHashElem = class(TObject)
-    Next: TAdHashElem;
-    Obj: TObject;
-  end;
-  PAdHashElem = TAdHashElem;
-  TAdHashRecord = class;
-  TAdHashList = array [0..25] of TAdHashRecord;
-  PAdHashList = TAdHashList;
-  TAdHashRecord = class(TObject)
-  public
-    Count: Byte;
-    Kind: TAdHashKind;
-    List: PAdHashList;
-    FirstElem: PAdHashElem;
-  end;
-  PAdHashRecord = TAdHashRecord;
-  {$ELSE}
   PAdHashElem = ^TAdHashElem;
   TAdHashElem = packed record
     Next: PAdHashElem;
@@ -117,7 +100,6 @@ type
       hkList: (List: PAdHashList);
       hkDirect: (FirstElem: PAdHashElem);
   end;
-  {$ENDIF CLR}
 
   TAdSimpleHashTable = class(TObject)
   private
@@ -136,7 +118,7 @@ type
     FValue: string;
     FParent: TAdSimpleXMLProps;
     FNameSpace: string;
-    FData: {$IFDEF CLR} TObject {$ELSE} Pointer {$ENDIF};
+    FData: Pointer;
     function GetBoolValue: Boolean;
     procedure SetBoolValue(const Value: Boolean);
     procedure SetName(const Value: string);
@@ -157,7 +139,7 @@ type
     property FloatValue: Extended read GetFloatValue write SetFloatValue;
     property NameSpace: string read FNameSpace write FNameSpace;
 
-    property Data: {$IFDEF CLR} TObject {$ELSE} Pointer {$ENDIF} read FData write FData;
+    property Data: Pointer read FData write FData;
   end;
 
   TAdSimpleXMLProps = class(TObject)
@@ -298,7 +280,7 @@ type
     FProps: TAdSimpleXMLProps;
     FValue: string;
     FNameSpace: string;
-    FData: {$IFDEF CLR} TObject {$ELSE} Pointer {$ENDIF};
+    FData: Pointer;
     FSimpleXML: TAdSimpleXML;
     FContainer: TAdSimpleXMLElems;
     function GetFloatValue: Extended;
@@ -326,7 +308,7 @@ type
     procedure SaveToStream(const Stream: TStream; const Level: string = ''; AParent: TAdSimpleXML = nil); virtual;
       abstract;
     procedure GetBinaryValue(const Stream: TStream);
-    property Data: {$IFDEF CLR} TObject {$ELSE} Pointer {$ENDIF} read FData write FData;
+    property Data: Pointer read FData write FData;
     function GetChildIndex(const AChild: TAdSimpleXMLElem): Integer;
 
     property SimpleXML: TAdSimpleXML read GetSimpleXML;
@@ -454,43 +436,6 @@ type
     property OnEncodeStream: TAdSimpleXMLEncodeStreamEvent read FOnEncodeStream write FOnEncodeStream;
     property OnDecodeStream: TAdSimpleXMLEncodeStreamEvent read FOnDecodeStream write FOnDecodeStream;
   end;
-
-{$IFNDEF CLR}
-{$IFDEF COMPILER6_UP}
-
-  TXMLVariant = class(TInvokeableVariantType)
-  public
-    procedure Clear(var V: TVarData); override;
-    function IsClear(const V: TVarData): Boolean; override;
-    procedure Copy(var Dest: TVarData; const Source: TVarData;
-      const Indirect: Boolean); override;
-    procedure CastTo(var Dest: TVarData; const Source: TVarData;
-      const AVarType: TVarType); override;
-
-    function DoFunction(var Dest: TVarData; const V: TVarData;
-      const Name: string; const Arguments: TVarDataArray): Boolean; override;
-    function GetProperty(var Dest: TVarData; const V: TVarData;
-      const Name: string): Boolean; override;
-    function SetProperty(const V: TVarData; const Name: string;
-      const Value: TVarData): Boolean; override;
-  end;
-
-  TXMLVarData = packed record
-    vType: TVarType;
-    Reserved1: Word;
-    Reserved2: Word;
-    Reserved3: Word;
-    XML: TAdSimpleXMLElem;
-    Reserved4: Longint;
-  end;
-
-procedure XMLCreateInto(var ADest: Variant; const AXML: TAdSimpleXMLElem);
-function XMLCreate(const AXML: TAdSimpleXMLElem): Variant; overload;
-function XMLCreate: Variant; overload;
-function VarXML: TVarType;
-
-{$ENDIF COMPILER6_UP}
-{$ENDIF !CLR}
 
 // Encodes a string into an internal format:
 // any character <= #127 is preserved
@@ -648,23 +593,12 @@ const
   {$ENDIF}
   AnsiTab            = AnsiChar(#9);
 
-  cBufferSize = 8192;
+  cBufferSize = AdBuffer.AdBufferSize;
   DefaultTrueBoolStr = 'True'; // DO NOT LOCALIZE
   DefaultFalseBoolStr = 'False'; // DO NOT LOCALIZE
 
 var
   GlobalSorts: TList = nil;
-
-  {$IFNDEF CLR}
-  {$IFDEF COMPILER6_UP}
-  GlobalXMLVariant: TXMLVariant = nil;
-  {$ENDIF COMPILER6_UP}
-  {$ENDIF !CLR}
-
-  {$IFDEF COMPILER5}
-  TrueBoolStrs: array of string;
-  FalseBoolStrs: array of string;
-  {$ENDIF COMPILER5}
 
   PreparedNibbleCharMapping: Boolean = False;
   NibbleCharMapping: array [Low(Char)..High(Char)] of Byte;
@@ -675,18 +609,6 @@ begin
     GlobalSorts := TList.Create;
   Result := GlobalSorts;
 end;
-
-{$IFNDEF CLR}
-{$IFDEF COMPILER6_UP}
-
-function XMLVariant: TXMLVariant;
-begin
-  if not Assigned(GlobalXMLVariant) then
-    GlobalXMLVariant := TXMLVariant.Create;
-  Result := GlobalXMLVariant;
-end;
-{$ENDIF COMPILER6_UP}
-{$ENDIF !CLR}
 
 function EntityEncode(const S: String): String;
 var
@@ -820,90 +742,6 @@ begin
     Stream.Write(b, 1);
   end;
 end;
-
-{$IFDEF COMPILER5}
-
-procedure VerifyBoolStrArray;
-begin
-  if Length(TrueBoolStrs) = 0 then
-  begin
-    SetLength(TrueBoolStrs, 1);
-    TrueBoolStrs[0] := DefaultTrueBoolStr;
-  end;
-  if Length(FalseBoolStrs) = 0 then
-  begin
-    SetLength(FalseBoolStrs, 1);
-    FalseBoolStrs[0] := DefaultFalseBoolStr;
-  end;
-end;
-
-function TryStrToBool(const S: string; out Value: Boolean): Boolean;
-var
-  lResult: Extended;
-
-  function CompareWith(const AStrings: array of string): Boolean;
-  var
-    I: Integer;
-  begin
-    Result := False;
-    for I := Low(AStrings) to High(AStrings) do
-      if AnsiSameText(S, AStrings[I]) then
-      begin
-        Result := True;
-        Break;
-      end;
-  end;
-
-begin
-  Result := TryStrToFloat(S, lResult);
-  if Result then
-    Value := lResult <> 0
-  else
-  begin
-    VerifyBoolStrArray;
-    Result := CompareWith(TrueBoolStrs);
-    if Result then
-      Value := True
-    else
-    begin
-      Result := CompareWith(FalseBoolStrs);
-      if Result then
-        Value := False;
-    end;
-  end;
-end;
-
-function StrToBoolDef(const S: string; const Default: Boolean): Boolean;
-begin
-  if not TryStrToBool(S, Result) then
-    Result := Default;
-end;
-
-(*  make Delphi 5 compiler happy // andreas
-function StrToBool(const S: string): Boolean;
-begin
-  if not TryStrToBool(S, Result) then
-    ConvertErrorFmt(@SInvalidBoolean, [S]);
-end;
-*)
-
-function BoolToStr(B: Boolean; UseBoolStrs: Boolean = False): string;
-const
-  cSimpleBoolStrs: array [Boolean] of string = ('0', '-1');
-begin
-  if UseBoolStrs then
-  begin
-    VerifyBoolStrArray;
-    if B then
-      Result := TrueBoolStrs[0]
-    else
-      Result := FalseBoolStrs[0];
-  end
-  else
-    Result := cSimpleBoolStrs[B];
-end;
-
-{$ENDIF COMPILER5}
 
 function SimpleXMLEncode(const S: String): String;
 const
@@ -1173,37 +1011,43 @@ var
   AOutStream: TStream;
   DoFree: Boolean;
 begin
-  FRoot.Clear;
-  FProlog.Clear;
-  AOutStream := nil;
-  DoFree := False;
+  QueryBufferedStream(Stream);
+
   try
-    if Assigned(FOnDecodeStream) then
-    begin
-      AOutStream := TMemoryStream.Create;
-      DoFree := True;
-      FOnDecodeStream(Self, Stream, AOutStream);
-      AOutStream.Seek(0, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
-    end
-    else
-      AOutStream := Stream;
-    if Assigned(FOnLoadProg) then
-    begin
-      FOnLoadProg(Self, AOutStream.Position, AOutStream.Size);
-    // Read doctype and so on
-      FProlog.LoadFromStream(AOutStream, Self);
-    // Read elements
-      FRoot.LoadFromStream(AOutStream, Self);
-      FOnLoadProg(Self, AOutStream.Position, AOutStream.Size);
-    end
-    else
-    begin
-      FProlog.LoadFromStream(AOutStream, Self);
-      FRoot.LoadFromStream(AOutStream, Self);
+    FRoot.Clear;
+    FProlog.Clear;
+    AOutStream := nil;
+    DoFree := False;
+    try
+      if Assigned(FOnDecodeStream) then
+      begin
+        AOutStream := TMemoryStream.Create;
+        DoFree := True;
+        FOnDecodeStream(Self, Stream, AOutStream);
+        AOutStream.Seek(0, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+      end
+      else
+        AOutStream := Stream;
+      if Assigned(FOnLoadProg) then
+      begin
+        FOnLoadProg(Self, AOutStream.Position, AOutStream.Size);
+        // Read doctype and so on
+        FProlog.LoadFromStream(AOutStream, Self);
+        // Read elements
+        FRoot.LoadFromStream(AOutStream, Self);
+        FOnLoadProg(Self, AOutStream.Position, AOutStream.Size);
+      end
+      else
+      begin
+        FProlog.LoadFromStream(AOutStream, Self);
+        FRoot.LoadFromStream(AOutStream, Self);
+      end;
+    finally
+      if DoFree then
+        AOutStream.Free;
     end;
   finally
-    if DoFree then
-      AOutStream.Free;
+    FreeBufferedStream(Stream);
   end;
 end;
 
@@ -3396,12 +3240,7 @@ end;
 constructor TAdSimpleHashTable.Create;
 begin
   inherited Create;
-  //XXX
-  {$IFDEF CLR}
-  FList := TAdHashRecord.Create;
-  {$ELSE}
   New(FList);
-  {$ENDIF CLR}
   FList.Count := 0;
   FList.Kind := hkDirect;
   FList.FirstElem := nil;
@@ -3410,9 +3249,7 @@ end;
 destructor TAdSimpleHashTable.Destroy;
 begin
   Clear;
-  {$IFNDEF CLR}
   Dispose(FList);
-  {$ENDIF !CLR}
   inherited Destroy;
 end;
 
@@ -3420,11 +3257,7 @@ procedure TAdSimpleHashTable.AddObject(const AName: string;
   AObject: TObject);
 begin
   //XXX
-  {$IFDEF CLR}
-  FList.FirstElem := TAdHashElem.Create;
-  {$ELSE}
   New(FList.FirstElem);
-  {$ENDIF CLR}
   //FList.FirstElem.Value := AName;
   //FList.FirstElem.Obj := nil;
 end;
@@ -3433,177 +3266,6 @@ procedure TAdSimpleHashTable.Clear;
 begin
   //XXX
 end;
-
-{$IFNDEF CLR}
-{$IFDEF COMPILER6_UP}
-
-function VarXML: TVarType;
-begin
-  Result := XMLVariant.VarType;
-end;
-
-procedure XMLCreateInto(var ADest: Variant; const AXML: TAdSimpleXMLElem);
-begin
-  TXMLVarData(ADest).vType := VarXML;
-  TXMLVarData(ADest).XML := AXML;
-end;
-
-function XMLCreate(const AXML: TAdSimpleXMLElem): Variant;
-begin
-  XMLCreateInto(Result, AXML);
-end;
-
-function XMLCreate: Variant;
-begin
-  XMLCreateInto(Result, TAdSimpleXMLElemClassic.Create(nil));
-end;
-
-//=== { TXMLVariant } ========================================================
-
-procedure TXMLVariant.CastTo(var Dest: TVarData; const Source: TVarData;
-  const AVarType: TVarType);
-begin
-  if Source.vType = VarType then
-  begin
-    case AVarType of
-      varOleStr:
-        VarDataFromOleStr(Dest, TXMLVarData(Source).XML.SaveToString);
-      varString:
-        VarDataFromStr(Dest, TXMLVarData(Source).XML.SaveToString);
-    else
-      RaiseCastError;
-    end;
-  end
-  else
-    inherited CastTo(Dest, Source, AVarType);
-end;
-
-procedure TXMLVariant.Clear(var V: TVarData);
-begin
-  V.vType := varEmpty;
-  TXMLVarData(V).XML := nil;
-end;
-
-procedure TXMLVariant.Copy(var Dest: TVarData; const Source: TVarData;
-  const Indirect: Boolean);
-begin          
-  if Indirect and VarDataIsByRef(Source) then
-    VarDataCopyNoInd(Dest, Source)
-  else
-    with TXMLVarData(Dest) do
-    begin
-      vType := VarType;
-      XML := TXMLVarData(Source).XML;
-    end;
-end;
-
-function TXMLVariant.DoFunction(var Dest: TVarData; const V: TVarData;
-  const Name: string; const Arguments: TVarDataArray): Boolean;
-var
-  LXML: TAdSimpleXMLElem;
-  I, J, K: Integer;
-begin
-  Result := False;
-  if (Length(Arguments) = 1) and (Arguments[0].vType in [vtInteger, vtExtended]) then
-    with TXMLVarData(V) do
-    begin
-      K := Arguments[0].vInteger;
-      J := 0;
-
-      if K > 0 then
-        for I := 0 to XML.Items.Count - 1 do
-          if UpperCase(XML.Items[I].Name) = Name then
-          begin
-            Inc(J);
-            if J = K then
-              Break;
-          end;
-
-      if (J = K) and (J < XML.Items.Count) then
-      begin
-        LXML := XML.Items[J];
-        if LXML <> nil then
-        begin
-          Dest.vType := VarXML;
-          TXMLVarData(Dest).XML := LXML;
-          Result := True;
-        end
-      end;
-    end;
-end;
-
-function TXMLVariant.GetProperty(var Dest: TVarData; const V: TVarData;
-  const Name: string): Boolean;
-var
-  LXML: TAdSimpleXMLElem;
-  lProp: TAdSimpleXMLProp;
-begin
-  Result := False;
-  with TXMLVarData(V) do
-  begin
-    LXML := XML.Items.ItemNamed[Name];
-    if LXML <> nil then
-    begin
-      Dest.vType := VarXML;
-      TXMLVarData(Dest).XML := LXML;
-      Result := True;
-    end
-    else
-    begin
-      lProp := XML.Properties.ItemNamed[Name];
-      if lProp <> nil then
-      begin
-        VarDataFromOleStr(Dest, lProp.Value);
-        Result := True;
-      end;
-    end;
-  end;
-end;
-
-function TXMLVariant.IsClear(const V: TVarData): Boolean;
-begin
-  Result := (TXMLVarData(V).XML = nil) or (TXMLVarData(V).XML.Items.Count = 0);
-end;
-
-function TXMLVariant.SetProperty(const V: TVarData; const Name: string;
-  const Value: TVarData): Boolean;
-
-  function GetStrValue: string;
-  begin
-    try
-      Result := Value.VOleStr;
-    except
-      Result := '';
-    end;
-  end;
-
-var
-  LXML: TAdSimpleXMLElem;
-  lProp: TAdSimpleXMLProp;
-begin
-  Result := False;
-  with TXMLVarData(V) do
-  begin
-    LXML := XML.Items.ItemNamed[Name];
-    if LXML = nil then
-    begin
-      lProp := XML.Properties.ItemNamed[Name];
-      if lProp <> nil then
-      begin
-        lProp.Value := GetStrValue;
-        Result := True;
-      end;
-    end
-    else
-    begin
-      LXML.Value := GetStrValue;
-      Result := True;
-    end;
-  end;
-end;
-
-{$ENDIF COMPILER6_UP}
-{$ENDIF !CLR}
 
 procedure TAdSimpleXMLElemsProlog.Error(const S: string);
 begin
@@ -3745,11 +3407,6 @@ end;
 initialization
 
 finalization
-  {$IFNDEF CLR}
-  {$IFDEF COMPILER6_UP}
-  FreeAndNil(GlobalXMLVariant);
-  {$ENDIF COMPILER6_UP}
-  {$ENDIF !CLR}
   FreeAndNil(GlobalSorts);
 
 end.

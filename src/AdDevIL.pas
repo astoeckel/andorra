@@ -130,7 +130,7 @@ begin
   ilEnable(IL_CONV_PAL);
   ilConvertPal(IL_PAL_BGRA32);
   
-  if ilLoadImage(PChar(AFile)) < IL_INVALID_ENUM then
+  if Boolean(ilLoadImage(PChar(AFile))) then
   begin
     ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 
@@ -169,7 +169,7 @@ begin
   ilEnable(IL_CONV_PAL);
   ilConvertPal(IL_PAL_BGRA32);
 
-  if ilLoadL(IL_PNG, ms.Memory, ms.Size) < IL_INVALID_ENUM then
+  if Boolean(ilLoadL(IL_PNG, ms.Memory, ms.Size)) then
   begin    
     ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 
@@ -201,7 +201,7 @@ begin
   ilGenImages(1, @imagename);
   ilBindImage(imagename);
 
-  mem := nil;
+//  mem := nil;
   GetMem(mem, ABitmap.Size);
   
   //Turn image upside down

@@ -201,10 +201,10 @@ procedure QueryBufferedStream(var AStream: TStream);
  QueryBufferedStream and FreeBufferedStream may be cascading.}
 procedure FreeBufferedStream(var AStream: TStream);
 
-implementation
-
 const
   AdBufferSize = 4096;
+
+implementation
 
 procedure QueryBufferedStream(var AStream: TStream);
 begin
@@ -410,6 +410,7 @@ var
   i, ind: integer;
   bckt: TAdBufferBucket;
   startpos: int64;
+  startofs: integer;
 begin
   //Exit if offset = 0
   if Offset = 0 then
@@ -421,6 +422,8 @@ begin
 
   if FBucketList.Count > 0 then
   begin
+    startofs := Offset;
+
     //Get the position of the first bucket in the list. If we are seeking forward,
     //the position of all succeding buckets must be greater than this value.
     //If we are seeking backward, all prior buckets must have a smaller position.
@@ -444,7 +447,7 @@ begin
           if not bckt.IsFree then
           begin
             result := true;
-            FFilled := FFilled - Offset;
+            FFilled := FFilled - (startofs - Offset);
             break;
           end else
           begin
@@ -476,10 +479,10 @@ begin
 
           //...if it came to its outer boundaries, the bucket is now fully used
           //and we have to continue seeking - if it didn't we finished seeking.
-          if not (bckt.FilledSize = bckt.DataSize) then
+          if (bckt.FilledSize <> bckt.DataSize) or (Offset = 0) then
           begin
             result := true;
-            FFilled := FFilled - Offset;
+            FFilled := FFilled - (startofs - Offset);
             break;
           end else
           begin
@@ -579,7 +582,13 @@ begin
   while (FBuffer.Filled < Count) do
   begin
     size := FStream.Read(FMem^, AdBufferSize);
-    FBuffer.Write(FMem, size);
+    if size > 0 then    
+      FBuffer.Write(FMem, size)
+    else
+    begin
+      result := 0;
+      exit;
+    end;
     if size < Count then
       break;
   end;
@@ -598,7 +607,13 @@ begin
   //Calculate the new seek position depending on the given origin.
   case Origin of
     soBeginning: newpos := Offset;
-    soCurrent: newpos := FPosition + Offset;
+    soCurrent:
+    begin
+      if FNewSeekPos = -1 then
+        newpos := FPosition + Offset
+      else
+        newpos := FNewSeekPos + Offset
+    end;
     soEnd: newpos := FStream.Size + Offset; //Offset is < 0
   end;
 

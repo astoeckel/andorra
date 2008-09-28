@@ -174,10 +174,11 @@ begin
 end;
 
 procedure TAdDeflateDecompressor.Decompress(const Input, Output: TStream);
-var c: Cardinal;
-    len, nlen: Word;
-    bfinal: Boolean;
-    str: TStream;
+var
+  c: Cardinal;
+  len, nlen: Word;
+  bfinal: Boolean;
+  str: TStream;
 begin
   str := Input;
   //Buffer the input stream for high speed read access
