@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.12 2008/09/28 12:42:00 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.13 2008/09/30 12:46:25 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -995,11 +995,10 @@ end;
 
 procedure TAdSimpleXML.LoadFromFile(const FileName: TFileName);
 var
-  Stream: TMemoryStream;
+  Stream: TFileStream;
 begin
-  Stream := TMemoryStream.Create;
+  Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   try
-    Stream.LoadFromFile(FileName);
     LoadFromStream(Stream);
   finally
     Stream.Free;
@@ -1024,7 +1023,7 @@ begin
         AOutStream := TMemoryStream.Create;
         DoFree := True;
         FOnDecodeStream(Self, Stream, AOutStream);
-        AOutStream.Seek(0, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+        AOutStream.Seek(0, soBeginning);
       end
       else
         AOutStream := Stream;
@@ -1067,13 +1066,7 @@ procedure TAdSimpleXML.SaveToFile(FileName: TFileName);
 var
   Stream: TFileStream;
 begin
-  if SysUtils.FileExists(FileName) then
-  begin
-    Stream := TFileStream.Create(FileName, fmOpenWrite);
-    Stream.Size := 0;
-  end
-  else
-    Stream := TFileStream.Create(FileName, fmCreate);
+  Stream := TFileStream.Create(FileName, fmCreate);
   try
     SaveToStream(Stream);
   finally
@@ -1117,7 +1110,7 @@ begin
     end;
     if Assigned(FOnEncodeStream) then
     begin
-      AOutStream.Seek(0, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+      AOutStream.Seek(0, soBeginning);
       FOnEncodeStream(Self, AOutStream, Stream);
     end;
   finally
@@ -1731,9 +1724,9 @@ begin
                   //This is a text
                 lElem := TAdSimpleXMLElemText.Create(Parent);
                 if lTrimWhiteSpace then
-                  Stream.Seek(lStreamPos - 1, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP})
+                  Stream.Seek(lStreamPos - 1, soBeginning)
                 else
-                  Stream.Seek(lStartOfContentPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+                  Stream.Seek(lStartOfContentPos, soBeginning);
                 lElem.LoadFromStream(Stream, AParent);
                 lStreamPos := Stream.Position;
                 CreateElems;
@@ -1780,7 +1773,7 @@ begin
             if lElem <> nil then
             begin
               CreateElems;
-              Stream.Seek(lStreamPos - (Length(St)), {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+              Stream.Seek(lStreamPos - (Length(St)), soBeginning);
               lElem.LoadFromStream(Stream, AParent);
               lStreamPos := Stream.Position;
               FElems.AddObject(lElem.Name, lElem);
@@ -1813,11 +1806,11 @@ begin
                 begin
                   lTempStreamPos := Stream.Position;
                   lElem := TAdSimpleXMLElemText.Create(Parent);
-                  Stream.Seek(lStartOfContentPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+                  Stream.Seek(lStartOfContentPos, soBeginning);
                   lElem.LoadFromStream(Stream, AParent);
                   CreateElems;
                   FElems.AddObject(lElem.Name, lElem);
-                  Stream.Seek(lTempStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+                  Stream.Seek(lTempStreamPos, soBeginning);
                 end;
 
                 Break;
@@ -1834,7 +1827,7 @@ begin
     end;
   until Count = 0;
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElems.Notify(Value: TAdSimpleXMLElem;
@@ -2271,7 +2264,7 @@ begin
     end;
   until Count = 0;
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLProps.SaveToStream(const Stream: TStream);
@@ -2426,7 +2419,7 @@ begin
           begin
             if lPos = 2 then
               Error(RsEInvalidXMLElementMalformedTagFoundn);
-            Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+            Stream.Seek(lStreamPos, soBeginning);
             Properties.LoadFromStream(Stream);
             lStreamPos := Stream.Position;
             Break; //Re read buffer
@@ -2438,7 +2431,7 @@ begin
                 begin
                   lName := St;
                   //Load elements
-                  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+                  Stream.Seek(lStreamPos, soBeginning);
                   St := Items.LoadFromStream(Stream, AParent);
                   if lNameSpace <> '' then
                   begin
@@ -2495,7 +2488,7 @@ begin
     AParent.DoValueParsed(lName, lValue);
   end;
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemClassic.SaveToStream(const Stream: TStream; const Level: string; AParent: TAdSimpleXML);
@@ -2634,7 +2627,7 @@ begin
   if AParent <> nil then
     AParent.DoValueParsed('', St);
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemComment.SaveToStream(const Stream: TStream; const Level: string; AParent: TAdSimpleXML);
@@ -2722,7 +2715,7 @@ begin
   if AParent <> nil then
     AParent.DoValueParsed('', St);
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemCData.SaveToStream(const Stream: TStream; const Level: string; AParent: TAdSimpleXML);
@@ -2787,7 +2780,7 @@ begin
   if AParent <> nil then
     AParent.DoValueParsed('', St);
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemText.SaveToStream(const Stream: TStream; const Level: string; AParent: TAdSimpleXML);
@@ -2859,7 +2852,7 @@ begin
         5: //L
           if lBuf[I] = CS_START_HEADER[lPos] then
           begin
-            Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+            Stream.Seek(lStreamPos, soBeginning);
             Properties.LoadFromStream(Stream);
             lStreamPos := Stream.Position;
             Inc(lPos);
@@ -2897,7 +2890,7 @@ begin
 
   Name := '';
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemHeader.SaveToStream(const Stream: TStream;
@@ -2993,7 +2986,7 @@ begin
   if AParent <> nil then
     AParent.DoValueParsed('', St);
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemDocType.SaveToStream(const Stream: TStream;
@@ -3042,7 +3035,7 @@ begin
         16: //L
           if lBuf[I] = CS_START_PI[lPos] then
           begin
-            Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+            Stream.Seek(lStreamPos, soBeginning);
             Properties.LoadFromStream(Stream);
             lStreamPos := Stream.Position;
             Inc(lPos);
@@ -3073,7 +3066,7 @@ begin
 
   Name := '';
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemSheet.SaveToStream(const Stream: TStream;
@@ -3210,7 +3203,7 @@ begin
             else
             if lElem <> nil then
             begin
-              Stream.Seek(lStreamPos - (Length(St)), {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+              Stream.Seek(lStreamPos - (Length(St)), soBeginning);
               lElem.LoadFromStream(Stream, AParent);
               lStreamPos := Stream.Position;
               FElems.AddObject(lElem.Name, lElem);
@@ -3223,7 +3216,7 @@ begin
     end;
   until Count = 0;
 
-  Stream.Seek(lStreamPos, {$IFDEF COMPILER6_UP}soBeginning{$ELSE ~COMPILER6_UP}soFromBeginning{$ENDIF ~COMPILER6_UP});
+  Stream.Seek(lStreamPos, soBeginning);
 end;
 
 procedure TAdSimpleXMLElemsProlog.SaveToStream(const Stream: TStream; AParent: TAdSimpleXML);

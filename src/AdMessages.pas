@@ -99,6 +99,9 @@ resourcestring
   MsgInvalidBitDepth = 'Bit depth not supported.';
   MsgInvalidCompressor = 'Compressor mode not supported.';
 
+  { Error messages for the bitmap filters }
+  MsgCallbackIsNil = 'The dithering callback function is nil.';
+
 implementation
 
 end.

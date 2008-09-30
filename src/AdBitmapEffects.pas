@@ -38,6 +38,7 @@ type
 
   {A array used by TAdBitmap blur. @seealso(TAdBitmapBlur)}
   TAdBlurMatrix = array[-100..100] of Single;
+  
   {Class which is able to blur a bitmap using a gausian blur.
    @seealso(TAdBitmapEffect)
    @seealso(TAd2dBitmap)
@@ -102,6 +103,79 @@ type
       {Specifies the color that should be made transparent. If this value
        is "clNone" ($1FFFFFFF) and transparent is true, nothing will be changed.}
       property TransparentColor: LongInt read FTransparentColor write FTransparentColor;      
+  end;
+
+  {Callback function for the dithering algorithms. You should return the nearest
+   palette color to the color given in the parameter AColor.}
+  TAdDitherCallback = function(AColor: TAndorraColor): TAndorraColor of object;
+
+  {A dithering filter allows you to dithre a bitmap. The pallette the image should
+   be dithered to is defined using the dithering callback.
+   Use the implementations TAdFloydSteinbergDithering, TAdBellDithering or
+   TAdBillAtkinsonDithering.
+   @seealso(TAdFloydSteinbergDithering)
+   @seealso(TAdBellDithering)
+   @seealso(TAdBillAtkinsonDithering)}
+  TAdDitheringFilter = class(TAdBitmapEffect)
+    private
+      FDitherCallback: TAdDitherCallback;
+    public
+      {Before starting the dithering progress you have to set this callback function.
+       In this function you have to return the nearest color in your palette to
+       the original color.}
+      property DitherCallback: TAdDitherCallback read FDitherCallback write FDitherCallback;
+  end;
+
+  {Record that is used in classes descended from TAdDithering filter. TAdErrorDiffusionKernel
+   specifies how the convolution has to be applied to the image.}
+  TAdErrorDiffusionKernel = record
+    Divisor: integer; {< The devisor of the matrix property. All elements in the matrix are divided by this value.}
+    OffsetX: integer; {< The matrix is transleted by this value in X-Direction.}
+    OffsetY: integer; {< The matrix is transleted by this value in Y-Direction.}
+    Matrix: array of array of Integer; {< The convolution matrix that is applied to the image in order to dither it.}
+  end;
+
+  {TAdErrorDiffusionDithering represent a sort of dithering algorithms that use
+   a convolution kernel in order to diffuse the quantization error to neighbour
+   pixels.}
+  TAdErrorDiffusionDithering = class(TAdDitheringFilter)
+    protected
+      procedure Dither(ADest: TAd2DBitmap; AKernel: TAdErrorDiffusionKernel);
+  end;
+
+  {TAdFloydSteinberDithering uses the FloydSteinberg convolution kernel for dithering
+   the bitmap.
+   @seealso(TAdErrorDiffusionDithering)
+   @seealso(TAdDitheringFilter)}
+  TAdFloydSteinbergDithering = class(TAdErrorDiffusionDithering)
+    public
+      {Applies the effect to a bitmap. Remember to set the dithering callback in
+       order to specify the palette the bitmap should be dithered to.}
+      procedure AssignEffect(Dest: TAd2dBitmap);override;
+  end;
+
+  {TAdBellDithering uses the an optimized FloydSteinberg convolution kernel for dithering
+   the bitmap. TAdBellDithering gives you a little better results than TAdFloydSteinberg
+   dithering but needs more time in calculating the results. 
+   @seealso(TAdErrorDiffusionDithering)
+   @seealso(TAdDitheringFilter)}
+  TAdBellDithering = class(TAdErrorDiffusionDithering)
+    public
+      {Applies the effect to a bitmap. Remember to set the dithering callback in
+       order to specify the palette the bitmap should be dithered to.}
+      procedure AssignEffect(Dest: TAd2dBitmap);override;
+  end;
+
+  {TAdBillAtkinsonDithering uses the an optimized FloydSteinberg convolution kernel for dithering
+   the bitmap. This algorithm is perfect if you want to convert a image to a palette
+   that only has very few colors.
+   @seealso(TAdErrorDiffusionDithering)
+   @seealso(TAdDitheringFilter)}
+  TAdBillAtkinsonDithering = class(TAdErrorDiffusionDithering)
+    public
+      {Applies the effect to a bitmap. Remember to set the dithering callback in
+       order to specify the palette the bitmap should be dithered to.}
+      procedure AssignEffect(Dest: TAd2dBitmap);override;
   end;
 
 
@@ -262,10 +336,10 @@ var
   i: integer;
   pixelptr: PRGBARec;
 begin
-  //The transparent color is "clNone", change nothing
   if FTransparent then
   begin
-    if not (FTransparent and (FTransparentColor = aclNone)) then
+    //If the transparent color is aclNone, change nothing
+    if not (FTransparentColor = aclNone) then
     begin
       pixelptr := Dest.ScanLine;
       for i := 0 to (Dest.Size div 4) - 1 do
@@ -349,6 +423,124 @@ begin
 
   FStrength := 0.5;
   FThreshold := 64;
+end;
+
+{ TAdFloydSteinbergDithering }
+
+{See http://en.wikipedia.org/wiki/Floyd-Steinberg_dithering for more details.}
+procedure TAdErrorDiffusionDithering.Dither(ADest: TAd2dBitmap; AKernel: TAdErrorDiffusionKernel);
+type
+  TAdColorDifference = array[0..3] of Integer;
+  
+var
+  x, y, i, j: integer;
+  pixel, palette: TAndorraColor;
+  difference: TAdColorDifference;
+
+  function DifferenceBetween(ACol1, ACol2: TAndorraColor): TAdColorDifference;
+  begin
+    result[0] := ACol1.r - ACol2.r;
+    result[1] := ACol1.g - ACol2.g;
+    result[2] := ACol1.b - ACol2.b;
+    result[3] := ACol1.a - ACol2.a;
+  end;
+
+  procedure ProcessPixel(AX, AY: integer; ADif: TAdColorDifference; ACoef1, ACoef2: integer);
+  var
+    i: integer;
+    pixel: PByte;
+  begin
+    if not ((AX >= ADest.Width) or (AY >= ADest.Height) or (AX < 0)) then
+    begin
+      pixel := ADest.ScanLine(AY);
+      inc(pixel, AX * 4);
+
+      for i := 0 to 3 do
+      begin
+        pixel^ := cut(pixel^ + ACoef1 * ADif[i] div ACoef2);
+        inc(pixel);
+      end;
+    end;
+  end;
+
+begin
+  for y := 0 to ADest.Height - 1 do
+  begin
+    for x := 0 to ADest.Width - 1 do
+    begin
+      pixel := ADest.Pixels[x, y];
+      palette := DitherCallback(pixel);
+      difference := DifferenceBetween(pixel, palette);
+
+      ADest.Pixels[x, y] := palette;
+
+      for i := 0 to High(AKernel.Matrix) do
+      begin
+        for j := 0 to High(AKernel.Matrix[i]) do
+        begin
+          if AKernel.Matrix[i, j] <> 0 then          
+            ProcessPixel(x + j + AKernel.OffsetX, y + i + AKernel.OffsetY, difference,
+              AKernel.Matrix[i, j], AKernel.Divisor);
+        end;
+      end;
+    end;
+  end;
+end;
+
+{ TAdFloydSteinbergDithering }
+
+procedure TAdFloydSteinbergDithering.AssignEffect(Dest: TAd2dBitmap);
+var
+  FloydSteinbergKernel: TAdErrorDiffusionKernel;
+begin
+  with FloydSteinbergKernel do
+  begin
+    Divisor := 16;
+    OffsetX := -1;
+    OffsetY := 0;
+    SetLength(Matrix, 3, 2);
+    Matrix[0, 0] := 0; Matrix[1, 0] := 0; Matrix[2, 0] := 7;
+    Matrix[0, 1] := 3; Matrix[1, 1] := 5; Matrix[2, 1] := 1;
+  end;
+  Dither(Dest, FloydSteinbergKernel);
+end;
+
+{ TAdBellDithering }
+
+procedure TAdBellDithering.AssignEffect(Dest: TAd2dBitmap);
+var
+  BellKernel: TAdErrorDiffusionKernel;
+begin
+  with BellKernel do
+  begin
+    Divisor := 16;
+    OffsetX := -2;
+    OffsetY := 0;
+    SetLength(Matrix, 5, 3);
+    Matrix[0, 0] := 0; Matrix[1, 0] := 0; Matrix[2, 0] := 0; Matrix[2, 0] := 7; Matrix[2, 0] := 5;
+    Matrix[0, 1] := 3; Matrix[1, 1] := 5; Matrix[2, 1] := 7; Matrix[2, 1] := 5; Matrix[2, 1] := 3;
+    Matrix[0, 2] := 1; Matrix[1, 2] := 3; Matrix[2, 2] := 5; Matrix[2, 2] := 3; Matrix[2, 2] := 1;
+  end;
+  Dither(Dest, BellKernel);
+end;
+
+{ TAdBillAtkinsonDithering }
+
+procedure TAdBillAtkinsonDithering.AssignEffect(Dest: TAd2dBitmap);
+var
+  BillAtkinsonKernel: TAdErrorDiffusionKernel;
+begin
+  with BillAtkinsonKernel do
+  begin
+    Divisor := 8;
+    OffsetX := -1;
+    OffsetY := 0;
+    SetLength(Matrix, 4, 3);
+    Matrix[0, 0] := 0; Matrix[1, 0] := 0; Matrix[2, 0] := 0; Matrix[2, 0] := 1;
+    Matrix[0, 1] := 1; Matrix[1, 1] := 1; Matrix[2, 1] := 1; Matrix[2, 1] := 0;
+    Matrix[0, 2] := 0; Matrix[1, 2] := 1; Matrix[2, 2] := 0; Matrix[2, 2] := 0;
+  end;
+  Dither(Dest, BillAtkinsonKernel);
 end;
 
 end.

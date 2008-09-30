@@ -209,7 +209,7 @@ implementation
 procedure QueryBufferedStream(var AStream: TStream);
 begin
   //We don't have to buffer TMemoryStream because its data already is "buffered"
-  if not (AStream is TMemoryStream) then
+  if not (AStream is TCustomMemoryStream) then
   begin
     //If AStream already is a TAdBufferStreamAdapter, increment its "InstanceCount" property
     if AStream is TAdBufferStreamAdapter then
