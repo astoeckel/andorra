@@ -229,15 +229,31 @@ type
    video decoder thread.}
   TAdDecodeMediaPacketEvent = procedure(Sender: TObject; APckt: TAdMediaPacket) of object;
 
+  {TAdMediaHandler is an abstract class that cares about handling the decoded 
+   media packets that come from the media decoder. For instance, a video handler
+   should care about buffering the decoded video frames. A audio handler should
+   buffer the audio data and pass it to the used audio engine.
+   @seealso(TAdMediaDecoderThread.RegisterMediaHandler)}
   TAdMediaHandler = class
     public
+      {This function is called, when a media packet was decoded by the media decoder.
+       The media handler should check the type of the package and store the data
+       in an internal buffer and pass it to the graphics/audio engine.}
       procedure FeedPackage(var APckt: TAdMediaPacket);virtual; abstract;
+      {This method is called when the media handler should be notified by the media decoder
+       about a special state change (e.g. the end of the stream).}
       procedure Notify(AState: TAdMediaDecoderState);virtual; abstract;
+      {This method is called when the media handler should flush its buffer.}
       procedure FlushBuffer; virtual; abstract;
+      {Return true, if your media handler experiences a buffer underrun and needs new
+       data.}
       function NeedsData: Boolean; virtual; abstract;
+      {Return true, if your buffer contains data for more than one or two seconds video.}
       function Overflow: Boolean; virtual; abstract;
   end;
 
+  {TAdMediaDecoder thread cares about decoding the video data and passing it to the registered
+   media handlers.}
   TAdMediaDecoderThread = class(TThread)
     private
       FDecoder: TAdMediaDecoder;
@@ -246,17 +262,33 @@ type
     protected
       procedure Execute;override;
     public
+      {Creates a new instance of TAdMediaDecoder. ADecoder specifies media decoder class
+       that should be used to decode the video/audio data.}
       constructor Create(ADecoder: TAdMediaDecoder);
+      {Destroys the instance of TAdMediaDecoderThread.}
       destructor Destroy;override;
-
+      
+      {Registers a handler in the media decoder.
+       @param(AHandler specifies the media handler that should be registered within the media
+         decoder. The media decoder gets its data via the "TAdMediaHandler.FeedPackage" method.)}
       procedure RegisterMediaHandler(AHandler: TAdMediaHandler);
+      {Flushs the buffers of the decoder and all reigstered media handlers. This function
+       is for the seek and stop functionality.}
       procedure FlushBuffers;
-
+      
+      {A list of all registered media handlers. Use the critical section property
+       to synchronize access on this property.}
       property MediaHandlers: TList read FMediaHandlers;
+      {A critical section that should be used when accessing the "MediaHandlers" or
+       the "Decoder" property.}
       property CriticalSection: TCriticalSection read FCriticalSection;
+      {A pointer on the media decoder.}
       property Decoder: TAdMediaDecoder read FDecoder;
   end;
 
+  {TAdVideoHandler is the standard media handler for video frames. It is used within
+   TAdVideoTexture. TAdVideoHandler contains a list of video frames that may be accessed
+   by the "GetNextFrame" function.}
   TAdVideoHandler = class(TAdMediaHandler)
     private
       FVideoMemQueue: TList;
@@ -276,19 +308,30 @@ type
         property. TAdVideoHandler doesn't activate the stream, you have to do
         this yourself.)}
       constructor Create(ABufferSize: Integer; AStreamIndex: Integer);
+      {Destroys the instance of TAdVideoHandler.}
       destructor Destroy; override;
       
+      {This function is called, when a media packet was decoded by the media decoder.
+       The video handler checks the type of the package and stores the data
+       in an internal buffer and passes it to the graphics engine.}      
       procedure FeedPackage(var APckt: TAdMediaPacket); override;
+      {This method is called when the video handler should be notified by the media decoder
+       about a special state change (e.g. the end of the stream).}
       procedure Notify(AState: TAdMediaDecoderState); override;
+      {Flushs the video frame buffer.}
       procedure FlushBuffer; override;
+      {Returns true, when the video handler experiences a buffer underrun.}
       function NeedsData: boolean; override;
+      {Returns true, when the video handler experiences a buffer overflow.}
       function Overflow: Boolean; override;
 
       {Returns the next frame in the video memory queue that can be processed by
        the graphic engine. Returns nil if no frame is available.}
       function GetNextFrame: TAdVideoMemory;
 
+      {Critical section that is used to synchronize access on the decoded texture data.}
       property CriticalSection: TCriticalSection read FCriticalSection;
+      {The index of the video stream.}
       property StreamIndex: Integer read FStreamIndex write FStreamIndex;
   end;
 

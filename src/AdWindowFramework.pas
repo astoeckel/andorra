@@ -13,7 +13,8 @@
 * Comment: Contains the abstract base windowframework class.
 }
 
-{Contains the abstract base windowframework class.}
+{Contains the abstract base windowframework class. To keep it as small as possible, this unit
+ doesn't have any references to the VCL/LCL or other standard pascal units.}
 unit AdWindowFramework;
 
 {$IFDEF FPC}
@@ -226,9 +227,8 @@ initialization
 finalization
   RegisteredWindowFrameworks.StartIteration;
   while not RegisteredWindowFrameworks.ReachedEnd do
-  begin
     Dispose(PShortString(RegisteredWindowFrameworks.GetCurrent));
-  end;
+
   RegisteredWindowFrameworks.Free;
 
 end.

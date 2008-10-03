@@ -173,6 +173,9 @@ begin
     bmp.PixelFormat := pf32Bit;
 
     //The bitmap we got has 32-Bits - we are able to copy its memory directly.
+    //This will only work correctly in Delphi versions >= 2009. In other Delphi versions
+    //this code is for compatibility with the TAdVCLBitmap class that stores its bitmap
+    //data in a pf32Bit bitmap.
     for y := 0 to bmp.Height - 1 do
       Move(bmp.ScanLine[y]^, ABitmap.ScanLine(y)^, ABitmap.Width * 4);
   end;
@@ -532,6 +535,9 @@ end;
 
 initialization
   RegisterGraphicFormat(TAdVCLFormat);
+  
+  //If new Andorra 2D graphic formats are registered, notify the TAdVCLBitmap class about it.
+  //It will unregister its old formats and register everything again.
   RegisteredGraphicFormats.OnChange := TAdVCLBitmap.FormatListChange;
 
 end.

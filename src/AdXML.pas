@@ -13,7 +13,7 @@
 * Comment: Contains a few functions, which make it easier to work with the AdSimpleXML.pas
 }
 
-{Contains a few functions, which make it easier to work with the AdSimpleXML.pas. Functions will move to AdSimpleXML soon, so don't use this functions provided here. Will be combined with TAdSimpleXML soon.}
+{Contains a few functions, which make it easier to work with the AdSimpleXML.pas. Functions will move to AdSimpleXML soon, so don't use this functions provided here. Will be merged with TAdSimpleXML soon.}
 unit AdXML;
 
 {$IFDEF FPC}

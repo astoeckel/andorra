@@ -105,6 +105,8 @@ begin
   FParent.RegisterNotifyEvent(Notify);
   FImage := TAdImage.Create(FParent);
 
+  //Set the texture of our image to the texture of the parent TAdVideoTexture class.
+  //The image will now automatically display this texture.
   FImage.Texture.Texture := Texture;
 
   FProportional := true;
@@ -118,6 +120,7 @@ var
   v: double;
   Width, Height: integer;
 begin
+  //Scale the video output to the given destination rectangle
   w := round(Info.Width * Info.PixelAspect);
   h := Info.Height;
 
@@ -165,15 +168,12 @@ begin
     Bottom := h;
   end;
 
+  //Center the image
   if FCenter then
-  begin
     AdOffsetRect(result, ADestRect.Left + (Width - w) div 2,
-                         ADestRect.Top + (Height - h) div 2);
-  end
+                         ADestRect.Top + (Height - h) div 2)
   else
-  begin
     AdOffsetRect(result, ADestRect.Left, ADestRect.Top);
-  end;
 end;
 
 destructor TAdCustomVideoPlayer.Destroy;
@@ -187,21 +187,27 @@ procedure TAdCustomVideoPlayer.Draw(ASurface: TAdDraw; ADestRect: TAdRect);
 begin
   if not HasFrame then exit;
   
+  //Activate the surface the draw function should draw on
   if ASurface <> nil then
     ASurface.Activate;
-  
+    
+  //Restore the image if the size of the video frames changed  
   if (Info.Width <> FImage.Width) or (Info.Height <> FImage.Height) then
     FImage.Restore;
-
+    
+  //Draw the image to the destination rectangle
   FImage.StretchDraw(ASurface, DestinationRect(ADestRect), 0);
 end;
 
 procedure TAdCustomVideoPlayer.Notify(ASender: TObject;
   AEvent: TAdSurfaceEventState);
 begin
+  //Cope with the TAdDraw surface events
   case AEvent of
     seInitialize:
     begin
+      //If the surface got reactivated, we have to reinitialize the video surface
+      //texture.
       InitializeTexture(FParent.AdAppl);
       FImage.Texture.Texture := Texture;
     end;
@@ -215,6 +221,8 @@ end;
 procedure TAdVideoPlayer.ClearData;
 begin
   inherited;
+  
+  //Destroys the stream
   if FOwnStream and (FStream <> nil) then
     FStream.Free;
 
@@ -287,6 +295,8 @@ begin
   begin
     FCriticalSection.Enter;
     try
+      //Read the data into the given buffer and return the count of bytes that
+      //have been read.
       result := FStream.Read(Dest^, Size);
     finally
       FCriticalSection.Leave;
@@ -305,6 +315,7 @@ end;
 
 procedure TAdVideoPlayer.Seek(APos: int64);
 begin
+  //Sets the video position of the raw video data stream.
   if FStream <> nil then
   begin
     FCriticalSection.Enter;

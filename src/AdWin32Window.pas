@@ -155,29 +155,33 @@ var
   WndStyle:Cardinal;
 begin
   result := false;
+  
   if (FBinded) and (not FInitialized) then
   begin
-    //Set window properties
+    //Choose the appropriate appearing of the window    
     if AProps.Mode = dmWindowed then
       WndStyle := WS_CAPTION or WS_VISIBLE or WS_SYSMENU
     else
     begin
-      if AProps.Mode = dmFullscreen then
+      if AProps.Mode in [dmFullscreen, dmScreenRes] then
       begin
-        if not ChangeResolution(AProps.Width, AProps.Height, ord(AProps.BitDepth)) then
+        if AProps.Mode = dmFullscreen then
         begin
-          result := false;
-          exit;
+          if not ChangeResolution(AProps.Width, AProps.Height, ord(AProps.BitDepth)) then
+          begin
+            result := false;
+            exit;
+          end;
         end;
+        WndStyle := WS_VISIBLE or WS_POPUP;
       end;
-      WndStyle := WS_VISIBLE or WS_POPUP;
     end; 
 
     FProps := AProps;
 
     SetCursorVisible(true);
     
-    //Set Win32 Window properties
+    //Set the Win32 window properties
     FWnd.cbSize := SizeOf(TWndClassEx);
     FWnd.style := CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS;
     FWnd.lpfnWndProc := FWndProc;
@@ -250,10 +254,15 @@ procedure TAdWin32Window.PlaceWindow;
 var
   ScreenWidth, ScreenHeight : integer;
 begin
+  //Moves the winow to the center of the screen
+  
+  //Get the screen size
   ScreenWidth := GetSystemMetrics(SM_CXSCREEN);
   ScreenHeight := GetSystemMetrics(SM_CYSCREEN);
-  if FProps.Mode = dmWindowed then
+  
+  if (FProps.Mode = dmWindowed) or (FProps.Mode = dmDefault) then
   begin
+    //Set the window position to the screen center
     MoveWindow(FHandle,
       (ScreenWidth - FProps.Width) div 2,
       (ScreenHeight - FProps.Height) div 2,
@@ -261,12 +270,14 @@ begin
   end
   else
   begin
+    //Make the window appear as large as the screen
     MoveWindow(FHandle, 0, 0, ScreenWidth, ScreenHeight, true);
   end;
 end;
 
 function TAdWin32Window.ParamToShift(Param: Integer): TAdShiftState;
 begin
+  //Converts the window message parameter to a Andorra 2D shift state.
   result := [];
   if (Param and MK_LBUTTON = MK_LBUTTON) then
     result := result + [asLeft];
@@ -286,6 +297,7 @@ function TAdWin32Window.GetClientHeight: integer;
 var
   rect:TRect;
 begin
+  //Returns the current client height
   result := 0;
   if FInitialized then
   begin
@@ -298,6 +310,7 @@ function TAdWin32Window.GetClientWidth: integer;
 var
   rect:TRect;
 begin
+  //Returns the current client width
   result := 0;
   if FInitialized then
   begin
@@ -308,6 +321,7 @@ end;
 
 function TAdWin32Window.GetShift: TAdShiftState;
 begin
+  //Returns the current shift state
   result := [];
   if GetKeyState(VK_SHIFT) < 0 then
     result := result + [asShift];
@@ -321,6 +335,7 @@ function TAdWin32Window.GetWindowClientRect: TRect;
 var
   info:TWindowInfo;
 begin
+  //Returns the client rect of the window
   info.cbSize := SizeOf(TWindowInfo);
   if FInitialized then
   begin
@@ -331,23 +346,24 @@ end;
 
 function TAdWin32Window.GetXCoord(Param: Integer): Word;
 begin
+  //Extracts the X-Coordinate from the wParam from a window message
   result := Param and $0000FFFF;
   if result = High(Word) then result := 0;
 end;
 
 function TAdWin32Window.GetYCoord(Param: Integer): Word;
 begin
+  //Extracts the Y-Coordinate from the wParam from a window message
   result := Param and $FFFF0000 shr 16;
   if result = High(Word) then result := 0;
 end;
 
 procedure TAdWin32Window.ProcessMouseMove(wParam, lParam: Integer);
 begin
+  //Sends the OnMouseMove event to the window framework
   if Assigned(Events.OnMouseMove) then
-  begin
     Events.OnMouseMove(
       Self, ParamToShift(wParam), GetXCoord(lParam), GetYCoord(lParam));
-  end;
 end;
 
 procedure TAdWin32Window.ProcessMouseDown(msg: UInt; wParam, lParam: Integer);
@@ -355,46 +371,49 @@ var
   btn:TAdMouseButton;
   dbl:boolean;
 begin
+  //Set some default values to the variables
   FClicked := false;
   FDblClicked := false;
   btn := abLeft;
   dbl := false;
-
+  
+  //Decide which message has been sent to the window
   case msg of
     WM_LBUTTONDOWN: FClicked := true;
     WM_RBUTTONDOWN: btn := abRight;
     WM_MBUTTONDOWN: btn := abMiddle;   
     WM_LBUTTONDBLCLK:
-      begin
-        dbl := true;
-        btn := abLeft;
-        FDblClicked := true;
-      end;
+    begin
+      dbl := true;
+      btn := abLeft;
+      FDblClicked := true;
+    end;
     WM_RBUTTONDBLCLK:
-      begin
-        dbl := true;
-        btn := abRight;
-      end;
+    begin
+      dbl := true;
+      btn := abRight;
+    end;
     WM_MBUTTONDBLCLK:
-      begin
-        dbl := true;
-        btn := abMiddle;
-      end;
+    begin
+      dbl := true;
+      btn := abMiddle;
+    end;
   end;
 
+  //Send the mouse down event to the window framework
   if Assigned(Events.OnMouseDown) then
-  begin
     if dbl then
       Events.OnMouseDown(Self, btn, ParamToShift(wParam), GetXCoord(lParam), GetYCoord(lParam))
     else
       Events.OnMouseDown(Self, btn, ParamToShift(wParam) + [asDouble], GetXCoord(lParam), GetYCoord(lParam));
-  end;
 end;
 
 procedure TAdWin32Window.ProcessMouseUp(msg: UInt; wParam, lParam: Integer);
 var
   btn:TAdMouseButton;
 begin
+  //Processes the Win32 mouse up event and decides whether a OnClick or a 
+  //OnDblClick event should be created.
   btn := abLeft;
   
   case msg of
@@ -404,17 +423,13 @@ begin
   end;
 
   if Assigned(Events.OnMouseDown) then
-  begin
     Events.OnMouseUp(Self, btn, ParamToShift(wParam), GetXCoord(lParam), GetYCoord(lParam));
-  end;
+
   if Assigned(Events.OnClick) and (FClicked) then
-  begin
     Events.OnClick(Self, GetXCoord(lParam), GetYCoord(lParam));
-  end;
-  if Assigned(Events.OnClick) and (FDblClicked) then
-  begin
+
+  if Assigned(Events.OnDblClick) and (FDblClicked) then
     Events.OnDblClick(Self, GetXCoord(lParam), GetYCoord(lParam));
-  end;
 
   FClicked := false;
   FDblClicked := false;
@@ -424,6 +439,7 @@ procedure TAdWin32Window.ProcessMouseWheel(wParam, lParam: Integer);
 var
   zDelta:SmallInt;
 begin
+  //Creates the "OnMouseWheel" event.
   if Assigned(Events.OnMouseWheel) then
   begin
     zDelta := wParam and $FFFF0000 shr 16;
@@ -433,14 +449,11 @@ end;
 
 procedure TAdWin32Window.ProcessKey(msg:UInt; wParam: LongInt);
 begin
+  //Create "KeyDown"/"KeyUp" events.
   if Assigned(Events.OnKeyDown) and (msg = WM_KEYDOWN) then
-  begin
-    Events.OnKeyDown(Self, wParam, GetShift);
-  end else
-  if Assigned(Events.OnKeyUp) and (msg = WM_KEYUP) then
-  begin
+    Events.OnKeyDown(Self, wParam, GetShift)
+  else if Assigned(Events.OnKeyUp) and (msg = WM_KEYUP) then
     Events.OnKeyUp(Self, wParam, GetShift);
-  end;
 end;
 
 function TAdWin32Window.WndProc(hWnd: HWND; uMsg: UINT; wParam: wParam;

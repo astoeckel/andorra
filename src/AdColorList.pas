@@ -41,9 +41,9 @@ type
     public
       //The "items" property of a list
     	property Items[AIndex:integer]:TAndorraColor read GetItem write SetItem;default;
-      //Returns a mixed color value
+      {Returns a mixed color value. Max represents a maximum value, which pos is relative to.}
       function GetColor(Max,Pos:double):TAndorraColor;
-      //Add a color
+      //Add a color to the lists
       function Add(AColor:TAndorraColor): integer;
       //Inserts a color to the specified position
       procedure Insert(AIndex: integer; AColor: TAndorraColor);
@@ -59,10 +59,12 @@ implementation
 
 function TAdColorList.Add(AColor: TAndorraColor): integer;
 var
-  temp: pAndorraColor;
+  temp: PAndorraColor;
 begin
-  new(temp);
-  temp^ := AColor;
+  //Reserve memory for a new RGBA-Color variable and assign the given color value to it
+  New(temp);
+  temp^ := AColor;  
+  
   result := inherited Add(temp);
 end;
 
@@ -70,19 +72,24 @@ procedure TAdColorList.Insert(AIndex: integer; AColor: TAndorraColor);
 var
   temp: pAndorraColor;
 begin
+  //Match AIndex to the list bounds
   if AIndex < 0 then
     AIndex := 0;
 
   if AIndex > Count then
     AIndex := Count;
     
+  //Reserve memory for a new RGBA-Color variable and assign the given color value to it
   new(temp);
   temp^ := AColor;
+  
   inherited Insert(AIndex, temp);
 end;
 
 function TAdColorList.GetColor(Max, Pos: double): TAndorraColor;
 
+  //Returns the color between two given RGBA colors. 
+  //!May be replaced by the interpolator classes used in my game CrashPoint/the PerlinNoise algorithm
   function ColorBetween(C1, C2 : TAndorraColor; blend:Double):TAndorraColor; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
   begin
      result.r := Round(C1.r + (C2.r-C1.r) * blend);
@@ -94,8 +101,10 @@ function TAdColorList.GetColor(Max, Pos: double): TAndorraColor;
 var v1,v2:integer;
     v:single;
 begin
+  //Deal with the case that pos is greater than max
   if pos > max then
   begin
+    //Return the last color in the list
     result := Items[count-1];
   end
   else
@@ -104,11 +113,15 @@ begin
     begin
       if (count > 1) and (pos > 0) then
       begin
-        v := 1/(max/((count-1)*pos));
+        //Calculate the list entry...        
+        //! Optimize!
+        v := 1 / (max / ((count - 1) * pos));
+
+        //Check whether the calculated list entry is in the lists bounds
         if v > (count-1) then
-        begin
-          v := (count-1)
-        end;
+          v := (count-1);
+          
+        //!?
         if trunc(v) <> v then
         begin
           v1 := trunc(v);
@@ -134,37 +147,49 @@ begin
 end;
 
 procedure TAdColorList.LoadFromStream(AStream: TStream);
-var c,i:integer;
-    tmp:TAndorraColor;
+var 
+  c, i: integer;
+  tmp: TAndorraColor;
 begin
+  //Clear all items in that are currently in the list
   Clear;
-  AStream.Read(c,sizeof(c));
+  
+  //Read the itemcount that was written to the list
+  //! Probably the stream content should be verified! Might be a possible security 
+  //problem. Use XML in network applications for single point of failure.
+  AStream.Read(c, sizeof(c));
+  
   for i := 0 to c-1 do
   begin
-    AStream.Read(tmp,SizeOf(tmp));
+    //Read a single color and add it to the list
+    AStream.Read(tmp, SizeOf(tmp));
     Add(tmp);
   end;
 end;
 
 procedure TAdColorList.SaveToStream(AStream: TStream);
-var i:integer;
-    tmp:TAndorraColor;
+var 
+  i, c:integer;
+  tmp:TAndorraColor;
 begin
-  i := Count;
-  AStream.Write(i,sizeof(i));
+  //Save the count of list items to the stream
+  c := Count;  
+  AStream.Write(c, SizeOf(c));  
+  
+  //And save every single color to the stream now.
   for i := 0 to Count - 1 do
   begin
     tmp := Items[i];
-    AStream.Write(tmp,SizeOf(TAndorraColor))
+    AStream.Write(tmp, SizeOf(TAndorraColor));
   end;
 end;
 
 procedure TAdColorList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
-  if ( Action = lnDeleted ) then
-  begin
+  //Free the list entry if a item is deleted.
+  if Action = lnDeleted then
     Dispose(PAndorraColor(Ptr));
-  end;
+    
   Inherited;
 end;        
 

@@ -23,7 +23,7 @@ unit AdVCLWindow;
 interface
 
 uses
-  {$IFDEF FPC}Interfaces, {$ENDIF}
+  {$IFDEF FPC}Interfaces, {$ENDIF} //Interfaces has to be included in the uses list for initializing the global "Application" variable
   Classes, Controls, Windows, Forms,
   AdEvents, AdTypes, AdWindowFramework, AdVCLComponentEventConnector;
 
@@ -77,6 +77,7 @@ begin
   
   if FForm <> nil then
     FForm.Free;
+    
   inherited;
 end;
 
@@ -100,6 +101,7 @@ begin
   result := FBinded;
 end;
 
+//! This code should be in an extra unit and shared between the different Win32 window frameworks.
 function TAdVCLWindow.ChangeResolution(width, height, bitdepth: LongWord):boolean;
 var
   DeviceMode: TDeviceMode;
@@ -131,16 +133,22 @@ begin
   result := false;
   if (FBinded) and not (FInitialized) then
   begin
+    //Initialize the application
     Application.Initialize;
-
+    
+    //Create a standard form
     Application.CreateForm(TForm, FForm);
 
+    //Set some default settings
     FForm.Color := 0;
     FForm.BorderIcons := [biSystemMenu];
     FForm.Caption := Title;
 
+    //Set the different form settings for the different window modes.
+    
     if (AProps.Mode = dmWindowed) or (AProps.Mode = dmDefault) then
     begin
+      //Simple window
       FForm.BorderStyle := bsSingle;
       FForm.ClientWidth := AProps.Width;
       FForm.ClientHeight := AProps.Height;
@@ -148,12 +156,14 @@ begin
     end else
     if (AProps.Mode = dmScreenRes) or (AProps.Mode = dmFullscreen) then
     begin
+      //Window without a border
       FForm.BorderStyle := bsNone;
       FForm.Width := Screen.Width;
       FForm.Height := Screen.Height;
       FForm.Top := 0;
       FForm.Left := 0;
-
+      
+      //Change the screen resolution if we are in the fullscreen mode
       if AProps.Mode = dmFullScreen then
       begin
         FForm.Width := AProps.Width;
@@ -168,6 +178,9 @@ begin
 
     result := true;
     FInitialized := true;
+    
+    //Bug in the VCL. Window handle may change while setting some settings like "BorderStyle" or "BorderIcons".
+    //Only occurs in VCL versions <= Delphi 2005
     FHandle := FForm.Handle;
 
     SetCursorVisible(true);
@@ -178,18 +191,15 @@ end;
 
 procedure TAdVCLWindow.Run;
 begin
+  //Call the run function of the VCL/LCL Application class
   if FInitialized then
-  begin
     Application.Run;
-  end;
 end;
 
 procedure TAdVCLWindow.Terminate;
 begin
   if FForm <> nil then
-  begin
     FForm.Close;
-  end;
 end;
 
 procedure TAdVCLWindow.SetCursorVisible(AValue: Boolean);
