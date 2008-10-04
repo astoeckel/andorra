@@ -38,11 +38,9 @@ type
   TAdFile=class;
 
 
-  {
-  * A file stream which is returned by TAdFile.GetStream. It is always linked
-  * to a specific virtual file.
-  }
-  TAdFileMemStream=class(TMemoryStream)
+  {A file stream which is returned by TAdFile.GetStream. It is always linked
+   to a specific virtual file.}
+  TAdFileMemStream = class(TMemoryStream)
   private
   	FReadOnly: Boolean;
     FFile: TAdFile;
@@ -54,13 +52,11 @@ type
     property ReadOnly: Boolean read FReadOnly;
   end;
 
-  {
-  * A virtual file in a virtual file system. Its data can be read by using
-  * the stream returned by GetStream. Note that every trial to get a
-  * non-read-only stream will throw an exception if there are any other streams
-  * reading or writing. Trying to get a read-only stream when a stream is
-  * writing will also result in an exception.
-  }
+  {A virtual file in a virtual file system. Its data can be read by using
+   the stream returned by GetStream. Note that every trial to get a
+   non-read-only stream will throw an exception if there are any other streams
+   reading or writing. Trying to get a read-only stream when a stream is
+   writing will also result in an exception.}
   TAdFile=class
   private
     FFileName, FPath, FPackagePath: String;
@@ -88,10 +84,8 @@ type
     property LockedForWriting: Boolean read IsLockedForWriting;
   end;
 
-  {
-  * A virtual directory used in virtual file systems. Its only purpose is,
-  * more or less, to get a file in it or one of its subdirectories.
-  }
+  {A virtual directory used in virtual file systems. Its only purpose is,
+   more or less, to get a file in it or one of its subdirectories.}
   TAdDirectory=class
   private
     FName, FPath, FPackagePath: String;
@@ -133,21 +127,17 @@ type
     	read GetDirectoryByName;
   end;
 
-	{
-  * A special map that allows the file controller to free all the packages
-  * when it is destroyed by providing a list of all its elements.
-  }
+	{A special map that allows the file controller to free all the packages
+   when it is destroyed by providing a list of all its elements.}
   TAdPackageMap = class(TAdMap)
   public
 		procedure AddToList(const AList: TAdLinkedList);
   end;
 
-  {
-  * A key class for a map. It automatically adapts to the operating system's
-  * file system's handling of case sensitivity about file names and also
-  * expands the given file name. So, a relative and an absolute path that are
-  * actually the same would also be recognized as the same path.
-  }
+  {A key class for a map. It automatically adapts to the operating system's
+   file system's handling of case sensitivity about file names and also
+   expands the given file name. So, a relative and an absolute path that are
+   actually the same would also be recognized as the same path.}
   TAdWrappedFileName = class(TAdMapKey)
   private
     FFileName: String;
@@ -158,9 +148,7 @@ type
     property FileName: String read FFileName;
   end;
 
-  {
-  * An abstract class that provides compression and decompression methods.
-  }
+  {An abstract class that provides compression and decompression methods.}
 	TAdCompression = class
   public
     class function GetCompressionName: String; virtual; abstract;
@@ -188,15 +176,13 @@ type
 
   TAdCompressionClass = class of TAdCompression;
 
-  {
-  * A package is an archive file like a tar file.
-  * When loaded, it provides a virtual file system through its property Root.
-  * Files and directories in the archive can be accessed by going though
-  * the directory tree of the file system.
-  * A package class has to be able to load and save a specific package
-  * (archive) file format and furthermore determine whether it can load an
-  * archive given in a stream (function CanOpen).
-  }
+  {A package is an archive file like a tar file.
+   When loaded, it provides a virtual file system through its property Root.
+   Files and directories in the archive can be accessed by going though
+   the directory tree of the file system.
+   A package class has to be able to load and save a specific package
+   (archive) file format and furthermore determine whether it can load an
+   archive given in a stream (function CanOpen).}
   TAdPackage = class
   protected
     FRoot: TAdDirectory;
@@ -231,14 +217,12 @@ type
 
   TAdPackageClass = class of TAdPackage;
 
-  {
-  * The file control handles connections between virtual file systems and
-  * the physical file system, for example by providing methods for loading and
-  * unloading packages It also provides general methods for processing
-  * files such as compressing and decompressing and information about
-  * the operating system's file system, such as whether file names are
-  * case-sensitive.
-  }
+  {The file control handles connections between virtual file systems and
+   the physical file system, for example by providing methods for loading and
+   unloading packages It also provides general methods for processing
+   files such as compressing and decompressing and information about
+   the operating system's file system, such as whether file names are
+   case-sensitive.}
   TAdFileControl = class
   protected
     FPackages: TAdPackageMap;
@@ -271,14 +255,9 @@ type
 
   end;
 
-{
-* Converts a file size in byte to a string (GB is the highest unit)
-}
+{Converts a file size in byte to a string (GB is the highest unit)}
 function FileSizeToStr(const FileSize: Int64): String;
-{
-* Determines whether the given character is a path delimiter on any
-* known platform
-}
+{Determines whether the given character is a path delimiter on any known platform.}
 function IsPathDelimiter(const AChar: Char): Boolean;
 
 var

@@ -89,9 +89,10 @@ implementation
 { TAdTarBall }
 
 class function TAdTarBall.CanOpen(const AStream: TStream): Boolean;
-var Header: PAdTarHeader;
-    Checksum: Cardinal;
-    Buffer: array[0..511] of Byte;
+var 
+  Header: PAdTarHeader;
+  Checksum: Cardinal;
+  Buffer: array[0..511] of Byte;
 begin
 	if AStream.Size<=AStream.Position then
   begin
@@ -112,8 +113,9 @@ class procedure TAdTarBall.DynStrToStaticStr(const str1: String; var str2;
 type
 	TByteArray=array of Byte;
   PByteArray=^TByteArray;
-var I: Integer;
-  	p: PByteArray;
+var 
+  I: Integer;
+  p: PByteArray;
 begin
   if System.length(str1)>Length then
     raise EAdTarTooLongStringException.CreateFmt(
@@ -148,8 +150,9 @@ begin
 end;
 
 class function TAdTarBall.IntToOct(const Value: Cardinal): String;
-var I, log8: Cardinal;
-  	v: Int64;
+var 
+  I, log8: Cardinal;
+  v: Int64;
 begin
   log8:=0;
   v:=Value;

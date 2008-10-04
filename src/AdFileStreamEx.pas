@@ -23,7 +23,8 @@ unit AdFileStreamEx;
 
 interface
 
-uses SysUtils, Classes, AdFileClasses;
+uses 
+  SysUtils, Classes, AdFileClasses;
 
 type
 	TAdFileStreamEx = class(TFileStream)
