@@ -12,7 +12,7 @@
 *Comment: Contains Image-Loader classes and a png compressor which use the "DevIL" library
 }
 
-{Contains Image-Loader classes and a png compressor that use the "DevIL" library}
+{Contains Image-Loader classes and a PNG compressor that use the "DevIL" library.}
 unit AdDevIL;
 
 {$IFDEF FPC}
@@ -57,6 +57,7 @@ end;
 
 class procedure TAdDevILFormat.FileExts(strs: TStrings);
 begin
+  //List all file formats that can be read by DevIL
   strs.Add('.bmp');
   strs.Add('.cut');
   strs.Add('.dds');
@@ -122,18 +123,25 @@ var
 begin
   result := false;
 
+  //Generate a DevIL image
   ilGenImages(1, @imagename);
   ilBindImage(imagename);
-
+  
+  //Set the image origin to the upper left corner.
   ilEnable(IL_ORIGIN_SET);
-  ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
+  ilOriginFunc(IL_ORIGIN_UPPER_LEFT);  
+
+  //Convert palette images to the BGRA32 format
   ilEnable(IL_CONV_PAL);
   ilConvertPal(IL_PAL_BGRA32);
   
+  //Load the image from the stream
   if Boolean(ilLoadImage(PChar(AFile))) then
   begin
+    //Convert the image to BGRA
     ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 
+    //And copy the decoded memory into an Andorra 2D bitmap
     w := ilGetInteger(IL_IMAGE_WIDTH);
     h := ilGetInteger(IL_IMAGE_HEIGHT);
 
@@ -142,6 +150,7 @@ begin
     result := true;
   end;
 
+  //Delete the DevIL image resource
   ilDeleteImages(1, @imagename);
 end;
 
@@ -159,20 +168,29 @@ var
   imagename:Cardinal;
 begin
   ms := TMemoryStream.Create;
+  //Extract the PNG image from the source stream and save it to
+  //a temporary memory stream
   ExtractPng(AStream, ms);
 
+  //Generate a DevIL image
   ilGenImages(1, @imagename);
   ilBindImage(imagename);
-
+  
+  //Set the image origin to the upper left corner.
   ilEnable(IL_ORIGIN_SET);
   ilOriginFunc(IL_ORIGIN_UPPER_LEFT);
+  
+  //Convert images to the BGRA32 format
   ilEnable(IL_CONV_PAL);
   ilConvertPal(IL_PAL_BGRA32);
-
+  
+  //Load the image from the stream
   if Boolean(ilLoadL(IL_PNG, ms.Memory, ms.Size)) then
   begin    
+    //Convert the image to BGRA
     ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
 
+    //And copy the decoded memory into an Andorra 2D bitmap
     w := ilGetInteger(IL_IMAGE_WIDTH);
     h := ilGetInteger(IL_IMAGE_HEIGHT);
 
@@ -180,8 +198,11 @@ begin
     ilCopyPixels(0, 0, 0, w, h, 1,  IL_BGRA, IL_UNSIGNED_BYTE, ABitmap.ScanLine);
   end;
 
+  //Delete the DevIL image resource
   ilDeleteImages(1, @imagename);
 
+  //Delete the temporary filestream that contained the extracted,
+  //undecoded PNG Data
   ms.Free;
 end;
 
@@ -196,12 +217,8 @@ var
   count:integer;
   chars: TAdVeryShortString;
 begin
-  ms := TMemoryStream.Create;
-
-  ilGenImages(1, @imagename);
-  ilBindImage(imagename);
-
-//  mem := nil;
+  //Reserve some memory to store a upside down version of the bitmap in it
+  mem := nil;
   GetMem(mem, ABitmap.Size);
   
   //Turn image upside down
@@ -211,34 +228,54 @@ begin
     Move(ABitmap.Scanline(y)^, p1^, ABitmap.Width * 4);
     Inc(p1, ABitmap.Width * 4);
   end;                           
+  
+  //Generate a DevIL image
+  ilGenImages(1, @imagename);
+  ilBindImage(imagename);  
 
+  //Load the bitmap in the DevIL system
   ilTexImage(ABitmap.Width, ABitmap.Height, 1, 4, IL_BGRA, IL_UNSIGNED_BYTE, mem);
   
+  //Free the temporary memory
   FreeMem(mem, ABitmap.Size);
 
-
+  //Reserve some memory to store the png plus header in it.
   size := ABitmap.Size + 128;
   GetMem(mem, size);
   FillChar(mem^, size, 0);
-  ilSaveL(IL_PNG, mem, size);
+  
+  //Save the image we generated as png to the memory
+  ilSaveL(IL_PNG, mem, size);  
+
+  //Create a memory stream
+  ms := TMemoryStream.Create;
+  
+  //Write the png image to the stream
   ms.Write(mem^, size);
+  
   ms.Position := 0;
+  
+  //Free the temporary memory
   FreeMem(mem, size);
-
+  
+  //Search for the end of the PNG image and remember the size of the image
   SetLength(chars, 4);
-
   repeat
     ms.Read(chars[1], 4);
     ms.Position := ms.Position - 3;
   until (chars = 'IEND') or (ms.Position >= ms.Size);
+  
   count := ms.Position + 7;                          
   ms.Position := 0;
 
+  //Copy the calculated amout of bytes into the destination memory stream
   AStream.CopyFrom(ms, count);
   
+  //Free the temporary memory stream
   ms.Free;
-
-  ilDeleteImages(1, @imagename);
+  
+  //Remove the image from the DevIL system
+  ilDeleteImages(1, @imagename);    
 end;
 
 initialization

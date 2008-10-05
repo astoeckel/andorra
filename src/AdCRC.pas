@@ -22,8 +22,8 @@ uses SysUtils, Classes;
 
 const CRCTABLE: array[Byte] of Cardinal =
 	(
- 		$00000000, $77073096, $EE0E612C, $990951BA,
-		$076DC419, $706AF48F, $E963A535, $9E6495A3,
+     $00000000, $77073096, $EE0E612C, $990951BA,
+		 $076DC419, $706AF48F, $E963A535, $9E6495A3,
 		 $0EDB8832, $79DCB8A4, $E0D5E91E, $97D2D988,
 		 $09B64C2B, $7EB17CBD, $E7B82D07, $90BF1D91,
 		 $1DB71064, $6AB020F2, $F3B97148, $84BE41DE,
@@ -89,47 +89,47 @@ const CRCTABLE: array[Byte] of Cardinal =
   );
 
   CRC_INIT: Cardinal=$FFFFFFFF;
-
-
-function CRC32(const Buffer; const Size: Cardinal): Cardinal; overload;
-function CRC32(const AStream: TStream; const Size: Int64): Cardinal; overload;
+  
+{Calculates the CRC32 checksum for a buffer in memory.}
+function CRC32(const ABuffer; const ASize: Cardinal): Cardinal; overload;
+{Calcualtes the CRC33 checksum for "size" bytes in the given memory stream.}
+function CRC32(const AStream: TStream; const ASize: Int64): Cardinal; overload;
 
 implementation
 
-function CRC32(const Buffer; const Size: Cardinal): Cardinal;
+function CRC32(const ABuffer; const ASize: Cardinal): Cardinal;
 var
   p: PByte;
-  I: Integer;
+  i: Integer;
 begin
 
-  p:=@Buffer;
-  Result:=CRC_INIT;
+  p := @ABuffer;
+  Result := CRC_INIT;
 
-  for I := 1 to Size do
+  for i := 1 to ASize do
   begin
-    Result:=CRCTABLE[Byte((Result xor p^) and $FF)] xor (Result shr 8);
+    Result := CRCTABLE[Byte((Result xor p^) and $FF)] xor (Result shr 8);
     inc(p);
   end;
 
-  Result:=not Result;
-
+  Result := not Result;
 end;
 
-function CRC32(const AStream: TStream; const Size: Int64): Cardinal;
+function CRC32(const AStream: TStream; const ASize: Int64): Cardinal;
 var
-  I: Integer;
+  i: Integer;
   b: Byte;
 begin
 
-  Result:=CRC_INIT;
+  Result := CRC_INIT;
 
-  for I := 1 to Size do
+  for i := 1 to ASize do
   begin
     AStream.Read(b, 1);
-    Result:=CRCTABLE[Byte((Result xor b) and $FF)] xor (Result shr 8);
+    Result := CRCTABLE[Byte((Result xor b) and $FF)] xor (Result shr 8);
   end;
 
-  Result:=not Result;
+  Result := not Result;
 end;
 
 end.

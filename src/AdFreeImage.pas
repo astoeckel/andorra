@@ -26,6 +26,7 @@ uses
   Classes, AdBitmap, AdTypes, AdPngUtils, FreeImage;
 
 type
+  {@exclude}
   TAdFreeImagePNGCompressor = class(TAdGraphicCompressor)
     public
       procedure Write(ABitmap:TAdBitmap; AStream:TStream);override;
@@ -33,6 +34,7 @@ type
       class function ID:TAdVeryShortString;override;
   end;
 
+  {@exclude}
   TAdFreeImageFormat = class(TAdGraphicFormat)
     public
       class procedure FileExts(strs:TStrings);override;
@@ -51,6 +53,7 @@ implementation
 
 class procedure TAdFreeImageFormat.FileExts(strs: TStrings);
 begin
+  //List all file formats the can be read by FreeImage
   strs.Add('.bmp');
   strs.Add('.cut');
   strs.Add('.dds');
@@ -129,44 +132,59 @@ var
   mem : PByte;
   typ:FREE_IMAGE_TYPE;
 begin
+  //Initialize some variables
   result := true;
   
   pdib1 := nil;
   pdib2 := nil;
 
+  //Get the type of the file that should be loaded
   Format := FreeImage_GetFileType(PChar(AFile), 0);
   if Format = FIT_UNKNOWN then
     Format := FreeImage_GetFIFFromFilename(PChar(AFile));
     
   try
+    //Load the image from the file and store the result in the pointer "pdib1"
     pdib1 := FreeImage_Load(Format, PChar(AFile));
 
+    //Get the image type (whether it is a palette, bitmap or hdr image)
     typ := FreeImage_GetImageType(pdib1);
 
     if typ <> FIT_BITMAP then
     begin
       if typ < FIT_COMPLEX then
       begin
+        //If the image is a palette image, convert it to a simple bitmap and store
+        //the conversion result in "pdib2"
         pdib2 := FreeImage.FreeImage_ConvertToType(pdib1, FIT_BITMAP);
       end else
       begin
+        //If the image is a hdr image, convert it to a simple bitmap using the
+        //"Reinhard05" filter and store the conversion result in "pdib2"
         pdib2 := FreeImage.FreeImage_TmoReinhard05(pdib1, -5);
       end;
+      
+      //A conversion has been made, free the old, unconverted image
       FreeImage_UnLoad(pdib1); pdib1 := nil;
     end else
     begin
+      //We didn't do a conversion, exchange the values of "pdib1" and "pdib2"
       pdib2 := pdib1; pdib1 := nil;
     end;
 
     if FreeImage.FreeImage_GetBPP(pdib2) <> 32 then
     begin
+      //Convert the image to 32 Bit Depth and store the result in "pdib1"
       pdib1 := FreeImage_ConvertTo32Bits(pdib2);
+      //Free the old "pdib2" resource
       FreeImage_UnLoad(pdib2); pdib2 := nil;
     end else
     begin
+      //We didn't do a conversion, exchange the values of "pdib2" and "pdib1"
       pdib1 := pdib2; pdib2 := nil;
     end;
 
+    //Get the sizes of the bitmap and copy the bitmap bottom up.
     w := FreeImage_GetWidth(pdib1);
     h := FreeImage_GetHeight(pdib1);
 
@@ -180,6 +198,7 @@ begin
     end;
 
   finally
+    //Free all unfinalized images
     if pdib1 <> nil then FreeImage_UnLoad(pdib1);
     if pdib2 <> nil then FreeImage_UnLoad(pdib2);
   end;
@@ -203,26 +222,37 @@ var
 begin
   ms := TMemoryStream.Create;
   try
+    //Extract the PNG image from the source stream
     ExtractPng(AStream, ms);
     ms.Position := 0;
 
     pdib2 := nil; pdib1 := nil; pstream := nil;
 
     try
+      //Create a FreeImage stream
       pstream := FreeImage_OpenMemory(ms.Memory, ms.Size - ms.Position);
+      
+      //Determine the type of the image (should always be "PNG")
       Format := FreeImage_GetFileTypeFromMemory(pstream);
 
+      //Load the image from the created stream
       pdib1 := FreeImage_LoadFromMemory(Format, pstream);
 
+      //Get the bit depth of the image and convert it to 32 Bit if neccessary
       if FreeImage.FreeImage_GetBPP(pdib1) <> 32 then
       begin
+        //Store the results in "pdib2"
         pdib2 := FreeImage_ConvertTo32Bits(pdib1);
+        
+        //Free the old FreeImage resource
         FreeImage_UnLoad(pdib1); pdib1 := nil;
       end else
       begin
+        //We didn't change anything. Exchange the pointers in "pdib2" and "pdib1"
         pdib2 := pdib1; pdib1 := nil;
       end;
 
+      //Get the size of the image and copy it bottom up
       w := FreeImage_GetWidth(pdib2);
       h := FreeImage_GetHeight(pdib2);
 
@@ -232,6 +262,7 @@ begin
         Move(FreeImage_GetScanline(pdib2, (h-1)-y)^, ABitmap.Scanline(y)^, 4 * w);
 
     finally
+      //Free all unfinalized resources
       if pdib1 <> nil then FreeImage_Unload(pdib1);
       if pdib2 <> nil then FreeImage_Unload(pdib2);
       if pstream <> nil then FreeImage_CloseMemory(pstream);
@@ -250,18 +281,28 @@ var
   size : DWORD;
   y:integer;
 begin
+  //Initialize some variables
   pdib := nil; pstream := nil;
+  
   try
+    //Create a new free image bitmap
     pdib := FreeImage_Allocate(ABitmap.Width, ABitmap.Height, 32);
 
+    //Copry the memory of the Andorra 2D bitmap into the FreeImage bitmap
     for y := 0 to ABitmap.Height - 1 do
       Move(ABitmap.Scanline((ABitmap.Height-1)-y)^, FreeImage_GetScanline(pdib, y)^, 4 * ABitmap.Width);
 
+    //Create a new free image stream
     pstream := FreeImage_OpenMemory;
+    
+    //Save the bitmap to the stram
     FreeImage_SaveToMemory(FIF_PNG, pdib, pstream);
+    //Get the pointer to the FreeImage memory stream and get its size
     FreeImage_AcquireMemory(pstream, mem, size);
+    //Write the FreeImage stream data to our destination stream
     AStream.Write(mem^, size);
   finally
+    //Free all unfinalized resources
     if pdib <> nil then FreeImage_Unload(pdib);
     if pstream <> nil then FreeImage_CloseMemory(pstream);
   end;

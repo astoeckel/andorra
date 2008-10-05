@@ -13,7 +13,7 @@
 * Comment: Just a switch unit for loading the right window framework unit.
 }
 
-{Just a switch unit for loading the right window framework unit.}
+{Just a switch unit for loading the proper window framework unit.}
 unit AdComponentWindow;
 
 interface
