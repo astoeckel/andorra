@@ -539,5 +539,6 @@ initialization
   //If new Andorra 2D graphic formats are registered, notify the TAdVCLBitmap class about it.
   //It will unregister its old formats and register everything again.
   RegisteredGraphicFormats.OnChange := TAdVCLBitmap.FormatListChange;
+  TAdVCLBitmap.RegisterHandler;
 
 end.
