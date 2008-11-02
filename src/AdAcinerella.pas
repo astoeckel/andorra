@@ -20,6 +20,11 @@
  Remember that Acinerella is licensed under the GPL.}
 unit AdAcinerella;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
+
 interface
 
 uses
@@ -100,10 +105,10 @@ begin
       //Set packet video info
       with PAdVideoInfo(@APacket.Info)^ do
       begin
-        Width := pLastDecoder^.stream_info.video_info.frame_width;
-        Height := pLastDecoder^.stream_info.video_info.frame_height;
-        FPS := 1 / pLastDecoder^.stream_info.video_info.frames_per_second;
-        PixelAspect := pLastDecoder^.stream_info.video_info.pixel_aspect;
+        Width := pLastDecoder^.stream_info.additional_info.video_info.frame_width;
+        Height := pLastDecoder^.stream_info.additional_info.video_info.frame_height;
+        FPS := 1 / pLastDecoder^.stream_info.additional_info.video_info.frames_per_second;
+        PixelAspect := pLastDecoder^.stream_info.additional_info.video_info.pixel_aspect;
         APacket.Timecode.Frame := round((round(pLastDecoder^.timecode * 1000) mod 1000) / (1000 / FPS));
       end;
     end else
@@ -112,9 +117,9 @@ begin
       //Set packet audio info
       with PAdAudioInfo(@APacket.Info)^ do
       begin
-        SampleRate := pLastDecoder^.stream_info.audio_info.samples_per_second;
-        BitDepth := pLastDecoder^.stream_info.audio_info.bit_depth;
-        Channels := pLastDecoder^.stream_info.audio_info.channel_count;
+        SampleRate := pLastDecoder^.stream_info.additional_info.audio_info.samples_per_second;
+        BitDepth := pLastDecoder^.stream_info.additional_info.audio_info.bit_depth;
+        Channels := pLastDecoder^.stream_info.additional_info.audio_info.channel_count;
         APacket.Timecode.Frame := round((round(pLastDecoder^.timecode * 1000) mod 1000) / (1000 / SampleRate));
       end;
     end;
@@ -159,7 +164,7 @@ begin
   //Init Acinerella
   pInstance := ac_init;
   pInstance^.output_format := AC_OUTPUT_RGBA32;
-  ac_open(pInstance, self, nil, @read_proc, nil);
+  ac_open(pInstance, self, nil, @read_proc, nil, nil);
 
   SetLength(pDecoders, pInstance^.stream_count);
 
@@ -200,6 +205,11 @@ begin
     pckg := ac_read_package(pInstance);
     if pckg <> nil then
     begin
+      // Indra Gunawan: Bug when pckg^.stream_index >= pInstance^.stream_count 
+      // added array checking 
+      if (pckg^.stream_index >= pInstance^.stream_count) then 
+        exit; 
+        
       //Decode package if corresponding decoder is activated
       if (pDecoders[pckg^.stream_index] <> nil) and
          (ac_decode_package(pckg, pDecoders[pckg^.stream_index]) > 0)  then

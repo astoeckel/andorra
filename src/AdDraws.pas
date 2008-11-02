@@ -28,8 +28,7 @@ interface
 {'$DEFINE DO_NOT_INCLUDE_STD_FORMATS}
 {'$DEFINE DO_NOT_INCLUDE_STD_WINDOWMGR}
 
-uses
-
+uses       
   SysUtils, Classes,
   AdClasses, AdTypes, AdList, AdPersistent,
   AdWindowFramework, AdDLLLoader, AdLog, AdMath, AdMessages,
@@ -232,7 +231,7 @@ type
   {Simple class that copes with scene management. TAdScene holds its own copy of
    the current view and projection matrix and applies it to the graphic system
    when needed. TAdScene is used in TAdRenderingSurface (and so in TAdDraw and
-   TAdTextureSurface, as they are descendants of TAdRenderingsurface) to allow
+   TAdTextureSurface, as they are descendants of TAdRenderingSurface) to allow
    easy access on the scene settings of the surface.}
   TAdScene = class
     private
@@ -1743,7 +1742,7 @@ var
 begin
   if Assigned(OnBeginRender) then
   begin
-    //!TODO: Only calculate VM*PM once
+    //!TODO: Calculate only VM*PM once
     mat := AdMatrix_Multiply(AModelMat, AScene.ViewMatrix);
     mat := AdMatrix_Multiply(mat, AScene.ProjectionMatrix);
     OnBeginRender(self, mat);

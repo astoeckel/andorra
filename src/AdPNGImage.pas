@@ -16,6 +16,10 @@
 {Provides an image class to load and save PNG files.}
 unit AdPNGImage;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 {$DEFINE LITTLE_ENDIAN}
 
 interface

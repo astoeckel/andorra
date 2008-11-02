@@ -30,11 +30,11 @@ unit AdSetupDlg;
 interface
 
 uses
+  {$IFDEF WIN32}Windows,{$ENDIF}
   {$IFDEF FPC}Interfaces,{$ENDIF}
   SysUtils, Forms, Classes, Controls, StdCtrls, ExtCtrls, Messages,
   IniFiles,
   {$IFNDEF FPC}XPMan, {$ELSE}lMessages, {$ENDIF}
-  {$IFDEF WIN32}Windows,{$ENDIF}
   AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages, AdStrUtils;
 
 const
@@ -655,8 +655,12 @@ end;
 
 procedure TAdSetup.DoRebuildControls(Sender: TObject);
 begin
+  //! Bug in the LCL. Hiding the only form in the application causes the whole
+  //application to close.
+  {$IFNDEF FPC}
   //Make Form invisible to hide the unaesthetic control rebuild process
   FForm.Hide;
+  {$ENDIF}
 
   //Store current settings
   StoreSettings;

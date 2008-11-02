@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites, AdSpriteEngineEx, AdParticles, AdClasses, AdPng, AdSetupDlg,
+  Dialogs, AdDraws, AdSprites, {AdSpriteEngineEx,} AdParticles, AdClasses, AdPng, AdSetupDlg,
   AdPerformanceCounter, AdTypes, AdBitmap, AdCanvas;
 
 type

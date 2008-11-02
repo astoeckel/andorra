@@ -7,14 +7,13 @@ unit Main;
 interface
 
 uses
-  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes, AdParticles;
+  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes;
 
 type
   TAdAppl = class
     private
       AdDraw:TAdDraw;
       AdImage:TAdImage;
-      AdPartSys: TAdParticleSystem;
     public
       MouseX, MouseY : integer;
       procedure Idle(Sender:TObject; var Done:boolean);
@@ -42,10 +41,6 @@ begin
       Release;
     end;
     
-    AdPartSys.Emit(1, 0, 0);
-    AdPartSys.Move(0.001);
-    AdPartSys.Draw(AdDraw, MouseX, MouseY, bmAlpha);
-
     AdDraw.EndScene;
     AdDraw.Flip;
   end;
@@ -97,15 +92,9 @@ begin
     AdImage := TAdImage.Create(AdDraw);
     AdImage.Texture.LoadGraphicFromFile('icon64.png');
     AdImage.Restore;
-    
-    AdPartSys := TAdParticleSystem.Create(AdDraw);
-    AdPartSys.DefaultParticle := TAdBillboardParticle.Create(AdPartSys);
-    AdPartSys.Texture := AdImage.Texture;
 
     AdDraw.Run;
 
-    AdPartSys.DefaultParticle.Free;
-    AdPartSys.Free;
     AdImage.Free;
   end;
   AdDraw.Free;

@@ -116,6 +116,9 @@ type
   {Represtents an index buffer}
   TAdIndexArray = array of Word;
 
+  {Represents an array of floats}
+  TAdFloatArray = array of Single;
+  
   {--- Replacement of TPoint and TRect ---}
     
   {A replacement for TPoint.}

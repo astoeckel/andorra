@@ -15,6 +15,10 @@
 {Adds png loading capabilities to Andorra 2D.}
 unit AdPNG;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

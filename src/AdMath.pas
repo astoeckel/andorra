@@ -38,9 +38,9 @@ uses
 
 {$I inc_andorra.inc}
 
-//Remove ' if you do not want to use SSE
+//Remove ' if you do not want to use 3DNOW!
 {'$DEFINE DO_NOT_USE_3DNOW}
-//Remove ' if you do not want to use any intel asm code
+//Remove ' if you do not want to use any x86amd asm code
 {'$DEFINE DO_NOT_USE_ASM}
 
 var
@@ -419,7 +419,7 @@ initialization
     UsePascal;
   {$ELSE}
     //Check whether the optimizations that are needed by the optimized functions
-    //are available on this processpr
+    //are available on this processor
     if Supports3DNow then
       Use3DNow
     else

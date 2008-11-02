@@ -42,7 +42,7 @@
         <Filename Value="OGLShader.pas"/>
         <UnitName Value="OGLShader"/>
         <CursorPos X="3" Y="31"/>
-        <TopLine Value="134"/>
+        <TopLine Value="125"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
@@ -60,7 +60,7 @@
     <JumpHistory Count="0" HistoryIndex="-1"/>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="5"/>
+    <Version Value="8"/>
     <PathDelim Value="\"/>
     <Target>
       <Filename Value="..\..\..\bin\AndorraOGLLaz.dll"/>
@@ -69,9 +69,6 @@
       <OtherUnitFiles Value="..\..\;..\..\..\lib\"/>
       <UnitOutputDirectory Value="..\..\dcu"/>
     </SearchPaths>
-    <CodeGeneration>
-      <Generate Value="Faster"/>
-    </CodeGeneration>
     <Linking>
       <Debugging>
         <StripSymbols Value="True"/>

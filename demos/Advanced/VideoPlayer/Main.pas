@@ -9,7 +9,7 @@ interface
 uses
   SysUtils, Dialogs, AdStdWindow, AdDraws, AdPNG,
   AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
-  AdGUI, AdComponents, AdGUIConnector, AdEvents, AdSetupDlg,
+  AdGUI, AdComponents, AdGUIConnector, AdSetupDlg,
 
   //Select one of the following video decoders here
   AdAcinerella; {GPL only!}
@@ -109,10 +109,10 @@ var
   AdSetup: TAdSetup;
 begin
   AdPerCounter := TAdPerformanceCounter.Create;
-//  AdPerCounter.MaximumFrameRate := 100;
+  AdPerCounter.MaximumFrameRate := 100;
 
   AdDraw := TAdDraw.Create(nil);
-  
+
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
 

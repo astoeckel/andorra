@@ -137,7 +137,7 @@ begin
   FTempTime := 0;
   FLastTickCount := GetTickCount;
   FInterpolate := true;
-  FInterpolationFactor := 5;
+  FInterpolationFactor := 20;
   FMaximumTimeGap := 50;
   FLastSleep := 0;
 end;

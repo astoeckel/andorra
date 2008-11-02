@@ -28,7 +28,7 @@ interface
 uses
   SysUtils, Classes, Math,
   AdEvents, AdClasses, AdTypes, AdContainers, AdList, AdFont, AdPolygonUtils,
-  AdMath;
+  AdMath, AdSpline;
 
 type
   {A set of three colors used to define the colors of a quad-object.}
@@ -326,6 +326,34 @@ type
   end;
 
   {@exclude}
+  TAdCanvasSplineObject = class(TAdCanvasObject)
+    private
+      FLine: TAdCanvasLine;
+      FPoints: TAdLinkedList;
+      FHash: integer;
+      FLastPoint: PAdLinePoint;
+      FOwnPen:boolean;
+      procedure ClearData;
+      procedure HashPoint(APoint:TAdLinePoint);
+    protected
+      procedure SetMatrix(AValue: TAdMatrix); override;
+    public
+      constructor Create(AAppl: TAd2DApplication);
+      destructor Destroy;override;
+
+      procedure Rehash;
+
+      procedure AddPoint(APoint:TAdLinePoint);
+      procedure Draw;override;
+      procedure Update(AItem: TAdCanvasObject);override;
+      function CompareTo(AItem: TAdCanvasObject): TAdCanvasUpdateState; override;
+
+      procedure Generate;override;
+
+      property Hash: integer read FHash;
+  end;
+
+  {@exclude}
   TAdCanvasQuadObject = class(TAdCanvasObject)
     private
       FQuad:TAdCanvasColorQuad;
@@ -482,7 +510,9 @@ type
 
       procedure CreateLinesObject;
       procedure CreatePointsObject;
+      procedure CreateSplineObject;
       procedure AddLinePoint(ax,ay:integer);
+      procedure AddSplinePoint(ax, ay: integer);
       procedure ColorQuad(var aquad:TAdCanvasColorQuad);
       procedure DoTextOut(ARect:TAdRect; AText:string);
     public
@@ -537,6 +567,18 @@ type
        @seealso(Line)}
       procedure Line(ap1,ap2:TAdPoint);overload;
 
+      {Moves the start point of the line to the specified coordinates.}
+      procedure SplineMoveTo(ax, ay: integer);overload;
+      {Moves the start point of the line to the specified coordinates.}
+      procedure SplineMoveTo(ap: TAdPoint);overload;
+      {Draws a spline from the start point specified by "SplineMoveTo" to the specified
+       coordinates.}
+      procedure SplineLineTo(ax, ay: integer);overload;
+      {Draws a spline from the start point specified by "SplineMoveTo" to the specified
+       coordinates.}
+      procedure SplineLineTo(ap: TAdPoint);overload;
+
+
       {Draws an arrow from P1 to P2. ArrowSize specifies the length of the a
        rrowhead. ArrowAngle specifies the inner angle between the to arrowhead
        lines.}
@@ -575,6 +617,12 @@ type
       {Draws a simple polygon. The polygon points have to be in clockwise order
        and may not contain any intersections. }
       procedure Polygon(APolygon:TAdPolygon);
+
+      {Draws a poly line.}
+      procedure Polyline(APolygon: TAdPolygon);
+
+      {Draws a spline.}
+      procedure Spline(ASpline: TAdPolygon);
 
       {The pen object, which represents the settings for the outline of the
        objects.
@@ -1026,7 +1074,12 @@ procedure TAdCanvas.PushObject;
 begin
   if FCurrentObject <> nil then
   begin
-    FCurrentObject.Pen := FPen;
+    if (FCurrentObject is TAdCanvasLine) or
+       (FCurrentObject is TAdCanvasSplineObject) then
+      FCurrentObject.Pen := FTempPen
+    else
+      FCurrentObject.Pen := FPen;
+      
     FCurrentObject.Brush := FBrush;
     DrawObject(FCurrentObject);
     FCurrentObject := nil;
@@ -1113,6 +1166,28 @@ begin
   FCurrentObject := TAdCanvasLine.Create(FAppl);
 end;
 
+procedure TAdCanvas.CreateSplineObject;
+var
+  tmp:TAdPen;
+begin
+  if (FCurrentObject <> nil) then
+  begin
+    if FCurrentObject is TAdCanvasSplineObject then
+    begin
+      tmp := FPen;
+      FPen := FTempPen;
+      PushObject;
+      FPen := tmp;
+    end
+    else
+    begin
+      PushObject;
+    end;
+  end;
+  FTempPen.Assign(FPen);
+  FCurrentObject := TAdCanvasSplineObject.Create(FAppl);
+end;
+
 procedure TAdCanvas.CreatePointsObject;
 begin
   if FCurrentObject = nil then
@@ -1141,6 +1216,20 @@ begin
   end;
 
   TAdCanvasLine(FCurrentObject).AddPoint(p);
+end;
+
+procedure TAdCanvas.AddSplinePoint(ax, ay: integer);
+var
+  p:TAdLinePoint;
+begin
+  with p do
+  begin
+    X := ax;
+    Y := ay;
+    Color := Pen.Color;
+  end;
+
+  TAdCanvasSplineObject(FCurrentObject).AddPoint(p);
 end;
 
 procedure TAdCanvas.Circle(acx, acy, ar: integer);
@@ -1205,13 +1294,9 @@ end;
 procedure TAdCanvas.LineTo(ax, ay: integer);
 begin
   if FCurrentObject is TAdCanvasLine then
-  begin
-    AddLinePoint(ax,ay);
-  end
+    AddLinePoint(ax,ay)
   else
-  begin
     MoveTo(ax,ay);
-  end;
 end;
 
 procedure TAdCanvas.MoveTo(ax, ay: integer);
@@ -1386,11 +1471,79 @@ begin
   PushObject;
   FCurrentObject := TAdCanvasPolygonObject.Create(FAppl);
   with FCurrentObject as TAdCanvasPolygonObject do
-  begin
     Polygon := APolygon;
-  end;
-  
+
   PushObject;  
+end;
+
+procedure TAdCanvas.Polyline(APolygon: TAdPolygon);
+var
+  i: integer;
+  lp: TAdLinePoint;
+begin
+  PushObject;
+
+  CreateLinesObject;
+  with FCurrentObject as TAdCanvasLine do
+  begin
+    for i := 0 to High(APolygon) do
+    begin
+      lp.X := APolygon[i].X;
+      lp.Y := APolygon[i].Y;
+      lp.Color := self.FPen.Color;
+
+      AddPoint(lp);
+    end;
+  end;
+
+  PushObject;
+end;
+
+procedure TAdCanvas.Spline(ASpline: TAdPolygon);
+var
+  i: integer;
+  lp: TAdLinePoint;
+begin
+  PushObject;
+
+  CreateSplineObject;
+  with FCurrentObject as TAdCanvasSplineObject do
+  begin
+    for i := 0 to High(ASpline) do
+    begin
+      lp.X := ASpline[i].X;
+      lp.Y := ASpline[i].Y;
+      lp.Color := self.FPen.Color;
+
+      AddPoint(lp);
+    end;
+  end;
+
+  PushObject;
+end;         
+
+procedure TAdCanvas.SplineLineTo(ap: TAdPoint);
+begin
+  SplineLineTo(ap.X, ap.Y);
+end;
+
+procedure TAdCanvas.SplineLineTo(ax, ay: integer);
+begin
+  if FCurrentObject is TAdCanvasSplineObject then
+    AddSplinePoint(ax, ay)
+  else
+    SplineMoveTo(ax, ay);
+end;
+
+procedure TAdCanvas.SplineMoveTo(ap: TAdPoint);
+begin
+  SplineMoveTo(ap.X, ap.Y);
+end;
+
+procedure TAdCanvas.SplineMoveTo(ax, ay: integer);
+begin
+  CreateSplineObject;
+  AddSplinePoint(ax,ay);
 end;
 
 { TAdCanvasLines }
@@ -2679,7 +2832,264 @@ end;
 procedure TAdCanvasPolygonObject.Update(AItem: TAdCanvasObject);
 begin
   FPolygon := TAdCanvasPolygonObject(AItem).Polygon;
-  Generate;  
+  Generate;
+end;
+
+{ TAdCanvasSpline }
+
+constructor TAdCanvasSplineObject.Create(AAppl: TAd2DApplication);
+begin
+  inherited Create(AAppl);
+
+  FPoints := TAdLinkedList.Create;
+  FOwnPen := false;
+end;
+
+destructor TAdCanvasSplineObject.Destroy;
+begin
+  ClearData;
+  FPoints.Free;
+
+  if FOwnPen then
+  begin
+    FPen.Free;
+    FBrush.Free;
+  end;
+  
+  inherited;
+end;
+
+procedure TAdCanvasSplineObject.AddPoint(APoint: TAdLinePoint);
+var
+  PPoint:PAdLinePoint;
+begin
+  if FLastPoint <> nil then
+  begin
+    if (FLastPoint^.X = APoint.X) and
+       (FLastPoint^.Y = APoint.Y) then exit;
+  end;
+  HashPoint(APoint);
+  New(PPoint);
+  PPoint^ := APoint;
+  FPoints.Add(PPoint);
+  FLastPoint := PPoint;
+end;
+
+procedure TAdCanvasSplineObject.ClearData;
+begin
+  //Free the line object if it isn't nil
+  if FLine <> nil then
+    FLine.Free;
+
+  FLine := nil;
+
+  //Free all points conected to the list
+  FPoints.StartIteration;
+  while not FPoints.ReachedEnd do
+    Dispose(FPoints.GetCurrent);
+
+  FPoints.Clear;
+end;
+
+function TAdCanvasSplineObject.CompareTo(AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  result := usDelete;
+  if AItem is TAdCanvasSplineObject then
+  begin
+    if (TAdCanvasSplineObject(AItem).FPoints.Count = FPoints.Count) and
+       (TAdCanvasSplineObject(AItem).Hash = FHash) and
+       (TAdCanvasSplineObject(AItem).Pen.EqualTo(FPen)) then
+    begin
+      result := usEqual;
+    end;    
+  end;
+end;
+
+procedure TAdCanvasSplineObject.Draw;
+begin
+  if FLine <> nil then  
+    FLine.Draw;
+end;
+
+procedure TAdCanvasSplineObject.Generate;
+var
+  spline: TAdCubicSpline;
+  p: PAdLinePoint;
+  x, y: TAdFloatArray;
+  cols: array of TAndorraColor;
+  i, j, itstart, itstop, splstart, splcount, dist, c: integer;
+  xp, yp: single;
+  t, cp, step: single;
+  APen: TAdPen;
+  ABrush: TAdBrush;
+  lp: TAdLinePoint;
+
+  function Range(const AStart, AMin, AMax, ARange, ABorder: integer; var AItStart, AItStop, ASplStart, ASplCount: integer): boolean;
+  var
+    ASplStop: integer;
+  begin
+    AItStart := AStart;
+    AItStop :=  AStart + ARange;
+    ASplStart := AItStart - ABorder;
+    ASplStop := AItStop + ABorder;
+
+    if AItStart < AMin then
+      AItStart := AMin;
+    if ASplStart < AMin then
+      ASplStart := AMin;
+    if AItStop > AMax then
+      AItStop := AMax;
+    if ASplStop > AMax then
+      ASplStop := AMax;
+
+    ASplCount := ASplStop - ASplStart + 1;
+
+    result := AStart < AMax;
+  end;
+
+  function InterpolateColor(ACol1, ACol2: TAndorraColor; APos: single): TAndorraColor;
+  begin
+    with result do
+    begin
+      r := round(ACol1.r * (1 - APos) + ACol2.r * APos);
+      g := round(ACol1.g * (1 - APos) + ACol2.g * APos);
+      b := round(ACol1.b * (1 - APos) + ACol2.b * APos);
+      a := round(ACol1.a * (1 - APos) + ACol2.a * APos);
+    end;
+  end;
+  
+begin
+  if FLine <> nil then
+    FLine.Free;
+  FLine := nil;
+
+  //Exit if there are less than two points in the list
+  if FPoints.Count <= 1 then
+    exit;
+
+  FLine := TAdCanvasLine.Create(Appl);
+
+  //Copy all components of the points to a seperate array
+  SetLength(x, FPoints.Count);
+  SetLength(y, FPoints.Count);
+  SetLength(cols, FPoints.Count);
+
+  i := 0;     
+  FPoints.StartIteration;
+  while not FPoints.ReachedEnd do
+  begin
+    p := FPoints.GetCurrent;
+
+    x[i] := p^.X;
+    y[i] := p^.Y;
+    cols[i] := p^.Color;
+
+    i := i + 1;
+  end;
+
+  //Copy pen and brush if necessary
+  if not FOwnPen then
+  begin
+    FOwnPen := true;
+
+    APen := FPen;
+    FPen := TAdPen.Create;
+    FPen.Assign(APen);
+
+    ABrush := FBrush;
+    FBrush := TAdBrush.Create;
+    FBrush.Assign(ABrush);
+  end;
+
+  //Create a new spline all 20 points
+  itstart := 0;
+  while Range(itstart, 0, FPoints.Count - 1, 20, 5, itstart, itstop, splstart, splcount) do
+  begin
+    spline := TAdCubicSpline.Create(
+      @x[splstart], @y[splstart], nil, splcount);
+
+    //Iterate through all points in the list
+    for i := itstart + 1 to itstop do
+    begin
+      //Calculate the distance between this and the last point
+      dist :=
+        Round(
+          Sqrt(
+            Sqr(x[i] - x[i - 1]) +
+            Sqr(y[i] - y[i - 1])));
+
+      //Calculate the step "t" has to make after a point was added
+      //to the line
+      c := (dist div 10) - 1;
+      if c <= 0 then
+      begin
+        c := 1;
+        step := 1;
+      end
+      else
+       step := 1 / c;
+
+      t := (i - splstart) - 1;
+      cp := 0;
+
+      for j := 0 to c do
+      begin
+        //Get a point from the spline
+        spline.SplineXY(t, xp, yp);
+
+        //Increase "t" by "step"
+        t := t + step;
+        cp := cp + step;
+
+        //Add the point to the line
+        lp.X := round(xp);
+        lp.Y := round(yp);
+        lp.Color := InterpolateColor(cols[i - 1], cols[i], cp);
+        FLine.AddPoint(lp);
+      end;
+    end;
+
+    spline.Free;
+
+    itstart := itstop;
+  end;
+
+  //Prepare the generated points for drawing
+  FLine.Pen := FPen;
+  FLine.Brush := FBrush;
+
+  FLine.Generate;
+end;
+
+procedure TAdCanvasSplineObject.HashPoint(APoint: TAdLinePoint);
+begin
+  //Multiply the components of the point with some numbers to create a
+  //value that changes with a little change in one of the value
+  FHash := FHash xor
+    ((APoint.X * FPoints.Count) + (APoint.Y * FPoints.Count * 10)) xor
+    (PInteger(@APoint.Color)^);
+end;
+
+procedure TAdCanvasSplineObject.Rehash;
+begin
+  FHash := 0;
+
+  FPoints.StartIteration;
+  while not FPoints.ReachedEnd do
+  begin
+    HashPoint(PAdLinePoint(FPoints.GetCurrent)^);
+  end;
+end;
+
+procedure TAdCanvasSplineObject.SetMatrix(AValue: TAdMatrix);
+begin
+  if FLine <> nil then
+    FLine.Matrix := AValue;
+end;
+
+procedure TAdCanvasSplineObject.Update(AItem: TAdCanvasObject);
+begin
+  //Updating a spline is not possible now
 end;
 
 end.

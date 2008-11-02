@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Dialogs, SysUtils, Forms, Types, Classes, Graphics,  AdSimpleXML,
-  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg;
+  Dialogs, SysUtils, Forms, Types, Classes, Graphics, AdSimpleXML,
+  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, ExtCtrls;
 
 type
   TForm1 = class(TForm)
@@ -15,6 +15,9 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
+    spline: TAdPolygon;
+    MDown: boolean;
+    ax, ay: integer;
     procedure Idle(Sender: TObject; var Done: boolean);
   end;
 

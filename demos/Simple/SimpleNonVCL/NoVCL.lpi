@@ -29,7 +29,7 @@
         <PackageName Value="LazOpenGLContext"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="19">
+    <Units Count="20">
       <Unit0>
         <Filename Value="NoVCL.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -41,8 +41,8 @@
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="71" Y="102"/>
-        <TopLine Value="82"/>
+        <CursorPos X="60" Y="60"/>
+        <TopLine Value="29"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="21"/>
         <Loaded Value="True"/>
@@ -149,7 +149,7 @@
         <UnitName Value="AdTypes"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="313"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="4"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit16>
@@ -158,7 +158,7 @@
         <UnitName Value="AdClasses"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="441"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="3"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit17>
@@ -166,13 +166,22 @@
         <Filename Value="..\..\..\src\AdParticles.pas"/>
         <UnitName Value="AdParticles"/>
         <CursorPos X="1" Y="1415"/>
-        <TopLine Value="1390"/>
-        <EditorIndex Value="1"/>
+        <TopLine Value="1383"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit18>
+      <Unit19>
+        <Filename Value="..\..\..\src\AdBuffer.pas"/>
+        <UnitName Value="AdBuffer"/>
+        <CursorPos X="8" Y="30"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit19>
     </Units>
-    <JumpHistory Count="13" HistoryIndex="12">
+    <JumpHistory Count="15" HistoryIndex="14">
       <Position1>
         <Filename Value="Main.pas"/>
         <Caret Line="90" Column="1" TopLine="74"/>
@@ -225,10 +234,18 @@
         <Filename Value="Main.pas"/>
         <Caret Line="107" Column="35" TopLine="80"/>
       </Position13>
+      <Position14>
+        <Filename Value="..\..\..\src\AdBuffer.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position14>
+      <Position15>
+        <Filename Value="Main.pas"/>
+        <Caret Line="17" Column="1" TopLine="1"/>
+      </Position15>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="5"/>
+    <Version Value="8"/>
     <PathDelim Value="\"/>
     <Target>
       <Filename Value="..\..\..\bin\NoVCL.exe"/>
@@ -237,9 +254,6 @@
       <OtherUnitFiles Value="..\..\..\lib\;..\..\..\src\;$(LazarusDir)\lcl\units\$(TargetCPU)-$(TargetOS)\;$(LazarusDir)\components\custom\;$(LazarusDir)\components\codetools\units\$(TargetCPU)-$(TargetOS)\;$(LazarusDir)\lcl\units\$(TargetCPU)-$(TargetOS)\$(LCLWidgetType)\;$(LazarusDir)\packager\units\$(TargetCPU)-$(TargetOS)\"/>
       <UnitOutputDirectory Value="..\..\..\src\dcu"/>
     </SearchPaths>
-    <CodeGeneration>
-      <Generate Value="Faster"/>
-    </CodeGeneration>
     <Other>
       <Verbosity>
         <ShowHints Value="False"/>

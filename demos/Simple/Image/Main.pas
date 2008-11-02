@@ -82,7 +82,7 @@ begin
     AdDraw.ClearSurface(clSilver);
     AdDraw.BeginScene;
 
-    AdImageList1.Find('logo').DrawRotate(AdDraw,0,0,64,64,0,0.5,0.5,180);
+    AdImageList1.Find('logo').Draw(AdDraw, 0, 0, 0);
 
     AdDraw.EndScene;
     AdDraw.Flip;

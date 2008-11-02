@@ -34,10 +34,15 @@ type
 
   TWall = class(TImageSprite);
 
+  TColl = (coLeft, coRight, coTop, coBottom);
+  TColls = set of TColl;
+
   TBall = class(TImageSpriteEx)
     private
       Falling:boolean;
       WillDie:boolean;
+      tg: double;
+      c: TColls;
     public
       SX,SY:double;
       SourceX,SourceY:integer;
@@ -81,7 +86,8 @@ begin
     with AdDraw.Canvas do
     begin
       Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
-      Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
+      Textout(0,16,'Timegap: '+floattostr(AdPerCounter.TimeGap));
+      Textout(0,32,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
       Release;
     end;
     AdDraw.Options := AdDraw.Options + [aoLight];
@@ -100,6 +106,7 @@ begin
   ReportMemoryLeaksOnShutdown := true;
 
   AdPerCounter := TAdPerformanceCounter.Create;
+  AdPerCounter.MaximumTimeGap := 50;
 
   AdDraw := TAdDraw.Create(self);
 
@@ -346,36 +353,16 @@ procedure TBall.DoCollision(Sprite: TSprite; var Done: boolean);
 begin
   if Sprite is TWall then
   begin
-    falling := false;
-    SY := 128;
-    if (Sprite.Y > Y) and (Sprite.X > X) and (Sprite.X+Sprite.Width < Y+Width) and
-       (Sprite.Y+Sprite.Height < Y+Height) then
-    begin
-      Coll;
-      Done := true;
-      exit;
-    end;
-
-    if Sprite.Y > Y then
-    begin
-      Y := Sprite.Y-Height+1;
-    end
-    else
-    begin
-      if (Sprite.X+Sprite.Width > X) and (SX < 0) then
-      begin
-        SX := -SX;
-        X := Sprite.X+Sprite.Width+1;
-        exit;
-      end;
-      if (Sprite.X < X+Width) and (SX > 0) then
-      begin
-        SX := -SX;
-        X := Sprite.X-Width-1;
-        exit;
-      end;
-    end;   
+    if (Sprite.Y < Y + Height) then
+      c := c + [coBottom] else
+    if (Y < Sprite.Y + Sprite.Height) then
+      c := c + [coTop];
+    if (Sprite.X < X + Width) and (Sprite.Y < Y + Height - 10) then
+      c := c + [coRight] else
+    if (Sprite.X + Width > X) and (Sprite.Y < Y + Height - 10) then
+      c := c + [coLeft];
   end;
+
   if Sprite is TBall then
   begin
     Coll;
@@ -400,7 +387,7 @@ begin
 
     Brush.BlendMode := bmAlpha;
   end;
-  Image.Color := Color;
+
   old := Engine.Surface.Scene.AmbientColor;
   Engine.Surface.Scene.AmbientColor := Ad_ARGB(255, 255, 255, 255);
   inherited DoDraw;
@@ -408,32 +395,50 @@ begin
 end;
 
 procedure TBall.DoMove(TimeGap: double);
+var
+  mx, my: double;
 begin
   inherited DoMove(TimeGap);
+
+  tg := TimeGap;
   if not WillDie then
   begin
     if Alpha < 255 then
-    begin
-      Alpha := Alpha + 1000*TimeGap;
-    end
+      Alpha := Alpha + 1000*TimeGap
     else
-    begin
       Alpha := 255;
-    end;
 
-    falling := true;
-    Collision;
+    mx := 0;
+    my := 0;
 
     if falling then
     begin
-      SY := SY + SY * 0.1*TimeGap;
-      Y := Y + SY*TimeGap;
+      SY := SY + SY * 0.1 * TimeGap;
+      my := SY * TimeGap;
     end
     else
     begin
       Angle := Angle + 360*(SX/abs(SX))*TimeGap;
       if Angle > 360 then Angle := 0;
-      X := X + SX*TimeGap;
+      mx := SX*TimeGap;
+    end;
+
+    X := X + mx;
+    Y := Y + my;
+
+    c := [];
+    Collision;
+
+    falling := not (coBottom in c);
+    if not falling then
+    begin
+      Y := Y - my * 0.5;
+      SY := 200;
+    end;
+    if (coLeft in c) or (coRight in c) then
+    begin
+      X := X - mx;
+      SX := - SX;
     end;
   end
   else
@@ -448,6 +453,7 @@ procedure TBall.Reset;
 begin
   X := sourcex;
   Y := sourcey;
+  SY := 200;
 end;
 
 end.

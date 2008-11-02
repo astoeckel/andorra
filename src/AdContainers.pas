@@ -71,6 +71,9 @@ type
       {Pointer to the last item.}
       function Last:Pointer;
 
+      {Deletes all entries in the linked list.}
+      procedure Clear;
+
       {Resets the iterator.}
       procedure StartIteration;
       {Returns true, if the iterator reached the end of the list.}
@@ -140,7 +143,7 @@ implementation
 constructor TAdLinkedList.Create;
 begin
   inherited Create;
-  
+
   //Initialize Varibales
   FCount := 0;
   FStart := nil;
@@ -150,10 +153,7 @@ end;
 destructor TAdLinkedList.Destroy;
 begin
   //Free all elements
-  while Count > 0 do
-  begin
-    Delete(0);
-  end;
+  Clear;
   
   inherited Destroy;
 end;
@@ -368,6 +368,31 @@ begin
   result := nil;
   if FLast <> nil then
     result := FLast^.data;
+end;
+
+procedure TAdLinkedList.Clear;
+var
+  p1, p2: PAdLinkedListItem;
+begin
+  //Get the first element
+  p1 := FStart;
+
+  //Iterate trough the list
+  while p1 <> nil do
+  begin
+    //Save the element next to the current element
+    p2 := p1^.next;
+    //Free the current element
+    Dispose(p1);
+    //Go on iterating through the list using the next element
+    p1 := p2;
+  end;
+
+  //Set everything to the initial settings
+  FStart := nil;
+  FLast := nil;
+  FIterItem := nil;
+  FCount := 0;
 end;
 
 { TAdMap }

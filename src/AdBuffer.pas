@@ -25,6 +25,10 @@
  filestream class that speeds up byte access on file streams is also included.}
 unit AdBuffer;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses

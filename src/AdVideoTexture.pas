@@ -65,8 +65,8 @@ type
     vdIncomplete, {< The frame data was incomplete, we have to transfer more
       data to the video decoder.}
     vdHasFrame, {< The video decoder found a frame in the data we provided.
-      It can be received by calling the "FillBuffer" method.}
-    vdEnd {< There was a fatal error in the video stream or it idicated that
+      It can be received by calling the "GetPacket" method.}
+    vdEnd {< There was a fatal error in the video stream or it indicated that
       the video has come to an end.}
   );
 
@@ -159,8 +159,6 @@ type
 
       {Tells the decoder to go on decoding. When data is needed, the specified
        callback should be called.
-       @param(ACallback is the callback that is called by the decoder when data
-        is needed.)
        @returns(The current decoder state)
        @seealso(TAdVideoDecoderState)
        @seealso(GetPacket)}

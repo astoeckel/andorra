@@ -344,7 +344,7 @@ begin
       pixelptr := Dest.ScanLine;
       for i := 0 to (Dest.Size div 4) - 1 do
       begin
-        if FTransparent and (FTransparentColor = RGB(pixelptr^.r, pixelptr^.g, pixelptr^.b)) then
+        if FTransparent and (FTransparentColor = RGB(pixelptr^.b, pixelptr^.g, pixelptr^.r)) then
           pixelptr^.a := 0
         else
           pixelptr^.a := 255;

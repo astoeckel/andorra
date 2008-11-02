@@ -193,7 +193,7 @@ type
       {Calls the instance's DoMove function and all child's move function.}
       procedure Move(TimeGap:double);
       {Calls the instance's DoDraw function and all childs' draw function.}
-      procedure Draw;
+      procedure Draw;virtual;
       {Tells the engine that this instance of TSprite wants to bee freed.}
       procedure Dead;virtual;
       {Gives all sprites the posibility to restore their setings - eg. for
@@ -637,15 +637,15 @@ var i:integer;
 begin
   if Visible then
   begin
-    FEngine.Surface.Activate;
+    //Activate the target surface if it unequals nil
+    if FEngine.Surface <> nil then
+     FEngine.Surface.Activate;
 
+    //Check if every element in the list is visible and draw it
     for i := 0 to FList.Count - 1 do
-    begin
       if (not FVisibilityTest) or (OverlapRect(FEngine.SurfaceRect, FList[i].BoundsRect)) then
-      begin
         FList[i].Draw;
-      end;
-    end;
+
     DoDraw;
   end;
 end;
