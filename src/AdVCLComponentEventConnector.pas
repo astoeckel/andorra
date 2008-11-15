@@ -24,7 +24,7 @@ interface
 
 uses
   SysUtils, Classes, Types, Forms, Controls, TypInfo,
-  AdTypes, AdEvents, AdWindowFramework;
+  AdEvents, AdWindowFramework;
 
 type
   {Connects the events of a vcl/lcl component to a window framework. This class
@@ -505,6 +505,7 @@ var
 begin
   if Assigned(FFramework.Events.OnClose) then
   begin
+    CanClose := true;
     FFramework.Events.OnClose(FFramework, CanClose);
     if not CanClose then
       Action := caNone;

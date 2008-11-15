@@ -66,11 +66,15 @@ var
   c:char;
   maxw, maxh, ax, ay, sx, sy, cx, cy:integer;
   shadow:boolean;
-  adbmp,adeffect:TAdBitmap;
+  adbmp:TAdBitmap;
   alphacolor:longint;
+
+  {$IFNDEF FPC}
+  adeffect:TAdBitmap;
   blur:TAdBitmapBlur;
   p1,p2:PRGBARec;
   p3:PRGBRec;
+  {$ENDIF}
 begin
   tmp := AData;
   inc(tmp, 5);

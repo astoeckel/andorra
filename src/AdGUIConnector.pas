@@ -26,7 +26,7 @@ unit AdGUIConnector;
 interface
 
 uses
-  AdWindowFramework, AdEvents, AdGUI, AdTypes;
+  AdWindowFramework, AdEvents, AdGUI;
 
 type
   {Connects a TAdWindowFramework to a TAdComponent.}

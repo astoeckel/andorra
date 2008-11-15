@@ -26,7 +26,7 @@ unit AdComponents;
 interface
 
 uses
-  AdSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap, AdList,
+  AdSimpleXML, AdGUI, AdXML, AdSkin, AdClasses, AdDraws, AdTypes, AdBitmap,
   Classes, Graphics, SysUtils, AdCanvas, AdFont, AdEvents;
 
 type

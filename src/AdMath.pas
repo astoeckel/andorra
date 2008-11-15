@@ -152,6 +152,7 @@ function _PASCAL_AdMatrix_RotationX(const angle:single):TAdMatrix;
 var
   asin, acos: Extended;
 begin
+  asin := 0; acos := 0;
   SinCos(angle, asin, acos);
 
   result := AdMatrix_Clear;

@@ -2886,7 +2886,7 @@ begin
   //Free all points conected to the list
   FPoints.StartIteration;
   while not FPoints.ReachedEnd do
-    Dispose(FPoints.GetCurrent);
+    Dispose(PAdLinePoint(FPoints.GetCurrent));
 
   FPoints.Clear;
 end;
@@ -3003,6 +3003,11 @@ begin
 
   //Create a new spline all 20 points
   itstart := 0;
+  itstop := 0;
+  splstart := 0;
+  splcount := 0;
+  xp := 0;
+  yp := 0;
   while Range(itstart, 0, FPoints.Count - 1, 20, 5, itstart, itstop, splstart, splcount) do
   begin
     spline := TAdCubicSpline.Create(

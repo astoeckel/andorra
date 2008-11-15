@@ -25,7 +25,7 @@ interface
 uses
   {$IFDEF FPC}Interfaces, {$ENDIF} //Interfaces has to be included in the uses list for initializing the global "Application" variable
   Classes, Controls, Windows, Forms,
-  AdEvents, AdTypes, AdWindowFramework, AdVCLComponentEventConnector;
+  AdTypes, AdWindowFramework, AdVCLComponentEventConnector;
 
 type
   {@exclude}

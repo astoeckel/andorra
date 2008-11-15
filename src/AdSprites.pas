@@ -371,6 +371,7 @@ type
       procedure RotatePoint(cx, cy: integer; var p: TAdPoint);
     protected
       procedure DoDraw;override;
+      procedure DoMove(ATimeGap: double);override;
       procedure SetHeight(AValue:double);override;
       procedure SetWidth(AValue:double);override;
       procedure SetAlpha(AValue:double);virtual;
@@ -1172,13 +1173,7 @@ end;
 procedure TImageSpriteEx.DoDraw;
 begin
   if FImage <> nil then
-  begin
-    if FChangedRotation then
-    begin
-      RecalcBoundsRect;
-      FChangedRotation := false;
-    end;
-    
+  begin   
     FImage.Color := FColor;
     if Alpha <> 255 then
     begin
@@ -1210,6 +1205,17 @@ begin
         FImage.StretchDraw(Engine.Surface, BoundsRect, Trunc(AnimPos));
       end;
     end;
+  end;
+end;
+
+procedure TImageSpriteEx.DoMove(ATimeGap: double);
+begin
+  inherited;
+
+  if FChangedRotation then
+  begin
+    RecalcBoundsRect;
+    FChangedRotation := false;
   end;
 end;
 

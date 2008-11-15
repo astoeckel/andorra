@@ -31,7 +31,7 @@ function PointInTriangle(const ap1, tp1, tp2, tp3 : TAdPoint): boolean;
 {Triangulates the given polygon. The polygon must not contain any intersections or holes/islands.}
 function Triangulate(const APolygon: TAdPolygon; var ATriangles: TAdTriangles):boolean;
 {Returns true if the polygon is in clockwise orientation, false if it is counter-clockwise}
-function PolygonIsClockwise(const APolygon : TAdPolygon):boolean;
+//function PolygonIsClockwise(const APolygon : TAdPolygon):boolean;
 
 implementation
 
@@ -41,12 +41,12 @@ implementation
 //http://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
 //http://www.iti.fh-flensburg.de/lang/algorithmen/geo/polygon.htm
 //http://nuttybar.drama.uga.edu/pipermail/dirgames-l/2003-December/027342.html
-
+{
 function PolygonIsClockwise(const APolygon : TAdPolygon):boolean;
 begin
   //result := APolygon[0].X < APolygon[1].X;
   result := false;
-end;
+end;       }
 
 //Überprüft ob ein Punkt in einem Dreieck liegt
 function PointInTriangle(const ap1, tp1, tp2, tp3 : TAdPoint): boolean;
