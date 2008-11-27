@@ -15,9 +15,6 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    spline: TAdPolygon;
-    MDown: boolean;
-    ax, ay: integer;
     procedure Idle(Sender: TObject; var Done: boolean);
   end;
 

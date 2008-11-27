@@ -313,6 +313,11 @@ const
   {A identity matrix.}
   AdMatrix_Identity : TAdMatrix = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1));
 
+  {For preventing the graphics board from plotting the from pxiels when the atPoint
+  filter is used, AdTextureOffset/(Width in Pixels) should be added to every texture
+  coordinate.}
+  AdTextureOffset = 0.5; //! this may be moved the graphic plugin - I have to see whether adding this value affects other graphic systems and/or filters
+
 implementation
 
 function AdPoint(X,Y:LongInt):TAdPoint;

@@ -25,6 +25,7 @@ type
     AdSpriteEngine:TSpriteEngineEx;
     AdPictureCollection:TAdImageList;
     AdPerCounter:TAdPerformanceCounter;
+    AdCamera: TAdSimpleCamera;
     firsttime:boolean;
     lx,ly:integer;
     procedure ApplicationIdle(Sender:TObject;var Done:boolean);
@@ -77,8 +78,19 @@ begin
 
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
 
-    AdSpriteEngine.Surface := AdDraw;
+    AdDraw.Scene.Viewport := AdBounds(0, 0, 300, 300);
     AdSpriteEngine.Draw;
+
+    AdDraw.Scene.Viewport := AdBounds(000, 300, 300, 300);
+    AdSpriteEngine.Draw;
+
+    AdDraw.Scene.Viewport := AdBounds(300, 000, 300, 300);
+    AdSpriteEngine.Draw;
+
+    AdDraw.Scene.Viewport := AdBounds(300, 300, 300, 300);
+    AdSpriteEngine.Draw;
+
+    AdDraw.Scene.Viewport := AdDraw.SurfaceRect;
 
     AdSpriteEngine.Dead;
 
@@ -121,6 +133,8 @@ begin
       AdDraw.Scene.AmbientColor := Ad_ARGB(255, 96, 96, 96);
       AdPictureCollection := TAdImageList.Create(AdDraw);
       AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
+      AdCamera := TAdSimpleCamera.Create(AdSpriteEngine);
+      AdSpriteEngine.Camera := AdCamera;
 
       LoadImages;
       LoadLevel;
@@ -145,6 +159,7 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdPerCounter.Free;
+  AdCamera.Free;
   AdSpriteEngine.Free;
   AdPictureCollection.Free;
   AdDraw.Free;
@@ -191,7 +206,7 @@ procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
 var
   p:TAdPoint;
 begin
-  p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
+  p := AdPoint(X, Y); //AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
   lx := p.x;
   ly := p.y;
 end;
@@ -203,9 +218,9 @@ var
 begin
   if ssLeft in Shift then
   begin
-    p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
-    AdSpriteEngine.X := AdSpriteEngine.X + p.x - lx;
-    AdSpriteEngine.Y := AdSpriteEngine.Y + p.y - ly;
+    p := AdPoint(X, Y);//AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
+    AdCamera.X := AdCamera.X + p.x - lx;
+    AdCamera.Y := AdCamera.Y + p.y - ly;
     Lx := p.x;
     Ly := p.y;
   end;
@@ -214,14 +229,14 @@ end;
 procedure TForm1.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 begin
-  if ssLeft in Shift then
+{  if ssLeft in Shift then
   begin
     AdSpriteEngine.Rotation := AdSpriteEngine.Rotation + WheelDelta / 5000;
   end
   else
   begin
     AdSpriteEngine.Zoom := AdSpriteEngine.Zoom + WheelDelta / (1000 / AdSpriteEngine.Zoom);
-  end;
+  end;  }
 end;
 
 procedure TForm1.LoadImages;

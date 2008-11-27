@@ -187,8 +187,8 @@ type
       {The title of the dialog. By default this is the title of the application.}
       property Title: string read FTitle write FTitle;
       {The ini file object all settings should be stored in. Normally TAdSetup
-       creates its own ini file. After setting your own ini file object, this
-       own ini file object is automatically freed.}
+       creates its own ini file. After setting your own ini file object, the
+       old ini file object is automatically freed.}
       property Ini: TIniFile read FIni write SetIni;
       {Path to the plugin dll files. Normally set to ParamStr(0)}
       property Path: string read FPath write FPath;

@@ -169,7 +169,7 @@ begin
       form.Left := 0;
     end;
 
-    //Actualize handle - it may have changed because of the changes in form.BorderStyle
+    //Refresh handle - it may have changed because of the changes in form.BorderStyle
     //and form.BorderIcons.
     //This only applies to Delphi 2005 and earlier
     FHandle := form.Handle;

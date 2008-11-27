@@ -28,7 +28,7 @@ unit AdAcinerella;
 interface
 
 uses
-  AdBitmapClass, AdVideoTexture, acinerella;
+  AdVideoTexture, acinerella;
 
 type
   {@exclude}
@@ -207,12 +207,10 @@ begin
     begin
       // Indra Gunawan: Bug when pckg^.stream_index >= pInstance^.stream_count 
       // added array checking 
-      if (pckg^.stream_index >= pInstance^.stream_count) then 
-        exit; 
-        
       //Decode package if corresponding decoder is activated
-      if (pDecoders[pckg^.stream_index] <> nil) and
-         (ac_decode_package(pckg, pDecoders[pckg^.stream_index]) > 0)  then
+      if (pckg^.stream_index < pInstance^.stream_count) and 
+         (pDecoders[pckg^.stream_index] <> nil) and
+         (ac_decode_package(pckg, pDecoders[pckg^.stream_index]) > 0) then
       begin
         pLastDecoder := pDecoders[pckg^.stream_index];
         result := vdHasFrame;

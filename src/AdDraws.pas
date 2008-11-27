@@ -378,9 +378,11 @@ type
       {DisplayRect returns the size of the current szene. Those coordinates are
        relative. }
       property DisplayRect: TAdRect read GetDisplayRect;
-      {The width of the surface in pixels.}
+      {The width of the surface in pixels. Absolute coordinates. Use the scene
+       property to get the relative width of the surface.}
       property Width: integer read GetWidth;
-      {The height of the surface in pixels.}
+      {The height of the surface in pixels. Absolure coordinates. Use the scene
+       property to get the relative height of the surface.}
       property Height: integer read GetHeight;
 
       {Calls Scene.Setup2DScene with the width and the height of the surface.
@@ -1761,9 +1763,6 @@ var
   rectw, recth: integer;
   mat: TAdMatrix;
 
-const
-  add = 0;
-  
 begin
   texw := Texture.Texture.Width;
   texh := Texture.Texture.Height;
@@ -1778,8 +1777,8 @@ begin
   mat[1,1] := (recth) / texh;
 
   //Translate the texture
-  mat[2,0] := (FSrcRect.Left + add) / texw;
-  mat[2,1] := (FSrcRect.Top + add) / texh;
+  mat[2,0] := (FSrcRect.Left + AdTextureOffset) / texw;
+  mat[2,1] := (FSrcRect.Top + AdTextureOffset) / texh;
 
   AdMesh.TextureMatrix := mat;
 end;

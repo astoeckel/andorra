@@ -528,6 +528,7 @@ var
   vertices:TAdVertexArray;
   indices:TAdIndexArray;
   texw, texh : integer;
+
 begin
   if Length(FText) = 0 then
   begin
@@ -555,10 +556,10 @@ begin
       vertices[i*4+3].Position := AdVector3(Position.Right, Position.Bottom, 0);
 
 
-      vertices[i*4+0].Texture := AdVector2(TexCoords.Left / texw, TexCoords.Top / texh);
-      vertices[i*4+1].Texture := AdVector2(TexCoords.Right / texw, TexCoords.Top / texh);
-      vertices[i*4+2].Texture := AdVector2(TexCoords.Left / texw, TexCoords.Bottom / texh);
-      vertices[i*4+3].Texture := AdVector2(TexCoords.Right / texw, TexCoords.Bottom / texh);
+      vertices[i*4+0].Texture := AdVector2((TexCoords.Left + AdTextureOffset) / texw, (TexCoords.Top + AdTextureOffset) / texh);
+      vertices[i*4+1].Texture := AdVector2((TexCoords.Right + AdTextureOffset) / texw, (TexCoords.Top + AdTextureOffset) / texh);
+      vertices[i*4+2].Texture := AdVector2((TexCoords.Left + AdTextureOffset) / texw, (TexCoords.Bottom + AdTextureOffset) / texh);
+      vertices[i*4+3].Texture := AdVector2((TexCoords.Right + AdTextureOffset) / texw, (TexCoords.Bottom + AdTextureOffset) / texh);
 
       for j := 0 to 3 do
       begin

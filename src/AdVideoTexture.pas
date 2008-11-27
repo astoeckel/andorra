@@ -817,7 +817,10 @@ end;
 procedure TAdVideoTexture.SetSpeed(AValue: double);
 begin
   FSpeed := AValue;
-  FFrameTime := 0.04 / FSpeed;
+  if FInfo.FPS = 0 then  
+    FFrameTime := 0.04 / FSpeed
+  else
+    FFrameTime := 1 / (FInfo.FPS * FSpeed);
 end;
 
 procedure TAdVideoTexture.Stop;
