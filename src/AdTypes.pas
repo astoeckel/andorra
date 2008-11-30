@@ -229,6 +229,35 @@ type
     astFragment //< This program is a fragment (pixel) program
   );
 
+
+  {---Classes that are used within the whole system, but not used in the plugin---}
+
+  {Standard event type. Moved here from AdEvents.}
+  TAdNotifyEvent = procedure(Sender: TObject) of object;
+
+  {Event type used by TAdRenderingObject.
+   @param(AModelViewProjection specifies the matrix, that results when
+     multiplying the model, the view and the projection matrix)
+   @seealso(TAdRenderingObject)}
+  TAdBeginRenderEvent =
+    procedure(Sender: TObject; AModelViewProjection: TAdMatrix) of object;
+
+  {Objects derived from this class provide a set of render events. Other classes
+   may link themselves to those events and can activate/deactivate certain
+   settings before and after the object was rendered. This mechanism is used
+   for simply attaching shaders to an object.}
+  TAdRenderingObject = class
+    private
+      FBeginRender: TAdBeginRenderEvent;
+      FEndRender: TAdNotifyEvent;
+    public
+      {Triggered before the object is rendered. The "ModelViewProjejectionMatrix"
+       is passed as a single parameter.}
+      property OnBeginRender: TAdBeginRenderEvent read FBeginRender write FBeginRender;
+      {Triggered when rendering has been finished.}
+      property OnEndRender: TAdNotifyEvent read FEndRender write FEndRender;
+  end;  
+
 const
   aclNone = $1FFFFFFF;
 
@@ -313,10 +342,11 @@ const
   {A identity matrix.}
   AdMatrix_Identity : TAdMatrix = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1));
 
+var
   {For preventing the graphics board from plotting the from pxiels when the atPoint
   filter is used, AdTextureOffset/(Width in Pixels) should be added to every texture
-  coordinate.}
-  AdTextureOffset = 0.5; //! this may be moved the graphic plugin - I have to see whether adding this value affects other graphic systems and/or filters
+  coordinate. This value is automaticaly set, when a TAdDraw is initialized}
+  AdTextureOffset: single = 0;
 
 implementation
 

@@ -16,7 +16,7 @@
 * Comment: This unit contains the 3D-Object generation code
 }
 
-{This unit contains some 3D-Object classes. Please notice, that those classes are not ready yet. This will be done for version 0.4}
+{This unit contains some 3D-Object classes.}
 unit Ad3DObj;
 
 {$IFDEF FPC}
@@ -25,282 +25,416 @@ unit Ad3DObj;
 
 interface
 
-uses Classes, AdTypes, AdClasses, AdDraws, AdMath;
+uses
+  Classes,
+  AdTypes, AdClasses, AdMath, AdDraws;
 
 type
-  {This class represents a main 3D-object, which can be rotated scaled and translated.}
   TAdMesh = class(TAdRenderingObject)
     private
-      FBuffer:TAd2DMesh;
-      FParent:TAdDraw;
-      FMatrix:TAdMatrix;
-      FRotX,FRotY,FRotZ:single;
-      FScaleX,FScaleY,FScaleZ:single;
-      FX,FY,FZ:single;
-      FWidth,FHeight,FDepth:single;
-      FDrawMode:TAd2DDrawMode;
-      FBlendMode:TAd2DBlendMode;
-      FColor:TAndorraColor;
-    protected
-      procedure Notify(ASender:TObject; AEvent:TAdSurfaceEventState);
-      procedure UpdateMatrix(Index:integer;Value:single);virtual;
-      property Width:single index 9 read FWidth write UpdateMatrix;
-      property Height:single index 10 read FHeight write UpdateMatrix;
-      property Depth:single index 11 read FDepth write UpdateMatrix;
-      property Matrix:TAdMatrix read FMatrix write FMatrix;
-    public
-      {The constructor of the TAdMesh class. AParent specifies the target AdDraw. TAdMesh will automaticly connect to the AdDraws surface events for finalization and initialization.}
-      constructor Create(AParent:TAdDraw);
-      {The destructor of the TAdMesh class. Destroys all used objects.}
-      destructor Destroy;override;
+      FX, FY, FZ: Single;
+      FScaleX, FScaleY, FScaleZ: Single;
+      FRotX, FRotY, FRotZ: Single;       
+      FParent: TAdDraw;
+      FMesh: TAd2DMesh;
+      FMatrix: TAdMatrix;
+      FTexture: TAdCustomTexture;
+      FDrawMode: TAd2dDrawMode;
+      FMatrixChanged: boolean;
 
-      {Initializes the mesh. This means creating a TAd2dMesh and loading the mesh data by calling the virtual "CreateMesh" function.}
+      procedure SetCoeff(AIndex: integer; AValue: single);
+      procedure SetMatrix(AMatrix: TAdMatrix);
+      procedure SetTexture(ATexture: TAdCustomTexture);
+      procedure Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
+    protected
+      procedure BuildMatrix;
       procedure Initialize;
-      {Destroys the instance of TAd2dMesh.}
       procedure Finalize;
+      
+      procedure LoadMeshData;virtual;abstract;
 
-      {This virtual function should be used to load the mesh data (so vertices and indices) into the TAd2dMesh}
-      procedure CreateMesh;virtual;
-
-      {This draws the TAd2dMesh buffer using the specified "BlendMode" and "DrawMode"}
-      procedure Draw;virtual;
-
-      {A link to the TAd2dMesh buffer}
-      property Buffer:TAd2DMesh read FBuffer;
-      {A link to the parent TAdDraw}
-      property Parent:TAdDraw read FParent;
-
-      {Setting this property will set the X-Coordinate of the object by updating the matrix of the mesh}
-      property X:single index 0 read FX write UpdateMatrix;
-      {Setting this property will set the Y-Coordinate of the object by updating the matrix of the mesh}
-      property Y:single index 1 read FY write UpdateMatrix;
-      {Setting this property will set the Z-Coordinate of the object by updating the matrix of the mesh}
-      property Z:single index 2 read FZ write UpdateMatrix;
-      {Setting this property will set the X-Roation of the object by updating the matrix of the mesh}      
-      property RotationX:single index 3 read FRotX write UpdateMatrix;
-      {Setting this property will set the Y-Roation of the object by updating the matrix of the mesh}      
-      property RotationY:single index 4 read FRotY write UpdateMatrix;
-      {Setting this property will set the Z-Roation of the object by updating the matrix of the mesh}      
-      property RotationZ:single index 5 read FRotZ write UpdateMatrix;
-      {Setting this property will set the X-Scale of the object by updating the matrix of the mesh}      
-      property ScaleX:single index 6 read FScaleX write UpdateMatrix;
-      {Setting this property will set the Y-Scale of the object by updating the matrix of the mesh}      
-      property ScaleY:single index 7 read FScaleY write UpdateMatrix;
-      {Setting this property will set the Z-Scale of the object by updating the matrix of the mesh}      
-      property ScaleZ:single index 8 read FScaleZ write UpdateMatrix;
-
-      {This property sets the color which should be used by the "CreateMesh" function}      
-      property Color:TAndorraColor read FColor write FColor;
-
-      {This property sets the blendmode the object is drawn with}      
-      property BlendMode:TAd2DBlendMode read FBlendMode write FBlendMode;
-      {This property sets the drawmode the object is drawn with}      
-      property DrawMode:TAd2DDrawMode read FDrawMode write FDrawMode;
-
-      {This virtual function stores the mesh data into a stream}      
-      procedure SaveToStream(AStream:TStream);virtual;
-      {This virtual function loads the mesh data from a stream}      
-      procedure LoadFromStream(AStream:TStream);virtual;
-      {This procedure uses SaveToStream using a "TMemoryStream" to store the mesh data in a file}      
-      procedure SaveToFile(AFile:string);
-      {This procedure uses LoadFromStream using a "TMemoryStream" to load the mesh data from a file}      
-      procedure LoadFromFile(AFile:string);
-  end;
-
-  {This simple child class of TAdMesh creates a simple plane}
-  TAdPlane = class(TAdMesh)
-    private
-    protected
+      property Mesh: TAd2DMesh read FMesh;
+      property DrawMode: TAd2dDrawMode read FDrawMode write FDrawMode;
     public
-      {This base function creates the base mesh consisting of four vertices}
-      procedure CreateMesh;override;
-      {Use this property to set the width of the created plane}
-      property Width;
-      {Use this property to set the size of the created plane}
-      property Height;
+      constructor Create(AParent: TAdDraw);virtual;
+      destructor Destroy;override;
+      
+      procedure Draw(ASurface: TAdSurface; ABlendMode: TAd2dBlendMode = bmAlpha);virtual;
+      
+      property Parent: TAdDraw read FParent write FParent;
+      property Texture: TAdCustomTexture read FTexture write SetTexture;
+
+      property X: single index 0 read FX write SetCoeff;
+      property Y: single index 1 read FY write SetCoeff;
+      property Z: single index 2 read FZ write SetCoeff;
+      property ScaleX: single index 3 read FScaleX write SetCoeff;
+      property ScaleY: single index 4 read FScaleY write SetCoeff;
+      property ScaleZ: single index 5 read FScaleZ write SetCoeff;
+      property RotationX: single index 6 read FRotX write SetCoeff;
+      property RotationY: single index 7 read FRotY write SetCoeff;
+      property RotationZ: single index 8 read FRotZ write SetCoeff;
+      property Matrix: TAdMatrix read FMatrix write SetMatrix;
   end;
 
-implementation
+  TAdCubeMesh = class(TAdMesh)
+    private
+      FWidth, FHeight, FDepth: single;
+      FColor: TAndorraColor;
+      procedure SetSizeCoeff(AIndex: integer; AValue: single);
+      procedure SetColor(AColor: TAndorraColor);
+    protected
+      procedure LoadMeshData;override;
+    public
+      constructor Create(AParent: TAdDraw);override;
+      
+      property Width: single index 0 read FWidth write SetSizeCoeff;
+      property Height: single index 1 read FHeight write SetSizeCoeff;
+      property Depth: single index 2 read FDepth write SetSizeCoeff;
+      property Color: TAndorraColor read FColor write SetColor;
+  end;
+
+
+implementation 
 
 { TAdMesh }
 
 constructor TAdMesh.Create(AParent: TAdDraw);
 begin
   inherited Create;
+
   FParent := AParent;
   FParent.RegisterNotifyEvent(Notify);
+
+  //Set some presets
+  FX := 0; FY := 0; FZ := 0;
+  FScaleX := 1; FScaleY := 1; FScaleZ := 1;
+  FRotX := 0; FRotY := 0; FRotZ := 0;
+
+  //Set the default draw mode
+  FDrawMode := adTriangles;
+
+  //Initialize the mesh
   Initialize;
-
-  FDrawMode := adTriangleStrips;
-  FBlendMode := bmAlpha;
-  FColor := Ad_ARGB(255,255,255,255);
-
-  FScaleX := 1;
-  FScaleY := 1;
-  FScaleZ := 1;
 end;
 
 destructor TAdMesh.Destroy;
-begin         
-  Finalize;
+begin
   FParent.UnRegisterNotifyEvent(Notify);
+
+  //Finalize the mesh
+  Finalize;
   inherited;
-end;
-
-procedure TAdMesh.CreateMesh;
-begin
-  //Nothig to do now
-end;
-
-procedure TAdMesh.Draw;
-begin
-  Buffer.Matrix := FMatrix;
-  Buffer.Draw(FBlendMode,FDrawMode);
-end;
-
-procedure TAdMesh.Finalize;
-begin
-  if Buffer <> nil then
-  begin
-    Buffer.Free;
-    FBuffer := nil;
-  end;              
 end;
 
 procedure TAdMesh.Initialize;
 begin
+  //Finalize the mesh object to be sure that no memory leaks will be created
   Finalize;
-  FBuffer := FParent.AdAppl.CreateMesh;
+
+  //Create a new mesh object
+  FMesh := FParent.AdAppl.CreateMesh;
+  Texture := FTexture;
+
+  //Create the translation matrix
+  BuildMatrix;
+
+  //Tell classes derived from this class, to load its mesh data
+  LoadMeshData;
 end;
 
-procedure TAdMesh.LoadFromFile(AFile: string);
-var ms:TMemoryStream;
+procedure TAdMesh.Finalize;
 begin
-  ms := TMemoryStream.Create;
-  ms.LoadFromFile(AFile);
-  ms.Position := 0;
-  LoadFromStream(ms);
-  ms.Free;
+  //Free the mesh if it was already initialized
+  if FMesh <> nil then
+    FMesh.Free;
+
+  FMesh := nil;
 end;
 
-procedure TAdMesh.SaveToFile(AFile: string);
-var ms:TMemoryStream;
+procedure TAdMesh.Draw(ASurface: TAdSurface; ABlendMode: TAd2dBlendMode);
 begin
-  ms := TMemoryStream.Create;
-  SaveToStream(ms);
-  ms.SaveToFile(AFile);
-  ms.Free;
+  if FMatrixChanged then
+    BuildMatrix;
+
+  //Activate the surface on which the mesh should be drawn
+  if ASurface <> nil then
+    ASurface.Activate;
+    
+  //Draw the mesh with the given paremeters
+  FMesh.Draw(ABlendMode, FDrawMode);
 end;
 
-procedure TAdMesh.LoadFromStream(AStream: TStream);
-var c:integer;
-begin
-  c := 0;
-  if Buffer.Vertices <> nil then
-  begin
-    c := Length(Buffer.Vertices);
-  end;
-  AStream.Write(c,SizeOf(c));
-  if Buffer.Vertices <> nil then
-  begin
-    AStream.Write(Buffer.Vertices[0],SizeOf(TAdVertex)*c)
-  end;
-  c := 0;
-  if Buffer.Indices <> nil then
-  begin
-    c := Length(Buffer.Indices);
-  end;
-  AStream.Write(c,SizeOf(c));
-  if Buffer.Indices <> nil then
-  begin
-    AStream.Write(Buffer.Indices[0],SizeOf(TAdVertex)*c)
-  end;
-end;
-
-procedure TAdMesh.SaveToStream(AStream: TStream);
-var c:integer;
-    vert:TAdVertexArray;
-    inde:TAdIndexArray;
-begin
-{  AStream.Read(c,SizeOf(c));
-  SetLength(Buffer.Vertices,c);
-  AStream.Read(Buffer.Vertices[0],SizeOf(TAdVertex)*c);
-  SetLength(Buffer.IndexBuffer,c);
-  AStream.Read(Buffer.IndexBuffer[0],SizeOf(TAdVertex)*c);}
-end;
-
-procedure TAdMesh.Notify(ASender: TObject; AEvent: TAdSurfaceEventState);
+procedure TAdMesh.Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
 begin
   case AEvent of
-    seInitialize: Initialize;
+    //Use the initialized event, to be sure, that the texture has been properly
+    //initialized
+    seInitialized: Initialize;
     seFinalize: Finalize;
   end;
 end;
 
-procedure TAdMesh.UpdateMatrix(Index: integer; Value: single);
-var Mat:TAdMatrix;
+procedure TAdMesh.SetCoeff(AIndex: integer; AValue: single);
 begin
-  case Index of
-    0:FX := Value;
-    1:FY := Value;
-    2:FZ := Value;
-    3:FRotX := Value;
-    4:FRotY := Value;
-    5:FRotZ := Value;
-    6:FScaleX := Value;
-    7:FScaleY := Value;
-    8:FScaleZ := Value;
-    9:FWidth := Value;
-   10:FHeight := Value;
-   11:FDepth := Value;
+  //Set the mesh translation coefficient that has been changed
+  case AIndex of
+    0: FX := AValue;
+    1: FY := AValue;
+    2: FZ := AValue;
+    3: FScaleX := AValue;
+    4: FScaleY := AValue;
+    5: FScaleZ := AValue;
+    6: FRotX := AValue;
+    7: FRotY := AValue;
+    8: FRotZ := AValue;
   end;
 
-  FMatrix := AdMatrix_Identity;
-  Mat := AdMatrix_Scale(FScaleX,FScaleY,FScaleZ);
-  FMatrix := AdMatrix_Multiply(FMatrix,Mat);
-  Mat := AdMatrix_RotationX(FRotX);
-  FMatrix := AdMatrix_Multiply(FMatrix,Mat);
-  Mat := AdMatrix_RotationY(FRotY);
-  FMatrix := AdMatrix_Multiply(FMatrix,Mat);
-  Mat := AdMatrix_RotationZ(FRotZ);
-  FMatrix := AdMatrix_Multiply(FMatrix,Mat);
-  Mat := AdMatrix_Translate(FX+Width / 2,FY+Height / 2,FZ+Depth / 2);
-  FMatrix := AdMatrix_Multiply(FMatrix,Mat);
+  //Rebuild the model matrix of the object the next time the object is rendered
+  FMatrixChanged := true;
 end;
 
-{ TAdPlane }
-
-procedure TAdPlane.CreateMesh;
-var
-  vert:TAdVertexArray;
+procedure TAdMesh.SetMatrix(AMatrix: TAdMatrix);
 begin
-  SetLength(vert,4);
-  vert[0].Position := AdVector3(-Width / 2, Height / 2,0);
-  vert[0].Color := Color;
-  vert[0].Normal := AdVector3(0,0,-1);
-  vert[0].Texture := AdVector2(0,1);
+  FMatrix := AMatrix;
+  FMesh.Matrix := AMatrix;
+end;
 
-  vert[1].Position := AdVector3(-Width / 2, -Height / 2,0);
-  vert[1].Color := Color;
-  vert[1].Normal := AdVector3(0,0,-1);
-  vert[1].Texture := AdVector2(0,0);
+procedure TAdMesh.SetTexture(ATexture: TAdCustomTexture);
+begin
+  FTexture := ATexture;
 
-  vert[2].Position := AdVector3(Width / 2, Height / 2,0);
-  vert[2].Color := Color;
-  vert[2].Normal := AdVector3(0,0,-1);
-  vert[2].Texture := AdVector2(1,1);
+  //Deactivate texturing if textures are switched off
+  if FTexture = nil then
+    FMesh.Texture := nil
+  else
+    FMesh.Texture := ATexture.Texture;
+end;
 
-  vert[3].Position := AdVector3(Width / 2, -Height / 2,0);
-  vert[3].Color := Color;
-  vert[3].Normal := AdVector3(0,0,-1);
-  vert[3].Texture := AdVector2(1,0);
+procedure TAdMesh.BuildMatrix;
+var
+  FMat1, FMat2: TAdMatrix;
+begin
+  //Calculate the rotation matrix
+  FMat1 := AdMatrix_Rotation(FRotX, FRotY, FRotZ);
 
-  Buffer.Vertices := vert;
-  Buffer.Indices := nil;
-  Buffer.PrimitiveCount := 2;
-  Buffer.Update;
+  //Calculate the scaling matrix
+  FMat2 := AdMatrix_Scale(FScaleX, FScaleY, FScaleZ);
+  
+  //Calculate the rotation+scale matrix
+  FMat1 := AdMatrix_Multiply(FMat1, FMat2);
 
-  UpdateMatrix(-1,0);
+  //Calculate the translation matrix
+  FMat2 := AdMatrix_Translate(FX, FY, FZ);
+
+  //Calculate the rotation+scale+translation matrix
+  FMat1 := AdMatrix_Multiply(FMat1, FMat2);
+
+  Matrix := FMat1;
+  FMatrixChanged := false;
+end;
+
+{ TAdCubeMesh }
+
+constructor TAdCubeMesh.Create(AParent: TAdDraw);
+begin
+  //Set the default size coefficients
+  FWidth := 100;
+  FHeight := 100;
+  FDepth := 100;
+
+  //Set the default color
+  FColor := Ad_ARGB(255, 255, 255, 255);
+
+  inherited;
+end;
+
+procedure TAdCubeMesh.LoadMeshData;
+var
+  vert: TAdVertexArray;
+  hx, hy, hz: single;
+  i: Integer;
+begin
+  SetLength(vert, 36);
+
+  hx := FWidth / 2;
+  hy := FHeight / 2;
+  hz := FDepth / 2;
+
+  //Front side of the cube
+  vert[0].Position := AdVector3(-hx, -hy, -hz);
+  vert[0].Texture := AdVector2(0, 0);
+  vert[0].Normal := AdVector3(0, 0, -1);
+  
+  vert[1].Position := AdVector3( hx, -hy, -hz);
+  vert[1].Texture := AdVector2(1, 0);
+  vert[1].Normal := AdVector3(0, 0, -1);
+  
+  vert[2].Position := AdVector3(-hx,  hy, -hz);
+  vert[2].Texture := AdVector2(0, 1);
+  vert[2].Normal := AdVector3(0, 0, -1);
+
+  vert[3].Position := AdVector3( hx, -hy, -hz);
+  vert[3].Texture := AdVector2(1, 0);
+  vert[3].Normal := AdVector3(0, 0, -1);
+
+  vert[4].Position := AdVector3( hx,  hy, -hz);
+  vert[4].Texture := AdVector2(1, 1);
+  vert[4].Normal := AdVector3(0, 0, -1);
+
+  vert[5].Position := AdVector3(-hx,  hy, -hz);
+  vert[5].Texture := AdVector2(0, 1);
+  vert[5].Normal := AdVector3(0, 0, -1);
+
+  //Left side of the cube
+  vert[6].Position := AdVector3(-hx, -hy,  hz);
+  vert[6].Texture := AdVector2(1, 0);
+  vert[6].Normal := AdVector3(-1, 0, 0);
+
+  vert[7].Position := AdVector3(-hx, -hy, -hz);
+  vert[7].Texture := AdVector2(0, 0);
+  vert[7].Normal := AdVector3(-1, 0, 0);
+
+  vert[8].Position := AdVector3(-hx,  hy, -hz);
+  vert[8].Texture := AdVector2(0, 1);
+  vert[8].Normal := AdVector3(-1, 0, 0);
+
+  vert[9].Position := AdVector3(-hx,  hy,  hz);
+  vert[9].Texture := AdVector2(1, 1);
+  vert[9].Normal := AdVector3(-1, 0, 0);
+
+  vert[10].Position := AdVector3(-hx, -hy,  hz);
+  vert[10].Texture := AdVector2(1, 0);
+  vert[10].Normal := AdVector3(-1, 0, 0);
+
+  vert[11].Position := AdVector3(-hx,  hy, -hz);
+  vert[11].Texture := AdVector2(0, 1);
+  vert[11].Normal := AdVector3(-1, 0, 0);
+
+  //Right side of the cube
+  vert[12].Position := AdVector3(hx, -hy, -hz);
+  vert[12].Texture := AdVector2(0, 0);
+  vert[12].Normal := AdVector3(1, 0, 0);
+
+  vert[13].Position := AdVector3(hx, -hy,  hz);
+  vert[13].Texture := AdVector2(1, 0);
+  vert[13].Normal := AdVector3(1, 0, 0);
+
+  vert[14].Position := AdVector3(hx,  hy, -hz);
+  vert[14].Texture := AdVector2(0, 1);
+  vert[14].Normal := AdVector3(1, 0, 0);
+
+  vert[15].Position := AdVector3(hx, -hy,  hz);
+  vert[15].Texture := AdVector2(1, 0);
+  vert[15].Normal := AdVector3(1, 0, 0);
+
+  vert[16].Position := AdVector3(hx,  hy,  hz);
+  vert[16].Texture := AdVector2(1, 1);
+  vert[16].Normal := AdVector3(1, 0, 0);
+
+  vert[17].Position := AdVector3(hx,  hy, -hz);
+  vert[17].Texture := AdVector2(0, 1);
+  vert[17].Normal := AdVector3(1, 0, 0);
+
+  //Back side of the cube
+  vert[18].Position := AdVector3( hx, -hy, hz);
+  vert[18].Texture := AdVector2(1, 0);
+  vert[18].Normal := AdVector3(0, 0, 1);
+
+  vert[19].Position := AdVector3(-hx, -hy, hz);
+  vert[19].Texture := AdVector2(0, 0);
+  vert[19].Normal := AdVector3(0, 0, 1);
+
+  vert[20].Position := AdVector3(-hx,  hy, hz);
+  vert[20].Texture := AdVector2(0, 1);
+  vert[20].Normal := AdVector3(0, 0, 1);
+
+  vert[21].Position := AdVector3( hx,  hy, hz);
+  vert[21].Texture := AdVector2(1, 1);
+  vert[21].Normal := AdVector3(0, 0, 1);
+
+  vert[22].Position := AdVector3( hx, -hy, hz);
+  vert[22].Texture := AdVector2(1, 0);
+  vert[22].Normal := AdVector3(0, 0, 1);
+
+  vert[23].Position := AdVector3(-hx,  hy, hz);
+  vert[23].Texture := AdVector2(0, 1);
+  vert[23].Normal := AdVector3(0, 0, 1);
+
+  //Top side of the cube
+  vert[24].Position := AdVector3(-hx, -hy, -hz);
+  vert[24].Texture := AdVector2(0, 0);
+  vert[24].Normal := AdVector3(0, -1, 0);
+
+  vert[25].Position := AdVector3(-hx, -hy,  hz);
+  vert[25].Texture := AdVector2(0, 1);
+  vert[25].Normal := AdVector3(0, -1, 0);
+
+  vert[26].Position := AdVector3( hx, -hy, -hz);
+  vert[26].Texture := AdVector2(1, 0);
+  vert[26].Normal := AdVector3(0, -1, 0);
+
+  vert[27].Position := AdVector3( hx, -hy, -hz);
+  vert[27].Texture := AdVector2(1, 0);
+  vert[27].Normal := AdVector3(0, -1, 0);
+
+  vert[28].Position := AdVector3(-hx, -hy, hz);
+  vert[28].Texture := AdVector2(0, 1);
+  vert[28].Normal := AdVector3(0, -1, 0);
+
+  vert[29].Position := AdVector3( hx, -hy, hz);
+  vert[29].Texture := AdVector2(1, 1);
+  vert[29].Normal := AdVector3(0, -1, 0);
+
+  //Bottom side of the cube
+  vert[30].Position := AdVector3(-hx, hy,  hz);
+  vert[30].Texture := AdVector2(0, 1);
+  vert[30].Normal := AdVector3(0, 1, 0);
+
+  vert[31].Position := AdVector3(-hx, hy, -hz);
+  vert[31].Texture := AdVector2(0, 0);
+  vert[31].Normal := AdVector3(0, 1, 0);
+
+  vert[32].Position := AdVector3( hx, hy, -hz);
+  vert[32].Texture := AdVector2(1, 0);
+  vert[32].Normal := AdVector3(0, 1, 0);
+
+  vert[33].Position := AdVector3(-hx, hy, hz);
+  vert[33].Texture := AdVector2(0, 1);
+  vert[33].Normal := AdVector3(0, 1, 0);
+
+  vert[34].Position := AdVector3( hx, hy, -hz);
+  vert[34].Texture := AdVector2(1, 0);
+  vert[34].Normal := AdVector3(0, 1, 0);
+
+  vert[35].Position := AdVector3( hx, hy, hz);
+  vert[35].Texture := AdVector2(1, 1);
+  vert[35].Normal := AdVector3(0, 1, 0);
+
+  for i := 0 to High(vert) do
+    vert[i].Color := FColor;
+
+  //Store the generated vertex/index data
+  Mesh.Vertices := vert;
+  Mesh.Indices := nil;
+  Mesh.PrimitiveCount := 12;
+  Mesh.Update;
+end;
+
+procedure TAdCubeMesh.SetColor(AColor: TAndorraColor);
+begin
+  FColor := AColor;
+  LoadMeshData;
+end;
+
+procedure TAdCubeMesh.SetSizeCoeff(AIndex: integer; AValue: single);
+begin
+  case AIndex of
+    0: FWidth := AValue;
+    1: FHeight := AValue;
+    2: FDepth := AValue;  
+  end;
+
+  LoadMeshData;
 end;
 
 end.

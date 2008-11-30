@@ -32,7 +32,7 @@ uses
   SysUtils, Classes,
   AdClasses, AdTypes, AdList, AdPersistent,
   AdWindowFramework, AdDLLLoader, AdLog, AdMath, AdMessages,
-  AdCanvas, AdBitmap, AdFontFactory, AdFont, AdEvents
+  AdCanvas, AdBitmap, AdFontFactory, AdFont
   {$IFNDEF DO_NOT_INCLUDE_STD_FORMATS}
   ,AdStandardFontGenerator, AdSimpleCompressors, AdFormats
   {$ENDIF}
@@ -58,29 +58,6 @@ type
   TAdCustomTexture = class;
   TAdRenderTargetTexture = class;
   TAdTexture = class;
-
-  {Event type used by TAdRenderingObject.
-   @param(AModelViewProjection specifies the matrix, that results when
-     multiplying the model, the view and the projection matrix)
-   @seealso(TAdRenderingObject)}
-  TAdBeginRenderEvent =
-    procedure(Sender: TObject; AModelViewProjection: TAdMatrix) of object;
-
-  {Objects derived from this class provide a set of render events. Other classes
-   may link themselves to those events and can activate/deactivate certain
-   settings before and after the object was rendered. This mechanism is used
-   for simply attaching shaders to an object.}
-  TAdRenderingObject = class
-    private
-      FBeginRender: TAdBeginRenderEvent;
-      FEndRender: TAdNotifyEvent;
-    public
-      {Triggered before the object is rendered. The "ModelViewProjejectionMatrix"
-       is passed as a single parameter.}
-      property OnBeginRender: TAdBeginRenderEvent read FBeginRender write FBeginRender;
-      {Triggered when rendering has been finished.}
-      property OnEndRender: TAdNotifyEvent read FEndRender write FEndRender;
-  end;
 
   {Specifies the event which called the procedure}
   TAdSurfaceEventState = (
@@ -312,15 +289,19 @@ type
        relative coordinate system.}
       property Height: integer read FHeight;
 
-      {The position of the near Z-Clipping plane. The distance between the
-       near and the far clipping plane should always be as small as possible,
-       because it changes the resolution of the Z-Buffer. A change of the
-       value will be in force after setting up a new 2D/3D scene.}
+      {The position of the near Z-Clipping plane. However, in the right handed coordinate
+       system used by Andorra 2D, the near and the far clipping plane swap their roles.
+       The distance between the near and the far clipping plane should always be as
+       small as possible, because this value is responsible for the resolution
+       of the Z-Buffer. A change of the value will take effect after setting
+       up a new 2D/3D scene. The default value is "100".}
       property ClipPlaneNearZ: double read FNearZ write FNearZ;
-      {The position of the far Z-Clipping plane. The distance between the
-       near and the far clipping plane should always be as small as possible,
-       because it changes the resolution of the Z-Buffer. A change of the
-       value will be in force after setting up a new 2D/3D scene.}
+      {The position of the far Z-Clipping plane. However, in the right handed coordinate
+       system used by Andorra 2D, the near and the far clipping plane swap their roles.
+       The distance between the near and the far clipping plane should always be as
+       small as possible, because this value is responsible for the resolution
+       of the Z-Buffer. A change of the value will take effect after setting
+       up a new 2D/3D scene. The default value is "-100".}
       property ClipPlaneFarZ: double read FFarZ write FFarZ;
 
       {Returns whether the scene is currently activated.}
@@ -1474,6 +1455,9 @@ begin
           //Initialization did not fail - congratulations
           result := true;
           FInitialized := true;
+
+          //Set the texture offset variable
+          AdTextureOffset := FAdAppl.TextureOffset;
 
           //Call all registered initialization routines
           CallNotifyEvent(seInitialize);
@@ -2766,8 +2750,8 @@ begin
   inherited Create;
   FDraw := ADraw;
 
-  FNearZ := -100;
-  FFarZ := 100;
+  FNearZ := 100;
+  FFarZ := -100;
   FAmbientColor := Ad_ARGB(255, 255, 255, 255);
 end;
 

@@ -289,6 +289,7 @@ type
       FViewPort:TAdRect;
       procedure SetViewPort(AValue:TAdRect);virtual;
       procedure SetAmbientColor(AValue: TAndorraColor);virtual;
+      function GetTextureOffset: single; virtual;
     public
       {Creates and returns a TAd2DBitmapTexture}
       function CreateBitmapTexture: TAd2DBitmapTexture;virtual;abstract;
@@ -375,6 +376,8 @@ type
       {Callback used to log log messages from the plugin in the host
        application.}
       property LogCallback: TAd2dLogCallback read FLogCallback write SetLogCallback;
+
+      property TextureOffset: single read GetTextureOffset;
   end;
 
   {An class which represents a texture in Andorra's engine. }
@@ -519,14 +522,19 @@ const
   {The current Andorra 2D version. If version between Plugin and Source is different,
    loading stops.}
 {$IFDEF FPC}
-  LibraryVersion = 'VER 0.4.5 FPC';
+  LibraryVersion = 'VER 0.4.5.003 FPC';
 {$ELSE}
-  LibraryVersion = 'VER 0.4.5.002';
+  LibraryVersion = 'VER 0.4.5.003';
 {$ENDIF}
 
 implementation
 
 { TAd2dApplication }
+
+function TAd2DApplication.GetTextureOffset: single;
+begin
+  result := 0;
+end;
 
 procedure TAd2DApplication.Log(AModule: PChar; ASeverity: TAd2dLogSeverity;
   AMsg: PChar);

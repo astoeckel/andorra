@@ -21,8 +21,8 @@ unit DX3DMain;
 interface
 
 uses
-  SysUtils, AdWindowFramework, d3dx9, Direct3D9, AdClasses, Windows, Math,
-  AdTypes, AdBitmapClass;
+  SysUtils, d3dx9, Direct3D9, Windows, Math,
+  AdWindowFramework, AdClasses, AdTypes, AdBitmapClass;
 
 type
   TDXApplication = class(TAd2DApplication)
@@ -46,6 +46,7 @@ type
       procedure WriteLog(ALogSeverity: TAd2dLogSeverity; AMessage: string);
       procedure SetViewPort(AValue:TAdRect);override;
       procedure SetAmbientColor(AValue: TAndorraColor);override;
+      function GetTextureOffset: single;override;
       procedure ResetRenderTarget;
     public
       Direct3D9:IDirect3D9;
@@ -426,7 +427,8 @@ begin
 
   //Z-Buffer
   Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, LongWord(aoZBuffer in AOptions));
-  
+//  Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE);
+
   //Light
   Direct3DDevice9.SetRenderState(D3DRS_LIGHTING, LongWord(aoLight in AOptions));
 
@@ -649,6 +651,11 @@ procedure TDXApplication.GetScene(out AMatView, AMatProj: TAdMatrix);
 begin
   Direct3DDevice9.GetTransform(D3DTS_PROJECTION, TD3DMatrix(AMatProj));
   Direct3DDevice9.GetTransform(D3DTS_VIEW, TD3DMatrix(AMatView));
+end;
+
+function TDXApplication.GetTextureOffset: single;
+begin
+  result := 0.5;
 end;
 
 procedure TDXApplication.ClearSurface(ARect: TAdRect; ALayers: TAd2dSurfaceLayers;

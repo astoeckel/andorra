@@ -43,7 +43,6 @@ type
   {Set of TAdShiftState.}
   TAdShiftState = set of TAdShiftStates;
 
-  TAdNotifyEvent = procedure(Sender: TObject) of object;
   TAdClickEvent = procedure(Sender: TObject; X, Y:integer) of object;
   TAdCloseEvent = procedure(Sender: TObject; var CanClose: Boolean) of object;
   TAdMouseEvent = procedure(Sender: TObject; Button: TAdMouseButton;

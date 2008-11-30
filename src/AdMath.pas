@@ -39,7 +39,7 @@ uses
 {$I inc_andorra.inc}
 
 //Remove ' if you do not want to use 3DNOW!
-{'$DEFINE DO_NOT_USE_3DNOW}
+{$DEFINE DO_NOT_USE_3DNOW}
 //Remove ' if you do not want to use any x86amd asm code
 {'$DEFINE DO_NOT_USE_ASM}
 
@@ -60,6 +60,8 @@ var
   AdMatrix_RotationY: function(const angle:single):TAdMatrix;
   {Returns a matrix for rotation around the Z-Axis}
   AdMatrix_RotationZ: function(const angle:single):TAdMatrix;
+  {Returns a matrix for rotation around the X, Y and Z-Axis}
+  AdMatrix_Rotation: function(const ax, ay, az: single):TAdMatrix;
 
 implementation
 
@@ -194,6 +196,23 @@ begin
   result[3,3] := 1;
 end;
 
+function _PASCAL_AdMatrix_Rotation(const ax, ay, az:single):TAdMatrix;
+var
+  AMat1, AMat2: TAdMatrix;
+begin
+  //Calculate the X and the Y rotation matrix
+  AMat1 := _PASCAL_AdMatrix_RotationX(ax);
+  AMat2 := _PASCAL_AdMatrix_RotationY(ay); 
+  AMat1 := AdMatrix_Multiply(AMat1, AMat2);
+
+  //Calculate the Z rotation matrix and multiply it with the XY rotation matrix
+  AMat2 := _PASCAL_AdMatrix_RotationZ(az);
+  AMat1 := AdMatrix_Multiply(AMat1, AMat2);
+
+  //Return the calculated XYZ Matrix
+  result := AMat1;
+end;
+
 procedure UsePascal;
 begin
   AdMatrix_Multiply := _PASCAL_AdMatrix_Multiply;
@@ -203,7 +222,8 @@ begin
   AdMatrix_Scale := _PASCAL_AdMatrix_Scale;
   AdMatrix_RotationX := _PASCAL_AdMatrix_RotationX;
   AdMatrix_RotationY := _PASCAL_AdMatrix_RotationY;
-  AdMatrix_RotationZ := _PASCAL_AdMatrix_RotationZ;  
+  AdMatrix_RotationZ := _PASCAL_AdMatrix_RotationZ;
+  AdMatrix_Rotation := _PASCAL_AdMatrix_Rotation;
 end;
 
 {$IFNDEF DO_NOT_USE_3DNOW}
