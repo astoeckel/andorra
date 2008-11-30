@@ -427,7 +427,6 @@ begin
 
   //Z-Buffer
   Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, LongWord(aoZBuffer in AOptions));
-//  Direct3DDevice9.SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE);
 
   //Light
   Direct3DDevice9.SetRenderState(D3DRS_LIGHTING, LongWord(aoLight in AOptions));

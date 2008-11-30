@@ -26,10 +26,15 @@ unit Ad3DObj;
 interface
 
 uses
-  Classes,
-  AdTypes, AdClasses, AdMath, AdDraws;
+  Classes, Math,
+  AdTypes, AdClasses, AdMath, AdDraws, AdSpline;
 
 type
+  {TAdMesh is the base class for 3D objects in Andorra 2D. It wraps around the
+   TAd2dMesh interface and allows classes derived from TAdMesh to load their own
+   mesh data. It also provides properties that may be used to set the position,
+   scaling and the rotation of the object. Textures and materials may be applied
+   to the mesh.}
   TAdMesh = class(TAdRenderingObject)
     private
       FX, FY, FZ: Single;
@@ -41,10 +46,14 @@ type
       FTexture: TAdCustomTexture;
       FDrawMode: TAd2dDrawMode;
       FMatrixChanged: boolean;
+      FMaterial: TAd2dMaterial;
+      FUseMaterial: boolean;
 
       procedure SetCoeff(AIndex: integer; AValue: single);
       procedure SetMatrix(AMatrix: TAdMatrix);
       procedure SetTexture(ATexture: TAdCustomTexture);
+      procedure SetMaterial(AMaterial: TAd2dMaterial);
+      procedure SetUseMaterial(AValue: boolean);
       procedure Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
     protected
       procedure BuildMatrix;
@@ -63,6 +72,8 @@ type
       
       property Parent: TAdDraw read FParent write FParent;
       property Texture: TAdCustomTexture read FTexture write SetTexture;
+      property Material: TAd2dMaterial read FMaterial write SetMaterial;
+      property UseMaterial: boolean read FUseMaterial write SetUseMaterial;
 
       property X: single index 0 read FX write SetCoeff;
       property Y: single index 1 read FY write SetCoeff;
@@ -79,9 +90,7 @@ type
   TAdCubeMesh = class(TAdMesh)
     private
       FWidth, FHeight, FDepth: single;
-      FColor: TAndorraColor;
       procedure SetSizeCoeff(AIndex: integer; AValue: single);
-      procedure SetColor(AColor: TAndorraColor);
     protected
       procedure LoadMeshData;override;
     public
@@ -90,7 +99,18 @@ type
       property Width: single index 0 read FWidth write SetSizeCoeff;
       property Height: single index 1 read FHeight write SetSizeCoeff;
       property Depth: single index 2 read FDepth write SetSizeCoeff;
-      property Color: TAndorraColor read FColor write SetColor;
+  end;
+
+  TAdTeapotMesh = class(TAdMesh)
+    private
+      FDetails: integer;
+      procedure SetDetails(AValue: integer);
+    protected
+      procedure LoadMeshData;override;
+    public
+      constructor Create(AParent: TAdDraw);override;
+
+      property Details: integer read FDetails write SetDetails;
   end;
 
 
@@ -112,6 +132,9 @@ begin
 
   //Set the default draw mode
   FDrawMode := adTriangles;
+
+  FUseMaterial := false;
+  FMaterial.Diffuse := Ad_ARGB(255, 255, 255, 255);
 
   //Initialize the mesh
   Initialize;
@@ -193,6 +216,27 @@ begin
   FMatrixChanged := true;
 end;
 
+procedure TAdMesh.SetMaterial(AMaterial: TAd2dMaterial);
+begin
+  FMaterial := AMaterial;
+
+  //Send the material to the mesh
+  FMesh.SetMaterial(@FMaterial);
+
+  //Set use material to true
+  FUseMaterial := true;
+end;
+
+procedure TAdMesh.SetUseMaterial(AValue: boolean);
+begin
+  FUseMaterial := AValue;
+
+  if not FUseMaterial then
+    FMesh.SetMaterial(nil) //If the parameter of set material is "nil" no material will be used
+  else
+    FMesh.SetMaterial(@FMaterial); //Set the material to the material in the "FMaterial" variable
+end;
+
 procedure TAdMesh.SetMatrix(AMatrix: TAdMatrix);
 begin
   FMatrix := AMatrix;
@@ -241,9 +285,6 @@ begin
   FWidth := 100;
   FHeight := 100;
   FDepth := 100;
-
-  //Set the default color
-  FColor := Ad_ARGB(255, 255, 255, 255);
 
   inherited;
 end;
@@ -411,19 +452,13 @@ begin
   vert[35].Normal := AdVector3(0, 1, 0);
 
   for i := 0 to High(vert) do
-    vert[i].Color := FColor;
+    vert[i].Color := Ad_ARGB(255, 255, 255, 255);
 
   //Store the generated vertex/index data
   Mesh.Vertices := vert;
   Mesh.Indices := nil;
   Mesh.PrimitiveCount := 12;
   Mesh.Update;
-end;
-
-procedure TAdCubeMesh.SetColor(AColor: TAndorraColor);
-begin
-  FColor := AColor;
-  LoadMeshData;
 end;
 
 procedure TAdCubeMesh.SetSizeCoeff(AIndex: integer; AValue: single);
@@ -433,6 +468,184 @@ begin
     1: FHeight := AValue;
     2: FDepth := AValue;  
   end;
+
+  LoadMeshData;
+end;
+
+{ TAdTeapotMesh }
+
+type
+  TAdBPatch = array[0..3,0..3] of Word;
+  TAdVectorArray = array of TAdVector3;
+
+{$I teapot.inc}
+
+procedure Tesselate_BPatch(
+  var AVertDst: TAdVectorArray;
+  var AIndDst: TAdIndexArray;
+  AVertSrc: TAdVectorArray;
+  ABPatch: TAdBPatch;
+  ADetails: integer);
+var
+  i, j, m: integer;
+  hor_splines: array[0..3] of TAdCubicSpline;
+  vert_splines: array of TAdCubicSpline;
+  pntsx: array[0..3] of TAdFloatArray;
+  pntsy: array[0..3] of TAdFloatArray;
+  pntsz: array[0..3] of TAdFloatArray;
+  pntx, pnty, pntz: TAdFloatArray;
+begin
+  //Get the vertices from the vertex buffer and store them in the "pnts"-Variable
+  for i := 0 to 3 do
+  begin
+    //Reserve memory for the points
+    SetLength(pntsx[i], 4);
+    SetLength(pntsy[i], 4);
+    SetLength(pntsz[i], 4);
+
+    for j := 0 to 3 do
+    begin
+      pntsx[i,j] := AVertSrc[ABPatch[i,j] - 1].x;
+      pntsy[i,j] := AVertSrc[ABPatch[i,j] - 1].y;
+      pntsz[i,j] := AVertSrc[ABPatch[i,j] - 1].z;
+    end;
+  end;
+
+  //Create four splines
+  for i := 0 to 3 do
+    hor_splines[i] := TAdCubicSpline.Create(pntsx[i], pntsy[i], pntsz[i], 4);
+
+  //Calculate the vertical splines
+  SetLength(vert_splines, ADetails + 1);
+
+  SetLength(pntx, 4);
+  SetLength(pnty, 4);
+  SetLength(pntz, 4);
+
+  for i := 0 to ADetails do
+  begin
+    for j := 0 to 3 do
+    begin
+      hor_splines[j].SplineXYZ(3 * (i / ADetails), pntx[j], pnty[j], pntz[j]);
+    end;
+    vert_splines[i] := TAdCubicSpline.Create(pntx, pnty, pntz, 4);
+  end;
+
+  //Calculate the points and add them to the position output buffer
+
+  m := 0;
+  for i := 0 to ADetails do
+  begin
+    for j := 0 to ADetails do
+    begin
+      vert_splines[i].SplineXYZ(3 * (j / ADetails),
+        AVertDst[m].x, AVertDst[m].y, AVertDst[m].z);
+
+      m := m + 1;
+    end;      
+  end;
+
+  //Write the point numbers to the index output buffer
+  m := 0;
+  for j := 0 to ADetails - 1 do
+  begin
+    for i := 0 to ADetails - 1 do
+    begin
+      AIndDst[m] :=   j     * (ADetails + 1) + i + 1;
+      AIndDst[m+1] := (j+1) * (ADetails + 1) + i;
+      AIndDst[m+2] := j     * (ADetails + 1) + i;
+      AIndDst[m+3] := j     * (ADetails + 1) + i + 1;
+      AIndDst[m+4] := (j+1) * (ADetails + 1) + i + 1;
+      AIndDst[m+5] := (j+1) * (ADetails + 1) + i;
+      m := m + 6;
+    end;
+  end;
+
+  //Free the vertical splines
+  for i := 0 to High(hor_splines) do
+    hor_splines[i].Free;
+
+  //Free the four horizontal splines
+  for i := 0 to High(vert_splines) do
+    vert_splines[i].Free;
+end;
+
+constructor TAdTeapotMesh.Create(AParent: TAdDraw);
+begin
+  FDetails := 32;
+
+  inherited;
+end;
+
+procedure TAdTeapotMesh.LoadMeshData;
+var
+  indices: TAdIndexArray;
+  vertices: TAdVertexArray;
+  tmp_indices: TAdIndexArray;
+  tmp_vertices: TAdVectorArray;
+  src_vertices: TAdVectorArray;
+  i, j: integer;
+  indexpos, vertexpos: integer;
+  patches: integer;
+  vpp: integer; //vertices per patch
+  ppp: integer; //primitives per patch
+begin
+  patches := Length(teapot_indices);
+  vpp := sqr(FDetails+1);
+  ppp := sqr(FDetails) * 2;
+  SetLength(tmp_indices, ppp * 3);
+  SetLength(tmp_vertices, vpp);
+  SetLength(src_vertices, Length(teapot_vertices) div 3);
+
+  for i := 0 to Length(teapot_vertices) div 3 - 1 do
+    src_vertices[i] := AdVector3(
+      teapot_vertices[i*3+0],
+      teapot_vertices[i*3+1],
+      teapot_vertices[i*3+2]
+    );
+
+  SetLength(vertices, patches * vpp);
+  SetLength(indices, patches * ppp * 3);
+
+  indexpos := 0;
+  vertexpos := 0;
+
+  for i := 0 to patches - 1 do
+  begin
+    Tesselate_BPatch(tmp_vertices, tmp_indices, src_vertices, teapot_indices[i], FDetails);
+
+    for j := 0 to High(tmp_indices) do
+      indices[j + indexpos] := tmp_indices[j] + vertexpos;
+
+    for j := 0 to High(tmp_vertices) do
+      vertices[j + vertexpos].Position := tmp_vertices[j];
+
+    indexpos := indexpos + Length(tmp_indices);
+    vertexpos := vertexpos + Length(tmp_vertices);
+  end;  
+
+  for i := 0 to High(vertices) do
+  begin
+    vertices[i].Position := AdVector3(
+        vertices[i].Position.x * 20,
+        vertices[i].Position.y * 20,
+        vertices[i].Position.z * 20);
+    vertices[i].Color := Ad_ARGB(255, 255, 255, 255);
+    vertices[i].Texture := AdVector2(0, 0);
+    vertices[i].Normal := AdVector3(0, 0, -1);
+  end;
+
+  Mesh.Vertices := vertices;
+  Mesh.Indices := indices;
+  Mesh.PrimitiveCount := ppp * patches;
+  Mesh.Update;
+
+  DrawMode := adPoints;
+end;
+
+procedure TAdTeapotMesh.SetDetails(AValue: integer);
+begin
+  FDetails := AValue;
 
   LoadMeshData;
 end;

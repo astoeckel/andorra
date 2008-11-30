@@ -99,11 +99,11 @@ type
      position is equivalent to the direction of the light.}
     Position: TAdVector3;
 
-    {The constant attenuation. Only used with point- and spotlights.}
+    {The constant attenuation. Only used with pointlights.}
     ConstantAttenuation: single;
-    {The linear attenuation. Only used with point- and spotlights.}
+    {The linear attenuation. Only used with pointlights.}
     LinearAttenuation: single;
-    {The quadratic attenuation. Only used with point- and spotlights.}
+    {The quadratic attenuation. Only used with pointlights.}
     QuadraticAttenuation: single;
   end;
   {Pointer on TAd2dLightData.}

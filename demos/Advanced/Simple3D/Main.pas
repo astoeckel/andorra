@@ -18,6 +18,7 @@ type
       AdDraw: TAdDraw;
       AdMesh: TAdMesh;
       AdTexture: TAdTexture;
+      AdLight: TAd2dLight;
 
       FMX, FMY: integer;
       FMouseDown: boolean;
@@ -57,7 +58,7 @@ begin
 
     //Switch to the 3D mode
     AdDraw.Scene.Setup3DScene(800, 600,
-      AdVector3(0, 0, -400),
+      AdVector3(0, 0, -200),
       AdVector3(0, 0, 0),
       AdVector3(0, -1 , 0));    
 
@@ -70,7 +71,9 @@ begin
     AdMesh.RotationY := AdMesh.RotationY + (AdPerCounter.TimeGap * dy);
 
     //Draw the mesh
+    AdLight.EnableLight(0);
     AdMesh.Draw(AdDraw);
+    AdLight.DisableLight;
 
     SlowDownRotation;
 
@@ -125,6 +128,8 @@ end;
 procedure TAdAppl.Run;
 var
   AdSetup: TAdSetup;
+  data: TAd2dLightData;
+  mat: TAd2dMaterial;
 begin
   AdDraw := TAdDraw.Create(nil);
   
@@ -141,18 +146,39 @@ begin
       AdDraw.Window.Events.OnMouseMove := MouseMove;
       AdDraw.Window.Events.OnMouseDown := MouseDown;
       AdDraw.Window.Events.OnMouseUp := MouseUp;
+      AdDraw.Window.Title := 'Andorra 2D Simple 3D';
 
-      AdDraw.Options := AdDraw.Options + [aoMipmaps];
+      AdDraw.Options := AdDraw.Options + [aoCulling];
 
       AdTexture := TAdTexture.Create(AdDraw);
       AdTexture.LoadGraphicFromFile(path + 'floor_tex.png');
       AdTexture.Filter := atAnisotropic;
 
-      AdMesh := TAdCubeMesh.Create(AdDraw);
-      AdMesh.Texture := AdTexture;
+      AdMesh := TAdTeapotMesh.Create(AdDraw);
+
+      FillChar(mat, SizeOf(TAd2dMaterial), 0);
+
+      mat.Diffuse := Ad_ARGB(255, 50, 50, 200);
+      mat.Specular := Ad_ARGB(255, 200, 200, 255);
+      mat.Power := 10;
+
+      AdMesh.Material := mat;
+
+      AdLight := AdDraw.AdAppl.CreateLight;
+      FillChar(data, SizeOf(TAd2dLightData), 0);
+      with data do
+      begin
+        LightType := altDirectional;
+        Diffuse := Ad_ARGB(255, 255, 255, 255);
+        Specular := Ad_ARGB(255, 255, 255, 255);
+        Position := AdVector3(0, 0, 1);
+      end;
+
+      AdLight.Data := data;      
 
       AdDraw.Run;
 
+      AdLight.Free;
       AdTexture.Free;
       AdMesh.Free;
       AdPerCounter.Free;
@@ -170,7 +196,7 @@ var
   sd: single;
 begin
   if FMouseDown then
-    sd := 5
+    sd := 20
   else
     sd := 1;
     
