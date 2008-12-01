@@ -65,25 +65,55 @@ type
       property Mesh: TAd2DMesh read FMesh;
       property DrawMode: TAd2dDrawMode read FDrawMode write FDrawMode;
     public
+      {Creates a new instance of TAdMesh. The underlying TAd2dMesh structure is
+       created and filled with data by calling the "LoadMeshData" function that
+       has to be implemented by classes derived from TAdMesh.}
       constructor Create(AParent: TAdDraw);virtual;
+      {Destroys the instance of TAdMesh.}
       destructor Destroy;override;
       
+      {Draws the mesh on the specified surface.
+       @param(ASurface specifies the target surface. May be nil, if you want to
+         draw on the surface that is currently active.)
+       @param(ABlendMode specifies the blend mode the mesh should be drawn in.)}
       procedure Draw(ASurface: TAdSurface; ABlendMode: TAd2dBlendMode = bmAlpha);virtual;
       
+      {Pointer on the parent TAdDraw.}
       property Parent: TAdDraw read FParent write FParent;
+      {The texture the loaded mesh should be texurized with. Please keep in mind
+       that TAdMesh is not capable of figuring out the texture coordinates that
+       match to your texture.}
       property Texture: TAdCustomTexture read FTexture write SetTexture;
+      {Material represents the material of the mesh. "UseMaterial" is set to true
+       when storing data in "Material". Do not use the Pascal "with" operation when
+       writing data to material. It won't be properly stored. Use a temporary variable
+       instead.
+       @seealso(Material)}
       property Material: TAd2dMaterial read FMaterial write SetMaterial;
+      {Set this to true if you want to use materials with this mesh. "UseMaterial"
+       is automatically set to true, when setting the "Material" property.
+       @seealso(UseMaterial)}
       property UseMaterial: boolean read FUseMaterial write SetUseMaterial;
 
+      {The X-value the mesh should be translated by.}
       property X: single index 0 read FX write SetCoeff;
+      {The Y-value the mesh should be translated by.}
       property Y: single index 1 read FY write SetCoeff;
+      {The Z-value the mesh should be translated by.}
       property Z: single index 2 read FZ write SetCoeff;
+      {The scale in X direction. Relative values.}
       property ScaleX: single index 3 read FScaleX write SetCoeff;
+      {The scale in Y direction. Relative values.}
       property ScaleY: single index 4 read FScaleY write SetCoeff;
+      {The scale in Z direction. Relative values.}
       property ScaleZ: single index 5 read FScaleZ write SetCoeff;
+      {Rotation around the X-axis of the coordinate system.}
       property RotationX: single index 6 read FRotX write SetCoeff;
+      {Rotation around the Y-axis of the coordinate system.}
       property RotationY: single index 7 read FRotY write SetCoeff;
+      {Rotation around the Z-axis of the coordinate system.}
       property RotationZ: single index 8 read FRotZ write SetCoeff;
+      {Returns the current translation matrix.}
       property Matrix: TAdMatrix read FMatrix write SetMatrix;
   end;
 

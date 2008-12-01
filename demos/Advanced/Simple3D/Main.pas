@@ -54,17 +54,7 @@ begin
 
     AdDraw.BeginScene;
 
-    AdDraw.AdAppl.ClearSurface(AdDraw.SurfaceRect, [alZBuffer], AdCol32_AliceBlue, 1, 0);
-    with AdDraw.Canvas do
-    begin
-      Pen.Width := 0;
-      Brush.Color := AdCol32_Bisque;
-      with Brush.Color do
-        a := 100;
-      Rectangle(AdDraw.SurfaceRect);
-
-      Release;
-    end;
+    AdDraw.ClearSurface(AdCol24_CornflowerBlue);
 
     //Switch to the 3D mode
     AdDraw.Scene.Setup3DScene(800, 600,
