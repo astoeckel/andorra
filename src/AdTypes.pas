@@ -79,6 +79,8 @@ type
     {@exclude}
     x, y: single;
   end;
+
+  {Pointer on TAdVector2}
   PAdVector2 = ^TAdVector2;
 
   {A vector type which has three components.}
@@ -86,6 +88,8 @@ type
     {@exclude}
     x, y, z: single;
   end;
+
+  {Pointer on TAdVector3}
   PAdVector3 = ^TAdVector3;
 
  {A vector type containing four components.}
@@ -93,6 +97,8 @@ type
     {@exclude}
     x, y, z, w: single;
   end;
+
+  {Pointer on TAdVector4}
   PAdVector4 = ^TAdVector4;
 
   {A standard 3x3 matrix.}
@@ -109,6 +115,9 @@ type
     {Contains the position of the texture. Normaly each value lies between 0 and 1. If a value is bigger/smaller the texture will be wrapped}
     Texture:TAdVector2;
   end;
+
+  {Pointer on TAdVertex}
+  PAdVertex = ^TAdVertex;
 
   {An array of the vertex}
   TAdVertexArray = array of TAdVertex;

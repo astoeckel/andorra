@@ -480,6 +480,95 @@ type
 
 {$I teapot.inc}
 
+function VectorLength(const AVec: TAdVector3): Single;
+begin
+  result := sqrt(sqr(AVec.x) + sqr(AVec.y) + sqr(AVec.z));
+end;
+
+procedure NormalizeVector(var AVec: TAdVector3);
+var
+  len: Single;
+begin
+  len := VectorLength(AVec);
+
+  with AVec do
+  begin
+    x := x / len;
+    y := y / len;
+    z := z / len;
+  end;
+end;
+
+function CrossProduct(AVec1, AVec2: TAdVector3): TAdVector3;
+begin    
+  with result do
+  begin
+    x := -(AVec1.y * AVec2.z - AVec1.z * AVec2.y);
+    y := -(AVec1.z * AVec2.x - AVec1.x * AVec2.z);
+    z := -(AVec1.x * AVec2.y - AVec1.y * AVec2.x);
+  end;
+end;
+
+function AddVectors(const AVec1, AVec2: TAdVector3): TAdVector3;
+begin
+  with result do
+  begin
+    x := (AVec1.x + AVec2.x);
+    y := (AVec1.y + AVec2.y);
+    z := (AVec1.z + AVec2.z);
+  end;
+end;
+
+function SubstractVectors(const AVec1, AVec2: TAdVector3): TAdVector3;
+begin
+  with result do
+  begin
+    x := AVec1.x - AVec2.x;
+    y := AVec1.y - AVec2.y;
+    z := AVec1.z - AVec2.z;
+  end;
+end;
+
+function TriangleNormal(const A, B, C: TAdVector3): TAdVector3;
+var
+  vec1, vec2: TAdVector3;
+begin
+  vec1 := SubstractVectors(B, A);
+  vec2 := SubstractVectors(C, A);
+
+  result := CrossProduct(vec1, vec2);
+end;
+
+procedure RecomputeNormals(var AInd: TAdIndexArray; var AVert: TAdVertexArray);
+var
+  i: Integer;
+  a, b, c: PAdVertex;
+  n: TAdVector3;
+begin
+  //Set all normal vectors to zero to prevent the following shading algorithm from
+  //failing
+  for i := 0 to High(AVert) do
+    AVert[i].Normal := AdVector3(0, 0, 0);
+
+  //Go through every triangle and set the normal vector
+  for i := 0 to Length(AInd) div 3 - 1 do
+  begin
+    //Store the three vertices of
+    a := @AVert[AInd[i*3+0]];
+    b := @AVert[AInd[i*3+1]];
+    c := @AVert[AInd[i*3+2]];
+
+    n := TriangleNormal(a^.Position, b^.Position, c^.Position);
+    a^.Normal := AddVectors(a^.Normal, n);
+    b^.Normal := AddVectors(b^.Normal, n);
+    c^.Normal := AddVectors(c^.Normal, n);
+  end;
+
+  //Normalize the resulting vectors
+  for i := 0 to High(AVert) do
+    NormalizeVector(AVert[i].Normal);  
+end;
+
 procedure Tesselate_BPatch(
   var AVertDst: TAdVectorArray;
   var AIndDst: TAdIndexArray;
@@ -572,7 +661,7 @@ end;
 
 constructor TAdTeapotMesh.Create(AParent: TAdDraw);
 begin
-  FDetails := 32;
+  FDetails := 16;
 
   inherited;
 end;
@@ -635,12 +724,12 @@ begin
     vertices[i].Normal := AdVector3(0, 0, -1);
   end;
 
+  RecomputeNormals(indices, vertices);
+
   Mesh.Vertices := vertices;
   Mesh.Indices := indices;
   Mesh.PrimitiveCount := ppp * patches;
   Mesh.Update;
-
-  DrawMode := adPoints;
 end;
 
 procedure TAdTeapotMesh.SetDetails(AValue: integer);

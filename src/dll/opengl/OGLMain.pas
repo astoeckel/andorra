@@ -884,7 +884,14 @@ begin
       FColors[i].b := FVertices[i].Color.b;
       FColors[i].a := FVertices[i].Color.a;
 
-      FNormals[i] := FVertices[i].Normal;
+      //!
+      with FNormals[i] do
+      begin
+        x := FVertices[i].Normal.x;
+        y := FVertices[i].Normal.y;
+        z := FVertices[i].Normal.z;
+      end;
+
       FPositions[i] := FVertices[i].Position;
       FTexCoords[i] := FVertices[i].Texture;
     end;
@@ -1331,9 +1338,15 @@ begin
     //If the light is directional, position represents the direction
     //The fourth "w" parameter is zero.
     if AValue.LightType = altDirectional then
-      Position := AdVector4(AValue.Position, 0)
+      Position := AdVector4(
+        -AValue.Position.x,
+        -AValue.Position.y,
+        -AValue.Position.z, 0)
     else
-      Position := AdVector4(AValue.Position, 1);
+      Position := AdVector4(
+         AValue.Position.x,
+         AValue.Position.y,
+         AValue.Position.z, 1);
 
     //Attenuation is automatically deactivated if the light is directional
     ConstantAttenuation := AValue.ConstantAttenuation;

@@ -9,7 +9,7 @@ interface
 uses
   SysUtils, Classes, Dialogs,
   AdDraws, AdTypes, AdClasses, AdPerformanceCounter, AdStdWindow, AdSetupDlg,
-  AdPNG, Ad3DObj, AdEvents;
+  AdPNG, Ad3DObj, AdEvents, AdConsts;
 
 type
   TAdAppl = class
@@ -54,7 +54,17 @@ begin
 
     AdDraw.BeginScene;
 
-    AdDraw.ClearSurface(0);
+    AdDraw.AdAppl.ClearSurface(AdDraw.SurfaceRect, [alZBuffer], AdCol32_AliceBlue, 1, 0);
+    with AdDraw.Canvas do
+    begin
+      Pen.Width := 0;
+      Brush.Color := AdCol32_Bisque;
+      with Brush.Color do
+        a := 100;
+      Rectangle(AdDraw.SurfaceRect);
+
+      Release;
+    end;
 
     //Switch to the 3D mode
     AdDraw.Scene.Setup3DScene(800, 600,
@@ -64,7 +74,7 @@ begin
 
     //Activate the ZBuffer on to prevent the graphic engine from producing graphic
     //problems
-    AdDraw.Options := AdDraw.Options + [aoZBuffer];
+    AdDraw.Options := AdDraw.Options + [aoZBuffer, aoLight];
 
     //Rotate the mesh
     AdMesh.RotationX := AdMesh.RotationX + (AdPerCounter.TimeGap * dx);
@@ -78,7 +88,7 @@ begin
     SlowDownRotation;
 
     //Deactivate the ZBuffer again - we don't need it when drawing in the 2D mode
-    AdDraw.Options := AdDraw.Options - [aoZBuffer];
+    AdDraw.Options := AdDraw.Options - [aoZBuffer, aoLight];
 
     //Switch to the 2D Mode again
     AdDraw.Setup2DScene;
@@ -148,7 +158,7 @@ begin
       AdDraw.Window.Events.OnMouseUp := MouseUp;
       AdDraw.Window.Title := 'Andorra 2D Simple 3D';
 
-      AdDraw.Options := AdDraw.Options + [aoCulling];
+      AdDraw.Options := AdDraw.Options;
 
       AdTexture := TAdTexture.Create(AdDraw);
       AdTexture.LoadGraphicFromFile(path + 'floor_tex.png');
@@ -158,9 +168,10 @@ begin
 
       FillChar(mat, SizeOf(TAd2dMaterial), 0);
 
-      mat.Diffuse := Ad_ARGB(255, 50, 50, 200);
-      mat.Specular := Ad_ARGB(255, 200, 200, 255);
-      mat.Power := 10;
+      mat.Ambient := Ad_ARGB(255, 63, 56, 15);
+      mat.Diffuse := Ad_ARGB(255, 90, 79, 23);
+      mat.Specular := Ad_ARGB(255, 204, 186, 54);
+      mat.Power := 5;
 
       AdMesh.Material := mat;
 
@@ -171,7 +182,7 @@ begin
         LightType := altDirectional;
         Diffuse := Ad_ARGB(255, 255, 255, 255);
         Specular := Ad_ARGB(255, 255, 255, 255);
-        Position := AdVector3(0, 0, 1);
+        Position := AdVector3(0, 1, 1);
       end;
 
       AdLight.Data := data;      

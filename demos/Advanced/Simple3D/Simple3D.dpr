@@ -7,7 +7,8 @@ program Simple3D;
 
 uses
   SysUtils,
-  Main in 'Main.pas';
+  Main in 'Main.pas',
+  AdConsts in '..\..\..\src\AdConsts.pas';
 
 var
   Appl: TAdAppl;
