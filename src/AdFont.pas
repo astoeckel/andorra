@@ -29,23 +29,25 @@ uses
   AdClasses, AdTypes;
 
 type
-  //Defines how the output of the TextOut-Ex function will be
+  //Defines how the TextOutEx function should print the text
   TAdFontDrawMode = (
-    dtBottom,
-    dtTop,
-    dtMiddle,
-    dtLeft,
-    dtRight,
-    dtCenter,
-    dtWordWrap,
-    dtCharWrap,
-    dtDoLineFeeds,
-    dtCut
+    dtBottom, //< The font is aligned at the bottom of the target rectangle
+    dtTop, //< The font is aligned at the top of the target rectangle
+    dtMiddle, //< The font is aligned in the horizontal center of the target rectangle
+    dtLeft, //< The font is aligned at the left side of the target rectangle
+    dtRight, //< The font is aligned at the right side of the target rectangle
+    dtCenter, //< The font is aligned in the vertical center of the target rectangle
+    dtWordWrap, //< Defines whether word wrap is activated
+    dtCharWrap, //< Defines whether single chars can seperated by the type setter
+    dtDoLineFeeds, //< Defines whether line breaks can be done
+    dtCut //< Defines whether the target rectangle should be used as a scissor rectangle
   );
 
   //A set of the draw type, used by TAdFont.FontOutEx
   TAdFontDrawModes = set of TAdFontDrawMode;
-
+  
+  {Abstract class that represents a type setter for Andorra 2D bitmap fonts. Texts
+   are}  
   TAdTypeSetter = class
     private
       FCharSizes:TAdCharSizes;
@@ -55,27 +57,56 @@ type
       FTextWidth:integer;
       FTextHeight:integer;
     public
+      {Creates a new instance of TAdTypeSetter. This method should not be called
+       for TAdTypeSetter as it is an abstract class. Use TAdSimpleTypeSetter or
+       other classes derived from TAdTypeSetter instead.}
       constructor Create;virtual;
 
+      {Returns the maximum width of a char in the font currently loaded into the
+       type setter.}
       function MaxHeight:double;
+      {Returns the maximum width of a char in the font currently loaded into the
+       type setter.}
       function MaxWidth:double;
 
+      {Generates one line of text.
+       @param(AX specifies the output X-coordinate of the generated text.)
+       @param(AY specifies the output Y-coordinate of the generated text.)
+       @param(AText specifies the text that is actually set.)
+       @param(ATextSet specifies the output text set that will contain the output data.)
+      }
       procedure GenerateLine(AX,AY:double; AText:string; var ATextSet:TAdTextSet);virtual;abstract;
+      {Generates the specified text in the given rectangle.
+       @param(ARect specifies the output rectangle of the text.)
+       @param(AText specifies the text that is actually set.)
+       @param(ATextSet specifies the output text set that will contain the output data.)
+      }
       procedure Generate(ARect:TAdRect; AText:string; var ATextSet:TAdTextSet);virtual;abstract;
 
+      {Copies the settings from another instance of a type setter class.}
       procedure Assign(ASource:TAdTypeSetter);virtual;abstract;
+      {Compares the settings of this instance of the type setter class with another
+       instance and returns whether the settings are equal.}
       function CompareTo(ATypeSetter:TAdTypeSetter):boolean;virtual;abstract;
 
+      {Pointer on the array that contains the sizes of each char.}
       property CharSizes:TAdCharSizes read FCharSizes write FCharSizes;
+      {Pointer on the array that contains the texture coordinates of each
+       char.}
       property CharPatterns:TAdCharPatterns read FCharPatterns write FCharPatterns;
+      {Returns whether any settings have changed.}
       property Changed:boolean read FChanged write FChanged;
 
+      {Contains the width of the text that had been lastly set.}
       property TextWidth:integer read FTextWidth;
+      {Contains the height of the text that had been lastly set.}      
       property TextHeight:integer read FTextHeight;
   end;
-
+  
+  {A class of TAdTypeSetter.}
   TAdTypeSetterClass = class of TAdTypeSetter;
-
+  
+  {TAdSimpleTypeSetter is the standard type setter of Andorra 2D.}
   TAdSimpleTypeSetter = class(TAdTypeSetter)
     private
       FLineHeight:double;
@@ -89,23 +120,48 @@ type
       procedure CutTextSet(AScissorRect:TAdRect; var ATextSet:TAdTextSet);
       procedure LineGeneration(AX,AY, AWidth:double; AText:string; var ATextSet:TAdTextSet; AOffset,ACount:integer);
     public
+      {Creates a new instance of TAdSimpleTypeSetter.}
       constructor Create;override;
-
+      
+      {Generates one line of text.
+       @param(AX specifies the output X-coordinate of the generated text.)
+       @param(AY specifies the output Y-coordinate of the generated text.)
+       @param(AText specifies the text that is actually set.)
+       @param(ATextSet specifies the output text set that will contain the output data.)
+      }      
       procedure GenerateLine(AX,AY:double; AText:string; var ATextSet:TAdTextSet);override;
+      {Generates the specified text in the given rectangle.
+       @param(ARect specifies the output rectangle of the text.)
+       @param(AText specifies the text that is actually set.)
+       @param(ATextSet specifies the output text set that will contain the output data.)
+      }
       procedure Generate(ARect:TAdRect; AText:string; var ATextSet:TAdTextSet);override;
 
+      {Copies the settings from another instance of a type setter class.}      
       procedure Assign(ASource:TAdTypeSetter);override;
+      {Compares the settings of this instance of the type setter class with another
+       instance and returns whether the settings are equal.}
       function CompareTo(ATypeSetter:TAdTypeSetter):boolean;override;
-
+      
+      {Relative value that controls the space between two lines. A value of "2" would mean that
+       there is one line space between two lines.}
       property LineHeight:double index 0 read FLineHeight write SetData;
+      {Gap between to chars in pixels.}
       property CharSpacing:double index 1 read FCharSpacing write SetData;
+      {Relative width of a char.}
       property CharWidth:double index 2 read FCharWidth write SetData;
+      {Relative height of a char.}
       property CharHeight:double index 3 read FCharHeight write SetData;
+      {Defines how the text sould be set and aligned.
+       @seealso(TAdFontDrawMode)}
       property DrawMode:TAdFontDrawModes read FDrawMode write SetDrawMode;
   end;
-
-
-  PAdFont = ^TAdFont;
+ 
+  {TAdFont is the base class that copes with text output. A font class represents
+   the typeface and the "drawing instance" at once. You should not create a font
+   class directly but use the TAdFontFactory class (AdDraw.Fonts) to create a font.
+   When doing this, the typefaces are automatically buffered and no memory or creation time
+   is wasted.}
   TAdFont = class
     private
       FMesh:TAd2dMesh;
@@ -142,26 +198,52 @@ type
       procedure GenerateText;
       procedure Draw;
     public
+      {Creates a new instance of TAdFont. Do not create fonts yourself unless you know
+       what you're doing. Use the TAdFontFactory class instead (e.g. AdDraw.Fonts). When 
+       doing this, instances of the same typeface will automatically be stored - no memory
+       will be wasted.}
       constructor Create(AAppl:TAd2dApplication);
+      {Destroys the instance of TAdFont.}
       destructor Destroy;override;
 
+      {Prints the text defined by "AText" to the defined output rectangle. To align the text
+       use the type setter property. When using the simple type setter (TAdSimpleTypeSetter, what
+       is default) simply set TAdSimpleTypeSetter(Font.TypeSetter).DrawMode.}
       procedure TextOut(ARect:TAdRect;AText:string);overload;
+      {Prints one line of text defined by "AText".}
       procedure TextOut(AX, AY:integer;AText:string);overload;
-
+      
+      {Returns the width of the given text. Calls with the same text will automatically be
+       buffered.}
       function TextWidth(AText:string):integer;
+      {Returns the height of the given text. Calls with the same text will automatically be
+       buffered.}
       function TextHeight(AText:string):integer;
-
+      
+      {Assigns the data of another to this font.}
       procedure Assign(AFont:TAdFont);
 
+      {If true, the font destroys the bitmap font texture it is using when being freed.}
       property AutoFreeTexture:boolean read FAutoFreeTexture write FAutoFreeTexture;
+      {Pointer on the type setter class used to set the text.}
       property TypeSetter:TAdTypeSetter read FTypeSetter write SetTypeSetter;
+      {Color of the text.}
       property Color:TAndorraColor read FColor write SetColor;
+      {Pointer on the texture used by the font.}
       property Texture:TAd2dBitmapTexture read FTexture write FTexture;
+      {Pointer on the array that contains the sizes of every letter in the bitmap font.}
       property CharSizes:TAdCharSizes read FCharSizes write FCharSizes;
+      {Pointer on the array that contains the texture coordinates of every letter in the bitmap font.}
       property CharPatterns:TAdCharPatterns read FCharPatterns write FCharPatterns;
+      {This matrix can be used to tranlate, rotate or scale the output.}
       property TransformationMatrix:TAdMatrix read FMatrix write FMatrix;
+      
+      {This pointer is internally used by Andorra 2D.}
       property Creator:Pointer read FCreator write FCreator;
-  end;
+  end;  
+  
+  {Pointer on TAdFont.}
+  PAdFont = ^TAdFont;  
 
 implementation
 

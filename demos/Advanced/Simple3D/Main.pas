@@ -158,12 +158,7 @@ begin
 
       FillChar(mat, SizeOf(TAd2dMaterial), 0);
 
-      mat.Ambient := Ad_ARGB(255, 63, 56, 15);
-      mat.Diffuse := Ad_ARGB(255, 90, 79, 23);
-      mat.Specular := Ad_ARGB(255, 204, 186, 54);
-      mat.Power := 5;
-
-      AdMesh.Material := mat;
+      AdMesh.Material := AdMat_Plastic_White;
 
       AdLight := AdDraw.AdAppl.CreateLight;
       FillChar(data, SizeOf(TAd2dLightData), 0);
