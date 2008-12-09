@@ -3,8 +3,8 @@ unit Main;
 interface
 
 uses
-  Dialogs, SysUtils, Forms, Types, Classes, Graphics, AdSimpleXML,
-  AdPNG, AdDraws, AdClasses, AdTypes, AdPerformanceCounter, AdSetupDlg, ExtCtrls;
+  Dialogs, SysUtils, Forms, Types, Classes, 
+  AdPNG, AdDraws, AdClasses, AdPerformanceCounter, AdSetupDlg, AdConsts;
 
 type
   TForm1 = class(TForm)
@@ -76,17 +76,9 @@ begin
   begin
     AdPerCounter.Calculate;
 
-    AdDraw.ClearSurface(clBlack);
+    AdDraw.ClearSurface(AdCol32_Black);
 
     AdDraw.BeginScene;
-
-    with AdDraw.Canvas do
-    begin
-      Pen.Width := 1;
-      Circle(50, 50, 10);
-      Textout(0, 0, IntToStr(AdPerCounter.FPS));
-      Textout(0, 16, FloatToStr(AdPerCounter.TimeGap));
-    end;
 
     AdDraw.EndScene;
 

@@ -195,9 +195,6 @@ type
       {Indicates wheter the surface is currently activated or not.}
       property Activated: boolean read FActivated;
 
-      {Clears the surface with a specific color.}
-      procedure ClearSurface(AColor: LongInt);virtual;
-
       {Returns wheteher the surface is able to be activated and used.}
       function CanDraw:boolean;virtual;abstract;
 
@@ -345,7 +342,15 @@ type
       {Destroys the instance of TAdRenderingSurface.}
       destructor Destroy;override;
 
-      procedure ClearSurface(AColor: LongInt);override;
+      {Clears the surface using a 24 Bit color. You may use the color constants
+       from Delphi/Lazarus or the 24 Bit color constants in the AdConsts unit or
+       use the RGB function from the unit AdTypes.}
+      procedure ClearSurface(AColor: LongInt);overload;virtual;
+      {Clears the surface using a 32 Andorra color value. You may use the color
+       constants from the unit AdConsts or the Ad_ARGB function. If your using a
+       transparent value when clearing a rendering surface, the surface is filled
+       with that transparent color so that you may draw it over other objects.}
+      procedure ClearSurface(AColor: TAndorraColor);overload;virtual;
 
       {A hardware accelerated canvas. All drawing operations will automatically
        be made on the owner of the canvas property.}
@@ -2925,11 +2930,6 @@ begin
   //Nothing to do in this class.
 end;
 
-procedure TAdSurface.ClearSurface(AColor: LongInt);
-begin
-  Activate;
-end;
-
 procedure TAdSurface.SetDraw(AValue: TAdDraw);
 begin
   if FDraw <> nil then
@@ -3043,14 +3043,27 @@ end;
 
 procedure TAdRenderingSurface.ClearSurface(AColor: Integer);
 begin
-  inherited;
+  Activate;
   
   if AdDraw.CanDraw then
   begin
-    //Clear the surface with the specified color.
+    //Clear the surface with the specified 24-Bit color.
     AdDraw.AdAppl.ClearSurface(
       Scene.Viewport, [alColorBuffer, alZBuffer, alStencilBuffer],
       ColorToAdColor(AColor), 1, 0);
+  end;
+end;
+
+procedure TAdRenderingSurface.ClearSurface(AColor: TAndorraColor);
+begin
+  Activate;
+  
+  if AdDraw.CanDraw then
+  begin
+    //Clear the surface with the 32-Bit specified color.
+    AdDraw.AdAppl.ClearSurface(
+      Scene.Viewport, [alColorBuffer, alZBuffer, alStencilBuffer],
+      AColor, 1, 0);
   end;
 end;
 
