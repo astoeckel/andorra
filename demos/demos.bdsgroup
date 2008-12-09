@@ -29,7 +29,8 @@
       <Projects Name="Stencil.exe">Advanced\StencilBuffer\Stencil.bdsproj</Projects>
       <Projects Name="Surfaces.exe">Advanced\Surfaces\Surfaces.bdsproj</Projects>
       <Projects Name="NoVCL.exe">Simple\SimpleNonVCL\NoVCL.bdsproj</Projects>
-      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe VideoPlayer.exe Shader.exe Stencil.exe Surfaces.exe NoVCL.exe</Projects>
+      <Projects Name="Simple3D.exe">Advanced\Simple3D\Simple3D.bdsproj</Projects>
+      <Projects Name="Targets">WormHunter.exe Simple.exe Image.exe DynTexture.exe Animation.exe SimplePart.exe Bounce.exe Breakout.exe Physic.exe SpriteAnim.exe PixelCheck.exe MovingPlanet.exe SimpleText.exe TextDemo.exe Spiral.exe VideoPlayer.exe Shader.exe Stencil.exe Surfaces.exe NoVCL.exe Simple3D.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>

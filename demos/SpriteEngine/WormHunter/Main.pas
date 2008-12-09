@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls,
-  AdPNG, AdTypes, AdSprites, AdParticles, AdPerformanceCounter, AdSetupDlg;
+  AdPNG, AdTypes, AdSprites, AdParticles, AdPerformanceCounter, AdSetupDlg,
+  AdConsts;
 
 type
   TKey = (kyUp, kyDown, kyLeft, kyRight);
@@ -135,7 +136,6 @@ begin
   Cursor := crNone;
 
   AdDraw := TAdDraw.Create(self);
-  AdDraw.Options := AdDraw.Options - [aoCulling];
 
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
@@ -222,12 +222,17 @@ var
 begin
   if AdDraw.CanDraw then
   begin
+    //Calculate the time that has gone by since the last frame
     AdPerCounter.Calculate;
-    AdDraw.ClearSurface(clBlack);
+
+    //Clear the surface with black color
+    AdDraw.ClearSurface(AdCol24_Black);
+
+    //Start the scene
     AdDraw.BeginScene;
 
+    //Only perform the following actions every 100ms
     ActTime := ActTime + AdPerCounter.TimeGap;
-
     if ActTime > 100 then
     begin
       keys := [];
@@ -246,15 +251,21 @@ begin
       ActTime := 0;
     end;
 
+    //Move all sprites...
     AdSpriteEngine.Move(AdPerCounter.TimeGap / 1000);
+    //...draw them...
     AdSpriteEngine.Draw;
+    //...and free the sprites that have been marked as dead
     AdSpriteEngine.Dead;
 
+    //Write the results on the canvas
     with AdDraw.Canvas do
     begin
-      Font.Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
-      Font.Textout(0,20,'Sprites: '+inttostr(AdSpriteEngine.Items.Count));
-      Font.Textout(0,40,'TimeGap: '+FormatFloat('#0.000',AdPerCounter.TimeGap));
+      Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
+      Textout(0,20,'Sprites: '+inttostr(AdSpriteEngine.Items.Count));
+      Textout(0,40,'TimeGap: '+FormatFloat('#0.000',AdPerCounter.TimeGap));
+
+      Release; //Actually draw the text
     end;
 
     AdDraw.EndScene;

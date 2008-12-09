@@ -23,6 +23,8 @@ var
 
 implementation
 
+uses AdCanvas;
+
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -77,6 +79,14 @@ begin
     AdDraw.ClearSurface(clBlack);
 
     AdDraw.BeginScene;
+
+    with AdDraw.Canvas do
+    begin
+      Pen.Width := 1;
+      Circle(50, 50, 10);
+      Textout(0, 0, IntToStr(AdPerCounter.FPS));
+      Textout(0, 16, FloatToStr(AdPerCounter.TimeGap));
+    end;
 
     AdDraw.EndScene;
 

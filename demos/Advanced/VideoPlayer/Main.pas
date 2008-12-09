@@ -49,7 +49,7 @@ begin
     AdDraw.BeginScene;
 
     AdVideo.Move(AdPerCounter.TimeGap / 1000);
-    AdVideo.Image.Filter := atLinear;
+//    AdVideo.Image.Filter := atLinear;
     AdVideo.Draw(AdDraw, AdRect(0,0,AdDraw.Window.ClientWidth,AdDraw.Window.ClientHeight));
 
     with AdDraw.Canvas do

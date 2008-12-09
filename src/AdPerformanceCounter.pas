@@ -37,6 +37,7 @@ type
       FTimeGap: double;
       FFPS: integer;
       FInterpolate: boolean;
+      FFirstTime: boolean;
       FState: TAdPerformanceCounterState;
       FLastTickCount: double;
       FTempTime: double;
@@ -98,13 +99,19 @@ type
 
 implementation
 
+uses
+  Windows;
+
 { TAdPerformanceCounter }
 
+//Comment this define, if you don't want hardware timers to be used.
+{'$DEFINE USE_HW_TIMER}
+
 {$IFDEF WIN32}
+{$IFDEF USE_HW_TIMER}
 var
   Frequency:int64 = 0;
 
-procedure Sleep(ms: Cardinal); stdcall; external 'kernel32.dll';
 function QueryPerformanceCounter(var lpPerformanceCount: int64): boolean; stdcall; external 'kernel32.dll';
 function QueryPerformanceFrequency(var lpFrequency: int64): boolean; stdcall; external 'kernel32.dll';
 
@@ -119,6 +126,12 @@ begin
 
   result := ticks * 1000 / Frequency;
 end;
+{$ELSE}
+function GetTickCount: LongInt; stdcall; external 'kernel32.dll';
+{$ENDIF}
+
+procedure Sleep(ms: Cardinal); stdcall; external 'kernel32.dll';
+
 {$ENDIF}
 
 constructor TAdPerformanceCounter.Create(ACreatePaused: boolean);
@@ -140,6 +153,7 @@ begin
   FInterpolationFactor := 20;
   FMaximumTimeGap := 50;
   FLastSleep := 0;
+  FFirstTime := true;
 end;
 
 procedure TAdPerformanceCounter.LimitFrameRate(atd: double);
@@ -169,9 +183,10 @@ begin
 
   if FState = psRunning then
   begin
-    if FInterpolate then
+    if FInterpolate and not FFirstTime then
     begin
       FTimeGap := (FTimeGap * FInterpolationFactor + (td)) / (FInterpolationFactor + 1);
+      FFirstTime := false;
     end
     else
     begin
@@ -215,6 +230,7 @@ begin
   if FState = psPaused then
   begin
     FState := psResumed;
+    FFirstTime := true;
   end;
 end;
 

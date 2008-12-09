@@ -67,7 +67,7 @@ type
       constructor Create(AParent:TAdDraw);
       destructor Destroy;override;
       {Draws the scene.}
-      procedure Draw;
+      procedure Draw;override;
 
       property Camera: TAdCamera read FCamera write SetCamera;
   end;

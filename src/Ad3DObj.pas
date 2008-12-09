@@ -644,9 +644,8 @@ begin
   for i := 0 to ADetails do
   begin
     for j := 0 to 3 do
-    begin
       hor_splines[j].SplineXYZ(3 * (i / ADetails), pntx[j], pnty[j], pntz[j]);
-    end;
+      
     vert_splines[i] := TAdCubicSpline.Create(pntx, pnty, pntz, 4);
   end;
 
@@ -709,13 +708,27 @@ var
   vpp: integer; //vertices per patch
   ppp: integer; //primitives per patch
 begin
+  //Store the count of patches in the patches variable
   patches := Length(teapot_indices);
+
+  //Calculate the count of vertices per patch
   vpp := sqr(FDetails+1);
+  //Calculate the count of primitives per patch
   ppp := sqr(FDetails) * 2;
+
+  //Reserve memory for the temporary index buffer, that stores the index data
+  //for a single patch
   SetLength(tmp_indices, ppp * 3);
+
+  //Reserve memory for the temporary vertex buffer, that stores the vertex data
+  //for a single patch
   SetLength(tmp_vertices, vpp);
+
+  //Reserve memory for the source vertex buffer. All vertices are copied into this
+  //buffer in the next step
   SetLength(src_vertices, Length(teapot_vertices) div 3);
 
+  //Copy all vertices to the source vertex buffer.
   for i := 0 to Length(teapot_vertices) div 3 - 1 do
     src_vertices[i] := AdVector3(
       teapot_vertices[i*3+0],
@@ -723,7 +736,9 @@ begin
       teapot_vertices[i*3+2]
     );
 
+  //Reserve memory for the output vertex buffer
   SetLength(vertices, patches * vpp);
+  //Reserve memorx for the output index buffer
   SetLength(indices, patches * ppp * 3);
 
   indexpos := 0;
@@ -731,18 +746,24 @@ begin
 
   for i := 0 to patches - 1 do
   begin
+    //Tesselate each patch and store the results in the "tmp_vertices" and "tmp_indices"
+    //variables
     Tesselate_BPatch(tmp_vertices, tmp_indices, src_vertices, teapot_indices[i], FDetails);
 
+    //Add the results to the indexbuffer
     for j := 0 to High(tmp_indices) do
       indices[j + indexpos] := tmp_indices[j] + vertexpos;
 
+    //Add the results to the vertex buffer
     for j := 0 to High(tmp_vertices) do
       vertices[j + vertexpos].Position := tmp_vertices[j];
 
+    //Calculate the next position of the index/vertex pointer
     indexpos := indexpos + Length(tmp_indices);
     vertexpos := vertexpos + Length(tmp_vertices);
   end;  
 
+  //Scale the resuilting modell and set its color
   for i := 0 to High(vertices) do
   begin
     vertices[i].Position := AdVector3(
@@ -751,14 +772,17 @@ begin
         vertices[i].Position.z * 20);
     vertices[i].Color := Ad_ARGB(255, 255, 255, 255);
     vertices[i].Texture := AdVector2(0, 0);
-    vertices[i].Normal := AdVector3(0, 0, -1);
   end;
 
+  //Compute the normals of the generated mesh
   RecomputeNormals(indices, vertices);
 
+  //Store the mesh data in the mesh class
   Mesh.Vertices := vertices;
   Mesh.Indices := indices;
   Mesh.PrimitiveCount := ppp * patches;
+
+  //Copy the mesh data to the graphics board
   Mesh.Update;
 end;
 

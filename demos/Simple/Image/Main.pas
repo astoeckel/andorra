@@ -31,7 +31,6 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   AdSetupDlg : TAdSetup;
 begin
-//  ReportMemoryLeaksOnShutdown := true;
   AdPerCounter := TAdPerformanceCounter.Create;
 
   AdDraw := TAdDraw.Create(self);
