@@ -25,8 +25,7 @@ unit AdDraws;
 
 interface
 
-{'$DEFINE DO_NOT_INCLUDE_STD_FORMATS}
-{'$DEFINE DO_NOT_INCLUDE_STD_WINDOWMGR}
+{$I andorra_conf.inc}
 
 uses       
   SysUtils, Classes,

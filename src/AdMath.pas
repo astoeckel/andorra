@@ -20,8 +20,9 @@
  (http://glscene.sf.net/). This code is published under the MPL.
  See http://glscene.cvs.sourceforge.net/viewvc/*checkout*/glscene/Source/Base/VectorGeometry.pas
  to get the original source code.
- If you define the "DO_NOT_USE_3DNOW" compiler switch, all code that was taken from
- this unit will be deactivated.}
+ If you define the "DO_NOT_USE_3DNOW" compiler switch in the andorra_conf.inc or
+ your project settings, all code that was taken from this unit will be
+ deactivated.}
 
 
 {Contains optimized mathematical functions for matrix calculations.}
@@ -36,12 +37,8 @@ interface
 uses
   AdTypes;
 
-{$I inc_andorra.inc}
-
-//Remove ' if you do not want to use 3DNOW!
-{$DEFINE DO_NOT_USE_3DNOW}
-//Remove ' if you do not want to use any x86amd asm code
-{'$DEFINE DO_NOT_USE_ASM}
+{$I andorra2d.inc}
+{$I andorra_conf.inc}
 
 var
   {Multiplies two matrixes and returns the new matrix}
@@ -232,7 +229,7 @@ end;
  GLScene project. For more details see above.}
 
 {$MESSAGE HINT 'Andorra may use the AMD 3DNow optimization. This code is not tested!'}
-{$MESSAGE HINT 'If you encounter any problem, activate the compilier switch at the beginning of the unit AdMath and report this problem to the Andorra 2D developers. Thank you.'}
+{$MESSAGE HINT 'If you encounter any problem, activate the DO_NOT_USE_3DNOW compiler switch in andorra_conf.inc and report this problem to the Andorra 2D developers. Thank you.'}
 {$MESSAGE HINT 'If you are using a AMD processor and everything works fine, it would be great if you could report this.'}
 
 function _3DNOW_AdMatrix_Multiply(const amat1, amat2:TAdMatrix):TAdMatrix;
@@ -434,7 +431,7 @@ end;
 
 initialization
   {$IFDEF DO_NOT_USE_3DNOW}
-    //If SSE optimizations are deactivated, connect the functions in the 
+    //If 3DNOW optimizations are deactivated, connect the functions in the 
     //interface part of the unit with the functions written in standard 
     //pascal
     UsePascal;

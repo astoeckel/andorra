@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.13 2008/09/30 12:46:25 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.14 2008/12/14 16:34:20 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -50,7 +50,7 @@ Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 {Unit which is used for parsing XML-Files. Originally "JclSimpleXML.pas".}
 unit AdSimpleXML;
 
-{$I inc_andorra.inc}
+{$I andorra2d.inc}
 
 interface
 

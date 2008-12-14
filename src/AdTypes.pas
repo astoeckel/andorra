@@ -26,7 +26,7 @@ unit AdTypes;
   {$MODE Delphi}
 {$ENDIF}
 
-{$INCLUDE inc_andorra.inc}
+{$I andorra2d.inc}
 
 interface
 
