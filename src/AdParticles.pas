@@ -22,7 +22,7 @@ unit AdParticles;
   {$MODE DELPHI}
 {$ENDIF}
 
-{$INCLUDE inc_andorra.inc}
+{$INCLUDE andorra2d.inc}
 
 interface
 
@@ -459,12 +459,22 @@ begin
 
       try
         ResizeData(FParticleList.Count);
-        for i := 0 to FParticleList.Count - 1 do
+        if FParticleList.Count > 0 then
         begin
-          FParticleList[i].Move(FTimeGap);
-          FParticleList[i].StoreMinMax(@FData);
-          FParticleList[i].StoreData(@FData);
-        end;
+          for i := 0 to FParticleList.Count - 1 do
+          begin
+            FParticleList[i].Move(FTimeGap);
+            FParticleList[i].StoreMinMax(@FData);
+            FParticleList[i].StoreData(@FData);
+          end;
+        end
+        else
+        begin
+          //Set the size rectangle to zero if there are no particles in the system
+          FData.MinX := 0; FData.MaxX := 0;
+          FData.MinY := 0; FData.MaxY := 0;
+        end; 
+
       finally
         FHasData := true;
         FStartedCalculation := false;

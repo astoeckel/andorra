@@ -1,3 +1,16 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
+
 unit Main;
 
 interface
@@ -16,23 +29,24 @@ uses
   //AdMPEG2Video;
 
 type
+  //This class is used to manage our demo application.
   TAdAppl = class
-  public
-    AdDraw:TAdDraw;
-    AdPerCounter:TAdPerformanceCounter;
-    AdVideo:TAdVideoPlayer;
-    AdGUI: TAdGUI;
-    AdGUIConnector: TAdGUIConnector;
+    private
+      procedure Idle(Sender:TObject;var Done:boolean);
+      procedure OpenClick(Sender: TObject);
+      procedure CloseClick(Sender: TObject);
+      procedure PlayClick(Sender: TObject);
+      procedure PauseClick(Sender: TObject);
+      procedure StopClick(Sender: TObject);
+      procedure CheckBoxClick(Sender: TObject);
+    public
+      AdDraw:TAdDraw;
+      AdPerCounter:TAdPerformanceCounter;
+      AdVideo:TAdVideoPlayer;
+      AdGUI: TAdGUI;
+      AdGUIConnector: TAdGUIConnector;
 
-    procedure Idle(Sender:TObject;var Done:boolean);
-    procedure OpenClick(Sender: TObject);
-    procedure CloseClick(Sender: TObject);
-    procedure PlayClick(Sender: TObject);
-    procedure PauseClick(Sender: TObject);
-    procedure StopClick(Sender: TObject);
-    procedure CheckBoxClick(Sender: TObject);
- 
-    procedure Run;
+      procedure Run;
   end;
 
 const
@@ -42,16 +56,22 @@ implementation
 
 procedure TAdAppl.Idle(Sender: TObject; var Done: boolean);
 begin
+  //Calculate the time difference
+  AdPerCounter.Calculate;
+
   if AdDraw.CanDraw then
   begin
-    AdPerCounter.Calculate;
+    //Clear the surface
     AdDraw.ClearSurface(0);
     AdDraw.BeginScene;
 
+    //Move the video forward
     AdVideo.Move(AdPerCounter.TimeGap / 1000);
-//    AdVideo.Image.Filter := atLinear;
-    AdVideo.Draw(AdDraw, AdRect(0,0,AdDraw.Window.ClientWidth,AdDraw.Window.ClientHeight));
+    //Draw it to the specified area
+    AdVideo.Draw(AdDraw,
+      AdRect(0,0,AdDraw.Window.ClientWidth,AdDraw.Window.ClientHeight));
 
+    //Display some information about the video
     with AdDraw.Canvas do
     begin
       TextOut(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
@@ -59,6 +79,7 @@ begin
       Release;
     end;
 
+    //Draw/Update the gui
     AdGUI.Update(AdPerCounter.TimeGap / 1000);
 
     AdDraw.EndScene;
@@ -68,8 +89,84 @@ begin
   Done := false;
 end;
 
+procedure TAdAppl.Run;
+var
+  AdSetup: TAdSetup;
+begin
+  AdDraw := TAdDraw.Create(nil);
+
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
+
+  if AdSetup.Execute then
+  begin
+    if AdDraw.Initialize then
+    begin
+      //Connect the OnIdle event
+      AdDraw.Window.Events.OnIdle := Idle;
+      //Disable the cursor
+      AdDraw.Window.CursorVisible := false;
+      //Set the window title
+      AdDraw.Window.Title := 'Andorra 2D Video Player';
+
+      //Create the preformance counter
+      AdPerCounter := TAdPerformanceCounter.Create;
+      //Limit the frame rate to 100 FPS
+      AdPerCounter.MaximumFrameRate := 100;
+
+      //Set the current work directory
+      if DirectoryExists(path) then
+        SetCurrentDir(path);
+
+      //Load the gui
+      AdGUI := TAdGUI.Create(AdDraw);
+      AdGUI.Skin.LoadFromFile('sunna.axs');
+      AdGUI.Cursors.LoadFromFile('cursors.xml');
+      AdGUI.LoadFromFile('VideoGUI.axg');
+
+      //Setup event handlers
+      AdGUI.FindComponent('btn_open').OnClick := OpenClick;
+      AdGUI.FindComponent('btn_close').OnClick := CloseClick;
+      AdGUI.FindComponent('btn_play').OnClick := PlayClick;
+      AdGUI.FindComponent('btn_pause').OnClick := PauseClick;
+      AdGUI.FindComponent('btn_stop').OnClick := StopClick;
+      AdGUI.FindComponent('chk_loop').OnClick := CheckBoxClick;
+      AdGUI.FindComponent('chk_stretch').OnClick := CheckBoxClick;
+      AdGUI.FindComponent('chk_proportional').OnClick := CheckBoxClick;
+      AdGUI.FindComponent('chk_center').OnClick := CheckBoxClick;
+
+      //Connect all event handlers to the AdDraw.Window
+      AdGUIConnector := TAdGUIConnector.Create(AdGUI);
+      AdGUIConnector.ConnectEventHandlers(AdDraw.Window);
+
+      //Create the video player object
+      AdVideo := TAdVideoPlayer.Create(AdDraw);
+
+      AdDraw.Run;
+
+      //Free all objects
+      AdGUIConnector.Free;
+      AdGUI.Free;
+      AdVideo.Free;
+      AdPerCounter.Free;
+    end else
+      ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
+                  'mode or another video adapter.');
+  end;
+
+  //Free all objects
+  AdSetup.Free;
+  AdDraw.Free;
+end;
+
+//
+//--- GUI event handlers ---
+//
+
+
 procedure TAdAppl.CheckBoxClick(Sender: TObject);
 begin
+  //Set the video properties
   AdVideo.Stretch := TAdCheckBox(AdGUI.FindComponent('chk_stretch')).Checked;
   AdVideo.Loop := TAdCheckBox(AdGUI.FindComponent('chk_loop')).Checked;
   AdVideo.Proportional := TAdCheckBox(AdGUI.FindComponent('chk_proportional')).Checked;
@@ -88,9 +185,8 @@ begin
   od := TOpenDialog.Create(nil);
   od.Options := od.Options + [ofNoChangeDir];
   if od.Execute then
-  begin
     AdVideo.Open(od.FileName);
-  end;
+    
   od.Free;
 end;
 
@@ -102,62 +198,6 @@ end;
 procedure TAdAppl.PlayClick(Sender: TObject);
 begin
   AdVideo.Play;
-end;
-
-procedure TAdAppl.Run;
-var
-  AdSetup: TAdSetup;
-begin
-  AdPerCounter := TAdPerformanceCounter.Create;
-  AdPerCounter.MaximumFrameRate := 100;
-
-  AdDraw := TAdDraw.Create(nil);
-
-  AdSetup := TAdSetup.Create(AdDraw);
-  AdSetup.Image := 'logo1.png';
-
-  if AdSetup.Execute then
-  begin
-    if AdDraw.Initialize then
-    begin
-      AdDraw.Window.Events.OnIdle := Idle;
-      AdDraw.Window.CursorVisible := false;
-      AdDraw.Window.Title := 'Andorra 2D Video Player';
-
-      if DirectoryExists(path) then
-        SetCurrentDir(path);
-
-      AdGUI := TAdGUI.Create(AdDraw);
-      AdGUI.Skin.LoadFromFile('sunna.axs');
-      AdGUI.Cursors.LoadFromFile('cursors.xml');
-      AdGUI.LoadFromFile('VideoGUI.axg');
-
-      AdGUI.FindComponent('btn_open').OnClick := OpenClick;
-      AdGUI.FindComponent('btn_close').OnClick := CloseClick;
-      AdGUI.FindComponent('btn_play').OnClick := PlayClick;
-      AdGUI.FindComponent('btn_pause').OnClick := PauseClick;
-      AdGUI.FindComponent('btn_stop').OnClick := StopClick;
-      AdGUI.FindComponent('chk_loop').OnClick := CheckBoxClick;
-      AdGUI.FindComponent('chk_stretch').OnClick := CheckBoxClick;
-      AdGUI.FindComponent('chk_proportional').OnClick := CheckBoxClick;
-      AdGUI.FindComponent('chk_center').OnClick := CheckBoxClick;
-
-      AdGUIConnector := TAdGUIConnector.Create(AdGUI);
-      AdGUIConnector.ConnectEventHandlers(AdDraw.Window);
-
-      AdVideo := TAdVideoPlayer.Create(AdDraw);
-
-      AdDraw.Run;
-    end else
-      ShowMessage('Error while initializing Andorra 2D. Try to use another display '+
-                  'mode or another video adapter.');
-  end;
-  AdSetup.Free;
-  AdGUIConnector.Free;
-  AdGUI.Free;
-  AdVideo.Free;
-  AdPerCounter.Free;
-  AdDraw.Free;
 end;
 
 procedure TAdAppl.StopClick(Sender: TObject);

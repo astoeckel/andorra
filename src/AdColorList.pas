@@ -22,7 +22,7 @@ unit AdColorList;
   {$MODE DELPHI}
 {$ENDIF}
 
-{$INCLUDE inc_andorra.inc}
+{$INCLUDE andorra2d.inc}
 
 interface
 

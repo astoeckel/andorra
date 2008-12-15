@@ -1,3 +1,15 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 interface
@@ -9,16 +21,19 @@ uses
   AdConsts;
 
 type
+  //Types that are used to tell the character which key has been pressed
   TKey = (kyUp, kyDown, kyLeft, kyRight);
-
   TKeys = set of TKey;
 
+  //TDirection is used to describe the current direction of the character
   TDirection = (dirS, dirSW, dirW, dirNW, dirN, dirNE, dirE, dirSE);
 
+  //TState represents the current state of a character
   TState = (stStopped, stWalking, stDie, stBorn);
 
   TDieCallBack = procedure of object;
 
+  //TAnimation sprite is a base class that manages animations
   TAnimationSprite = class(TImageSprite)
     private
       FImages:TAdImageList;
@@ -30,6 +45,7 @@ type
       procedure SetAnim(AName:string);
   end;
 
+  //TCharacter is a base class that adds normal behaviour to TAnimationSprite
   TCharacter = class(TAnimationSprite)
     private
       FDirection:TDirection;
@@ -52,6 +68,8 @@ type
       constructor Create(AParent:TSprite);override;
   end;
 
+  //TMainCharacter represents the default character the player may steer through
+  //the game.
   TMainCharacter = class(TCharacter)
     private
       FKeys:TKeys;
@@ -66,6 +84,7 @@ type
       procedure SetDefPartSys(APartSys: TAdParticleSystem);
   end;
 
+  //TWorm represents an enemy character
   TWorm = class(TCharacter)
     private
       FNextDirChange:double;
@@ -79,15 +98,16 @@ type
       procedure Die;
   end;
   
-
+  //TDoodad is used for entities spread over the whole map
   TDoodad = class(TImageSprite);
 
   TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure FormResize(Sender: TObject);
   private
-    { Private-Deklarationen }
+    procedure Idle(Sender:TObject;var Done:boolean);
+    procedure AddWorm;
+    procedure FreeObjects;
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
@@ -98,9 +118,6 @@ type
 
     MainCharacter:TMainCharacter;
     ActTime:double;
-
-    procedure Idle(Sender:TObject;var Done:boolean);
-    procedure AddWorm;
   end;
 
 const
@@ -115,11 +132,18 @@ implementation
 
 procedure TForm1.AddWorm;
 begin
+  //Create a new worm sprite
   with TWorm.Create(AdSpriteEngine) do
   begin
+    //Set the animation list name.
+    //This function is provided by the "TAnimationSprite" class
     SetAnims(AdImageList,'worm');
+
+    //Set a random position
     X := Random(5000)-2500;
     Y := Random(5000)-2500;
+
+    //Initialize the worm
     Init;
   end;
 end;
@@ -129,39 +153,59 @@ var
   i:integer;
   AdSetup: TAdSetup;
 begin
+  //Activate the memory leak reports. You may remove this line if your compiler doesn't support this
+  ReportMemoryLeaksOnShutdown := true;
+  
+  //Initialize the random number generator
   Randomize;
 
-  AdPerCounter := TAdPerformanceCounter.Create;
-
-  Cursor := crNone;
-
+  //Create the TAdDraw
   AdDraw := TAdDraw.Create(self);
 
+  //Show the setup dialog
   AdSetup := TAdSetup.Create(AdDraw);
   AdSetup.Image := 'logo1.png';
+  
   if AdSetup.Execute then
   begin
+    //Free the setup dialog
+    AdSetup.Free;
+
     if AdDraw.Initialize then
     begin
-      Application.OnIdle := Idle;
+      //Connect the on idle (draw) event
+      AdDraw.Window.Events.OnIdle := Idle;
+      //Disable the cursor
+      AdDraw.Window.CursorVisible := false;
 
+      //Create the performance counter
+      AdPerCounter := TAdPerformanceCounter.Create;
+      //Set a maximum frame rate to save CPU power
+      AdPerCounter.MaximumFrameRate := 100;
+
+      //Load the imagelist
       AdImageList := TAdImageList.Create(AdDraw);
       AdImageList.LoadFromFile(path+'demo_wormhunter.ail');
 
-      AdPixelCollisionTester := TAdSpritePixelCollisionTester.Create(AdDraw);
-
+      //Create the sprite engine
       AdSpriteEngine := TSpriteEngine.Create(AdDraw);
 
+      //Create the collision tester
+      AdPixelCollisionTester := TAdSpritePixelCollisionTester.Create(AdDraw);
+
+      //Create the "blood" splatter particle effect
       AdSplatterEffect := TAdParticleSystem.Create(AdDraw);
       AdSplatterEffect.LoadFromFile(path + 'splatter.apf');
       AdSplatterEffect.Texture := AdImageList.Find('particle').Texture;
       
+      //Create a background sprite
       with TBackgroundSprite.Create(AdSpriteEngine) do
       begin
         Image := AdImageList.Find('gras');
         Z := -10000;
       end;
 
+      //Create the main character
       MainCharacter := TMainCharacter.Create(AdSpriteEngine);
       with MainCharacter do
       begin
@@ -172,6 +216,7 @@ begin
         Init;
       end;
 
+      //Create a few doodads and spread them on the map
       for i := 0 to 200 do
       begin
         with TDoodad.Create(AdSpriteEngine) do
@@ -187,33 +232,39 @@ begin
           Z := round(Y+Height);
         end;
       end;
-
     end
     else
     begin
+      //Report the last error
       ShowMessage(AdDraw.GetLastError);
-      halt;
+      FreeObjects; //Free all created objects
     end;
   end else
   begin
-    halt;
+    AdSetup.Free;
+    FreeObjects; //Free all created objects
   end;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdSplatterEffect.Free;
-  AdPixelCollisionTester.Free;
-  AdSpriteEngine.Free;
-  AdPerCounter.Free;
-  AdImageList.Free;
-  AdDraw.Free;
+  FreeObjects;
 end;
 
-procedure TForm1.FormResize(Sender: TObject);
+procedure TForm1.FreeObjects;
 begin
-  //Resize the Backbuffer
-  AdDraw.Setup2DScene;
+  if Assigned(AdSplatterEffect) then
+    AdSplatterEffect.Free;
+  if Assigned(AdPixelCollisionTester) then
+    AdPixelCollisionTester.Free;
+  if Assigned(AdSpriteEngine) then
+    AdSpriteEngine.Free;
+  if Assigned(AdPerCounter) then
+    AdPerCounter.Free;
+  if Assigned(AdImageList) then
+    AdImageList.Free;
+  if Assigned(AdDraw) then
+    AdDraw.Free;  
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
@@ -258,14 +309,14 @@ begin
     //...and free the sprites that have been marked as dead
     AdSpriteEngine.Dead;
 
-    //Write the results on the canvas
+    //Write some information on the canvas
     with AdDraw.Canvas do
     begin
       Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
       Textout(0,20,'Sprites: '+inttostr(AdSpriteEngine.Items.Count));
       Textout(0,40,'TimeGap: '+FormatFloat('#0.000',AdPerCounter.TimeGap));
 
-      Release; //Actually draw the text
+      Release; //This command makes all canvas command visible on the surface. 
     end;
 
     AdDraw.EndScene;
@@ -293,6 +344,7 @@ procedure TAnimationSprite.SetAnim(AName: string);
 var
   i:integer;
 begin
+  //Set the animation image to the image specified by the name and the stored prefix
   Image := nil;
   for i := 0 to FImages.Count - 1 do
   begin
@@ -309,6 +361,9 @@ procedure TAnimationSprite.SetAnims(AList: TAdImageList; APrefix: string);
 begin
   if FImages <> nil then
     FreeAndNil(FImages);
+
+  //Get the animation image list by storing all images in a list the contain
+  //"APrefix_"
   FImages := AList.FindEx(APrefix+'_');
   FPrefix := APrefix;
 end;
@@ -319,6 +374,7 @@ constructor TCharacter.Create(AParent: TSprite);
 begin
   inherited;
   
+  //Set some default values
   Speed := 150;
   AnimSpeed := 15;
 end;
@@ -331,6 +387,8 @@ end;
 procedure TCharacter.DoMove(TimeGap: double);
 begin
   inherited;
+
+  //Move on if the character is currently walking
   if FState = stWalking then
   begin
     X := X + FXSpeed * TimeGap;
@@ -343,13 +401,14 @@ procedure TCharacter.SetDir(ADirection: TDirection);
 var
   w:integer;
 begin
+  //Reset the speed variables
   FYSpeed := 0;
   FXSpeed := 0;
 
   FDirection := ADirection;
-
   w := 0;
-  
+
+  //Set the movement angle  
   case ADirection of
     dirS: w := -270;
     dirSW: w := -225;
@@ -361,8 +420,10 @@ begin
     dirSE: w := -315;
   end;
 
+  //Set the corresponding animation for the direction
   SetDirAnim;
 
+  //Set the X and the Y speed
   FXSpeed := round(cos(PI/180*w)*Speed);
   FYSpeed := round(sin(PI/180*w)*Speed);
 end;
@@ -370,6 +431,7 @@ end;
 procedure TCharacter.SetDirAnim;
 begin
   case FState of
+    //Set the image to "stop" and don't draw any animation
     stStopped:
     begin
       SetAnim('stop');
@@ -377,6 +439,8 @@ begin
       AnimActive := false;
       AnimPos := ord(FDirection);
     end;
+
+    //Select the walking animation
     stWalking:
     begin
       case FDirection of
@@ -392,12 +456,16 @@ begin
       AnimLoop := true;
       AnimActive := true;
     end;
+
+    //Set the die animation
     stDie:
     begin
       SetAnim('die');
       AnimLoop := false;
       AnimActive := true;
     end;
+
+    //Set the born animatoin
     stBorn:
     begin
       SetAnim('born');
@@ -410,6 +478,8 @@ end;
 procedure TCharacter.SetState(AState: TState);
 begin
   FState := AState;
+
+  //Set the animation
   SetDirAnim;
 end;
 
@@ -424,6 +494,7 @@ procedure TMainCharacter.DoCollision(Sprite: TSprite; var Done: boolean);
 begin
   if (Sprite is TWorm) and (TWorm(Sprite).State <> stDie) then
   begin
+    //Create a splatter effect particle sprite
     with TParticleSprite.Create(Engine) do
     begin
       PartSys.Assign(FDefPartSys);
@@ -432,6 +503,8 @@ begin
       Y := Sprite.Y + Sprite.Height / 2;
       Z := Sprite.Z;
     end;
+
+    //Kill the worm
     TWorm(Sprite).Die;
   end;
 end;
@@ -440,9 +513,11 @@ procedure TMainCharacter.DoMove(TimeGap: double);
 begin
   inherited;
 
+  //Center the engine to the main character
   Engine.X := -X + (Engine.SurfaceRect.Right - Width) / 2;
   Engine.Y := -Y + (Engine.SurfaceRect.Bottom - Height) / 2;
 
+  //Check collisions
   Collision;
 end;
 
@@ -509,6 +584,8 @@ end;
 constructor TWorm.Create(AParent: TSprite);
 begin
   inherited;
+
+  //Set initial values
   Speed := 50;
   FMaxLifeTime := random(40)+10;
 end;
@@ -516,9 +593,7 @@ end;
 procedure TWorm.Die;
 begin
   if State <> stDie then
-  begin
     SetState(stDie);
-  end;
 end;
 
 procedure TWorm.DoMove(TimeGap: double);
@@ -544,6 +619,8 @@ begin
   if (State = stWalking) then
   begin
     FNextDirChange := FNextDirChange - (TimeGap*1000);
+
+    //Change direction by one step
     if FNextDirChange < 0 then
     begin
       d := ord(Direction);

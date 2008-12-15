@@ -164,7 +164,7 @@ begin
   if sleeptime > 0 then
   begin
     Sleep(trunc(sleeptime));
-    FLastSleep := sleeptime;
+    FLastSleep := trunc(sleeptime);
   end else
     FLastSleep := 0;
 end;
@@ -186,11 +186,11 @@ begin
     if FInterpolate and not FFirstTime then
     begin
       FTimeGap := (FTimeGap * FInterpolationFactor + (td)) / (FInterpolationFactor + 1);
-      FFirstTime := false;
     end
     else
     begin
       FTimeGap := td;
+      FFirstTime := false;
     end;
   end else
   begin

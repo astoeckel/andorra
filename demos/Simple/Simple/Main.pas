@@ -1,3 +1,15 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 interface
@@ -11,11 +23,10 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
-    { Private-Deklarationen }
+    procedure Idle(Sender: TObject; var Done: boolean);
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    procedure Idle(Sender: TObject; var Done: boolean);
   end;
 
 var
@@ -34,10 +45,6 @@ begin
   //Only for debuging - you can remove this line
   ReportMemoryLeaksOnShutdown := true;
 
-  //Create the performance counter. This class is used for measuring the time
-  //that passed between two frames.
-  AdPerCounter := TAdPerformanceCounter.Create;
-
   //Crate the main surface.
   AdDraw := TAdDraw.Create(self);
 
@@ -47,9 +54,18 @@ begin
 
   if AdSetup.Execute then
   begin
+    //Free the setup dialog
+    AdSetup.Free;
+
+    //Try to initialize the TAdDraw
     if AdDraw.Initialize then
     begin
-      Application.OnIdle := Idle;
+      //Create the performance counter. This class is used for measuring the time
+      //that passes between two frames.
+      AdPerCounter := TAdPerformanceCounter.Create;
+
+      //Connect the on idle event
+      AdDraw.Window.Events.OnIdle := Idle;
     end
     else
     begin
@@ -61,7 +77,6 @@ begin
     AdSetup.Free;
     halt;
   end;
-  AdSetup.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -72,16 +87,23 @@ end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
+  //Draw on the TAdDraw if drawing is possible
   if AdDraw.CanDraw then
   begin
+    //Calculate the time difference. The information gained here is not used
+    //in this demo - But you'll need this class in most cases
     AdPerCounter.Calculate;
 
-    AdDraw.ClearSurface(AdCol32_Black);
+    //Clear the surface of the TAdDraw with black color
+    AdDraw.ClearSurface(AdCol24_Black);
 
     AdDraw.BeginScene;
 
+    //Place all your drawing code between theese two lines
+
     AdDraw.EndScene;
 
+    //Bring the drawn things on the screen
     AdDraw.Flip;
   end;
   Done := false;
