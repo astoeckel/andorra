@@ -25,7 +25,6 @@ type
     AdSpriteEngine:TSpriteEngineEx;
     AdPictureCollection:TAdImageList;
     AdPerCounter:TAdPerformanceCounter;
-    AdCamera: TAdSimpleCamera;
     firsttime:boolean;
     lx,ly:integer;
     procedure ApplicationIdle(Sender:TObject;var Done:boolean);
@@ -35,15 +34,10 @@ type
 
   TWall = class(TImageSprite);
 
-  TColl = (coLeft, coRight, coTop, coBottom);
-  TColls = set of TColl;
-
   TBall = class(TImageSpriteEx)
     private
       Falling:boolean;
       WillDie:boolean;
-      tg: double;
-      c: TColls;
     public
       SX,SY:double;
       SourceX,SourceY:integer;
@@ -78,19 +72,8 @@ begin
 
     AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
 
-    AdDraw.Scene.Viewport := AdBounds(0, 0, 300, 300);
+    AdSpriteEngine.Surface := AdDraw;
     AdSpriteEngine.Draw;
-
-    AdDraw.Scene.Viewport := AdBounds(000, 300, 300, 300);
-    AdSpriteEngine.Draw;
-
-    AdDraw.Scene.Viewport := AdBounds(300, 000, 300, 300);
-    AdSpriteEngine.Draw;
-
-    AdDraw.Scene.Viewport := AdBounds(300, 300, 300, 300);
-    AdSpriteEngine.Draw;
-
-    AdDraw.Scene.Viewport := AdDraw.SurfaceRect;
 
     AdSpriteEngine.Dead;
 
@@ -98,8 +81,7 @@ begin
     with AdDraw.Canvas do
     begin
       Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
-      Textout(0,16,'Timegap: '+floattostr(AdPerCounter.TimeGap));
-      Textout(0,32,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
+      Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
       Release;
     end;
     AdDraw.Options := AdDraw.Options + [aoLight];
@@ -118,7 +100,6 @@ begin
   ReportMemoryLeaksOnShutdown := true;
 
   AdPerCounter := TAdPerformanceCounter.Create;
-  AdPerCounter.MaximumTimeGap := 50;
 
   AdDraw := TAdDraw.Create(self);
 
@@ -133,8 +114,6 @@ begin
       AdDraw.Scene.AmbientColor := Ad_ARGB(255, 96, 96, 96);
       AdPictureCollection := TAdImageList.Create(AdDraw);
       AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
-      AdCamera := TAdSimpleCamera.Create(AdSpriteEngine);
-      AdSpriteEngine.Camera := AdCamera;
 
       LoadImages;
       LoadLevel;
@@ -159,7 +138,6 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdPerCounter.Free;
-  AdCamera.Free;
   AdSpriteEngine.Free;
   AdPictureCollection.Free;
   AdDraw.Free;
@@ -206,7 +184,7 @@ procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
 var
   p:TAdPoint;
 begin
-  p := AdPoint(X, Y); //AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
+  p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
   lx := p.x;
   ly := p.y;
 end;
@@ -218,9 +196,9 @@ var
 begin
   if ssLeft in Shift then
   begin
-    p := AdPoint(X, Y);//AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
-    AdCamera.X := AdCamera.X + p.x - lx;
-    AdCamera.Y := AdCamera.Y + p.y - ly;
+    p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
+    AdSpriteEngine.X := AdSpriteEngine.X + p.x - lx;
+    AdSpriteEngine.Y := AdSpriteEngine.Y + p.y - ly;
     Lx := p.x;
     Ly := p.y;
   end;
@@ -229,14 +207,14 @@ end;
 procedure TForm1.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 begin
-{  if ssLeft in Shift then
+  if ssLeft in Shift then
   begin
     AdSpriteEngine.Rotation := AdSpriteEngine.Rotation + WheelDelta / 5000;
   end
   else
   begin
     AdSpriteEngine.Zoom := AdSpriteEngine.Zoom + WheelDelta / (1000 / AdSpriteEngine.Zoom);
-  end;  }
+  end;
 end;
 
 procedure TForm1.LoadImages;
@@ -368,16 +346,36 @@ procedure TBall.DoCollision(Sprite: TSprite; var Done: boolean);
 begin
   if Sprite is TWall then
   begin
-    if (Sprite.Y < Y + Height) then
-      c := c + [coBottom] else
-    if (Y < Sprite.Y + Sprite.Height) then
-      c := c + [coTop];
-    if (Sprite.X < X + Width) and (Sprite.Y < Y + Height - 10) then
-      c := c + [coRight] else
-    if (Sprite.X + Width > X) and (Sprite.Y < Y + Height - 10) then
-      c := c + [coLeft];
-  end;
+    falling := false;
+    SY := 128;
+    if (Sprite.Y > Y) and (Sprite.X > X) and (Sprite.X+Sprite.Width < Y+Width) and
+       (Sprite.Y+Sprite.Height < Y+Height) then
+    begin
+      Coll;
+      Done := true;
+      exit;
+    end;
 
+    if Sprite.Y > Y then
+    begin
+      Y := Sprite.Y-Height+1;
+    end
+    else
+    begin
+      if (Sprite.X+Sprite.Width > X) and (SX < 0) then
+      begin
+        SX := -SX;
+        X := Sprite.X+Sprite.Width+1;
+        exit;
+      end;
+      if (Sprite.X < X+Width) and (SX > 0) then
+      begin
+        SX := -SX;
+        X := Sprite.X-Width-1;
+        exit;
+      end;
+    end;   
+  end;
   if Sprite is TBall then
   begin
     Coll;
@@ -402,7 +400,7 @@ begin
 
     Brush.BlendMode := bmAlpha;
   end;
-
+  Image.Color := Color;
   old := Engine.Surface.Scene.AmbientColor;
   Engine.Surface.Scene.AmbientColor := Ad_ARGB(255, 255, 255, 255);
   inherited DoDraw;
@@ -410,50 +408,32 @@ begin
 end;
 
 procedure TBall.DoMove(TimeGap: double);
-var
-  mx, my: double;
 begin
   inherited DoMove(TimeGap);
-
-  tg := TimeGap;
   if not WillDie then
   begin
     if Alpha < 255 then
-      Alpha := Alpha + 1000*TimeGap
+    begin
+      Alpha := Alpha + 1000*TimeGap;
+    end
     else
+    begin
       Alpha := 255;
+    end;
 
-    mx := 0;
-    my := 0;
+    falling := true;
+    Collision;
 
     if falling then
     begin
-      SY := SY + SY * 0.1 * TimeGap;
-      my := SY * TimeGap;
+      SY := SY + SY * 0.1*TimeGap;
+      Y := Y + SY*TimeGap;
     end
     else
     begin
       Angle := Angle + 360*(SX/abs(SX))*TimeGap;
       if Angle > 360 then Angle := 0;
-      mx := SX*TimeGap;
-    end;
-
-    X := X + mx;
-    Y := Y + my;
-
-    c := [];
-    Collision;
-
-    falling := not (coBottom in c);
-    if not falling then
-    begin
-      Y := Y - my * 0.5;
-      SY := 200;
-    end;
-    if (coLeft in c) or (coRight in c) then
-    begin
-      X := X - mx;
-      SX := - SX;
+      X := X + SX*TimeGap;
     end;
   end
   else
@@ -468,7 +448,7 @@ procedure TBall.Reset;
 begin
   X := sourcex;
   Y := sourcey;
-  SY := 200;
 end;
 
 end.
+
