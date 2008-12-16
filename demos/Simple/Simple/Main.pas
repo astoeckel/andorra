@@ -93,8 +93,9 @@ begin
     //Calculate the time difference. The information gained here is not used
     //in this demo - But you'll need this class in most cases
     AdPerCounter.Calculate;
-
-    //Clear the surface of the TAdDraw with black color
+    
+    //Clear the surface of the TAdDraw with black color. You may also use delphi
+    //colors here
     AdDraw.ClearSurface(AdCol24_Black);
 
     AdDraw.BeginScene;

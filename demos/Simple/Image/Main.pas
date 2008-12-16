@@ -107,7 +107,8 @@ begin
     //in this demo - But you'll need this class in most cases
     AdPerCounter.Calculate;
 
-    //Clear the surface of the TAdDraw with black color
+    //Clear the surface of the TAdDraw with black color. You may also use delphi
+    //colors here
     AdDraw.ClearSurface(AdCol24_BlanchedAlmond);
     
     AdDraw.BeginScene;

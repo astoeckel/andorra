@@ -342,13 +342,16 @@ type
       destructor Destroy;override;
 
       {Clears the surface using a 24 Bit color. You may use the color constants
-       from Delphi/Lazarus or the 24 Bit color constants in the AdConsts unit or
-       use the RGB function from the unit AdTypes.}
+       provided by Delphi/Lazarus or the 24 Bit color constants in the AdConsts unit or
+       use the RGB function from the unit AdTypes. This function clears the color
+       buffer, the stencil buffer (clear value 0) and the Z-Buffer (clear value 1).}
       procedure ClearSurface(AColor: LongInt);overload;virtual;
       {Clears the surface using a 32 Andorra color value. You may use the color
        constants from the unit AdConsts or the Ad_ARGB function. If your using a
        transparent value when clearing a rendering surface, the surface is filled
-       with that transparent color so that you may draw it over other objects.}
+       with that transparent color so that you may draw it over other objects.
+       This function clears the color buffer, the stencil buffer (clear value 0)
+       and the Z-Buffer (clear value 1).}
       procedure ClearSurface(AColor: TAndorraColor);overload;virtual;
 
       {A hardware accelerated canvas. All drawing operations will automatically

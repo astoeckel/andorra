@@ -117,7 +117,7 @@ const
 
 begin
   //Get all file types that are registered with TGraphic
-  DevideString(GraphicFileMask(TGraphic), MaskDiv, elems);
+  Explode(GraphicFileMask(TGraphic), MaskDiv, elems);
   for i := 0 to High(elems) do
     strs.Add(Copy(elems[i], 2, Length(elems[i]) - 1));
 end;

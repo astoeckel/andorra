@@ -894,7 +894,7 @@ var
   strs: TAdStringArray;
 begin
   //Get Resolution
-  DevideString(FResolutionCombobox.Items[FResolutionCombobox.ItemIndex],'x',strs);
+  Explode(FResolutionCombobox.Items[FResolutionCombobox.ItemIndex],'x',strs);
   with FDraw.Display do
   begin
     Width := StrToInt(strs[0]);

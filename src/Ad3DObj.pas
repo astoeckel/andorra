@@ -117,6 +117,7 @@ type
       property Matrix: TAdMatrix read FMatrix write SetMatrix;
   end;
 
+  {A simple cube.}
   TAdCubeMesh = class(TAdMesh)
     private
       FWidth, FHeight, FDepth: single;
@@ -124,13 +125,22 @@ type
     protected
       procedure LoadMeshData;override;
     public
+      {Creates an instance of TAdCubeMesh.}
       constructor Create(AParent: TAdDraw);override;
-      
+
+      {Set this value to change the base width of TAdCubeMesh. If you want to scale
+       the cube, you should use scale x instead.}      
       property Width: single index 0 read FWidth write SetSizeCoeff;
+      {Set this value to change the base height of TAdCubeMesh. If you want to scale
+       the cube, you should use scale y instead.}      
       property Height: single index 1 read FHeight write SetSizeCoeff;
+      {Set this value to change the base depth of TAdCubeMesh. If you want to scale
+       the cube, you should use scale z instead.}      
       property Depth: single index 2 read FDepth write SetSizeCoeff;
   end;
 
+  {A simple teapot. The teapot patch data is stored inside the exe. The teapot
+   mesh is generated when it is created.}
   TAdTeapotMesh = class(TAdMesh)
     private
       FDetails: integer;
@@ -138,8 +148,12 @@ type
     protected
       procedure LoadMeshData;override;
     public
+      {Creates an instance of TAdCubeMesh.}
       constructor Create(AParent: TAdDraw);override;
 
+      {Specifies how many times each teapot patch should be subdivided. The default
+       value is 16. A higher value may cause the teapot to be displayed incorrectly.
+       A lower value reduces the polygon count.}
       property Details: integer read FDetails write SetDetails;
   end;
 
