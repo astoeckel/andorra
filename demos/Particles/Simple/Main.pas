@@ -1,3 +1,15 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 interface
@@ -5,7 +17,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
   AdDraws, AdClasses, AdTypes, AdParticles, AdPng, AdSetupDlg, AdPerformanceCounter,
-  AdCanvas;
+  AdCanvas, AdConsts;
 
 type
   TForm1 = class(TForm)
@@ -17,7 +29,7 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    PartSys:TAdParticleSystem;
+    AdPartSys:TAdParticleSystem;
     AdImageList:TAdImageList;
     MouseX,MouseY:integer;
     procedure Idle(Sender:TObject;var Done:boolean);
@@ -36,31 +48,50 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  AdSetupDlg:TAdSetup;
+  AdSetup: TAdSetup;
 begin
+  //Only for debuging - you can remove this line
   ReportMemoryLeaksOnShutdown := true;
 
-  AdPerCounter := TAdPerformanceCounter.Create;
-
+  //Crate the main surface.
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(AdDraw);
-  AdSetupDlg.Image := 'logo1.png';
+  //Create the setup dialog and pass the main surface
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
 
-  if AdSetupDlg.Execute then
+  if AdSetup.Execute then
   begin
+    //Free the setup dialog
+    AdSetup.Free;
+    
+    //Try to initialize the TAdDraw
     if AdDraw.Initialize then
     begin
-      Application.OnIdle := Idle;
+      //Create the performance counter. This class is used for measuring the time
+      //that passes between two frames.
+      AdPerCounter := TAdPerformanceCounter.Create;
 
+      //Connect the on idle event
+      AdDraw.Window.Events.OnIdle := Idle;
+
+      //Create an image list and load the texture that will be used for the particles
       AdImageList := TAdImageList.Create(AdDraw);
       with AdImageList.Add('particle') do
       begin
         Texture.LoadGraphicFromFile(path+'part2.png', true, clNone);
         Restore;
-      end;
-      PartSys := TAdParticleSystem.Create(AdDraw);
-      PartSys.Texture := AdImageList.Items[0].Texture;
+      end;       
+      
+      //Create the particle system
+      AdPartSys := TAdParticleSystem.Create(AdDraw);
+      //Load the texture image
+      AdPartSys.Texture := AdImageList.Items[0].Texture;
+
+      //Setup the particle system color gradient
+      AdPartSys.Colors.Clear;
+      AdPartSys.Colors.Add(AdSetAlpha(255, AdCol32_CornflowerBlue));
+      AdPartSys.Colors.Add(AdSetAlpha(0, AdCol32_Goldenrod));
     end
     else
     begin
@@ -70,15 +101,14 @@ begin
   end
   else
   begin
+    AdSetup.Free;
     halt;
   end;
-
-  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  PartSys.Free;
+  AdPartSys.Free;
   AdImageList.Free;
   AdPerCounter.Free;
   AdDraw.Free;
@@ -87,30 +117,35 @@ end;
 procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
-  MouseX := X;
-  MouseY := Y;
-  PartSys.Emit(5, MouseX, MouseY);
+  //Emit some paticles when the mouse is moving
+  MouseX := X; MouseY := Y;
+  AdPartSys.Emit(5, MouseX, MouseY);
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
+  //Draw on the TAdDraw if drawing is possible
   if AdDraw.CanDraw then
   begin
+    //Calculate the time difference.
     AdPerCounter.Calculate;
-    Caption := 'FPS:'+inttostr(AdPerCounter.FPS) + ' C:'+inttostr(PartSys.Items.Count);
 
-    AdDraw.ClearSurface(0);
+    //Clear the surface of the TAdDraw with black color
+    AdDraw.ClearSurface(AdCol24_Black);
+
     AdDraw.BeginScene;
 
-    PartSys.Move(AdPerCounter.TimeGap / 1000);
+    //Calculate the particle motion
+    AdPartSys.Move(AdPerCounter.TimeGap / 1000);
 
-    PartSys.Draw(AdDraw, 0, 0);
+    //Draw the particle system
+    AdPartSys.Draw(AdDraw, 0, 0);
 
     with AdDraw.Canvas do
     begin
-      Pen.Color := Ad_ARGB(255, 255, 0, 0);
+      Pen.Color := AdCol32_BlueViolet;
       Brush.Style := abClear;
-      Rectangle(PartSys.BoundsRect);
+      Rectangle(AdPartSys.BoundsRect);
     end;
 
     AdDraw.EndScene;

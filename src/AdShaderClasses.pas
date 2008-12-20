@@ -68,8 +68,8 @@ type
          sourcecode)
        @param(AShaderType defines the type of the shader program:
          a vertex or a fragment shader.)}
-      procedure LoadProgramFromBuffer(ABuf: PChar;
-        ASourceType: TAd2dShaderSourceType; AProgramName: PChar;
+      procedure LoadProgramFromBuffer(ABuf: PAnsiChar;
+        ASourceType: TAd2dShaderSourceType; AProgramName: PAnsiChar;
         AShaderType: TAd2dShaderType);virtual;abstract;
 
       {Initializes the shader. This function should be called after the main
@@ -85,7 +85,7 @@ type
       procedure Unbind;virtual;abstract;
 
       {Returns the pointer to the parameter with a specific name.}
-      function GetParameter(AName: PChar): Pointer;virtual;abstract;
+      function GetParameter(AName: PAnsiChar): Pointer;virtual;abstract;
 
       {Sets a float parameter.}
       procedure SetParameter(AParam: Pointer; AValue: PSingle; ACount: integer);overload;virtual;abstract;

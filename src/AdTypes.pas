@@ -317,6 +317,10 @@ function AdVector2(AX,AY:double):TAdVector2;
 function Ad_ARGB(a,r,g,b:byte):TAndorraColor;
 {Creates an andorra color with the given components and alpha is set to 255}
 function Ad_RGB(r,g,b:byte):TAndorraColor;
+{Allows to change the alpha component of the given color.}
+function AdSetAlpha(AAlpha: byte; ACol: Longint):TAndorraColor;overload;
+{Allows to change the alpha component of the given color.}
+function AdSetAlpha(AAlpha: byte; ACol: TAndorraColor):TAndorraColor;overload;
 {Converts a color to a string}
 function AdColorToString(AColor:TAndorraColor): AnsiString;
 {Converts a string to a color}
@@ -552,6 +556,23 @@ end;
 function Ad_RGB(r,g,b:byte):TAndorraColor;
 begin
   result := Ad_ARGB(255,r,g,b);
+end;
+
+function AdSetAlpha(AAlpha: byte; ACol: Longint):TAndorraColor;overload;
+begin
+  with result do
+  begin
+    r := GetRValue(ACol);
+    g := GetGValue(ACol);
+    b := GetBValue(ACol);
+    a := AAlpha;
+  end;
+end;
+
+function AdSetAlpha(AAlpha: byte; ACol: TAndorraColor):TAndorraColor;overload;
+begin
+  result := ACol;
+  result.a := AAlpha;
 end;
 
 function CompareColors(col1,col2:TAndorraColor):boolean;

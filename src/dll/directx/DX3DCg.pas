@@ -53,14 +53,14 @@ type
       constructor Create(ASystem: TDXCGEngine);
       destructor Destroy;override;
 
-      procedure LoadProgramFromBuffer(ABuf: PChar;
-        ASourceType: TAd2dShaderSourceType; AProgramName: PChar;
+      procedure LoadProgramFromBuffer(ABuf: PAnsiChar;
+        ASourceType: TAd2dShaderSourceType; AProgramName: PAnsiChar;
         AShaderType: TAd2dShaderType);override;
 
       procedure Initialize;override;
       procedure Finalize;override;
 
-      function GetParameter(AName: PChar): Pointer;override;
+      function GetParameter(AName: PAnsiChar): Pointer;override;
 
       procedure SetParameter(AParam: Pointer; AValue: PSingle; ACount: integer);overload;override;
       procedure SetParameter(AParam: Pointer; AValue: PInteger; ACount: integer);overload;override;
@@ -166,8 +166,8 @@ begin
   result := FProgram <> nil;
 end;
 
-procedure TDXCgShader.LoadProgramFromBuffer(ABuf: PChar;
-  ASourceType: TAd2dShaderSourceType; AProgramName: PChar;
+procedure TDXCgShader.LoadProgramFromBuffer(ABuf: PAnsiChar;
+  ASourceType: TAd2dShaderSourceType; AProgramName: PAnsiChar;
   AShaderType: TAd2dShaderType);
 var
   srctype: TCGenum;
@@ -216,7 +216,7 @@ begin
     FSystem.UsePixelShader(true);
 end;
 
-function TDXCgShader.GetParameter(AName: PChar): Pointer;
+function TDXCgShader.GetParameter(AName: PAnsiChar): Pointer;
 begin
   result := cgGetNamedParameter(FProgram, AName);
 end;

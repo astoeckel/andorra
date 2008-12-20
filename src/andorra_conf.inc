@@ -41,7 +41,7 @@
 
 //Remove ' if you do not want to use 3DNOW!. This may lead to problems with AMD processors.
 //If any problem occurs deactivate this compiler switch and report this problem.
-{'$DEFINE DO_NOT_USE_3DNOW}
+{$DEFINE DO_NOT_USE_3DNOW}
 
 //Remove ' if you do not want to use any x86 ASM code
 {'$DEFINE DO_NOT_USE_ASM}

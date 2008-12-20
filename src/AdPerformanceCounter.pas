@@ -190,7 +190,12 @@ begin
     else
     begin
       FTimeGap := td;
-      FFirstTime := false;
+      if (FFirstTime) then
+      begin
+        if FTimeGap <> 0 then
+          FFirstTime := false;
+        FTimeGap := 0;
+      end;
     end;
   end else
   begin

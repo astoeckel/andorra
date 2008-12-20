@@ -805,11 +805,11 @@ begin
 
       //If some data has been created (PrimitiveCount > 0), store it in the mesh
       //structure of the graphic plugin and prepare for rendering.
+      FMesh.PrimitiveCount := PData^.PrimitiveCount;
       if PData^.PrimitiveCount > 0 then
       begin
         FMesh.Vertices := PData^.Vertices;
         FMesh.Indices := PData^.Indices;
-        FMesh.PrimitiveCount := PData^.PrimitiveCount;
 
         FMesh.Texture := FTexture.Texture;
         FMesh.Matrix := AdMatrix_Identity;

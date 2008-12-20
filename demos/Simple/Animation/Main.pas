@@ -1,10 +1,22 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 interface
 
 uses
   Windows, Dialogs, SysUtils, Graphics, Classes, Forms, Controls,
-  AdPng, AdDraws, AdClasses, AdSetupDlg, AdPerformanceCounter;
+  AdPng, AdDraws, AdClasses, AdSetupDlg, AdPerformanceCounter, AdConsts;
 
 type
   TForm1 = class(TForm)
@@ -15,7 +27,7 @@ type
   public
     AdDraw:TAdDraw;
     AdPerCounter:TAdPerformanceCounter;
-    AdImageList1:TAdImageList;
+    AdImageList:TAdImageList;
     procedure Idle(Sender:TObject;var Done:boolean);
     procedure SetLine;
     { Public-Deklarationen }
@@ -55,29 +67,50 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  AdSetupDlg:TAdSetup;
+  AdSetup: TAdSetup;
 begin
-  AdPerCounter := TAdPerformanceCounter.Create;
+  //Only for debuging - you can remove this line
+  ReportMemoryLeaksOnShutdown := true;
 
+  //Crate the main surface.
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(AdDraw);
-  AdSetupDlg.Image := 'logo1.png';
+  //Create the setup dialog and pass the main surface
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
 
-  if AdSetupDlg.Execute then
+  if AdSetup.Execute then
   begin
+    //Free the setup dialog
+    AdSetup.Free;
+    
     if AdDraw.Initialize then
     begin
-      Application.OnIdle := Idle;
+      //Create the performance counter. This class is used for measuring the time
+      //that passes between two frames.
+      AdPerCounter := TAdPerformanceCounter.Create;
 
-      AdImageList1 := TAdImageList.Create(AdDraw);
-      with AdImageList1.Add('figur') do
+      //Connect the on idle event
+      AdDraw.Window.Events.OnIdle := Idle;
+
+      //Creat an image list and load the image that will be animated
+      AdImageList := TAdImageList.Create(AdDraw);
+      with AdImageList.Add('figur') do
       begin
         Texture.LoadGraphicFromFile(path+'boy.png',true,clFuchsia);
+
+        //Pattern width and height specify the height and the width of a single
+        //animation pattern. The patterns have to be orderd from left to right and
+        //from top to bottom:
+        //0  1  2  3
+        //4  5  6  7
+        //8  9  10 11
+        //12 13 14 15
         PatternWidth := 96;
         PatternHeight := 96;
       end;
-      AdImageList1.Restore;
+      //Call the restore function for all images in the image list
+      AdImageList.Restore;
 
       XSpeed := -150;
 
@@ -92,23 +125,24 @@ begin
   end
   else
   begin
+    AdSetup.Free;
     halt;
   end;
-
-  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  AdImageList1.Free;
+  AdImageList.Free;
   AdPerCounter.Free;
   AdDraw.Free;
 end;
 
 procedure TForm1.Idle(Sender: TObject; var Done: boolean);
 begin
+  //Draw on the TAdDraw if drawing is possible
   if AdDraw.CanDraw then
   begin
+    //Calculate the time difference.
     AdPerCounter.Calculate;
 
     Pattern := Pattern + 15*AdPerCounter.TimeGap/1000;
@@ -117,11 +151,14 @@ begin
     X := X + XSpeed*AdPerCounter.TimeGap/1000;
     if ((X > ClientWidth) and (XSpeed > 0)) or ((X < -96) and (XSpeed < 0))  then SetLine;
 
-    AdDraw.ClearSurface(clBlack);
+    //Clear the surface of the TAdDraw with black color
+    AdDraw.ClearSurface(AdCol24_Black);
     AdDraw.BeginScene;
 
-    AdImageList1.Find('figur').Draw(AdDraw,round(X),round(Y),round(Pattern));
+    //Draw the image on the calculated position with the calculated animation pattern
+    AdImageList.Find('figur').Draw(AdDraw,round(X),round(Y),round(Pattern));
 
+    //Draw the FPS on the screen
     with AdDraw.Canvas do
     begin
       TextOut(5,5,'FPS: '+inttostr(AdPerCounter.FPS));
@@ -129,6 +166,7 @@ begin
     end;
 
     AdDraw.EndScene;
+    //Bring the drawn things on the screen
     AdDraw.Flip;
 
     Done := false;

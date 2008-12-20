@@ -72,6 +72,9 @@ begin
       //that passes between two frames.
       AdPerCounter := TAdPerformanceCounter.Create;
 
+      //Connect the on idle event
+      AdDraw.Window.Events.OnIdle := Idle;
+
       //Create a simple VCL bitmap
       Bmp := TBitmap.Create;
       Bmp.Width := ClientWidth;
@@ -88,9 +91,6 @@ begin
       //Load a simple icon that will be drawn on the bitmap
       Ico := TIcon.Create;
       Ico.LoadFromFile('icon32.ico');
-
-      //Connect the on idle event
-      AdDraw.Window.Events.OnIdle := Idle;
     end
     else
     begin
@@ -163,7 +163,7 @@ begin
     AdPerCounter.Calculate;
 
     //Clear the surface of the TAdDraw with black color
-    AdDraw.ClearSurface(clBlack);
+    AdDraw.ClearSurface(AdCol24_Black);
 
     AdDraw.BeginScene;
 

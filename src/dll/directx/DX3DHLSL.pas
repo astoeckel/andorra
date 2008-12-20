@@ -47,14 +47,14 @@ type
       constructor Create(ASystem: TDXHLSLEngine);
       destructor Destroy;override;
 
-      procedure LoadProgramFromBuffer(ABuf: PChar;
-        ASourceType: TAd2dShaderSourceType; AProgramName: PChar;
+      procedure LoadProgramFromBuffer(ABuf: PAnsiChar;
+        ASourceType: TAd2dShaderSourceType; AProgramName: PAnsiChar;
         AShaderType: TAd2dShaderType);override;
 
       procedure Initialize;override;
       procedure Finalize;override;
 
-      function GetParameter(AName: PChar): Pointer;override;
+      function GetParameter(AName: PAnsiChar): Pointer;override;
 
       procedure SetParameter(AParam: Pointer; AValue: PSingle; ACount: integer);overload;override;
       procedure SetParameter(AParam: Pointer; AValue: PInteger; ACount: integer);overload;override;
@@ -104,8 +104,8 @@ begin
   result := FBinCode <> nil;
 end;
 
-procedure TDXHLSLShader.LoadProgramFromBuffer(ABuf: PChar;
-  ASourceType: TAd2dShaderSourceType; AProgramName: PChar;
+procedure TDXHLSLShader.LoadProgramFromBuffer(ABuf: PAnsiChar;
+  ASourceType: TAd2dShaderSourceType; AProgramName: PAnsiChar;
   AShaderType: TAd2dShaderType);
 var
   profile: PAnsiChar;
@@ -180,9 +180,9 @@ begin
   end;
 end;
 
-function TDXHLSLShader.GetParameter(AName: PChar): Pointer;
+function TDXHLSLShader.GetParameter(AName: PAnsiChar): Pointer;
 begin
-  result := FConstantTable.GetConstantByName(nil, PChar('$' + AName));
+  result := FConstantTable.GetConstantByName(nil, PAnsiChar('$' + AName));
 end;
 
 procedure TDXHLSLShader.SetParameter(AParam: Pointer; AValue: PSingle;

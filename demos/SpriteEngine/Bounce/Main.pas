@@ -1,3 +1,15 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 interface
@@ -5,7 +17,7 @@ interface
 uses
   Windows, Dialogs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, AdTypes, AdCanvas,
-  AdSetupDlg, AdPng, AdPerformanceCounter;
+  AdSetupDlg, AdPng, AdPerformanceCounter, AdEvents;
 
 type
   TForm1 = class(TForm)
@@ -23,11 +35,11 @@ type
   public
     AdDraw:TAdDraw;
     AdSpriteEngine:TSpriteEngineEx;
-    AdPictureCollection:TAdImageList;
+    AdImageList:TAdImageList;
     AdPerCounter:TAdPerformanceCounter;
     firsttime:boolean;
     lx,ly:integer;
-    procedure ApplicationIdle(Sender:TObject;var Done:boolean);
+    procedure Idle(Sender:TObject;var Done:boolean);
     procedure LoadLevel;
     procedure LoadImages;
   end;
@@ -60,65 +72,47 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.ApplicationIdle(Sender: TObject; var Done: boolean);
-begin
-  if AdDraw.CanDraw then
-  begin
-    AdPerCounter.Calculate;
-
-    AdDraw.BeginScene;
-
-    AdDraw.ClearSurface(0);
-
-    AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
-
-    AdSpriteEngine.Surface := AdDraw;
-    AdSpriteEngine.Draw;
-
-    AdSpriteEngine.Dead;
-
-    AdDraw.Options := AdDraw.Options - [aoLight];
-    with AdDraw.Canvas do
-    begin
-      Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
-      Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
-      Release;
-    end;
-    AdDraw.Options := AdDraw.Options + [aoLight];
-
-    AdDraw.EndScene;
-    AdDraw.Flip;
-  end;
-
-  Done := false;
-end;
-
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  AdSetupDlg:TAdSetup;
+  AdSetup: TAdSetup;
 begin
+  //Only for debuging - you can remove this line
   ReportMemoryLeaksOnShutdown := true;
 
-  AdPerCounter := TAdPerformanceCounter.Create;
-
+  //Crate the main surface.
   AdDraw := TAdDraw.Create(self);
 
-  AdSetupDlg := TAdSetup.Create(AdDraw);
-  AdSetupDlg.Image := 'logo1.png';
+  //Create the setup dialog and pass the main surface
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
 
-  if AdSetupDlg.Execute then
+  if AdSetup.Execute then
   begin
-    AdDraw.Options := AdDraw.Options + [aoLight, aoMipmaps];
+    //Free the setup dialog
+    AdSetup.Free;
+    
+    //Try to initialize the TAdDraw
     if AdDraw.Initialize then
     begin
-      AdDraw.Scene.AmbientColor := Ad_ARGB(255, 96, 96, 96);
-      AdPictureCollection := TAdImageList.Create(AdDraw);
+      //Create the performance counter. This class is used for measuring the time
+      //that passes between two frames.
+      AdPerCounter := TAdPerformanceCounter.Create;
+
+      //Connect the on idle event
+      AdDraw.Window.Events.OnIdle := Idle;
+
+      //Create an image list
+      AdImageList := TAdImageList.Create(AdDraw);
+      //Create the sprite engine object
       AdSpriteEngine := TSpriteEngineEx.Create(AdDraw);
 
       LoadImages;
       LoadLevel;
 
-      Application.OnIdle := ApplicationIdle;
+      //Set the ambient color of the scene. This color is used when lights are
+      //turned.
+      AdDraw.Scene.AmbientColor := Ad_ARGB(255, 96, 96, 96);
+
       Randomize;
     end
     else
@@ -129,39 +123,75 @@ begin
   end
   else
   begin
-    Halt;
+    AdSetup.Free;
+    halt;
   end;
-
-  AdSetupDlg.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdPerCounter.Free;
   AdSpriteEngine.Free;
-  AdPictureCollection.Free;
+  AdImageList.Free;
   AdDraw.Free;
+end;
+
+procedure TForm1.Idle(Sender: TObject; var Done: boolean);
+begin
+  //Draw on the TAdDraw if drawing is possible
+  if AdDraw.CanDraw then
+  begin
+    //Calculate the time difference.
+    AdPerCounter.Calculate;
+
+    //Clear the surface of the TAdDraw with black color
+    AdDraw.ClearSurface(0);
+
+    AdDraw.BeginScene;
+
+    //Enable lights
+    AdDraw.Options := AdDraw.Options + [aoLight];
+
+    //Move all sprites
+    AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
+    //Draw them
+    AdSpriteEngine.Draw;
+    //And free all sprites that were marked as "dead"  
+    AdSpriteEngine.Dead;
+
+    //Disable lights
+    AdDraw.Options := AdDraw.Options - [aoLight];
+
+    with AdDraw.Canvas do
+    begin
+      Textout(0,0,'FPS: '+inttostr(AdPerCounter.FPS));
+      Textout(0,16,'Use mousewheel to zoom, mousewheel and left mouse button to rotate');
+      Release;
+    end;
+
+    AdDraw.EndScene;
+    AdDraw.Flip;
+  end;
+
+  Done := false;
 end;
 
 procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
-  if key = VK_LEFT then
-  begin
+  //Handle key presses (I'm using the Andorra 2D virtual key codes here - if your
+  //game is only for windows you can also use the native windows keycodes.
+  if key = AVK_LEFT then
     AdSpriteEngine.X := AdSpriteEngine.X + 10;
-  end;
-  if key = VK_RIGHT then
-  begin
+
+  if key = AVK_RIGHT then
     AdSpriteEngine.X := AdSpriteEngine.X - 10;
-  end;
-  if key = VK_UP then
-  begin
+
+  if key = AVK_UP then
     AdSpriteEngine.Y := AdSpriteEngine.Y + 10;
-  end;
-  if key = VK_DOWN then
-  begin
+
+  if key = AVK_DOWN then
     AdSpriteEngine.Y := AdSpriteEngine.Y - 10;
-  end;
 end;
 
 procedure TForm1.FormKeyPress(Sender: TObject; var Key: Char);
@@ -219,28 +249,28 @@ end;
 
 procedure TForm1.LoadImages;
 begin
-  with AdPictureCollection.Add('wall')do
+  with AdImageList.Add('wall')do
   begin
     Texture.LoadGraphicFromFile(path+'texture.png', false, clWhite);
   end;
-  with AdPictureCollection.Add('wallgras')do
+  with AdImageList.Add('wallgras')do
   begin
     Texture.LoadGraphicFromFile(path+'texture2.png', false, clWhite);
   end;
-  with AdPictureCollection.Add('ball') do
+  with AdImageList.Add('ball') do
   begin
     Texture.LoadGraphicFromFile(path+'ball.png', true, clYellow);
     PatternWidth := 32;
     PatternHeight := 32;
   end;
-  with AdPictureCollection.Add('stars')do
+  with AdImageList.Add('stars')do
   begin
     Texture.LoadGraphicFromFile(path+'stars.png', false, clWhite);
   end;
 
-  AdPictureCollection.Filter := atLinear;
+  AdImageList.Filter := atLinear;
 
-  AdPictureCollection.Restore;
+  AdImageList.Restore;
 end;
 
 procedure TForm1.LoadLevel;
@@ -253,7 +283,7 @@ begin
 
   with TBackgroundSprite.Create(AdSpriteEngine) do
   begin
-    Image := AdPictureCollection.Find('stars');
+    Image := AdImageList.Find('stars');
     z := -1;
     Depth := 10;
   end;
@@ -267,7 +297,7 @@ begin
         begin
           with TWall.Create(AdSpriteEngine) do
           begin
-            Image := AdPictureCollection.Find('wall');
+            Image := AdImageList.Find('wall');
             x := ax*128;
             y := ay*128;
             z := 0;
@@ -277,7 +307,7 @@ begin
         begin
           with TWall.Create(AdSpriteEngine) do
           begin
-            Image := AdPictureCollection.Find('wallgras');
+            Image := AdImageList.Find('wallgras');
             x := ax*128;
             y := ay*128;
             z := 0;
@@ -287,7 +317,7 @@ begin
         begin
           with TBall.Create(AdSpriteEngine) do
           begin
-            Image := AdPictureCollection.Find('ball');
+            Image := AdImageList.Find('ball');
             x := ax*128;
             y := ay*128+128-height;
             z := 2;

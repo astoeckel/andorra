@@ -37,6 +37,7 @@ type
       FRotation:single;
       FViewPort:TAdRect;
       FChanged:boolean;
+      FOurSurfaceRect: TAdRect;
       procedure SetZoom(AValue:single);
       procedure SetRotation(AValue:single);
       procedure SetViewPort(AValue:TAdRect);
@@ -51,7 +52,7 @@ type
       constructor Create(AParent:TAdDraw);
 
       {Draws the scene}
-      procedure Draw;
+      procedure Draw;override;
 
       {Transforms screen coordinates to sprite coordinates.}
       function ScreenPointToSpriteCoords(p:TAdPoint):TAdPoint;
@@ -190,9 +191,11 @@ begin
       Top    := round(- h / 2 + (Base.Bottom - Base.Top) / 2);
       Bottom := round(  h / 2 + (Base.Bottom - Base.Top) / 2);
     end;
+    FOurSurfaceRect := FSurfaceRect;
 
     FChanged := false;
-  end;
+  end else
+    FSurfaceRect := FOurSurfaceRect;
 end;
 
 function TSpriteEngineEx.ScreenPointToSpriteCoords(p: TAdPoint): TAdPoint;
@@ -258,13 +261,10 @@ procedure TSpriteEngineEx.SetZoom(AValue: single);
 begin
   FZoom := AValue;
   if FZoom < 0.1 then
-  begin
     FZoom := 0.1;
-  end;
+
   if Surface <> nil then
-  begin
     CalcZDistance;
-  end;
 end;
 
 end.

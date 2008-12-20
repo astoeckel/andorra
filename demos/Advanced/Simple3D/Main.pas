@@ -110,7 +110,7 @@ begin
 
         //The position vector represents the light direction when using
         //a directional light
-        Position := AdVector3(1, 0, 0);
+        Position := AdVector3(0, 1, 1);
       end;
       
       //Store the light data in the light
