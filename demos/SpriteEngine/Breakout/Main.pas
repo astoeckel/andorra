@@ -1,11 +1,23 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdSprites, {AdSpriteEngineEx,} AdParticles, AdClasses, AdPng, AdSetupDlg,
-  AdPerformanceCounter, AdTypes, AdBitmap, AdCanvas;
+  Dialogs, AdDraws, AdSprites, AdParticles, AdClasses, AdPNG, AdSetupDlg,
+  AdPerformanceCounter, AdTypes, AdConsts, AdBitmap, AdCanvas;
 
 type
   TBrickSprite = class(TImageSpriteEx)
@@ -38,7 +50,7 @@ type
   end;
 
 type
-  TMainDlg = class(TForm)
+  TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -46,18 +58,19 @@ type
     { Private-Deklarationen }
   public
     AdDraw:TAdDraw;
-    AdImgLst:TAdImageList;
+    AdImageList:TAdImageList;
     AdSpriteEngine:TSpriteEngine;
     AdPerCounter:TAdPerformanceCounter;
     Bat:TBat;
     CamPos:TAdVector3;
     VX,VY,VZ:integer;
     procedure CreateLevel;
+    procedure CameraMovement;
     procedure Idle(Sender:TObject; var done:boolean);
   end;
 
 var
-  MainDlg: TMainDlg;
+  Form1: TForm1;
 
 const
   path = './resources/';
@@ -66,21 +79,119 @@ implementation
 
 {$R *.dfm}
 
-procedure TMainDlg.CreateLevel;
+procedure TForm1.FormCreate(Sender: TObject);
+var
+  AdSetup: TAdSetup;
+begin
+  //Only for debuging - you can remove this line
+  ReportMemoryLeaksOnShutdown := true;
+
+  //Crate the main surface.
+  AdDraw := TAdDraw.Create(self);
+
+  //Create the setup dialog and pass the main surface
+  AdSetup := TAdSetup.Create(AdDraw);
+  AdSetup.Image := 'logo1.png';
+
+  if AdSetup.Execute then
+  begin
+    //Free the setup dialog
+    AdSetup.Free;
+    
+    //Try to initialize the TAdDraw
+    if AdDraw.Initialize then
+    begin
+      //Create the performance counter. This class is used for measuring the time
+      //that passes between two frames.
+      AdPerCounter := TAdPerformanceCounter.Create;
+
+      //Connect the on idle event
+      AdDraw.Window.Events.OnIdle := Idle;
+
+      //Create the image list and load the used images
+      AdImageList := TAdImageList.Create(AdDraw);
+
+      with AdImageList.Add('bricks') do
+        Texture.LoadGraphicFromFile(path+'brick1.png', false, clNone);
+
+      with AdImageList.Add('ball') do
+        Texture.LoadGraphicFromFile(path+'small_ball.png', true, clFuchsia);
+
+      with AdImageList.Add('bat') do
+        Texture.LoadGraphicFromFile(path+'bat.png', false, clNone);
+
+      AdImageList.Restore;
+
+      //Create the sprite engine
+      AdSpriteEngine := TSpriteEngine.Create(nil);
+      AdSpriteEngine.Surface := AdDraw;
+
+      //Create the first level
+      Randomize;
+      CreateLevel;
+
+
+      //Create same basic sprites
+      with TBall.Create(AdSpriteEngine) do
+      begin
+        Image := AdImageList.Find('ball');
+        X := ClientWidth div 2;
+        Y := ClientHeight div 2;
+      end;
+
+      Bat := TBat.Create(AdSpriteEngine);
+      with Bat do
+      begin
+        Image := AdImageList.Find('bat');
+        Y := ClientHeight-Height;
+        X := (ClientWidth-Width) / 2;
+      end;
+
+      //Set a default camera position. This demo uses the 3D-space to create
+      //a neat graphical effect.
+      CamPos := AdVector3(ClientWidth / 2,ClientHeight / 2, -(ClientHeight * 1.3));
+
+      //Speed of the camera movement
+      VX := 100;
+      VY := 100;
+      VZ := 20;
+    end
+    else
+    begin
+      ShowMessage(AdDraw.GetLastError);
+      halt;
+    end;
+  end
+  else
+  begin
+    AdSetup.Free;
+    halt;
+  end;
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  AdPerCounter.Free;
+  AdSpriteEngine.Free;
+  AdImageList.Free;
+  AdDraw.Free;
+end;
+
+procedure TForm1.CreateLevel;
 var
   ax,ay:integer;
   c, w: integer;
 begin
-  c := ClientWidth div AdImgLst.Find('bricks').Width; 
-  w := AdImgLst.Find('bricks').Width;
-  w := round(w * (ClientWidth / ((c) * w)));
+  c := ClientWidth div AdImageList.Find('bricks').Width;
+  w := AdImageList.Find('bricks').Width;
+  w := round(w * (ClientWidth / (c * w)));
   for ax := 0 to c - 1 do
   begin
     for ay := 0 to 7 do
     begin
       with TBrickSprite.Create(AdSpriteEngine) do
       begin
-        Image := AdImgLst.Find('bricks');
+        Image := AdImageList.Find('bricks');
         Width := w;
         x := ax * w;
         y := ay * 20;
@@ -96,105 +207,14 @@ begin
   end;
 end;
 
-procedure TMainDlg.FormCreate(Sender: TObject);
-var
-  AdSetupDlg:TAdSetup;
-begin
-  AdPerCounter := TAdPerformanceCounter.Create;
-
-  AdDraw := TAdDraw.Create(self);
-
-  AdSetupDlg := TAdSetup.Create(AdDraw);
-  AdSetupDlg.Image := 'logo1.png';
-  AdSetupDlg.Sections := AdSetupDlg.Sections;
-
-  if AdSetupDlg.Execute then
-  begin
-    Cursor := crNone;
-    if AdDraw.Initialize then
-    begin
-      AdImgLst := TAdImageList.Create(AdDraw);
-
-      with AdImgLst.Add('bricks') do
-      begin
-        Texture.LoadGraphicFromFile(path+'brick1.png', false, clNone);
-      end;
-
-      with AdImgLst.Add('ball') do
-      begin
-        Texture.LoadGraphicFromFile(path+'small_ball.png', true, clFuchsia);
-      end;
-
-      with AdImgLst.Add('bat') do
-      begin
-        Texture.LoadGraphicFromFile(path+'bat.png', false, clNone);
-      end;
-
-      AdImgLst.Restore;
-
-      AdSpriteEngine := TSpriteEngine.Create(nil);
-      AdSpriteEngine.Surface := AdDraw;
-
-      Randomize;
-      CreateLevel; 
-
-      with TBall.Create(AdSpriteEngine) do
-      begin
-        Image := AdImglst.Find('ball');
-        X := 294;
-        Y := 295;
-      end;
-
-      Bat := TBat.Create(AdSpriteEngine);
-      with Bat do
-      begin
-        Image := AdImglst.Find('bat');
-        Y := ClientHeight-Height;
-        X := (ClientWidth-Width) / 2;
-      end;
-
-      AdPerCounter := TAdPerformanceCounter.Create;
-
-      Application.OnIdle := Idle;
-
-      CamPos := AdVector3(ClientWidth / 2,ClientHeight / 2, -(ClientHeight * 1.3));
-      VX := 100;
-      VY := 100;
-      VZ := 20;
-    end
-    else
-    begin
-      ShowMessage(AdDraw.GetLastError);
-      halt;
-    end;
-  end
-  else
-  begin
-    halt;
-  end;
-end;
-
-procedure TMainDlg.FormDestroy(Sender: TObject);
-begin
-  AdPerCounter.Free;
-  AdSpriteEngine.Free;
-  AdImgLst.Free;
-  AdDraw.Free;
-end;
-
-procedure TMainDlg.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
   Bat.MoveTo(X);
 end;
 
-procedure TMainDlg.Idle(Sender: TObject; var done: boolean);
+procedure TForm1.CameraMovement;
 begin
-  AdPerCounter.Calculate;
-
-  AdDraw.BeginScene;
-  AdDraw.ClearSurface(clBlack);
-
   CamPos.x := CamPos.x + VX * AdPerCounter.TimeGap / 1000;
   CamPos.y := CamPos.y + VY * AdPerCounter.TimeGap / 1000;
   CamPos.z := CamPos.z - VZ * AdPerCounter.TimeGap / 1000;
@@ -231,31 +251,67 @@ begin
     CamPos.z := -ClientHeight * 1.2;
     VZ := -VZ;
   end;
+end;
 
-  AdDraw.AdAppl.Setup3DScene(ClientWidth,ClientHeight,
-      CamPos, AdVector3(ClientWidth / 2,ClientHeight / 2, 0), AdVector3(0,-1,0),
-      -100, 100);
-
-  AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
-  AdSpriteEngine.Draw;
-  AdSpriteEngine.Dead;
-
-  if AdSpriteEngine.CountOfClass(TBrickSprite) = 0 then
+procedure TForm1.Idle(Sender: TObject; var done: boolean);
+begin
+  //Draw on the TAdDraw if drawing is possible
+  if AdDraw.CanDraw then
   begin
-    CreateLevel;
+    //Calculate the time difference.
+    AdPerCounter.Calculate;
+    
+    AdDraw.ClearSurface(AdCol24_Black);
+
+    AdDraw.BeginScene;
+
+    //Recreate the level if there are no brick sprites left
+    if AdSpriteEngine.CountOfClass(TBrickSprite) = 0 then
+    begin
+      CreateLevel;
+
+      //Add a new ball to the game
+      with TBall.Create(AdSpriteEngine) do
+      begin
+        Image := AdImageList.Find('ball');
+        X := ClientWidth div 2;
+        Y := ClientHeight div 2;
+      end;
+    end;
+
+    //Set the camera position
+    CameraMovement;
+    AdDraw.AdAppl.Setup3DScene(ClientWidth,ClientHeight,
+        CamPos, AdVector3(ClientWidth / 2,ClientHeight / 2, 0), AdVector3(0,-1,0),
+        -100, 100);
+
+    AdSpriteEngine.Move(AdPerCounter.TimeGap/1000);
+    AdSpriteEngine.Draw;
+    AdSpriteEngine.Dead;
+
+    //Draw a white rectangle around the playground
+    with AdDraw.Canvas do
+    begin          
+      Brush.Style := abClear;
+      Pen.Color := AdCol32_White;
+      Rectangle(AdRect(0,0,ClientWidth,ClientHeight));
+      Release;
+    end;
+
+    //Return to a simple 2D scene
+    AdDraw.Setup2DScene;
+
+    //Draw the FPS information
+    with AdDraw.Canvas do
+    begin
+      TextOut(2,2,'FPS: '+IntToStr(AdPerCounter.FPS));
+      TextOut(2,18,'Bricks left: '+IntToStr(AdSpriteEngine.CountOfClass(TBrickSprite)));
+      Release;
+    end;            
+
+    AdDraw.EndScene;
+    AdDraw.Flip;
   end;
-
-  with AdDraw.Canvas do
-  begin
-    TextOut(2,2,'FPS: '+inttostr(AdPerCounter.FPS));
-    Brush.Style := abClear;
-    Pen.Color := Ad_ARGB(255,255,255,255);
-    Rectangle(AdRect(0,0,ClientWidth,ClientHeight));
-    Release;
-  end;                
-
-  AdDraw.EndScene;
-  AdDraw.Flip;
 
   Done := false;
 end;
@@ -362,7 +418,7 @@ begin
   end;
 end;
 
-{ TBar }
+{ TBat }
 
 constructor TBat.Create(AParent: TSprite);
 begin

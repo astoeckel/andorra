@@ -430,11 +430,7 @@ begin
     FPluginIndex := -1;
     FPluginList.Clear;
     
-    {$IFDEF WIN32}
-      FDllExplorer.GetPlugins(FPluginList, FPath, '.dll');
-    {$ELSE}
-      FDllExplorer.GetPlugins(FPluginList, FPath, '.so');
-    {$ENDIF}
+    FDllExplorer.GetPlugins(FPluginList, FPath);
 
     result := FPluginList.Count > 0;
   end else

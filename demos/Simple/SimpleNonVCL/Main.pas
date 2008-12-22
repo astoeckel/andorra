@@ -1,3 +1,15 @@
+{
+* This program is licensed under the Common Public License (CPL) Version 1.0
+* You should have recieved a copy of the license with this file.
+* If not, see http://www.opensource.org/licenses/cpl1.0.txt for more
+* informations.
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and
+* the GNU General Public License (GPL) you're allowed to use this program
+* under the GPL.
+* You also should have recieved a copy of this license with this file.
+* If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
+}
 unit Main;
 
 {$IFDEF FPC}
@@ -7,7 +19,8 @@ unit Main;
 interface
 
 uses
-  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes;
+  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes, AdFont,
+  AdDLLExplorer;
 
 type
   TAdAppl = class
@@ -25,6 +38,46 @@ type
 implementation
 
 { TAdAppl }
+
+{You should also use AdGLFWWindow, AdSDLWindow or AdWin32Window
+ To get rid of the VCL, you should also activate the following compiler switches:
+  DO_NOT_INCLUDE_STD_FORMATS (remember that fonts are deactivated too)
+  DO_NOT_INCLUDE_STD_WINDOWMGR}
+
+procedure TAdAppl.Run;
+begin
+  //Only for debuging - you can remove this line
+  ReportMemoryLeaksOnShutdown := true;
+
+  //Crate the main surface.
+  AdDraw := TAdDraw.Create(nil);
+
+  //Get a plugin. Default plugin is declared within the AdDLLExplorer unit.
+  AdDraw.DllName := DefaultPlugin;
+
+  with AdDraw.Display do
+  begin
+    Width := 800;
+    Height := 600;
+    BitDepth := ad32Bit;
+  end;
+  if AdDraw.Initialize then
+  begin
+    AdDraw.Window.Events.OnIdle := Idle;
+    AdDraw.Window.Events.OnMouseMove := MouseMove;
+    AdDraw.Window.Events.OnKeyDown := KeyDown;
+    AdDraw.Window.Title := 'Andorra 2D';
+
+    AdImage := TAdImage.Create(AdDraw);
+    AdImage.Texture.LoadGraphicFromFile('icon64.png');
+    AdImage.Restore;
+
+    AdDraw.Run;
+
+    AdImage.Free;
+  end;
+  AdDraw.Free;
+end;
 
 procedure TAdAppl.Idle(Sender: TObject; var Done: boolean);
 begin
@@ -59,45 +112,6 @@ procedure TAdAppl.MouseMove(Sender: TObject; Shift: TAdShiftState; X,
 begin
   MouseX := X;
   MouseY := Y;
-end;
-
-procedure TAdAppl.Run;
-begin
-  AdDraw := TAdDraw.Create(nil);
-
-  {$IFDEF FPC}
-    {$IFDEF WIN32}
-      AdDraw.DllName := 'AndorraOGLLaz.dll';
-    {$ELSE}
-      AdDraw.DllName := 'libAndorraOGLLaz.so';
-    {$ENDIF}
-  {$ELSE}
-    AdDraw.DllName := 'AndorraOGL.dll';
-  {$ENDIF}
-
-
-  with AdDraw.Display do
-  begin
-    Width := 800;
-    Height := 600;
-    BitDepth := ad32Bit;
-  end;
-  if AdDraw.Initialize then
-  begin
-    AdDraw.Window.Events.OnIdle := Idle;
-    AdDraw.Window.Events.OnMouseMove := MouseMove;
-    AdDraw.Window.Events.OnKeyDown := KeyDown;
-    AdDraw.Window.Title := 'Andorra 2D';
-
-    AdImage := TAdImage.Create(AdDraw);
-    AdImage.Texture.LoadGraphicFromFile('icon64.png');
-    AdImage.Restore;
-
-    AdDraw.Run;
-
-    AdImage.Free;
-  end;
-  AdDraw.Free;
 end;
 
 end.

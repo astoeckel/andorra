@@ -34,7 +34,7 @@
 {'$DEFINE DO_NOT_INCLUDE_STD_FORMATS}
 
 //Activate this compiler switch in order to remove all Andorra 2D dependencies to the VCL
-{'$DEFINE DO_NOT_INCLUDE_STD_WINDOWMGR}
+{$DEFINE DO_NOT_INCLUDE_STD_WINDOWMGR}
 
 //--------------------------------
 //--- ANDORRA 2D MATH SETTINGS ---

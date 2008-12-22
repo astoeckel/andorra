@@ -62,10 +62,9 @@ type
       constructor Create(AMemory: PByte; AWidth, AHeight: integer);
   end;
 
-  {TAd2dBitmap is the base bitmap class, which is used to transfer bitmap data
-   between the host and the plugin dlls. TAd2dBitmap is only depended to
-   AdTypes.pas. It does not contain any read/write functions for streams or
-   files. You can use the scanline or the fast pixel property to manipulate the
+  {TAd2dBitmap is used to transfer bitmap data between the host and the plugin dlls.
+   TAd2dBitmap is only depended on AdTypes.pas. It does not contain any read/write
+   functions for streams or files. You can use the scanline or the fast pixel property to manipulate the
    picture.}
   TAd2DBitmap = class(TAd2DCustomBitmap)
     private

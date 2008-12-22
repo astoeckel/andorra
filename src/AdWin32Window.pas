@@ -158,8 +158,9 @@ begin
   
   if (FBinded) and (not FInitialized) then
   begin
+    WndStyle := 0;
     //Choose the appropriate appearing of the window    
-    if AProps.Mode = dmWindowed then
+    if (AProps.Mode = dmWindowed) or (AProps.Mode = dmDefault) then
       WndStyle := WS_CAPTION or WS_VISIBLE or WS_SYSMENU
     else
     begin
