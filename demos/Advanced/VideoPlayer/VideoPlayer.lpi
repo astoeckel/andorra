@@ -10,7 +10,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="19"/>
+      <ActiveEditorIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value=""/>
@@ -32,328 +32,127 @@
         <PackageName Value="LazOpenGLContext"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="22">
+    <Units Count="9">
       <Unit0>
         <Filename Value="VideoPlayer.dpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="VideoPlayer"/>
         <CursorPos X="1" Y="10"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="0"/>
-        <UsageCount Value="27"/>
+        <EditorIndex Value="8"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="Main.pas"/>
         <UnitName Value="Main"/>
-        <CursorPos X="27" Y="83"/>
-        <TopLine Value="79"/>
-        <EditorIndex Value="1"/>
-        <UsageCount Value="13"/>
+        <CursorPos X="9" Y="115"/>
+        <TopLine Value="100"/>
+        <EditorIndex Value="0"/>
+        <UsageCount Value="14"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
         <UnitName Value="AdSetupDlg"/>
-        <CursorPos X="26" Y="659"/>
-        <TopLine Value="646"/>
-        <EditorIndex Value="16"/>
+        <CursorPos X="67" Y="349"/>
+        <TopLine Value="321"/>
+        <EditorIndex Value="5"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="..\..\..\src\AdDLLExplorer.pas"/>
-        <UnitName Value="AdDLLExplorer"/>
-        <CursorPos X="38" Y="55"/>
-        <TopLine Value="65"/>
-        <EditorIndex Value="20"/>
+        <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
+        <UnitName Value="AdVCLWindow"/>
+        <CursorPos X="33" Y="180"/>
+        <TopLine Value="153"/>
+        <EditorIndex Value="4"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit3>
       <Unit4>
-        <Filename Value="..\..\..\src\AdClasses.pas"/>
-        <UnitName Value="AdClasses"/>
-        <CursorPos X="22" Y="450"/>
-        <TopLine Value="449"/>
-        <EditorIndex Value="21"/>
+        <Filename Value="..\..\..\src\AdFontFactory.pas"/>
+        <UnitName Value="AdFontFactory"/>
+        <CursorPos X="20" Y="349"/>
+        <TopLine Value="322"/>
+        <EditorIndex Value="6"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
-        <Filename Value="..\..\..\src\AdPNGImage.pas"/>
-        <UnitName Value="AdPNGImage"/>
-        <CursorPos X="8" Y="21"/>
-        <TopLine Value="3"/>
-        <EditorIndex Value="17"/>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <UnitName Value="AdSimpleXML"/>
+        <CursorPos X="23" Y="1268"/>
+        <TopLine Value="1241"/>
+        <EditorIndex Value="7"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
-        <Filename Value="..\..\..\src\AdPNG.pas"/>
-        <UnitName Value="AdPNG"/>
-        <CursorPos X="8" Y="20"/>
+        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
+        <UnitName Value="AdStdWindow"/>
+        <CursorPos X="11" Y="27"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="18"/>
+        <EditorIndex Value="3"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit6>
       <Unit7>
-        <Filename Value="..\..\..\src\AdAcinerella.pas"/>
-        <UnitName Value="AdAcinerella"/>
-        <CursorPos X="24" Y="42"/>
-        <TopLine Value="10"/>
-        <EditorIndex Value="19"/>
+        <Filename Value="..\..\..\src\AdVideo.pas"/>
+        <UnitName Value="AdVideo"/>
+        <CursorPos X="38" Y="27"/>
+        <TopLine Value="127"/>
+        <EditorIndex Value="1"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit7>
       <Unit8>
-        <Filename Value="..\..\..\src\AdVCLComponentEventConnector.pas"/>
-        <UnitName Value="AdVCLComponentEventConnector"/>
-        <CursorPos X="3" Y="27"/>
-        <TopLine Value="6"/>
+        <Filename Value="..\..\..\src\AdVideoTexture.pas"/>
+        <UnitName Value="AdVideoTexture"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit8>
-      <Unit9>
-        <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
-        <UnitName Value="AdVCLWindow"/>
-        <CursorPos X="3" Y="28"/>
-        <TopLine Value="16"/>
-        <EditorIndex Value="3"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit9>
-      <Unit10>
-        <Filename Value="..\..\..\src\AdMath.pas"/>
-        <UnitName Value="AdMath"/>
-        <CursorPos X="21" Y="171"/>
-        <TopLine Value="150"/>
-        <EditorIndex Value="4"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit10>
-      <Unit11>
-        <Filename Value="..\..\..\src\AdFont.pas"/>
-        <UnitName Value="AdFont"/>
-        <CursorPos X="50" Y="666"/>
-        <TopLine Value="645"/>
-        <EditorIndex Value="5"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit11>
-      <Unit12>
-        <Filename Value="..\..\..\src\AdPolygonUtils.pas"/>
-        <UnitName Value="AdPolygonUtils"/>
-        <CursorPos X="2" Y="44"/>
-        <TopLine Value="82"/>
-        <EditorIndex Value="6"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit12>
-      <Unit13>
-        <Filename Value="..\..\..\src\AdCanvas.pas"/>
-        <UnitName Value="AdCanvas"/>
-        <CursorPos X="24" Y="348"/>
-        <TopLine Value="327"/>
-        <EditorIndex Value="7"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit13>
-      <Unit14>
-        <Filename Value="..\..\..\src\AdFontFactory.pas"/>
-        <UnitName Value="AdFontFactory"/>
-        <CursorPos X="13" Y="382"/>
-        <TopLine Value="353"/>
-        <EditorIndex Value="8"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit14>
-      <Unit15>
-        <Filename Value="..\..\..\src\AdBitmapEffects.pas"/>
-        <UnitName Value="AdBitmapEffects"/>
-        <CursorPos X="25" Y="272"/>
-        <TopLine Value="251"/>
-        <EditorIndex Value="9"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit15>
-      <Unit16>
-        <Filename Value="..\..\..\src\AdStandardFontGenerator.pas"/>
-        <UnitName Value="AdStandardFontGenerator"/>
-        <CursorPos X="42" Y="51"/>
-        <TopLine Value="30"/>
-        <EditorIndex Value="10"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit16>
-      <Unit17>
-        <Filename Value="..\..\..\src\Huffman.pas"/>
-        <UnitName Value="Huffman"/>
-        <CursorPos X="34" Y="335"/>
-        <TopLine Value="314"/>
-        <EditorIndex Value="11"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit17>
-      <Unit18>
-        <Filename Value="..\..\..\src\AdSimpleCompressors.pas"/>
-        <UnitName Value="AdSimpleCompressors"/>
-        <CursorPos X="32" Y="53"/>
-        <TopLine Value="32"/>
-        <EditorIndex Value="12"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit18>
-      <Unit19>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <UnitName Value="AdDraws"/>
-        <CursorPos X="24" Y="692"/>
-        <TopLine Value="671"/>
-        <EditorIndex Value="13"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit19>
-      <Unit20>
-        <Filename Value="..\..\..\src\AdComponents.pas"/>
-        <UnitName Value="AdComponents"/>
-        <CursorPos X="76" Y="29"/>
-        <TopLine Value="8"/>
-        <EditorIndex Value="14"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit20>
-      <Unit21>
-        <Filename Value="..\..\..\src\AdGUIConnector.pas"/>
-        <UnitName Value="AdGUIConnector"/>
-        <CursorPos X="37" Y="29"/>
-        <TopLine Value="8"/>
-        <EditorIndex Value="15"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit21>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="9" HistoryIndex="8">
       <Position1>
-        <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
-        <Caret Line="111" Column="10" TopLine="91"/>
+        <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
+        <Caret Line="659" Column="26" TopLine="646"/>
       </Position1>
       <Position2>
-        <Filename Value="..\..\..\src\AdMath.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdFontFactory.pas"/>
+        <Caret Line="382" Column="13" TopLine="353"/>
       </Position2>
       <Position3>
-        <Filename Value="..\..\..\src\AdMath.pas"/>
-        <Caret Line="168" Column="27" TopLine="137"/>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position3>
       <Position4>
-        <Filename Value="..\..\..\src\AdMath.pas"/>
-        <Caret Line="155" Column="24" TopLine="132"/>
+        <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
+        <Caret Line="458" Column="14" TopLine="438"/>
       </Position4>
       <Position5>
-        <Filename Value="..\..\..\src\AdFont.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
+        <Caret Line="396" Column="24" TopLine="366"/>
       </Position5>
       <Position6>
-        <Filename Value="..\..\..\src\AdMath.pas"/>
-        <Caret Line="171" Column="43" TopLine="148"/>
+        <Filename Value="Main.pas"/>
+        <Caret Line="23" Column="25" TopLine="1"/>
       </Position6>
       <Position7>
-        <Filename Value="..\..\..\src\AdFont.pas"/>
-        <Caret Line="345" Column="49" TopLine="313"/>
+        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
+        <Caret Line="27" Column="11" TopLine="1"/>
       </Position7>
       <Position8>
-        <Filename Value="..\..\..\src\AdPolygonUtils.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="Main.pas"/>
+        <Caret Line="24" Column="48" TopLine="4"/>
       </Position8>
       <Position9>
-        <Filename Value="..\..\..\src\AdCanvas.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdVideo.pas"/>
+        <Caret Line="27" Column="38" TopLine="13"/>
       </Position9>
-      <Position10>
-        <Filename Value="..\..\..\src\AdCanvas.pas"/>
-        <Caret Line="2746" Column="34" TopLine="2725"/>
-      </Position10>
-      <Position11>
-        <Filename Value="..\..\..\src\AdCanvas.pas"/>
-        <Caret Line="2889" Column="45" TopLine="2865"/>
-      </Position11>
-      <Position12>
-        <Filename Value="..\..\..\src\AdCanvas.pas"/>
-        <Caret Line="3006" Column="15" TopLine="2985"/>
-      </Position12>
-      <Position13>
-        <Filename Value="..\..\..\src\AdCanvas.pas"/>
-        <Caret Line="3010" Column="11" TopLine="2975"/>
-      </Position13>
-      <Position14>
-        <Filename Value="..\..\..\src\AdFontFactory.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position14>
-      <Position15>
-        <Filename Value="..\..\..\src\AdFontFactory.pas"/>
-        <Caret Line="175" Column="46" TopLine="154"/>
-      </Position15>
-      <Position16>
-        <Filename Value="..\..\..\src\AdBitmapEffects.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position16>
-      <Position17>
-        <Filename Value="..\..\..\src\AdFontFactory.pas"/>
-        <Caret Line="349" Column="20" TopLine="328"/>
-      </Position17>
-      <Position18>
-        <Filename Value="..\..\..\src\AdBitmapEffects.pas"/>
-        <Caret Line="272" Column="25" TopLine="251"/>
-      </Position18>
-      <Position19>
-        <Filename Value="..\..\..\src\AdStandardFontGenerator.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position19>
-      <Position20>
-        <Filename Value="..\..\..\src\AdStandardFontGenerator.pas"/>
-        <Caret Line="69" Column="15" TopLine="60"/>
-      </Position20>
-      <Position21>
-        <Filename Value="..\..\..\src\AdStandardFontGenerator.pas"/>
-        <Caret Line="73" Column="22" TopLine="50"/>
-      </Position21>
-      <Position22>
-        <Filename Value="..\..\..\src\AdStandardFontGenerator.pas"/>
-        <Caret Line="49" Column="40" TopLine="61"/>
-      </Position22>
-      <Position23>
-        <Filename Value="..\..\..\src\Huffman.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position23>
-      <Position24>
-        <Filename Value="..\..\..\src\Huffman.pas"/>
-        <Caret Line="278" Column="30" TopLine="257"/>
-      </Position24>
-      <Position25>
-        <Filename Value="..\..\..\src\AdSimpleCompressors.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position25>
-      <Position26>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position26>
-      <Position27>
-        <Filename Value="..\..\..\src\AdDraws.pas"/>
-        <Caret Line="2205" Column="17" TopLine="2184"/>
-      </Position27>
-      <Position28>
-        <Filename Value="..\..\..\src\AdComponents.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position28>
-      <Position29>
-        <Filename Value="..\..\..\src\AdGUIConnector.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position29>
-      <Position30>
-        <Filename Value="..\..\..\src\AdAcinerella.pas"/>
-        <Caret Line="129" Column="60" TopLine="101"/>
-      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -380,6 +179,7 @@
     <Linking>
       <Debugging>
         <UseLineInfoUnit Value="False"/>
+        <StripSymbols Value="True"/>
       </Debugging>
       <Options>
         <Win32>
@@ -388,6 +188,12 @@
       </Options>
     </Linking>
     <Other>
+      <Verbosity>
+        <ShowNotes Value="False"/>
+        <ShowHints Value="False"/>
+        <ShowHintsForSenderNotUsed Value="True"/>
+      </Verbosity>
+      <WriteFPCLogo Value="False"/>
       <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>

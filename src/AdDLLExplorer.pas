@@ -86,13 +86,14 @@ begin
   begin
     try
       try
-      {$IFDEF Win32}
+      {$IFDEF WIN32}
         ahandle := Windows.LoadLibrary(PChar(dir+searchrec.Name));
       {$ELSE}
         ahandle := dynlibs.LoadLibrary(PChar(dir+searchrec.Name));
       {$ENDIF}
       except
         //Load the next module if something didn't work...
+        res := FindNext(searchrec);
         Continue;
       end;
 
@@ -108,10 +109,8 @@ begin
 
           //The library must be compatible
           if info.LibVersion = LibraryVersion then
-          begin
-            //Call callback and pass name and informations
+            //Call callback and pass name and information
             CallBack(searchrec.Name, info);
-          end;
         end;
       end;
 

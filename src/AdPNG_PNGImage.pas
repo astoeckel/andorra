@@ -18,7 +18,7 @@
  needs the PNG Delphi Sources which are available at 
  http://pngdelphi.sourceforge.net/ . This unit doesn't run with lazarus! To have 
  PNG Support with Lazarus, try one of the other graphic library plugins like
- AdDevIL or AdFreeImage.
+ AdDevIL or AdFreeImage or try the internal PNG loader (default).
 }
 unit AdPNG_PNGImage;
 

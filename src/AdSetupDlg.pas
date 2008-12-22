@@ -404,6 +404,7 @@ begin
   FOkBtn.Default := true;
   FOkBtn.ModalResult := mrOk;
   FOkBtn.TabOrder := 0;
+  FOkBtn.Left := FBottomPanel.ClientWidth - 10 - FCancelBtn.Width;
 end;
 
 procedure TAdSetup.FreeSections;
@@ -455,7 +456,7 @@ end;
 procedure TAdSetup.AutoResize;
 var
   i: integer;
-  h: integer;
+  h: LongWord;
 begin
   h := 0;
   for i := 0 to FCenterPanel.ComponentCount - 1 do

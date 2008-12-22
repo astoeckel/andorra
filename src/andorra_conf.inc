@@ -49,9 +49,11 @@
 //--------------------------------
 //--- ANDORRA 2D PNG ---
 
+{$IFNDEF FPC}
 {$IFDEF WIN32}
   //Deactivate the following switch to activate the internal (experimental) PNG loader
   {$DEFINE DO_NOT_USE_INTERNAL_PNG}
+{$ENDIF}
 {$ENDIF}
 
 //--------------------------------

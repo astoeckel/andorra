@@ -2,6 +2,10 @@ unit OGLCg;
 
 interface
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 uses
   AdShaderClasses, AdClasses, AdTypes,
   OGLShaderClasses,
@@ -60,8 +64,6 @@ implementation
 
 procedure TOGLCgEngine.Finalize;
 begin
-  inherited;
-
   if FContext <> nil then
     cgDestroyContext(FContext);
   FContext := nil;

@@ -18,7 +18,7 @@
 library AndorraOGL;
 
 {$IFDEF FPC}
-  {$MODE delphi}
+  {$MODE Delphi}
 {$ENDIF}
 
 uses

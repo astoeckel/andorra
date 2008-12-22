@@ -141,6 +141,7 @@ begin
 
       //Create the video player object
       AdVideo := TAdVideoPlayer.Create(AdDraw);
+      AdVideo.Image.Texture.Filter := atLinear;
 
       AdDraw.Run;
 
@@ -162,7 +163,6 @@ end;
 //
 //--- GUI event handlers ---
 //
-
 
 procedure TAdAppl.CheckBoxClick(Sender: TObject);
 begin

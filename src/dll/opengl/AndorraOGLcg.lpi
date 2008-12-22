@@ -7,7 +7,7 @@
       <MainUnit Value="0"/>
       <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
-      <ActiveEditorIndexAtStart Value="4"/>
+      <ActiveEditorIndexAtStart Value="1"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value="0.0.0.0"/>
@@ -27,21 +27,40 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="1">
+    <Units Count="2">
       <Unit0>
         <Filename Value="AndorraOGLcg.dpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="AndorraOGLcg"/>
         <CursorPos X="13" Y="22"/>
-        <TopLine Value="10"/>
+        <TopLine Value="1"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="23"/>
         <Loaded Value="True"/>
       </Unit0>
+      <Unit1>
+        <Filename Value="OGLCg.pas"/>
+        <UnitName Value="OGLCg"/>
+        <CursorPos X="16" Y="6"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit1>
     </Units>
+    <JumpHistory Count="2" HistoryIndex="1">
+      <Position1>
+        <Filename Value="OGLCg.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position1>
+      <Position2>
+        <Filename Value="OGLCg.pas"/>
+        <Caret Line="8" Column="3" TopLine="1"/>
+      </Position2>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="5"/>
+    <Version Value="8"/>
     <PathDelim Value="\"/>
     <Target>
       <Filename Value="..\..\..\bin\AndorraOGLcg.dll"/>
@@ -50,9 +69,11 @@
       <OtherUnitFiles Value="..\..\;..\..\..\lib\"/>
       <UnitOutputDirectory Value="..\..\dcu"/>
     </SearchPaths>
-    <CodeGeneration>
-      <Generate Value="Faster"/>
-    </CodeGeneration>
+    <Parsing>
+      <SyntaxOptions>
+        <CStyleOperator Value="False"/>
+      </SyntaxOptions>
+    </Parsing>
     <Linking>
       <Options>
         <ExecutableType Value="Library"/>

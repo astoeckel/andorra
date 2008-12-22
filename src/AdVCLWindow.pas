@@ -145,7 +145,6 @@ begin
     FForm.Caption := Title;
 
     //Set the different form settings for the different window modes.
-    
     if (AProps.Mode = dmWindowed) or (AProps.Mode = dmDefault) then
     begin
       //Simple window
