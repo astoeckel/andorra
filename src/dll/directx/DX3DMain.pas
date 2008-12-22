@@ -122,7 +122,7 @@ type
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
       procedure FlushTexture;override;
-      procedure LoadFromBitmap(ABmp:TAd2dBitmap; ABitDepth: TAdBitDepth);override;
+      procedure LoadFromBitmap(ABmp:TAd2dCustomBitmap; ABitDepth: TAdBitDepth);override;
       procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
   end;
 
@@ -1059,7 +1059,7 @@ begin
                         or R8ToR4(r);
 end;
 
-procedure TDXBitmapTexture.LoadFromBitmap(ABmp: TAd2dBitmap; ABitDepth: TAdBitDepth);
+procedure TDXBitmapTexture.LoadFromBitmap(ABmp: TAd2dCustomBitmap; ABitDepth: TAdBitDepth);
 var afmt:TD3DFORMAT;
     w,h,x,y:integer;
     d3dlr:TD3DLocked_Rect;
@@ -1110,7 +1110,7 @@ begin
     if FBitDepth = ad16Bit then
     begin
       cur16 := d3dlr.pBits;
-      pnt32 := ABmp.ScanLine;
+      pnt32 := PRGBARec(ABmp.Memory);
       for y := 0 to ABmp.Height - 1 do
       begin
         for x := 0 to w - 1 do
@@ -1127,7 +1127,7 @@ begin
     if FBitDepth = ad32Bit then
     begin
       cur32 := d3dlr.pBits;
-      pnt32 := ABmp.ScanLine;
+      pnt32 := PRGBARec(ABmp.Memory);
       for y := 0 to ABmp.Height - 1 do
       begin
         Move(pnt32^, cur32^, ABmp.Width * 4);

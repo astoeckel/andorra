@@ -28,22 +28,51 @@ interface
 uses
   AdTypes;
 
-type   
+type
+  {TAd2DCustomBitmap is the base bitmap class that defines the main bitmap
+   properties.}
+  TAd2DCustomBitmap = class
+    protected
+      FMemory: PByte;
+      FWidth: integer;
+      FHeight: integer;
+      FSize: int64;
+    public
+      {The width of the bitmap in pixels.}
+      property Width: integer read FWidth;
+      {The height of the bitmap in pixels.}
+      property Height: integer read FHeight;
+      {The size of the bitmap in bytes.}
+      property Size: int64 read FSize;
+      {Pointer to the top-left pixel in memory. The pixels are in a 4-Byte format
+       (BGRA) and ordered from left to right and top to bottom.}
+      property Memory: PByte read FMemory;
+  end;
+
+  {Simple bitmap class that can be used to map an existing bitmap in memory
+   to an Andorra 2D bitmap. This is faster than storing the bitmap data in a
+   TAd2DBitmap before loading it to the plugin.}
+  TAd2DMemoryBitmap = class(TAd2DCustomBitmap)
+    public
+      {Creates a memory mapped bitmap. The pixels have to be in a 4-Byte BGRA format
+       and ordered from left to right and top to bottom.
+       @param(AMemory is a pointer to the memory region that stores the bitmap.)
+       @param(AWidth is the width of the bitmap in pixels.)
+       @param(AHeight is the height of the bitmap in pixels.)}
+      constructor Create(AMemory: PByte; AWidth, AHeight: integer);
+  end;
+
   {TAd2dBitmap is the base bitmap class, which is used to transfer bitmap data
    between the host and the plugin dlls. TAd2dBitmap is only depended to
    AdTypes.pas. It does not contain any read/write functions for streams or
    files. You can use the scanline or the fast pixel property to manipulate the
    picture.}
-  TAd2DBitmap = class
+  TAd2DBitmap = class(TAd2DCustomBitmap)
     private
       function GetPixelMemory(X, Y:integer):PAndorraColor;
       function GetPixel(X, Y:integer):TAndorraColor;
       procedure SetPixel(X, Y:integer; Value:TAndorraColor);
     protected
-      FMemory:PByte;
-      FWidth:integer;
-      FHeight:integer;
-      FSize:int64;
       procedure ClearMemory;
     public
       {Creates a instance of TAd2dBitmap and initializes all used variables.}
@@ -54,7 +83,7 @@ type
       {Use this procedure to reserve a specific amount of memory. This is
        important when loading bitmap data from a plugin dll via
        TAd2dTexture.SaveToBitmap. }
-      procedure ReserveMemory(AWidth,AHeight:integer);
+      procedure ReserveMemory(AWidth, AHeight:integer);
 
       {Removes the loaded bitmap data from the memory. After calling this
        procedure the old content of the bitmap is no more existent. The memory
@@ -66,19 +95,13 @@ type
       procedure ClearAlphaChannel;
 
       {Returns the pointer to the beginning of a pixel line.}
-      function ScanLine(AY:integer):pointer;overload;
+      function ScanLine(AY:integer):Pointer;overload;
       {Returns the pointer to the first pixel. All pixels are written from
       top-left to bottom-right. The pixels are stored a TRGBARec.}
-      function ScanLine:pointer;overload;
+      function ScanLine:Pointer;overload;
       {Returns wether memory for the bitmap is reserved.}
       function Loaded:boolean;
 
-      {Returns the width of the bitmap in pixels.}
-      property Width:integer read FWidth;
-      {Returns the height of the bitmap in pixels.}
-      property Height:integer read FHeight;
-      {Returns the size of the bitmap in bytes.}
-      property Size:int64 read FSize;
       {Use the pixels property to gain easy access to each pixel of the bitmap.}
       property Pixels[X, Y:integer]:TAndorraColor read GetPixel write SetPixel;
   end;
@@ -201,6 +224,18 @@ begin
   p := GetPixelMemory(X, Y);
   if p <> nil then
     p^ := Value;
+end;
+
+{ TAd2DMemoryBitmap }
+
+constructor TAd2DMemoryBitmap.Create(AMemory: PByte; AWidth, AHeight: integer);
+begin
+  inherited Create;
+
+  FMemory := AMemory;
+  FWidth := AWidth;
+  FHeight := AHeight;
+  FSize := FWidth * FHeight * 4;
 end;
 
 end.

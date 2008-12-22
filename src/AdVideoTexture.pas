@@ -24,7 +24,7 @@ interface
 
 uses
   SysUtils, Classes, SyncObjs, Contnrs,
-  AdEvents, AdClasses, AdPersistent, AdTypes, AdBitmap;
+  AdEvents, AdClasses, AdPersistent, AdTypes, AdBitmapClass;
 
 type
   {Infos about the current video frame that are exchanged between the video
@@ -576,7 +576,7 @@ end;
 
 function TAdCustomVideoTexture.NextFrame:boolean;
 var
-  adbmp:TAdBitmap;
+  adbmp:TAd2dMemoryBitmap;
   buf: TAdVideoMemory;
 begin
   result := false;
@@ -593,15 +593,10 @@ begin
 
         if not FStreamEnd then
         begin
-          adbmp := TAdBitmap.Create;
-
-          adbmp.ReserveMemory(buf.Width, buf.Height);
-          System.Move(buf.Memory^, adbmp.Scanline^, adbmp.Size);
-
+          adbmp := TAd2DMemoryBitmap.Create(buf.Memory, buf.Width, buf.Height);
           FTexture.LoadFromBitmap(adbmp, ad32Bit);
-
           adbmp.Free;
-          
+
           FHasFrame := true;
         end;
       finally

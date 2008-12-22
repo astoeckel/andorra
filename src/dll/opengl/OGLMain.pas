@@ -149,7 +149,7 @@ type
       constructor Create(AParent: TOGLApplication);
       destructor Destroy;override;
       procedure FlushTexture;override;
-      procedure LoadFromBitmap(ABmp:TAd2dBitmap; ABitDepth: TAdBitDepth);override;
+      procedure LoadFromBitmap(ABmp:TAd2dCustomBitmap; ABitDepth: TAdBitDepth);override;
       procedure SaveToBitmap(ABmp:TAd2dBitmap);override;
       procedure SetFilter;
   end;
@@ -969,7 +969,7 @@ begin
   Result := (R8ToR4(b) shl 12) or (R8ToR4(g) shl 8) or (R8ToR4(r) shl 4) or (R8ToR4(a));
 end;
 
-procedure TOGLBitmapTexture.LoadFromBitmap(ABmp: TAd2dBitmap; ABitDepth: TAdBitDepth);
+procedure TOGLBitmapTexture.LoadFromBitmap(ABmp: TAd2dCustomBitmap; ABitDepth: TAdBitDepth);
 var
   mem:PByte;
   w,h,x,y:integer;
@@ -1013,7 +1013,7 @@ begin
       if newtex or FParent.FMipmaps then
       begin
         cur32 := PLongWord(mem);
-        pnt32 := ABmp.ScanLine;
+        pnt32 := PRGBARec(ABmp.Memory);
         for y := 0 to ABmp.Height - 1 do
         begin
           Move(pnt32^, cur32^, ABmp.Width * 4);
@@ -1040,14 +1040,14 @@ begin
           glTexSubImage2D(
             GL_TEXTURE_2D, 0,
             0, 0, BaseWidth, BaseHeight,
-            GL_BGRA, GL_UNSIGNED_BYTE, ABmp.ScanLine)
+            GL_BGRA, GL_UNSIGNED_BYTE, ABmp.Memory)
         end;
       end;
     end
     else
     begin
       cur16 := PWord(mem);
-      pnt32 := ABmp.ScanLine;
+      pnt32 := PRGBARec(ABmp.Memory);
       for y := 0 to ABmp.Height - 1 do
       begin
         for x := 0 to w - 1 do

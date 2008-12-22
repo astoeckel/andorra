@@ -463,7 +463,7 @@ type
       {Frees the textures memory}
       procedure FlushTexture;virtual;abstract;
       {Loads the texture from a TAd2dBitmap.}
-      procedure LoadFromBitmap(ABmp:TAd2dBitmap; ABitDepth: TAdBitDepth);virtual;abstract;
+      procedure LoadFromBitmap(ABmp:TAd2dCustomBitmap; ABitDepth: TAdBitDepth);virtual;abstract;
       {Saves the texture to a TAd2dBitmap.}
       procedure SaveToBitmap(ABmp:TAd2dBitmap);virtual;abstract;
   end;
