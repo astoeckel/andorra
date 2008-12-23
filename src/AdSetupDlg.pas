@@ -456,7 +456,7 @@ end;
 procedure TAdSetup.AutoResize;
 var
   i: integer;
-  h: LongWord;
+  h: integer;
 begin
   h := 0;
   for i := 0 to FCenterPanel.ComponentCount - 1 do

@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Menus, ComCtrls, XPMan, Designer, FontCollection, ImgList, Objects,
-  Structure, ExtDlgs, ImageEditor, AdClasses, AdPNG, AdTypes,
+  Structure, ExtDlgs, ImageEditor, AdClasses, AdPNG_PNGImage, AdTypes,
   ExtCtrls, AdPersistent,
 
   //Add all units with components here
