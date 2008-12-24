@@ -4,4 +4,4 @@ Andorra 2D - The next generation 2D-Engine!
 Andorra 2D is designed to be the successor of DelphiX, the 2D-Rendering system based on Microsofts DirectDraw.
 DelphiX was a cool thing, but its speed got indiscutable. Why is Half Life 2 faster in rendering a terrific 3D-Scene, than DelphiX in rendering an alpha blended image? Why weren't you able to use lights or textures with alphachannel? Why did its spriteengine system get so slow, when creating 1000 sprites?
 Andorra 2D tries to solve those problems by using modern 3D-Hardware to draw 2D-Scenes. A flexible plugin structure enables to use Andorra 2D with any 3D-system. DirectX, OpenGL? No problem. Even in ten years, when you probably have a raytracer graphic board, you're able to write a plugin for Andorra 2D.
-Andorra 2D also tries to be flexible regarding to platform independence - but a few steps have to be done, to achieve this goal...
+Andorra 2D is flexible regarding to platform independence too - Andorra 2D is designed to run under Linux.

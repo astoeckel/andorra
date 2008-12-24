@@ -25,8 +25,8 @@ uses
   AdGUI, AdComponents, AdGUIConnector, AdSetupDlg,
 
   //Select one of the following video decoders here
-  AdAcinerella; {GPL only!}
-  //AdMPEG2Video;
+  //AdAcinerella; {GPL only!}
+  AdMPEG2Video;
 
 type
   //This class is used to manage our demo application.

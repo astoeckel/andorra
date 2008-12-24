@@ -99,9 +99,6 @@ type
 
 implementation
 
-uses
-  Windows;
-
 { TAdPerformanceCounter }
 
 //Comment this define, if you don't want hardware timers to be used.

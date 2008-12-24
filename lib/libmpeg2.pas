@@ -227,7 +227,7 @@ implementation
 
 {$IFDEF Mpeg2Convert}
 uses
-  SysUtils, Windows;
+  SysUtils, {$IFDEF WIN32}Windows{$ELSE}dynlibs{$ENDIF};
 
 var
   Handle:Cardinal;
@@ -237,19 +237,19 @@ begin
   Handle := 0;
   if FileExists(LibMpeg2ConvertName) then
   begin
-    Handle := Windows.LoadLibrary(PChar(LibMpeg2ConvertName));
-    mpeg2convert_rgb32 := Windows.GetProcAddress(Handle, 'mpeg2convert_rgb32');
-    mpeg2convert_rgb24 := Windows.GetProcAddress(Handle, 'mpeg2convert_rgb24');
-    mpeg2convert_rgb16 := Windows.GetProcAddress(Handle, 'mpeg2convert_rgb16');
-    mpeg2convert_rgb15 := Windows.GetProcAddress(Handle, 'mpeg2convert_rgb15');
-    mpeg2convert_rgb8  := Windows.GetProcAddress(Handle, 'mpeg2convert_rgb8');
-    mpeg2convert_rgb   := Windows.GetProcAddress(Handle, 'mpeg2convert_rgb');
+    Handle := LoadLibrary(PChar(LibMpeg2ConvertName));
+    mpeg2convert_rgb32 := GetProcAddress(Handle, 'mpeg2convert_rgb32');
+    mpeg2convert_rgb24 := GetProcAddress(Handle, 'mpeg2convert_rgb24');
+    mpeg2convert_rgb16 := GetProcAddress(Handle, 'mpeg2convert_rgb16');
+    mpeg2convert_rgb15 := GetProcAddress(Handle, 'mpeg2convert_rgb15');
+    mpeg2convert_rgb8  := GetProcAddress(Handle, 'mpeg2convert_rgb8');
+    mpeg2convert_rgb   := GetProcAddress(Handle, 'mpeg2convert_rgb');
 
-    mpeg2convert_bgr32 := Windows.GetProcAddress(Handle, 'mpeg2convert_bgr32');
-    mpeg2convert_bgr24 := Windows.GetProcAddress(Handle, 'mpeg2convert_bgr24');
-    mpeg2convert_bgr16 := Windows.GetProcAddress(Handle, 'mpeg2convert_bgr16');
-    mpeg2convert_bgr15 := Windows.GetProcAddress(Handle, 'mpeg2convert_bgr15');
-    mpeg2convert_bgr8  := Windows.GetProcAddress(Handle, 'mpeg2convert_bgr8');
+    mpeg2convert_bgr32 := GetProcAddress(Handle, 'mpeg2convert_bgr32');
+    mpeg2convert_bgr24 := GetProcAddress(Handle, 'mpeg2convert_bgr24');
+    mpeg2convert_bgr16 := GetProcAddress(Handle, 'mpeg2convert_bgr16');
+    mpeg2convert_bgr15 := GetProcAddress(Handle, 'mpeg2convert_bgr15');
+    mpeg2convert_bgr8  := GetProcAddress(Handle, 'mpeg2convert_bgr8');
   end;
 end;
 
@@ -257,7 +257,7 @@ procedure CloseConvertVariables;
 begin
   if Handle <> 0 then
   begin
-    Windows.FreeLibrary(Handle);
+    FreeLibrary(Handle);
   end;
 end;
 

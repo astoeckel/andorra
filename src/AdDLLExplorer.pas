@@ -120,7 +120,11 @@ begin
     end;
     res := FindNext(searchrec);
   end;
+  {$IFNDEF WIN32}
+  FindClose(searchrec);
+  {$ELSE}
   FindClose(searchrec.FindHandle);
+  {$ENDIF}
 end;
 
 procedure TAdDLLExplorer.GetPlugins(Plugins: TStrings; Dir, Extension: string);

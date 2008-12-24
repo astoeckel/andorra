@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.14 2008/12/14 16:34:20 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.15 2008/12/24 11:06:32 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -559,7 +559,7 @@ begin
     //Calculate the value
     result := Abs(predec);
     if decimalplaces <> '' then
-      result := result + StrToInt(decimalplaces) / Power10(length(decimalplaces));
+      result := result + StrToFloat(decimalplaces) / Power10(length(decimalplaces));
 
     //Set sign
     if AStr[1] = '-' then
