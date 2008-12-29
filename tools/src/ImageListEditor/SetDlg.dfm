@@ -3,7 +3,7 @@ object Settings: TSettings
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Image Settings'
-  ClientHeight = 373
+  ClientHeight = 377
   ClientWidth = 620
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -28,8 +28,8 @@ object Settings: TSettings
     Visible = False
   end
   object Button1: TButton
-    Left = 537
-    Top = 345
+    Left = 456
+    Top = 344
     Width = 75
     Height = 25
     Hint = 'Save settings and close this dialog'
@@ -41,7 +41,7 @@ object Settings: TSettings
     TabOrder = 0
   end
   object Button2: TButton
-    Left = 456
+    Left = 537
     Top = 344
     Width = 75
     Height = 25
@@ -113,7 +113,7 @@ object Settings: TSettings
       Caption = 'Main layer:'
       TabOrder = 3
       object Image1: TImage
-        Left = 12
+        Left = 8
         Top = 20
         Width = 182
         Height = 134

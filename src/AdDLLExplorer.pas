@@ -110,7 +110,7 @@ begin
           //The library must be compatible
           if info.LibVersion = LibraryVersion then
             //Call callback and pass name and information
-            CallBack(searchrec.Name, info);
+            CallBack(dir + ExtractFileName(searchrec.Name), info);
         end;
       end;
 

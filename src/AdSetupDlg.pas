@@ -30,23 +30,20 @@ unit AdSetupDlg;
 interface
 
 uses
-  {$IFDEF WIN32}Windows,{$ENDIF}
-  {$IFDEF FPC}Interfaces,{$ENDIF}
+  {$IFDEF FPC}Interfaces,{$ENDIF}{$IFDEF WIN32}Windows,{$ENDIF}
   SysUtils, Forms, Classes, Controls, StdCtrls, ExtCtrls, Messages,
   IniFiles,
-  {$IFNDEF FPC}XPMan, {$ELSE}lMessages, {$ENDIF}
+  {$IFNDEF FPC}XPMan,{$ENDIF}
   AdClasses, AdTypes, AdDraws, AdDLLExplorer, AdMessages, AdStrUtils;
 
+{$IFNDEF FPC}
 const
   {A window message that is sent to the setup dlg form. This message tells the
    form to tell the setup dlg main class, that it should rebuild its components.
    This event is needed, because the main class isn't able to delete components 
    in a event handler method. Therefore it posts a new event, that is handled 
    after the current event handle method.}
-{$IFNDEF FPC}
   WM_AD_REBUILDCONTROLS = WM_USER + 1;
-{$ELSE}
-  WM_AD_REBUILDCONTROLS = LM_USER + 1;
 {$ENDIF}
 
 type
@@ -96,7 +93,11 @@ type
   TAdSetupForm = class(TForm)
     private
       FOnRebuildControls: TNotifyEvent;
+      {$IFDEF FPC}
+      procedure MsgAsyncCall(Data: PtrInt);
+      {$ELSE}
       procedure MsgRebuildControls(var Message: TMessage); message WM_AD_REBUILDCONTROLS;
+      {$ENDIF}
     public
       {Sends a WM_AD_REBUILDCONTROLS message to itself.
        @seealso(WM_AD_REBUILDCONTROLS)}
@@ -983,14 +984,30 @@ end;
 { TAdSetupForm }
 
 procedure TAdSetupForm.DoRebuildControls;
+{$IFDEF FPC}
+var
+  i: integer;
+begin
+  i := 0;
+  Application.QueueAsyncCall(MsgAsyncCall, i);
+{$ELSE}
 begin
   PostMessage(Handle, WM_AD_REBUILDCONTROLS, 0, 0);
+{$ENDIF}
 end;
 
+{$IFDEF FPC}
+procedure TAdSetupForm.MsgAsyncCall(Data: PtrInt);
+begin
+  if Assigned(FOnRebuildControls) then
+    FOnRebuildControls(self);
+end;
+{$ELSE}
 procedure TAdSetupForm.MsgRebuildControls(var Message: TMessage);
 begin
   if Assigned(FOnRebuildControls) then
     FOnRebuildControls(self);
 end;
+{$ENDIF}
 
 end.

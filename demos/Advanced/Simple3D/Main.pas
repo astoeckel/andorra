@@ -30,7 +30,6 @@ type
       AdDraw: TAdDraw;
       AdMesh: TAdMesh;
       AdLight: TAd2dLight;
-      AdTexture: TAdTexture;
 
       FMX, FMY: integer;
       FMouseDown: boolean;
@@ -97,13 +96,8 @@ begin
       AdDraw.Window.Events.OnMouseWheel := MouseWheel;
       AdDraw.Window.Title := 'Andorra 2D Simple 3D';
 
-      AdTexture := TAdTexture.Create(AdDraw);
-      AdTexture.LoadGraphicFromFile(path + 'normalmap.png');
-      AdTexture.Filter := atAnisotropic;
-
       //Create a new "Teapot-Mesh"
-      AdMesh := TAdPlaneMesh.Create(AdDraw);
-      AdMesh.Texture := AdTexture;
+      AdMesh := TAdCubeMesh.Create(AdDraw);
 
       //Set the material of the teapot
       FMatIndex := -1;
@@ -130,7 +124,6 @@ begin
       AdDraw.Run;
 
       //Free all created objects
-      AdTexture.Free;
       AdLight.Free;
       AdMesh.Free;
       AdPerCounter.Free;

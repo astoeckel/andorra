@@ -5,9 +5,9 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ImgList, ComCtrls, Menus, ToolWin, ExtCtrls, XPMan, StdCtrls,
-  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg, AdDevIL,
+  ActnList, AdDraws, SetDlg, AdClasses, ExtDlgs, CompDlg,
   AdCanvas, AdBitmap, AdVCLFormats, AdSimpleCompressors, AdTypes, AdPerformanceCounter,
-  Progress, AdPersistent;
+  Progress, AdPersistent, AdDevIL;
 
 type
   TMainDlg = class(TForm)
@@ -21,7 +21,6 @@ type
     N2: TMenuItem;
     SaveLibrary1: TMenuItem;
     SaveLibraryas1: TMenuItem;
-    N3: TMenuItem;
     Exit1: TMenuItem;
     Image1: TMenuItem;
     Add1: TMenuItem;
@@ -38,7 +37,7 @@ type
     OpenPictureDialog1: TOpenPictureDialog;
     N4: TMenuItem;
     SaveDialog1: TSaveDialog;
-    OpenDialog1: TOpenDialog;
+    ODImageList: TOpenDialog;
     Setcompressorforallpictures1: TMenuItem;
     GroupBox1: TGroupBox;
     Splitter1: TSplitter;
@@ -77,6 +76,11 @@ type
     Clearalphachannel1: TMenuItem;
     Setalphachannel1: TMenuItem;
     OpenPictureDialog2: TOpenPictureDialog;
+    N8: TMenuItem;
+    Library1: TMenuItem;
+    Exportimages1: TMenuItem;
+    N3: TMenuItem;
+    Importlibrary1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure ListView1CustomDrawItem(Sender: TCustomListView; Item: TListItem;
@@ -116,6 +120,8 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure Clearalphachannel1Click(Sender: TObject);
     procedure Setalphachannel1Click(Sender: TObject);
+    procedure Exportlibrary1Click(Sender: TObject);
+    procedure Importlibrary1Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -143,12 +149,16 @@ type
     procedure ViewContent;
     procedure UpdateState;
     procedure CreateAnimPatterns;
+
+    procedure ExportImage(const AIndex : Integer; const AFilename : string);
   end;
 
 var
   MainDlg: TMainDlg;
 
 implementation
+uses
+  {$WARNINGS OFF}FileCtrl{$WARNINGS ON};
 
 {$R *.dfm}
 
@@ -380,24 +390,60 @@ begin
 end;
 
 procedure TMainDlg.Export1Click(Sender: TObject);
-var adbmp:TAdBitmap;
-    bmp:TBitmap;
 begin
   if ListView1.ItemIndex <> -1 then
   begin
     if SavePictureDialog1.Execute then
     begin
-      adbmp := TAdBitmap.Create;
-      with AdImageList[ListView1.ItemIndex] do
+      ExportImage(ListView1.ItemIndex, SavePictureDialog1.FileName);
+    end;
+  end;
+end;
+
+procedure TMainDlg.ExportImage(const AIndex: Integer; const AFilename : string);
+var
+  adbmp:TAdBitmap;
+  bmp:TBitmap;
+begin
+  adbmp := TAdBitmap.Create;
+  bmp := TBitmap.Create;
+  try
+    with AdImageList[AIndex] do
+    begin
+      adbmp.ReserveMemory(Texture.Texture.BaseWidth, Texture.Texture.BaseHeight);
+      Texture.Texture.SaveToBitmap(adbmp);
+    end;
+
+    adbmp.AssignTo(bmp);
+    bmp.SaveToFile(AFilename);
+  finally
+    bmp.Free;
+    adbmp.Free;
+  end;
+end;
+
+procedure TMainDlg.Exportlibrary1Click(Sender: TObject);
+var
+  i: Integer;
+  fn, Path : string;
+begin
+  if SelectDirectory('Please select the outputpath of the images', '', Path, [sdNewFolder,sdNewUI]) then
+  begin
+    Path := Path + '\';
+    for i := 0 to ListView1.Items.Count - 1 do
+    begin
+      fn := AdImageList[i].Name;
+      if fn = '' then
       begin
-        adbmp.ReserveMemory(Texture.Texture.BaseWidth,Texture.Texture.BaseHeight);
-        Texture.Texture.SaveToBitmap(adbmp);
+        fn := ExtractFileName(CurrentFile);
+        if LastDelimiter('.', fn) > 0 then
+        begin
+          fn := Copy(fn, 1, LastDelimiter('.', fn) - 1);
+        end;
+        fn := fn + '_' + IntToStr(i);
       end;
-      bmp := TBitmap.Create;
-      adbmp.AssignTo(bmp);
-      bmp.SaveToFile(changefileext(SavePictureDialog1.FileName,'.bmp'));
-      bmp.Free;
-      adbmp.Free;
+      fn := fn + '.bmp';
+      ExportImage(i, Path + fn);
     end;
   end;
 end;
@@ -660,7 +706,7 @@ begin
       end
       else
       begin
-        ListView1.ItemIndex := i-1;
+        ListView1.ItemIndex := i - 1;
       end;
     end;
     UpdateState;
@@ -792,12 +838,15 @@ begin
   begin
     ii := ListView1.ItemIndex;
     SetDlg := TSettings.Create(self);
-    if SetDlg.InspectImage(AdImageList.Items[ListView1.ItemIndex]) = mrOk then
-    begin
-      Changed := true;
+    try
+      if SetDlg.InspectImage(AdImageList.Items[ListView1.ItemIndex]) = mrOk then
+      begin
+        Changed := true;
+      end;
+      ViewContent;
+    finally
+      SetDlg.Free;
     end;
-    ViewContent;
-    SetDlg.Free;
     ListView1.Selected := ListView1.Items[ii];
     ListView1.Selected.MakeVisible(false);
   end;
@@ -816,9 +865,9 @@ end;
 
 procedure TMainDlg.OpenClick(Sender: TObject);
 begin
-  if CheckSaved and OpenDialog1.Execute then
+  if CheckSaved and ODImageList.Execute then
   begin
-    Load(OpenDialog1.FileName);
+    Load(ODImageList.FileName);
   end;
 end;
 
@@ -863,44 +912,84 @@ begin
   if OpenPictureDialog1.Execute then
   begin
     progdlg := TProgressDlg.Create(self);
-    progdlg.Show;
-    progdlg.ProgressBar1.Max := OpenPictureDialog1.Files.Count;
+    try
+      progdlg.Show;
+      progdlg.ProgressBar1.Max := OpenPictureDialog1.Files.Count;
 
-    for i := 0 to OpenPictureDialog1.Files.Count - 1 do
-    begin
-      with AdImageList.Add(extractfilename(copy(OpenPictureDialog1.Files[i],1,
-            length(OpenPictureDialog1.Files[i])-
-            length(ExtractFileExt(OpenPictureDialog1.Files[i]))))) do
+      for i := 0 to OpenPictureDialog1.Files.Count - 1 do
       begin
-        Screen.Cursor := crHourglass;
-        try
-          Texture.LoadGraphicFromFile(OpenPictureDialog1.Files[i],true,clNone);
-        finally
-          Screen.Cursor := crDefault;
+        with AdImageList.Add(extractfilename(copy(OpenPictureDialog1.Files[i],1,
+              length(OpenPictureDialog1.Files[i])-
+              length(ExtractFileExt(OpenPictureDialog1.Files[i]))))) do
+        begin
+          Screen.Cursor := crHourglass;
+          try
+            Texture.LoadGraphicFromFile(OpenPictureDialog1.Files[i],true,clNone);
+          finally
+            Screen.Cursor := crDefault;
+          end;
+
+          Changed := true;
+
+          progdlg.ProgressBar1.Position := progdlg.ProgressBar1.Position + 1;
+          progdlg.Repaint;
         end;
-
-        Changed := true;
-
-        progdlg.ProgressBar1.Position := progdlg.ProgressBar1.Position + 1;
-        progdlg.Repaint;
       end;
+      AdImageList.Restore;
+      ViewContent;
+    finally
+      progdlg.Free;
     end;
-    AdImageList.Restore;
-    ViewContent;
+  end;
+end;
 
-    progdlg.Free;
+procedure TMainDlg.Importlibrary1Click(Sender: TObject);
+var
+  AdBufferImages : TAdImageList;
+  i: Integer;
+  ProgDlg : TProgressDlg;
+begin
+  if ODImageList.Execute then
+  begin
+    AdBufferImages := TAdImageList.Create(AdDraw);
+    ProgDlg := TProgressDlg.Create(self);
+    try
+      ProgDlg.Show;
+      AdBufferImages.LoadFromFile(ODImageList.FileName);
+      ProgDlg.ProgressBar1.Max := AdBufferImages.Count;
+      for i := 0 to AdBufferImages.Count - 1 do
+      begin
+        with AdImageList.Add(AdBufferImages[i].Name) do
+        begin
+          Assign(AdBufferImages[i]);
+        end;
+        //Sleep(100);
+        ProgDlg.ProgressBar1.StepIt;
+        ProgDlg.Repaint;
+      end;
+      if AdBufferImages.Count > 0 then
+        Changed := true;
+      AdImageList.Restore;
+      ViewContent;
+    finally
+      ProgDlg.Free;
+      AdBufferImages.Free;
+    end;
   end;
 end;
 
 procedure TMainDlg.UpdateState;
+var
+  SelectedItem : Boolean;
 begin
-  Delete2.Enabled := ListView1.ItemIndex <> -1;
-  Settings2.Enabled := ListView1.ItemIndex <> -1;
-  Export1.Enabled := ListView1.ItemIndex <> -1;
+  SelectedItem := ListView1.ItemIndex <> -1;
+  Delete2.Enabled := SelectedItem;
+  Settings2.Enabled := SelectedItem;
+  Export1.Enabled := SelectedItem;
   Compoundselectedpictures1.Enabled := ListView1.SelCount > 1;
-  ToolButton1.Enabled := ListView1.ItemIndex <> -1;
-  ToolButton6.Enabled := ListView1.ItemIndex <> -1;
-  ToolButton13.Enabled := ListView1.ItemIndex <> -1;
+  ToolButton1.Enabled := SelectedItem;
+  ToolButton6.Enabled := SelectedItem;
+  ToolButton13.Enabled := SelectedItem;
 
   CreateAnimPatterns;
 end;

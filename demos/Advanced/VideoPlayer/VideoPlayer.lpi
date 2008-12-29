@@ -32,15 +32,15 @@
         <PackageName Value="LazOpenGLContext"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="10">
+    <Units Count="5">
       <Unit0>
         <Filename Value="VideoPlayer.dpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="VideoPlayer"/>
         <CursorPos X="1" Y="10"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="9"/>
-        <UsageCount Value="28"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="29"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -55,77 +55,32 @@
       <Unit2>
         <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
         <UnitName Value="AdSetupDlg"/>
-        <CursorPos X="67" Y="349"/>
-        <TopLine Value="321"/>
-        <EditorIndex Value="6"/>
+        <CursorPos X="45" Y="30"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="1"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="..\..\..\src\AdVCLWindow.pas"/>
-        <UnitName Value="AdVCLWindow"/>
-        <CursorPos X="33" Y="180"/>
-        <TopLine Value="153"/>
-        <EditorIndex Value="5"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit3>
-      <Unit4>
         <Filename Value="..\..\..\src\AdFontFactory.pas"/>
         <UnitName Value="AdFontFactory"/>
         <CursorPos X="20" Y="349"/>
         <TopLine Value="322"/>
-        <EditorIndex Value="7"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
-        <UnitName Value="AdSimpleXML"/>
-        <CursorPos X="23" Y="1268"/>
-        <TopLine Value="1241"/>
-        <EditorIndex Value="8"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit5>
-      <Unit6>
-        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
-        <UnitName Value="AdStdWindow"/>
-        <CursorPos X="11" Y="27"/>
-        <TopLine Value="1"/>
-        <EditorIndex Value="4"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit6>
-      <Unit7>
-        <Filename Value="..\..\..\src\AdVideo.pas"/>
-        <UnitName Value="AdVideo"/>
-        <CursorPos X="38" Y="27"/>
-        <TopLine Value="127"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
-      </Unit7>
-      <Unit8>
-        <Filename Value="..\..\..\src\AdVideoTexture.pas"/>
-        <UnitName Value="AdVideoTexture"/>
-        <CursorPos X="1" Y="1"/>
-        <TopLine Value="1"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <UnitName Value="AdSimpleXML"/>
+        <CursorPos X="63" Y="1274"/>
+        <TopLine Value="1037"/>
         <EditorIndex Value="3"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
-      </Unit8>
-      <Unit9>
-        <Filename Value="..\..\..\src\AdDLLExplorer.pas"/>
-        <UnitName Value="AdDLLExplorer"/>
-        <CursorPos X="40" Y="94"/>
-        <TopLine Value="91"/>
-        <EditorIndex Value="1"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit9>
+      </Unit4>
     </Units>
-    <JumpHistory Count="11" HistoryIndex="10">
+    <JumpHistory Count="10" HistoryIndex="9">
       <Position1>
         <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
         <Caret Line="659" Column="26" TopLine="646"/>
@@ -151,25 +106,21 @@
         <Caret Line="23" Column="25" TopLine="1"/>
       </Position6>
       <Position7>
-        <Filename Value="..\..\..\src\AdStdWindow.pas"/>
-        <Caret Line="27" Column="11" TopLine="1"/>
-      </Position7>
-      <Position8>
         <Filename Value="Main.pas"/>
         <Caret Line="24" Column="48" TopLine="4"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\..\..\src\AdSimpleXML.pas"/>
+        <Caret Line="1268" Column="23" TopLine="1241"/>
       </Position8>
       <Position9>
-        <Filename Value="..\..\..\src\AdVideo.pas"/>
-        <Caret Line="27" Column="38" TopLine="13"/>
+        <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
+        <Caret Line="1003" Column="30" TopLine="972"/>
       </Position9>
       <Position10>
-        <Filename Value="..\..\..\src\AdDLLExplorer.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\..\..\src\AdSetupDlg.pas"/>
+        <Caret Line="40" Column="6" TopLine="28"/>
       </Position10>
-      <Position11>
-        <Filename Value="..\..\..\src\AdDLLExplorer.pas"/>
-        <Caret Line="112" Column="42" TopLine="91"/>
-      </Position11>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

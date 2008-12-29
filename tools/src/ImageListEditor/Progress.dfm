@@ -34,6 +34,7 @@ object ProgressDlg: TProgressDlg
     Top = 27
     Width = 330
     Height = 30
+    Step = 1
     TabOrder = 0
   end
 end

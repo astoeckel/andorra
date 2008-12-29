@@ -2,7 +2,7 @@ object MainDlg: TMainDlg
   Left = 0
   Top = 0
   Caption = 'Image List Editor'
-  ClientHeight = 704
+  ClientHeight = 744
   ClientWidth = 712
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -22,7 +22,7 @@ object MainDlg: TMainDlg
     Left = 225
     Top = 32
     Width = 487
-    Height = 653
+    Height = 693
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
@@ -31,22 +31,22 @@ object MainDlg: TMainDlg
     OnMouseUp = Panel1MouseUp
     OnResize = Panel1Resize
     ExplicitTop = 29
-    ExplicitHeight = 656
+    ExplicitHeight = 696
   end
   object Panel2: TPanel
     Left = 0
     Top = 32
     Width = 225
-    Height = 653
+    Height = 693
     Align = alLeft
     BevelOuter = bvNone
     BorderWidth = 3
     TabOrder = 1
     ExplicitTop = 29
-    ExplicitHeight = 656
+    ExplicitHeight = 696
     object Splitter1: TSplitter
       Left = 3
-      Top = 471
+      Top = 511
       Width = 219
       Height = 3
       Cursor = crVSplit
@@ -62,7 +62,7 @@ object MainDlg: TMainDlg
       Left = 3
       Top = 3
       Width = 219
-      Height = 468
+      Height = 508
       Align = alClient
       Caption = 'Library:'
       DragMode = dmAutomatic
@@ -71,7 +71,7 @@ object MainDlg: TMainDlg
       Padding.Right = 2
       Padding.Bottom = 2
       TabOrder = 0
-      ExplicitHeight = 471
+      ExplicitHeight = 511
       object Image2: TImage
         Left = 120
         Top = 240
@@ -112,7 +112,7 @@ object MainDlg: TMainDlg
         Left = 4
         Top = 17
         Width = 211
-        Height = 447
+        Height = 487
         Align = alClient
         Columns = <
           item
@@ -143,12 +143,12 @@ object MainDlg: TMainDlg
         OnDragDrop = ListView1DragDrop
         OnDragOver = ListView1DragOver
         OnKeyDown = ListView1KeyDown
-        ExplicitHeight = 450
+        ExplicitHeight = 490
       end
     end
     object GroupBox1: TGroupBox
       Left = 3
-      Top = 474
+      Top = 514
       Width = 219
       Height = 176
       Align = alBottom
@@ -159,7 +159,7 @@ object MainDlg: TMainDlg
       Padding.Bottom = 3
       TabOrder = 1
       Visible = False
-      ExplicitTop = 477
+      ExplicitTop = 517
       object ListView2: TListView
         Left = 5
         Top = 42
@@ -335,7 +335,7 @@ object MainDlg: TMainDlg
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 685
+    Top = 725
     Width = 712
     Height = 19
     Panels = <>
@@ -373,12 +373,26 @@ object MainDlg: TMainDlg
         Caption = 'Save library as...'
         OnClick = SaveLibraryas1Click
       end
-      object N3: TMenuItem
+      object N8: TMenuItem
         Caption = '-'
       end
       object Exit1: TMenuItem
         Caption = 'Exit'
         OnClick = Exit1Click
+      end
+    end
+    object Library1: TMenuItem
+      Caption = 'Library'
+      object Exportimages1: TMenuItem
+        Caption = 'Export images...'
+        OnClick = Exportlibrary1Click
+      end
+      object N3: TMenuItem
+        Caption = '-'
+      end
+      object Importlibrary1: TMenuItem
+        Caption = 'Import library...'
+        OnClick = Importlibrary1Click
       end
     end
     object Image1: TMenuItem
@@ -1021,7 +1035,7 @@ object MainDlg: TMainDlg
     Left = 56
     Top = 96
   end
-  object OpenDialog1: TOpenDialog
+  object ODImageList: TOpenDialog
     Filter = 'Andorra Image Library (*.ail)|*.ail|All Files (*.*)|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 24
