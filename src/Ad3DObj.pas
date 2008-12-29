@@ -30,6 +30,9 @@ uses
   AdTypes, AdClasses, AdMath, AdDraws, AdSpline;
 
 type
+  TAdBPatch = array[0..3,0..3] of Word;
+  TAdVectorArray = array of TAdVector3;
+
   {TAdMesh is the base class for 3D objects in Andorra 2D. It wraps around the
    TAd2dMesh interface and allows classes derived from TAdMesh to load their own
    mesh data. It also provides properties that may be used to set the position,
@@ -117,6 +120,24 @@ type
       property Matrix: TAdMatrix read FMatrix write SetMatrix;
   end;
 
+  {A simple plane.}
+  TAdPlaneMesh = class(TAdMesh)
+    private
+      FWidth, FHeight: Single;
+      procedure SetSizeCoeff(AIndex: integer; AValue: single);
+    protected
+      procedure LoadMeshData;override;
+    public
+      constructor Create(AParent: TAdDraw);override;
+
+      {Set this value to change the base width of TAdPlaneMesh. If you want to scale
+       the cube, you should use scale x instead.}      
+      property Width: Single index 0 read FWidth write SetSizeCoeff;
+      {Set this value to change the base height of TAdPlaneMesh. If you want to scale
+       the cube, you should use scale y instead.}      
+      property Height: Single index 1 read FHeight write SetSizeCoeff;
+  end;
+
   {A simple cube.}
   TAdCubeMesh = class(TAdMesh)
     private
@@ -139,22 +160,37 @@ type
       property Depth: single index 2 read FDepth write SetSizeCoeff;
   end;
 
-  {A simple teapot. The teapot patch data is stored inside the exe. The teapot
-   mesh is generated when it is created.}
-  TAdTeapotMesh = class(TAdMesh)
+  TAdConstMesh = class(TAdMesh)
     private
       FDetails: integer;
       procedure SetDetails(AValue: integer);
     protected
-      procedure LoadMeshData;override;
+      procedure LoadConstMesh(AVertices: array of Single; APatches: array of TAdBPatch);  
     public
       {Creates an instance of TAdCubeMesh.}
       constructor Create(AParent: TAdDraw);override;
 
-      {Specifies how many times each teapot patch should be subdivided. The default
+      {Specifies how many times each patch should be subdivided. The default
        value is 16. A higher value may cause the teapot to be displayed incorrectly.
        A lower value reduces the polygon count.}
       property Details: integer read FDetails write SetDetails;
+  end;
+
+  {A simple teapot. The teapot data is stored inside the exe. The teapot
+   is generated when it is created.}
+  TAdTeapotMesh = class(TAdConstMesh)
+    protected
+      procedure LoadMeshData;override;
+  end;
+
+  TAdTeacupMesh = class(TAdConstMesh)
+    protected
+      procedure LoadMeshData;override;
+  end;
+
+  TAdTeaspoonMesh = class(TAdConstMesh)
+    protected
+      procedure LoadMeshData;override;
   end;
 
 
@@ -349,11 +385,11 @@ begin
   vert[0].Position := AdVector3(-hx, -hy, -hz);
   vert[0].Texture := AdVector2(0, 0);
   vert[0].Normal := AdVector3(0, 0, -1);
-  
+
   vert[1].Position := AdVector3( hx, -hy, -hz);
   vert[1].Texture := AdVector2(1, 0);
   vert[1].Normal := AdVector3(0, 0, -1);
-  
+
   vert[2].Position := AdVector3(-hx,  hy, -hz);
   vert[2].Texture := AdVector2(0, 1);
   vert[2].Normal := AdVector3(0, 0, -1);
@@ -516,14 +552,6 @@ begin
   LoadMeshData;
 end;
 
-{ TAdTeapotMesh }
-
-type
-  TAdBPatch = array[0..3,0..3] of Word;
-  TAdVectorArray = array of TAdVector3;
-
-{$I teapot.inc}
-
 function VectorLength(const AVec: TAdVector3): Single;
 begin
   result := sqrt(sqr(AVec.x) + sqr(AVec.y) + sqr(AVec.z));
@@ -621,8 +649,8 @@ procedure Tesselate_BPatch(
   ADetails: integer);
 var
   i, j, m: integer;
-  hor_splines: array[0..3] of TAdCubicSpline;
-  vert_splines: array of TAdCubicSpline;
+  hor_splines: array[0..3] of TAdBezierSpline;
+  vert_splines: array of TAdBezierSpline;
   pntsx: array[0..3] of TAdFloatArray;
   pntsy: array[0..3] of TAdFloatArray;
   pntsz: array[0..3] of TAdFloatArray;
@@ -646,7 +674,7 @@ begin
 
   //Create four splines
   for i := 0 to 3 do
-    hor_splines[i] := TAdCubicSpline.Create(pntsx[i], pntsy[i], pntsz[i], 4);
+    hor_splines[i] := TAdBezierSpline.Create(pntsx[i], pntsy[i], pntsz[i], 4);
 
   //Calculate the vertical splines
   SetLength(vert_splines, ADetails + 1);
@@ -660,7 +688,7 @@ begin
     for j := 0 to 3 do
       hor_splines[j].SplineXYZ(3 * (i / ADetails), pntx[j], pnty[j], pntz[j]);
       
-    vert_splines[i] := TAdCubicSpline.Create(pntx, pnty, pntz, 4);
+    vert_splines[i] := TAdBezierSpline.Create(pntx, pnty, pntz, 4);
   end;
 
   //Calculate the points and add them to the position output buffer
@@ -702,14 +730,17 @@ begin
     vert_splines[i].Free;
 end;
 
-constructor TAdTeapotMesh.Create(AParent: TAdDraw);
+{ TAdConstMesh }
+
+constructor TAdConstMesh.Create(AParent: TAdDraw);
 begin
   FDetails := 16;
 
   inherited;
 end;
 
-procedure TAdTeapotMesh.LoadMeshData;
+procedure TAdConstMesh.LoadConstMesh(AVertices: array of Single;
+  APatches: array of TAdBPatch);
 var
   indices: TAdIndexArray;
   vertices: TAdVertexArray;
@@ -723,7 +754,7 @@ var
   ppp: integer; //primitives per patch
 begin
   //Store the count of patches in the patches variable
-  patches := Length(teapot_indices);
+  patches := Length(APatches);
 
   //Calculate the count of vertices per patch
   vpp := sqr(FDetails+1);
@@ -740,14 +771,14 @@ begin
 
   //Reserve memory for the source vertex buffer. All vertices are copied into this
   //buffer in the next step
-  SetLength(src_vertices, Length(teapot_vertices) div 3);
+  SetLength(src_vertices, Length(AVertices) div 3);
 
   //Copy all vertices to the source vertex buffer.
-  for i := 0 to Length(teapot_vertices) div 3 - 1 do
+  for i := 0 to Length(AVertices) div 3 - 1 do
     src_vertices[i] := AdVector3(
-      teapot_vertices[i*3+0],
-      teapot_vertices[i*3+1],
-      teapot_vertices[i*3+2]
+      AVertices[i*3+0],
+      AVertices[i*3+1],
+      AVertices[i*3+2]
     );
 
   //Reserve memory for the output vertex buffer
@@ -762,7 +793,7 @@ begin
   begin
     //Tesselate each patch and store the results in the "tmp_vertices" and "tmp_indices"
     //variables
-    Tesselate_BPatch(tmp_vertices, tmp_indices, src_vertices, teapot_indices[i], FDetails);
+    Tesselate_BPatch(tmp_vertices, tmp_indices, src_vertices, APatches[i], FDetails);
 
     //Add the results to the indexbuffer
     for j := 0 to High(tmp_indices) do
@@ -800,9 +831,86 @@ begin
   Mesh.Update;
 end;
 
-procedure TAdTeapotMesh.SetDetails(AValue: integer);
+procedure TAdConstMesh.SetDetails(AValue: integer);
 begin
   FDetails := AValue;
+
+  LoadMeshData;
+end;
+
+{ TAdTeapotMesh }
+
+{$I teapot.inc}
+
+procedure TAdTeapotMesh.LoadMeshData;
+begin
+  LoadConstMesh(teapot_vertices, teapot_indices);
+end;
+
+{ TAdTeacupMesh }
+
+{$I teacup.inc}
+
+procedure TAdTeacupMesh.LoadMeshData;
+begin
+  LoadConstMesh(teacup_vertices, teacup_indices);
+end;
+
+{ TAdTeaspoonMesh }
+
+{$I teaspoon.inc}
+
+procedure TAdTeaspoonMesh.LoadMeshData;
+begin
+  LoadConstMesh(teaspoon_vertices, teaspoon_indices);
+end;
+
+{ TAdPlaneMesh }
+
+constructor TAdPlaneMesh.Create(AParent: TAdDraw);
+begin
+  FWidth := 100;
+  FHeight := 100;
+
+  inherited;
+
+  DrawMode := adTriangleStrips;
+end;
+
+procedure TAdPlaneMesh.LoadMeshData;
+var
+  vertices: TAdVertexArray;
+  i: integer;
+begin
+  SetLength(vertices, 4);
+
+  vertices[0].Position := AdVector3(- FWidth / 2, - FHeight / 2, 0);
+  vertices[0].Texture := AdVector2(0, 0);
+  vertices[1].Position := AdVector3(  FWidth / 2, - FHeight / 2, 0);
+  vertices[1].Texture := AdVector2(1, 0);
+  vertices[2].Position := AdVector3(- FWidth / 2,   FHeight / 2, 0);
+  vertices[2].Texture := AdVector2(0, 1);
+  vertices[3].Position := AdVector3(  FWidth / 2,   FHeight / 2, 0);
+  vertices[3].Texture := AdVector2(1, 1);
+
+  for i := 0 to 3 do
+  begin
+    vertices[i].Color := Ad_ARGB(255, 255, 255, 255);
+    vertices[i].Normal := AdVector3(0, 0, -1);
+  end;
+
+  Mesh.Vertices := vertices;
+  Mesh.Indices := nil;
+  Mesh.PrimitiveCount := 2;
+  Mesh.Update;
+end;
+
+procedure TAdPlaneMesh.SetSizeCoeff(AIndex: integer; AValue: single);
+begin
+  case AIndex of
+    0: FWidth := AValue;
+    1: FHeight := AValue;
+  end;
 
   LoadMeshData;
 end;

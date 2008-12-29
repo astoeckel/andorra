@@ -218,7 +218,11 @@ type
 
       {Returns one sprite at the specified position}
       function GetSpriteAt(X,Y:integer):TSprite;virtual;
-      
+      {Returns all sprites at the specified position and of a specified type}
+      procedure GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList;
+        AClass : TSpriteClass); overload; virtual;
+      procedure GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList);overload;virtual;
+     
       {Returns a rect which contains the relative coordinates (relative to the
        screen) of the sprite.}
       property BoundsRect:TAdRect read GetBoundsRect;
@@ -606,6 +610,33 @@ begin
       result := Items[i];
       break;
     end;    
+  end;
+end;
+
+procedure TSprite.GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList);
+begin
+  GetSpritesAt(AX, AY, ASprites, TSprite);
+end;
+
+procedure TSprite.GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList;
+  AClass: TSpriteClass);
+var
+  i: Integer;
+  Rect : TAdRect;
+begin
+  if Assigned(ASprites) then
+  begin
+    ASprites.Clear; // Standard ?
+    for i := 0 to Items.Count - 1 do
+    begin
+      Rect := Items[i].BoundsRect;
+      if (AX >= Rect.Left) and (AX <= Rect.Right) and
+         (AY >= Rect.Top) and (AY <= Rect.Bottom) and
+         (Items[i] is AClass) then
+      begin
+        ASprites.Add(Items[i]);
+      end;
+    end;
   end;
 end;
 

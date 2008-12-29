@@ -22,7 +22,7 @@ located at http://jcl.sourceforge.net
 
 Known Issues: This component does not parse the !DOCTYPE tags but preserves them
 -----------------------------------------------------------------------------}
-// $Id: AdSimpleXML.pas,v 1.15 2008/12/24 11:06:32 igel457 Exp $
+// $Id: AdSimpleXML.pas,v 1.16 2008/12/29 14:03:16 igel457 Exp $
 
 //****IMPORTANT****
 //
@@ -736,7 +736,7 @@ var
   b: Byte;
 begin
   result := 0;
-  for i := 0 to BufSize - 1 do
+  for i := 1 to BufSize do
   begin
     b := Ord(Buf[i]);
     Stream.Write(b, 1);

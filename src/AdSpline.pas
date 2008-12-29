@@ -31,38 +31,56 @@ uses
   AdTypes;
 
 type
-   TAdCubicSplineMatrix = array of array [0..3] of Single;
+  TAdSpline = class(TObject)
+    public
+      {Creates the spline and declares interpolation points.
+       Time references go from 0 (first point) to nb-1 (last point), the
+       first and last reference matrices respectively are used when T is
+       used beyond this range.
+       Note : "nil" single arrays are accepted, in this case the axis is
+       disabled and calculus will return 0 (zero) for this component. }
+      constructor Create(const X, Y, Z: TAdFloatArray; const nb: integer);virtual;
 
-   {TCubic Spline is a 3D cubic spline handler class.
-    This class allows to describe and calculate values of a time-based,
-    three-dimensionnal cubic spline.
-    Cubic spline pass through all given points and tangent on point N is
-    given by the (N-1) to (N+1) vector.
-    Note : X, Y & Z are actually interpolated independently. }
-   TAdCubicSpline = class (TObject)
-   private
-     matX, matY, matZ: TAdCubicSplineMatrix;
-     FNb : Integer;
-   public
-     {Creates the spline and declares interpolation points.
-      Time references go from 0 (first point) to nb-1 (last point), the
-      first and last reference matrices respectively are used when T is
-      used beyond this range.
-      Note : "nil" single arrays are accepted, in this case the axis is
-      disabled and calculus will return 0 (zero) for this component. }
-     constructor Create(const X, Y, Z: TAdFloatArray; const nb : Integer); {$ifdef CLR}unsafe;{$endif}
-     destructor Destroy; override;
+      procedure SplineXY(const t: single; var X, Y: Single);virtual;abstract;
+      procedure SplineXYZ(const t: single; var X, Y, Z: Single);virtual;abstract;
+  end;
 
-     {Calculates X component at time t.}
-     function SplineX(const t : Single): Single;
-     {Calculates Y component at time t.}
-     function SplineY(const t : single): Single;
-     {Calculates Z component at time t.}
-     function SplineZ(const t : single): Single;
-     {Calculates X and Y components at time t.}
-     procedure SplineXY(const t : single; var X, Y : Single);
-     {Calculates X, Y and Z components at time t.}
-     procedure SplineXYZ(const t : single; var X, Y, Z : Single);
+  TAdCubicSplineMatrix = array of array [0..3] of Single;
+
+  {TAdCubicSpline is a 3D cubic spline handler class.
+   This class allows to describe and calculate values of a time-based,
+   three-dimensionnal cubic spline.
+   Cubic spline pass through all given points and tangent on point N is
+   given by the (N-1) to (N+1) vector.
+   Note : X, Y & Z are actually interpolated independently. }
+  TAdCubicSpline = class (TAdSpline)
+    private
+      matX, matY, matZ: TAdCubicSplineMatrix;
+      FNb : Integer;
+    public
+      {Creates the spline and declares interpolation points.
+       Time references go from 0 (first point) to nb-1 (last point), the
+       first and last reference matrices respectively are used when T is
+       used beyond this range.
+       Note : "nil" single arrays are accepted, in this case the axis is
+       disabled and calculus will return 0 (zero) for this component. }
+      constructor Create(const X, Y, Z: TAdFloatArray; const nb : Integer);override;
+      destructor Destroy; override;
+
+      procedure SplineXY(const t: single; var X, Y: Single);override;
+      procedure SplineXYZ(const t: single; var X, Y, Z: Single);override;
+  end;
+
+  TAdBezierSpline = class(TAdSpline)
+    private
+      FX, FY, FZ: TAdFloatArray;
+      Fnb: Integer;
+      function BaseFunction(t: Single; n: Integer): Single;
+    public
+      constructor Create(const X, Y, Z: TAdFloatArray; const nb : Integer);override;
+
+      procedure SplineXY(const t: single; var X, Y: Single);override;
+      procedure SplineXYZ(const t: single; var X, Y, Z: Single);override;
    end;
 
 implementation
@@ -146,11 +164,11 @@ begin
    end else Result:=0;
 end;
 
-{ TCubicSpline }
+{ TAdCubicSpline }
 
 constructor TAdCubicSpline.Create(const X, Y, Z: TAdFloatArray; const nb : Integer); {$ifdef CLR}unsafe;{$endif}
 begin
-   inherited Create;
+   inherited;
    MATInterpolationHermite(X, nb, matX);
    MATInterpolationHermite(Y, nb, matY);
    MATInterpolationHermite(Z, nb, matZ);
@@ -162,33 +180,89 @@ begin
    inherited Destroy;
 end;
 
-function TAdCubicSpline.SplineX(const t : single): Single;
+procedure TAdCubicSpline.SplineXY(const t: single; var X, Y: Single);
 begin
-   Result:=MATValeurSpline(MatX, t, FNb);
+   X := MATValeurSpline(MatX, T, FNb);
+   Y := MATValeurSpline(MatY, T, FNb);
 end;
 
-function TAdCubicSpline.SplineY(const t : single): Single;
+procedure TAdCubicSpline.SplineXYZ(const t : single; var X, Y, Z: Single);
 begin
-   Result:=MATValeurSpline(MatY, t, FNb);
+   X := MATValeurSpline(MatX, T, FNb);
+   Y := MATValeurSpline(MatY, T, FNb);
+   Z := MATValeurSpline(MatZ, T, FNb);
 end;
 
-function TAdCubicSpline.SplineZ(const t : single): Single;
+
+{ TAdSpline }
+
+constructor TAdSpline.Create(const X, Y, Z: TAdFloatArray; const nb: integer);
 begin
-   Result:=MATValeurSpline(MatZ, t, FNb);
+  inherited Create;
 end;
 
-procedure TAdCubicSpline.SplineXY(const t : single; var X, Y : Single);
+{ TAdBezierSpline }
+
+constructor TAdBezierSpline.Create(const X, Y, Z: TAdFloatArray;
+  const nb: Integer);
 begin
-   X:=MATValeurSpline(MatX, T, FNb);
-   Y:=MATValeurSpline(MatY, T, FNb);
+  inherited;
+
+  if X <> nil then  
+    FX := Copy(X, 0, nb);
+  if Y <> nil then
+    FY := Copy(Y, 0, nb);
+  if z <> nil then
+    FZ := Copy(Z, 0, nb);
+
+  Fnb := nb;
 end;
 
-procedure TAdCubicSpline.SplineXYZ(const t : single; var X, Y, Z : Single);
+function TAdBezierSpline.baseFunction(t: Single; n: Integer): Single;
 begin
-   X:=MATValeurSpline(MatX, T, FNb);
-   Y:=MATValeurSpline(MatY, T, FNb);
-   Z:=MATValeurSpline(MatZ, T, FNb);
+  case n of
+    0:
+      result := (1 - t) * (1 - t) * (1 - t);
+    1:
+      result := 3 * t * (1 - t) * (1 - t);
+    2:
+      result := 3 * t * t * (1 - t);
+    3:
+      result := t * t * t;
+  else
+    result := 0;
+  end;
 end;
 
+procedure TAdBezierSpline.SplineXY(const t: single; var X, Y: Single);
+var
+  bfv: Single;
+  i: integer;
+begin
+  X := 0; Y := 0;
+  for i := 0 to 3 do
+  begin
+    bfv := baseFunction(t / 3, i);
+    X := X + FX[i] * bfv;
+    Y := Y + FY[i] * bfv;
+  end;
+end;
+
+
+procedure TAdBezierSpline.SplineXYZ(const t : single; var X, Y, Z: Single);
+var
+  bfv: Single;
+  i: integer;
+begin
+  X := 0; Y := 0; Z := 0;
+  for i := 0 to 3 do
+  begin
+    bfv := baseFunction(t / 3, i);
+    X := X + FX[i] * bfv;
+    Y := Y + FY[i] * bfv;
+    Z := Z + FZ[i] * bfv;
+  end;
+end;
 
 end.
+

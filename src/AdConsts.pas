@@ -782,7 +782,7 @@ const
     Ambient: (r: 0; g: 0; b: 32; a: 255);
     Specular: (r: 128; g: 128; b: 255; a: 255);
     Emissive: (r: 0; g: 0; b: 0; a: 255);
-    Power: 40;
+    Power: 20;
   );
 
   //Green plastic
@@ -791,7 +791,7 @@ const
     Ambient: (r: 0; g: 32; b: 0; a: 255);
     Specular: (r: 128; g: 255; b: 128; a: 255);
     Emissive: (r: 0; g: 0; b: 0; a: 255);
-    Power: 40;
+    Power: 20;
   );
 
   //Red plastic

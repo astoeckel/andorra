@@ -695,21 +695,21 @@ end;
 function TAdButton.DoMouseDown(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
-  inherited DoMouseDown(Button,Shift,X,Y);
-
   if Button = abLeft then
     FState := bsDown;
 
   GetStateNr;
-  result := true;
+
+  result := inherited DoMouseDown(Button,Shift,X,Y);
 end;
 
 function TAdButton.DoMouseEnter:boolean;
 begin
-  inherited DoMouseEnter;
   FState := bsHover;
   GetStateNr;
   result := true;
+
+  inherited DoMouseEnter;
 end;
 
 function TAdButton.DoMouseLeave:boolean;
@@ -730,11 +730,11 @@ end;
 function TAdButton.DoMouseUp(Button: TAdMouseButton; Shift: TAdShiftState; X,
   Y: Integer):boolean;
 begin
-  inherited DoMouseUp(Button,Shift,X,Y);
-  result := true;
   FState := bsHover;
   SetFocused;
   GetStateNr;
+
+  result := inherited DoMouseUp(Button,Shift,X,Y);
 end;
 
 procedure TAdButton.LoadSkinItem;

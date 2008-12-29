@@ -2757,7 +2757,7 @@ begin
   inherited Create;
   FDraw := ADraw;
 
-  FNearZ := 100;
+  FNearZ := 10;
   FFarZ := -100;
   FAmbientColor := Ad_ARGB(255, 255, 255, 255);
 end;

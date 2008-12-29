@@ -14,7 +14,7 @@ http://www.delphigl.com/
 
 Compressors and additional file formats:
 ----------------------------------------
-If you want to use the AdPng.pas for highly compressed graphics, you'll need to download the PNG Delphi library (http://pngdelphi.sourceforge.net). 
+If you want to use the AdPng.pas for highly compressed graphics, you'll need to download the PNG Delphi library (http://pngdelphi.sourceforge.net).
 
 
 If you have any questions, feel free to write an e-mail to:

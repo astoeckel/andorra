@@ -30,11 +30,13 @@ type
       AdDraw: TAdDraw;
       AdMesh: TAdMesh;
       AdLight: TAd2dLight;
+      AdTexture: TAdTexture;
 
       FMX, FMY: integer;
       FMouseDown: boolean;
       FMatIndex: integer;
-      dx, dy: single;
+      dx, dy: Single;
+      tz: Single;
 
       procedure SlowDownRotation;
 
@@ -45,6 +47,8 @@ type
       procedure MouseUp(Sender: TObject; Button: TAdMouseButton;
         Shift: TAdShiftState; X, Y: integer);
       procedure KeyPress(Sender: TObject; Key: Char);
+      procedure MouseWheel(Sender: TObject; Shift: TAdShiftState;
+    WheelDelta: integer; X, Y: integer);
       procedure SetMaterial;
     public
       procedure Run;
@@ -90,10 +94,16 @@ begin
       AdDraw.Window.Events.OnMouseDown := MouseDown;
       AdDraw.Window.Events.OnMouseUp := MouseUp;
       AdDraw.Window.Events.OnKeyPress := KeyPress;
+      AdDraw.Window.Events.OnMouseWheel := MouseWheel;
       AdDraw.Window.Title := 'Andorra 2D Simple 3D';
 
+      AdTexture := TAdTexture.Create(AdDraw);
+      AdTexture.LoadGraphicFromFile(path + 'normalmap.png');
+      AdTexture.Filter := atAnisotropic;
+
       //Create a new "Teapot-Mesh"
-      AdMesh := TAdTeapotMesh.Create(AdDraw);
+      AdMesh := TAdPlaneMesh.Create(AdDraw);
+      AdMesh.Texture := AdTexture;
 
       //Set the material of the teapot
       FMatIndex := -1;
@@ -120,6 +130,7 @@ begin
       AdDraw.Run;
 
       //Free all created objects
+      AdTexture.Free;
       AdLight.Free;
       AdMesh.Free;
       AdPerCounter.Free;
@@ -151,9 +162,9 @@ begin
 
     //Switch to the 3D mode
     AdDraw.Scene.Setup3DScene(800, 600,
-      AdVector3(0, 0, -200),
+      AdVector3(0, 0, -200 + tz),
       AdVector3(0, 0, 0),
-      AdVector3(0, -1 , 0));    
+      AdVector3(0, -1 , 0));
 
     //Activate the ZBuffer on to prevent the graphic engine from producing graphic
     //problems
@@ -226,6 +237,12 @@ procedure TAdAppl.MouseUp(Sender: TObject; Button: TAdMouseButton;
   Shift: TAdShiftState; X, Y: integer);
 begin
   FMouseDown := FMouseDown and not (Button = abLeft);
+end;
+
+procedure TAdAppl.MouseWheel(Sender: TObject; Shift: TAdShiftState; WheelDelta,
+  X, Y: integer);
+begin
+  tz := tz + WheelDelta * 0.01;
 end;
 
 procedure TAdAppl.SetMaterial;

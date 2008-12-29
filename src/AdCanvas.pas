@@ -2918,8 +2918,8 @@ var
   x, y: TAdFloatArray;
   cols: array of TAndorraColor;
   i, j, itstart, itstop, splstart, splcount, dist, c: integer;
-  xp, yp: single;
-  t, cp, step: single;
+  xp, yp: Single;
+  t, cp, step: Single;
   APen: TAdPen;
   ABrush: TAdBrush;
   lp: TAdLinePoint;
@@ -3006,8 +3006,7 @@ begin
   itstop := 0;
   splstart := 0;
   splcount := 0;
-  xp := 0;
-  yp := 0;
+  xp := 0; yp := 0;
   while Range(itstart, 0, FPoints.Count - 1, 20, 5, itstart, itstop, splstart, splcount) do
   begin
     spline := TAdCubicSpline.Create(

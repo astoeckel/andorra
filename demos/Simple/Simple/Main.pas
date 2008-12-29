@@ -16,7 +16,7 @@ interface
 
 uses
   Dialogs, SysUtils, Forms, Types, Classes, 
-  AdPNG, AdDraws, AdClasses, AdPerformanceCounter, AdSetupDlg, AdConsts;
+  AdPNG, AdDraws, AdClasses, AdPerformanceCounter, AdSetupDlg, AdConsts, AdTypes;
 
 type
   TForm1 = class(TForm)
@@ -96,11 +96,11 @@ begin
     
     //Clear the surface of the TAdDraw with black color. You may also use delphi
     //colors here
-    AdDraw.ClearSurface(AdCol24_Black);
+    AdDraw.ClearSurface(AdCol24_Blue);
 
     AdDraw.BeginScene;
 
-    //Place all your drawing code between theese two lines
+    //Place all your drawing code between these two lines
 
     AdDraw.EndScene;
 
