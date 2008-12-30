@@ -257,6 +257,7 @@ type
       FDecoder: TAdMediaDecoder;
       FMediaHandlers: TList;
       FCriticalSection: TCriticalSection;
+      FPaused: boolean;
     protected
       procedure Execute;override;
     public
@@ -273,6 +274,11 @@ type
       {Flushs the buffers of the decoder and all reigstered media handlers. This function
        is for the seek and stop functionality.}
       procedure FlushBuffers;
+      {Pauses decoding.}
+      procedure Pause;
+      {Resumes decocding.}
+      procedure Play;
+
       
       {A list of all registered media handlers. Use the critical section property
        to synchronize access on this property.}
@@ -787,7 +793,7 @@ begin
   begin
     //Pause video decoder thread
     if DecoderThread <> nil then
-      FDecoderThread.Suspend;
+      FDecoderThread.Pause;
       
     FState := vpPaused;
     DoPause;
@@ -803,7 +809,7 @@ begin
 
     //Resume video decoder
     if DecoderThread <> nil then
-      DecoderThread.Resume;
+      DecoderThread.Play;
 
     DoPlay;
   end;
@@ -922,6 +928,7 @@ begin
   FCriticalSection := TCriticalSection.Create;
   FMediaHandlers := TList.Create;
   FDecoder := ADecoder;
+  FPaused := false;
 
   //Start the thread
   Resume;
@@ -949,25 +956,28 @@ begin
       //Search for a media handler that needs new buffer data
       needframe := false;
 
-      FCriticalSection.Enter;
-      try
-        for i := 0 to FMediaHandlers.Count - 1 do
-          if TAdMediaHandler(FMediaHandlers[i]).NeedsData then
-          begin
-            //At least one decoder needs new decoded data.
-            needframe := true;
-            break;
-          end;
+      if not FPaused then
+      begin
+        FCriticalSection.Enter;
+        try
+          for i := 0 to FMediaHandlers.Count - 1 do
+            if TAdMediaHandler(FMediaHandlers[i]).NeedsData then
+            begin
+              //At least one decoder needs new decoded data.
+              needframe := true;
+              break;
+            end;
 
-        for i := 0 to FMediaHandlers.Count - 1 do
-          if TAdMediaHandler(FMediaHandlers[i]).Overflow then
-          begin
-            //At least one decoder is flooded with data!
-            needframe := false;
-            break;
-          end;
-      finally
-        FCriticalSection.Leave;
+          for i := 0 to FMediaHandlers.Count - 1 do
+            if TAdMediaHandler(FMediaHandlers[i]).Overflow then
+            begin
+              //At least one decoder is flooded with data!
+              needframe := false;
+              break;
+            end;
+        finally
+          FCriticalSection.Leave;
+        end;
       end;
 
       //If a frame is needed, decode a new one - else sleep a while
@@ -1016,6 +1026,16 @@ begin
   finally
     FCriticalSection.Leave;
   end;
+end;
+
+procedure TAdMediaDecoderThread.Pause;
+begin
+  FPaused := true;
+end;
+
+procedure TAdMediaDecoderThread.Play;
+begin
+  FPaused := false;
 end;
 
 procedure TAdMediaDecoderThread.RegisterMediaHandler(AHandler: TAdMediaHandler);
