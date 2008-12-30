@@ -31,6 +31,7 @@ type
     AdPerCounter:TAdPerformanceCounter;
     AdPartSys:TAdParticleSystem;
     AdImageList:TAdImageList;
+    AdDefaultParticle: TAdBillboardParticle;
     MouseX,MouseY:integer;
     procedure Idle(Sender:TObject;var Done:boolean);
     { Public-Deklarationen }
@@ -85,8 +86,19 @@ begin
       
       //Create the particle system
       AdPartSys := TAdParticleSystem.Create(AdDraw);
+
       //Load the texture image
       AdPartSys.Texture := AdImageList.Items[0].Texture;
+      
+      AdDefaultParticle := TAdBillboardParticle.Create(AdPartSys);
+      AdPartSys.DefaultParticle := AdDefaultParticle;
+
+      with AdDefaultParticle do
+      begin
+        Size.Start := 1;
+        Size.Stop := 0;
+        Size.Variation := 0.5;
+      end;
 
       //Setup the particle system color gradient
       AdPartSys.Colors.Clear;
@@ -109,6 +121,7 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   AdPartSys.Free;
+  AdDefaultParticle.Free;
   AdImageList.Free;
   AdPerCounter.Free;
   AdDraw.Free;
