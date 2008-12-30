@@ -20,6 +20,9 @@ interface
 {$ENDIF}
 
 uses
+  {$IFDEF UNIX}
+  cthreads,
+  {$ENDIF}
   SysUtils, Dialogs, AdStdWindow, AdDraws, AdPNG,
   AdClasses, AdTypes, AdPerformanceCounter, AdVideo,
   AdGUI, AdComponents, AdGUIConnector, AdSetupDlg,

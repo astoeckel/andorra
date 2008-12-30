@@ -97,7 +97,7 @@ begin
       AdDraw.Window.Title := 'Andorra 2D Simple 3D';
 
       //Create a new "Teapot-Mesh"
-      AdMesh := TAdCubeMesh.Create(AdDraw);
+      AdMesh := TAdTeapotMesh.Create(AdDraw);
 
       //Set the material of the teapot
       FMatIndex := -1;

@@ -128,6 +128,7 @@ type
     protected
       procedure LoadMeshData;override;
     public
+      {Creates an instance of TAdPlaneMesh.}
       constructor Create(AParent: TAdDraw);override;
 
       {Set this value to change the base width of TAdPlaneMesh. If you want to scale

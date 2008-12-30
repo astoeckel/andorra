@@ -86,6 +86,9 @@ begin
 end;
 
 procedure TAdAcinerellaDecoder.GetPacket(var APacket: TAdMediaPacket);
+var
+  p: PCardinal;
+  i: Integer;
 begin
   //Copy frame information data into the media file
   if pLastDecoder <> nil then
@@ -102,6 +105,14 @@ begin
     //Set stream type specific information
     if APacket.StreamType = amVideo then
     begin
+      //Set the alpha channel
+      p := PCardinal(pLastDecoder^.buffer);
+      for i := 0 to (pLastDecoder^.buffer_size div 4) - 1 do
+      begin
+        p^ := p^ or $FF000000;
+        inc(p);
+      end;
+
       //Set packet video info
       with PAdVideoInfo(@APacket.Info)^ do
       begin
