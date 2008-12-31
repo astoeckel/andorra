@@ -96,7 +96,7 @@ begin
     
     //Clear the surface of the TAdDraw with black color. You may also use delphi
     //colors here
-    AdDraw.ClearSurface(AdCol24_Blue);
+    AdDraw.ClearSurface(AdCol24_White);
 
     AdDraw.BeginScene;
 

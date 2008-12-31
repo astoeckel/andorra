@@ -1837,9 +1837,9 @@ begin
       pnts[High(pnts)].X, pnts[High(pnts)].Y,
       Pen.Width);
 
-    Vertices[v].Color := pnts[i].Color;
+    Vertices[v].Color := pnts[High(pnts)].Color;
     Vertices[v].Position := AdVector3(quad.p[2].x, quad.p[2].y, 0); inc(v);
-    Vertices[v].Color := pnts[i].Color;
+    Vertices[v].Color :=  pnts[High(pnts)].Color;
     Vertices[v].Position := AdVector3(quad.p[3].x, quad.p[3].y, 0); inc(v);
 
     SetLength(Vertices, v);
