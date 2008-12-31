@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+  <PersonalityInfo>
+    <Option>
+      <Option Name="Personality">Default.Personality</Option>
+      <Option Name="ProjectType"></Option>
+      <Option Name="Version">1.0</Option>
+      <Option Name="GUID">{96AD7734-D5AE-4342-A1F1-24C7F9B41040}</Option>
+    </Option>
+  </PersonalityInfo>
+  <Default.Personality>
+    
+    <Projects>
+      <Projects Name="GUIEdit.exe">GUI Edit\GUIEdit.bdsproj</Projects>
+      <Projects Name="ImgEdit.exe">ImageListEditor\ImgEdit.bdsproj</Projects>
+      <Projects Name="PartEd.exe">ParticleEditor\PartEd.bdsproj</Projects>
+      <Projects Name="SkinEd.exe">SkinEditor\SkinEd.bdsproj</Projects>
+      <Projects Name="Targets">GUIEdit.exe ImgEdit.exe PartEd.exe SkinEd.exe</Projects>
+    </Projects>
+    <Dependencies/>
+  </Default.Personality>
+</BorlandProject>

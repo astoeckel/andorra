@@ -218,7 +218,7 @@ var
   chars: TAdVeryShortString;
 begin
   //Reserve some memory to store a upside down version of the bitmap in it
-  mem := nil;
+  {$IFDEF FPC}mem := nil;{$ENDIF}
   GetMem(mem, ABitmap.Size);
   
   //Turn image upside down
