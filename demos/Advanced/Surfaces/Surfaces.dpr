@@ -1,13 +1,10 @@
 program Surfaces;
 
 //Set a icon for the application when using windows
-{$IFDEF WIN32}
-  {$R '..\..\icon.res' '..\..\icon.rc'}
-{$ENDIF}
 
 uses
   SysUtils,
-  Main in 'Main.pas';
+  Main in 'Main.pas'{$IFDEF FPC}, LazOpenGLContext{$ENDIF};
 
 var
   appl: TAdAppl;
