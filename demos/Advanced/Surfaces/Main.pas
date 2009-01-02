@@ -8,7 +8,7 @@ interface
 
 uses
   AdSetupDlg, AdDraws, AdClasses, AdPerformanceCounter, AdTypes, AdCanvas,
-  AdStdWindow, AdEvents, {$IFNDEF FPC}AdPNG{$ENDIF};
+  AdStdWindow, AdEvents{$IFNDEF FPC}, AdPNG{$ENDIF};
 
 type
   TAdAppl = class
