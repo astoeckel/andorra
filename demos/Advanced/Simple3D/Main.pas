@@ -56,6 +56,13 @@ type
 const
   path = './resources/';
 
+  //utf-8 failure of lazarus ):
+  {$IFDEF FPC}
+  degree = ' degrees';
+  {$ELSE}
+  degree = '°';
+  {$ENDIF}
+
 implementation
 
 uses AdCanvas;
@@ -68,7 +75,7 @@ var
   data: TAd2dLightData;
 begin
   //Only for debuging - you can remove this line
-  ReportMemoryLeaksOnShutdown := true;
+  //ReportMemoryLeaksOnShutdown := true;
 
   //Crate the main surface.
   AdDraw := TAdDraw.Create(nil);
@@ -183,8 +190,9 @@ begin
     with AdDraw.Canvas do
     begin
       TextOut(0, 0, 'FPS: ' + inttostr(AdPerCounter.FPS));
-      TextOut(0, 16, 'Rotation X: ' + inttostr(Round(AdMesh.RotationX * 180 / PI) mod 360) + '°');
-      TextOut(0, 32, 'Rotation Y: ' + inttostr(Round(AdMesh.RotationY * 180 / PI) mod 360) + '°');
+
+      TextOut(0, 16, 'Rotation X: ' + inttostr(Round(AdMesh.RotationX * 180 / PI) mod 360) + degree);
+      TextOut(0, 32, 'Rotation Y: ' + inttostr(Round(AdMesh.RotationY * 180 / PI) mod 360) + degree);
       TextOut(0, 64, 'Press "m" to change the material of the mesh');
       Release;
     end;
