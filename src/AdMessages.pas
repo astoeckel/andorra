@@ -102,6 +102,9 @@ resourcestring
   { Error messages for the bitmap filters }
   MsgCallbackIsNil = 'The dithering callback function is nil.';
 
+  { Sprite engine messages }
+  MsgSpriteListIsNil = 'The given sprite list is nil';
+
 implementation
 
 end.

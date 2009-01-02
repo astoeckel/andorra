@@ -564,11 +564,21 @@ var
 begin
   len := VectorLength(AVec);
 
-  with AVec do
+  if len <> 0 then
   begin
-    x := x / len;
-    y := y / len;
-    z := z / len;
+    with AVec do
+    begin
+      x := x / len;
+      y := y / len;
+      z := z / len;
+    end;
+  end else begin
+    with AVec do
+    begin
+      x := 0;
+      y := 0;
+      z := 0;
+    end;
   end;
 end;
 
