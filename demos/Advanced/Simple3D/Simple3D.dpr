@@ -12,6 +12,11 @@
 }
 program Simple3D;
 
+//Set an icon for the application when using windows
+{$IFDEF WIN32}
+  {$R '..\..\icon.res' '..\..\icon.rc'}
+{$ENDIF}
+
 uses
   SysUtils,
   Main in 'Main.pas'{$IFDEF FPC}, LazOpenGLContext{$ENDIF};

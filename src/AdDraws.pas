@@ -183,6 +183,9 @@ type
        never create an instance of it directly. Use TAdTextureSurface or TAdDraw
        instead.}
       constructor Create(ADraw:TAdDraw);virtual;
+      {Destroys the instance of TAdSurface and unregisters the notify event in
+       parent TAdDraw.}
+      destructor Destroy;override;
 
       {Activates the surface so that graphic operations will affect this surface
        from now on.}
@@ -2896,6 +2899,15 @@ begin
     FDraw := TAdDraw(self)
   else
     AdDraw := ADraw;
+end;
+
+destructor TAdSurface.Destroy;
+begin
+  //Only remove the notify event, if this surface isn't the TAdDraw
+  if (FDraw <> nil) and (FDraw <> self) then
+    FDraw.UnregisterNotifyEvent(Notify);
+
+  inherited Destroy;
 end;
 
 procedure TAdSurface.Activate;

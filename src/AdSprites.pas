@@ -25,7 +25,8 @@ interface
 
 uses 
   SysUtils, Classes, Math,
-  AdBitmap, AdTypes, AdDraws, AdClasses, AdParticles, AdList, AdPixelTest;
+  AdBitmap, AdTypes, AdDraws, AdClasses, AdParticles, AdList, AdPixelTest,
+  AdMessages;
 
 type
   {The sprite engines base class.}
@@ -44,6 +45,10 @@ type
     public
     	{Access on every item in the list.}
       property Items[AIndex:integer]:TSprite read GetItem write SetItem;default;
+      {Returns all sprites, which are at the given position. X and Y are relative
+       screen coordinates.}
+      procedure GetSpritesAt(ASpriteList: TSpriteList; const AX,
+        AY: Integer; const ASpriteClass: TSpriteClass);
       {Adds a sprite to the list and orders it by its Z value}
       procedure Add(ASprite:TSprite);
       {Removes a sprite from the list.}
@@ -71,7 +76,8 @@ type
       function GetCol(X:integer):Integer;
       function GetRow(Y:integer):Integer;
     public
-      {Expands the field.}
+      {Expands the sprite field by X/Y fields. A negative value expands the field
+       in negative direction.}
       procedure Expand(X,Y:integer);
       {Creates the list and initializes all values}
       constructor Create;
@@ -216,11 +222,15 @@ type
       {Optimzes the optimization field}
       procedure Optimize;
 
-      {Returns one sprite at the specified position}
+      {Returns one sprite at the specified position. X and Y are relative
+       screen coordinates.}
       function GetSpriteAt(X,Y:integer):TSprite;virtual;
-      {Returns all sprites at the specified position and of a specified type}
+      {Returns all sprites, which are at the specified position and of the specified type. X and Y are relative
+       screen coordinates.}
       procedure GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList;
         AClass : TSpriteClass); overload; virtual;
+      {Returns all sprites, which are at the specified position and of the specified type. X and Y are relative
+       screen coordinates.}
       procedure GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList);overload;virtual;
      
       {Returns a rect which contains the relative coordinates (relative to the
@@ -500,6 +510,26 @@ begin
   result := TSprite(inherited Items[AIndex]);
 end;
 
+procedure TSpriteList.GetSpritesAt(ASpriteList: TSpriteList; const AX,
+  AY: Integer; const ASpriteClass: TSpriteClass);
+var
+  i : Integer;
+  Rect : TAdRect;
+begin
+  if ASpriteList = nil then
+    raise Exception.Create(MsgSpriteListIsNil);
+
+  for i := 0 to Count - 1 do
+  begin
+    Rect := Items[i].BoundsRect;
+    if InRect(AX, AY, Rect) and
+       (Items[i] is ASpriteClass) then
+    begin
+      ASpriteList.Add(Items[i]);
+    end;
+  end;
+end;
+
 procedure TSpriteList.Remove(ASprite: TSprite);
 begin
   inherited Remove(ASprite);
@@ -621,35 +651,25 @@ end;
 procedure TSprite.GetSpritesAt(const AX, AY: Integer; ASprites: TSpriteList;
   AClass: TSpriteClass);
 var
-  i: Integer;
-  Rect : TAdRect;
+  Field: TSpriteList;
 begin
-  if Assigned(ASprites) then
-  begin
-    ASprites.Clear; // Standard ?
-    for i := 0 to Items.Count - 1 do
-    begin
-      Rect := Items[i].BoundsRect;
-      if (AX >= Rect.Left) and (AX <= Rect.Right) and
-         (AY >= Rect.Top) and (AY <= Rect.Bottom) and
-         (Items[i] is AClass) then
-      begin
-        ASprites.Add(Items[i]);
-      end;
-    end;
+  if CollisionOptimizationTyp = ctNormal then
+    Items.GetSpritesAt(ASprites, AX, AY, AClass)
+  else begin
+    Field := SpriteField.GetItem(
+      round(AX-WorldX) div FGridSize,
+      round(AY-WorldY) div FGridSize);
+    if Field <> nil then
+      Field.GetSpritesAt(ASprites, AX, AY, AClass);
   end;
 end;
 
 function TSprite.GetWorldX: double;
 begin
   if FParent <> nil then
-  begin
-    Result := FParent.WorldX + FX;
-  end
+    Result := FParent.WorldX + FX
   else
-  begin
     Result := FX;
-  end;
 end;
 
 function TSprite.GetWorldY: double;
@@ -1635,7 +1655,7 @@ begin
     //Create TSpriteLists for all new fields
     for i := 0 to High(FDynField) do
     begin
-      for j :=  High(FDynField[i])-abs(y)+1 to High(FDynField[i]) do
+      for j := High(FDynField[i])-abs(y)+1 to High(FDynField[i]) do
       begin
         FDynField[i][j] := TSpriteList.Create;
       end;
@@ -1702,8 +1722,12 @@ function TAd2DSpriteList.GetItem(X, Y: integer): TSpriteList;
 var
   cell:TAdPoint;
 begin
-  cell := GetCell(X,Y);
-  result := FDynField[cell.X,cell.Y];
+  result := nil;
+  if InRect(X, Y, AdRect(FStartX, FStartY, FEndX, FEndY)) then
+  begin
+    cell := GetCell(X,Y);
+    result := FDynField[cell.X,cell.Y];
+  end;
 end;
 
 function TAd2DSpriteList.GetRow(Y: integer): Integer;
@@ -1726,8 +1750,7 @@ var x,y:integer;
     Field1:T2DSpriteListArray;
 begin
   if UnOptimized then
-  begin
-
+  begin 
     //Create a new, tenporary buffer for the organisatrion and the field data
     SetLength(OrgRows,Length(FOrganisationCols));
     SetLength(OrgCols,Length(FOrganisationRows));
@@ -1735,13 +1758,10 @@ begin
 
     //Fill the organisation data
     for x := 0 to high(OrgRows) do
-    begin
       OrgRows[x] := FStartX + x;
-    end;
+
     for x := 0 to high(OrgCols) do
-    begin
       OrgCols[x] := FStartY + x;
-    end;
 
     //Re-Fill the field in optimized order
     for x := 0 to high(Field1) do

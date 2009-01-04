@@ -213,10 +213,21 @@ procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
   p:TAdPoint;
+  lst: TSpriteList;
 begin
   p := AdSpriteEngine.ScreenPointToSpriteCoords(AdPoint(X,Y));
   lx := p.x;
   ly := p.y;
+
+  lst := TSpriteList.Create;
+  AdSpriteEngine.GetSpritesAt(
+    round(lx),
+    round(ly), lst);
+  if lst.Count > 0 then
+  begin
+    lst[0].Dead;
+  end;
+  lst.Free;
 end;
 
 procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
