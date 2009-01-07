@@ -2,9 +2,9 @@
 * This program is licensed under the Common Public License (CPL) Version 1.0
 * You should have recieved a copy of the license with this file.
 * If not, see http://www.opensource.org/licenses/cpl1.0.txt for more informations.
-* 
-* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL. 
-* You also should have recieved a copy of this license with this file. 
+*
+* Inspite of the incompatibility between the Common Public License (CPL) and the GNU General Public License (GPL) you're allowed to use this program * under the GPL.
+* You also should have recieved a copy of this license with this file.
 * If not, see http://www.gnu.org/licenses/gpl.txt for more informations.
 
 * Project: Andorra 2D
@@ -16,6 +16,10 @@
 {Contains a class which allows simple and hardware accelerated collision
  detection.}
 unit AdPixelTest;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
 
 interface
 
@@ -43,7 +47,7 @@ type
   {@exclude}
   PAdCollisionTesterItem = ^TAdCollisionTesterItem;
 
-  {This class can be used to see whether two user-defined objects collide. 
+  {This class can be used to see whether two user-defined objects collide.
    TAdPixelCollisionTester manages its own surfaces where the test objects are
    temporaly drawn at. After sending all test to the class using the
    "CheckCollision" method, the results can be retrieved using the "GetCollisions"
@@ -67,13 +71,13 @@ type
       {Destroys the instance of TAdPixelCollisionTester.}
       destructor Destroy;override;
 
-      {The check collision function performs a collision test between two 
+      {The check collision function performs a collision test between two
        objects. The only thing you need to have, is a callback function that
        draws the objects on the surface to a specific position.
-       @param(AObj1 is only a pointer that may contain user data that is in 
+       @param(AObj1 is only a pointer that may contain user data that is in
          connection with the first collision object.)
        @param(ABoundsRect1 specifies the boundsrect of the first object.)
-       @param(AObj2 is only a pointer that may contain user data that is in 
+       @param(AObj2 is only a pointer that may contain user data that is in
          connection with the second collision object.)
        @param(ABoundsRect2 specifies the boundsrect of the second object.
        @param(ADrawCallback is called when one of the objects should be drawn
@@ -101,7 +105,7 @@ type
        results.}
       property Surface: TAdTextureSurface read FSurface;
       {The parent AdDraw given in the constructor.}
-      property AdDraw: TAdDraw read FDraw;      
+      property AdDraw: TAdDraw read FDraw;
   end;
 
 implementation
@@ -121,7 +125,7 @@ begin
 
   FCollisionObjectList := TAdLinkedList.Create;
 
-  if FDraw.Initialized then  
+  if FDraw.Initialized then
     Initialize;
 end;
 
@@ -131,7 +135,7 @@ begin
   FSurface.Free;
 
   FCollisionObjectList.Free;
-  
+
   inherited;
 end;
 
