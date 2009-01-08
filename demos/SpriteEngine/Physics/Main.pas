@@ -1,10 +1,14 @@
 unit Main;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPng, AdSetupDlg,
+  {$ifndef FPC}Windows, {$ELSE}LCLType, {$ENDIF}Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, AdDraws, AdClasses, AdSprites, AdPhysics, AdPNG, AdSetupDlg,
   AdPerformanceCounter, AdTypes;
 
 type
