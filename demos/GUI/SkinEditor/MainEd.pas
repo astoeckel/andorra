@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, Menus, XPMan, ComCtrls, Tabs, AdSkin, AdDraws,
-  AdClasses, ExtDlgs, AdPng, Buttons, CompDlg;
+  AdClasses, ExtDlgs, AdPNG, Buttons, CompDlg;
 
 type
   TRHandleTyp = (rhLT,rhRT,rhLB,rhRB);

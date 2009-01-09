@@ -16,7 +16,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Dialogs,
-  AdDraws, AdClasses, AdTypes, AdParticles, AdPng, AdSetupDlg, AdPerformanceCounter,
+  AdDraws, AdClasses, AdTypes, AdParticles, AdPNG, AdSetupDlg, AdPerformanceCounter,
   AdCanvas, AdConsts;
 
 type

@@ -17,7 +17,7 @@ interface
 uses
   Windows, Dialogs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   AdDraws, AdSprites, AdSpriteEngineEx, AdClasses, AdTypes, AdCanvas,
-  AdSetupDlg, AdPng, AdPerformanceCounter, AdEvents;
+  AdSetupDlg, AdPNG, AdPerformanceCounter, AdEvents;
 
 type
   TForm1 = class(TForm)

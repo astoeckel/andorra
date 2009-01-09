@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Dialogs, SysUtils, Graphics, Classes, Forms, AdDraws, AdClasses,
-  Controls, ExtCtrls, AdSprites, AdSetupDlg, AdPng, AdPerformanceCounter;
+  Controls, ExtCtrls, AdSprites, AdSetupDlg, AdPNG, AdPerformanceCounter;
 
 type
   TFigur = class(TImageSprite)
