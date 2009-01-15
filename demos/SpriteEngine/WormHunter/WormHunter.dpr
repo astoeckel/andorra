@@ -13,14 +13,17 @@
 program WormHunter;
 
 uses
+  {$ifdef FPC}{$ifdef UNIX}
+  cthreads,
+  {$endif}{$endif}
   Forms,
-  Main in 'Main.pas';
+  Main in 'Main.pas'{$ifdef FPC}, LazOpenGLContext{$endif};
 
 {$R *.res}
 
+
 begin
   Application.Initialize;
-  Application.Title := 'Andorra 2D Collision Demo';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.

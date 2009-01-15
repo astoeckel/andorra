@@ -12,10 +12,14 @@
 }
 unit Main;
 
+{$ifdef FPC}
+{$mode delphi}
+{$endif}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  {$ifndef FPC}Windows, {$else}LCLIntf, LCLType, {$endif}Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, AdDraws, AdClasses, StdCtrls,
   AdPNG, AdTypes, AdSprites, AdParticles, AdPerformanceCounter, AdSetupDlg,
   AdConsts;
@@ -154,7 +158,9 @@ var
   AdSetup: TAdSetup;
 begin
   //Activate the memory leak reports. You may remove this line if your compiler doesn't support this
+  {$ifndef FPC}
   ReportMemoryLeaksOnShutdown := true;
+  {$endif}
   
   //Initialize the random number generator
   Randomize;
