@@ -20,7 +20,7 @@
 unit Ad3DObj;
 
 {$IFDEF FPC}
-  {$MODE DELPHI}                                         ,
+  {$MODE DELPHI}                                        
 {$ENDIF}
 
 interface
@@ -239,12 +239,14 @@ type
   end;
 
   TAdModel = class(TAd3DSpaceObject)
-    private
     public
       constructor Create(AParent: TAdDraw);
       destructor Destroy;override;
 
-      procedure Draw(ASurface: TAdSurface);
+{      procedure LoadFromFile(AFile: string);
+      procedure SaveToFile(AFile: string);
+      procedure LoadFromStream(AStream: TStream);
+      procedure SaveToStream(AStream: TStream);         }
   end;
 
 
@@ -308,6 +310,8 @@ end;
 
 procedure TAdMesh.Draw(ASurface: TAdSurface);
 begin
+  inherited;
+  
   //Get the object matrix
   FMesh.Matrix := Matrix;
 
@@ -1092,11 +1096,6 @@ destructor TAdModel.Destroy;
 begin
 
   inherited;
-end;
-
-procedure TAdModel.Draw(ASurface: TAdSurface);
-begin
-
 end;
 
 end.

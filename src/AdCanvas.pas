@@ -362,10 +362,10 @@ type
       FOwnPen:boolean;
       FDrawMode:TAd2dDrawMode;
       FWidth, FHeight, FMinX, FMaxX, FMinY, FMaxY: single;
-      procedure GenerateTextureCoords(var vertices:TAdVertexArray);
-      procedure SetNormals(var vertices:TAdVertexArray);
       procedure CalcQuadSizes(aquad:TAdCanvasColorQuad);
     protected
+      procedure GenerateTextureCoords(var vertices:TAdVertexArray);
+      procedure SetNormals(var vertices:TAdVertexArray);
       procedure SetMatrix(AValue:TAdMatrix);override;
     public
       constructor Create(AAppl:TAd2dApplication);
@@ -377,7 +377,7 @@ type
       procedure Update(AItem:TAdCanvasObject);override;
       procedure Generate;override;
 
-      property Quad:TAdCanvasColorQuad read FQuad;
+      property Quad:TAdCanvasColorQuad read FQuad write FQuad;
       property Width:single read FWidth;
       property Height:single read FHeight;
       property MinX:single read FMinX;
@@ -386,6 +386,44 @@ type
       property MaxY:single read FMaxY;
   end;
 
+  {@exclude}
+  // Rounded Rectangle written by the DelphiPraxis user xZise
+  //! Fix gradient
+  TAdCanvasRoundedQuadObject = class(TAdCanvasQuadObject)
+    private
+      // Charactisation
+      FCornerWidth, FCornerHeight : Single;
+    public
+      function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState; override;
+      procedure Update(AItem:TAdCanvasObject); override;
+      procedure Generate; override;
+
+      property CornerWidth : Single read FCornerWidth write FCornerWidth;
+      property CornerHeight : Single read FCornerHeight write FCornerHeight;
+  end;
+
+  {@exclude}
+  // Ring Rectangle written by the DelphiPraxis user xZise
+  //! Fix gradient
+  TAdCanvasRingQuadObject = class(TAdCanvasQuadObject)
+    private
+      // Charactisation
+      FRingWidth, FRingHeight : Single;
+      FInnerLine : TAdCanvasLine;
+      FRects : array [0..3] of TAd2DMesh;
+    public
+      constructor Create(AAppl:TAd2dApplication);
+      destructor Destroy; override;
+
+      function CompareTo(AItem:TAdCanvasObject):TAdCanvasUpdateState; override;
+      procedure Update(AItem:TAdCanvasObject); override;
+      procedure Generate; override;
+      procedure Draw;override;
+
+      property RingWidth : Single read FRingWidth write FRingWidth;
+      property RingHeight : Single read FRingHeight write FRingHeight;
+  end;
+  
   {@exclude}
   TAdCanvasEllipseObject = class(TAdCanvasObject)
     private
@@ -595,6 +633,24 @@ type
       procedure Rectangle(AP1, AP2:TAdPoint);overload;
       {Draws a rectangle.}
       procedure Rectangle(AP:TAdPoint; AWidth, AHeight:integer);overload;
+
+      {Draws a rounded rectangle.}
+      procedure RoundedRectangle(AX1, AY1, AX2, AY2, ACornerWidth, ACornerHeight : Integer); overload;
+      {Draws a rounded rectangle.}
+      procedure RoundedRectangle(ARect : TAdRect; ACornerWidth, ACornerHeight : Integer); overload;
+      {Draws a rounded rectangle.}
+      procedure RoundedRectangle(APoint1, APoint2 : TAdPoint; ACornerWidth, ACornerHeight : Integer); overload;
+      {Draws a rounded rectangle.}
+      procedure RoundedRectangle(APoint : TAdPoint; AWidth, AHeight, ACornerWidth, ACornerHeight : Integer); overload;
+
+      {Draws a rectangle "rectangle ring".}
+      procedure RingRectangle(AX1, AY1, AX2, AY2, ARingWidth, ARingHeight : Integer); overload;
+      {Draws a rectangle "rectangle ring".}
+      procedure RingRectangle(ARect : TAdRect; ARingWidth, ARingHeight : Integer); overload;
+      {Draws a rectangle "rectangle ring".}
+      procedure RingRectangle(APoint1, APoint2 : TAdPoint; ARingWidth, ARingHeight : Integer); overload;
+      {Draws a rectangle "rectangle ring".}
+      procedure RingRectangle(APoint : TAdPoint; AWidth, AHeight, ARingWidth, ARingHeight : Integer); overload;
 
       {Draws a single pixel using the color specified in TAdPen.Color}
       procedure PlotPixel(AX, AY:integer);overload;
@@ -1417,6 +1473,104 @@ end;
 procedure TAdCanvas.Rectangle(ap: TAdPoint; awidth, aheight: integer);
 begin
   Rectangle(ap.X, ap.Y, awidth + ap.X, aheight + ap.Y);
+end;
+
+procedure TAdCanvas.RoundedRectangle(ARect: TAdRect; ACornerWidth,
+  ACornerHeight: Integer);
+begin
+  RoundedRectangle(ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, ACornerWidth, ACornerHeight);
+end;
+
+procedure TAdCanvas.RoundedRectangle(AX1, AY1, AX2, AY2, ACornerWidth,
+  ACornerHeight: Integer);
+var
+  AQuad:TAdCanvasColorQuad;
+begin
+  PushObject;
+  AQuad.p[0].x := ax1;
+  AQuad.p[0].y := ay1;
+
+  AQuad.p[1].x := ax2;
+  AQuad.p[1].y := ay1;
+
+  AQuad.p[2].x := ax2;
+  AQuad.p[2].y := ay2;
+
+  AQuad.p[3].x := ax1;
+  AQuad.p[3].y := ay2;
+
+  ColorQuad(AQuad);
+
+  FCurrentObject := TAdCanvasRoundedQuadObject.Create(FAppl);
+  with FCurrentObject as TAdCanvasRoundedQuadObject do
+  begin
+    Quad := AQuad;
+    CornerWidth := ACornerWidth;
+    CornerHeight := ACornerHeight;
+  end;
+
+  PushObject;
+end;
+
+procedure TAdCanvas.RoundedRectangle(APoint: TAdPoint; AWidth, AHeight,
+  ACornerWidth, ACornerHeight: Integer);
+begin
+  RoundedRectangle(APoint.X, APoint.Y, APoint.X + AWidth, APoint.Y + AHeight, ACornerWidth, ACornerHeight);
+end;
+
+procedure TAdCanvas.RoundedRectangle(APoint1, APoint2: TAdPoint; ACornerWidth,
+  ACornerHeight: Integer);
+begin
+  RoundedRectangle(APoint1.X, APoint1.Y, APoint2.X, APoint2.Y, ACornerWidth, ACornerHeight);
+end;
+
+procedure TAdCanvas.RingRectangle(ARect: TAdRect; ARingWidth,
+  ARingHeight: Integer);
+begin
+  RingRectangle(ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, ARingWidth, ARingHeight);
+end;
+
+procedure TAdCanvas.RingRectangle(AX1, AY1, AX2, AY2, ARingWidth,
+  ARingHeight: Integer);
+var
+  AQuad:TAdCanvasColorQuad;
+begin
+  PushObject;
+  AQuad.p[0].x := ax1;
+  AQuad.p[0].y := ay1;
+
+  AQuad.p[1].x := ax2;
+  AQuad.p[1].y := ay1;
+
+  AQuad.p[2].x := ax2;
+  AQuad.p[2].y := ay2;
+
+  AQuad.p[3].x := ax1;
+  AQuad.p[3].y := ay2;
+
+  ColorQuad(AQuad);
+
+  FCurrentObject := TAdCanvasRingQuadObject.Create(FAppl);
+  with FCurrentObject as TAdCanvasRingQuadObject do
+  begin
+    Quad := AQuad;
+    RingWidth := ARingWidth;
+    RingHeight := ARingHeight;
+  end;
+
+  PushObject;
+end;
+
+procedure TAdCanvas.RingRectangle(APoint: TAdPoint; AWidth, AHeight, ARingWidth,
+  ARingHeight: Integer);
+begin
+  RingRectangle(APoint.X, APoint.Y, APoint.X + AWidth, APoint.Y + AHeight, ARingWidth, ARingHeight);
+end;
+
+procedure TAdCanvas.RingRectangle(APoint1, APoint2: TAdPoint; ARingWidth,
+  ARingHeight: Integer);
+begin
+  RingRectangle(APoint1.X, APoint1.Y, APoint2.X, APoint2.Y, ARingWidth, ARingHeight);
 end;
 
 procedure TAdCanvas.Ellipse(ax1, ay1, ax2, ay2: integer);
@@ -3094,6 +3248,431 @@ end;
 procedure TAdCanvasSplineObject.Update(AItem: TAdCanvasObject);
 begin
   //Updating a spline is not possible now
+end;
+
+{ TAdCanvasRoundedQuadObject }
+
+function TAdCanvasRoundedQuadObject.CompareTo(
+  AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  if (AItem is TAdCanvasRoundedQuadObject) then
+  begin
+    Result := inherited CompareTo(AItem);
+    if (Result = usEqual) then
+    begin
+      if (TAdCanvasRoundedQuadObject(AItem).CornerWidth <> FCornerWidth) and (TAdCanvasRoundedQuadObject(AItem).CornerHeight <> FCornerHeight) then
+        Result := usUpdate;
+    end;
+  end else
+    Result := usDelete;
+end;
+
+procedure TAdCanvasRoundedQuadObject.Generate;
+var
+  SelfPen : TAdPen;
+  SelfBrush : TAdBrush;
+  i, Steps, SubSteps : Integer;
+  p:TAdLinePoint;
+  Vertices : TAdVertexArray;
+  Angle : Double;
+  CornerCenter : array [0..4] of TAdVector2;
+begin
+  CalcQuadSizes(Quad);
+
+  FDrawMode := adTriangleFan;
+
+  //Copy pen and brush if the brush/pen object doesn't owned by self
+  if not FOwnPen then
+  begin
+    FOwnPen := true;
+
+    SelfPen := FPen;
+    FPen := TAdPen.Create;
+    FPen.Assign(SelfPen);
+
+    SelfBrush := FBrush;
+    FBrush := TAdBrush.Create;
+    FBrush.Assign(SelfBrush);
+  end;
+
+  // Count of points on the roundedrect
+  Steps := 68; //63 / 4; //Round(PI * 2 * Radius * (0.1/(0.01 * Radius) / 4);
+  // Count of Point in one corner (68 / 4)
+  SubSteps := 17;
+
+  // Set the centers of the rounded corners (start at topleft clockwise)
+  CornerCenter[0].x := FMinX + CornerWidth;
+  CornerCenter[0].y := FMinY + CornerHeight;
+
+  CornerCenter[1].x := FMaxX - CornerWidth;
+  CornerCenter[1].y := FMinY + CornerHeight;
+
+  CornerCenter[2].x := FMaxX - CornerWidth;
+  CornerCenter[2].y := FMaxY - CornerHeight;
+
+  CornerCenter[3].x := FMinX + CornerWidth;
+  CornerCenter[3].y := FMaxY - CornerHeight;
+
+  //Set line object properties if necessary
+  if (FPen.Style <> apNone) then
+  begin
+    // Reset line
+    if FLine.Points.Count > 0 then
+    begin
+      FLine.Free;
+      FLine := TAdCanvasLine.Create(Appl);
+    end;
+    FLine.Pen := FPen;
+  end;
+
+  if (FBrush.Style <> abClear) then
+  begin
+    SetLength(Vertices, Steps + 2);
+
+    with Vertices[0] do
+    begin
+      Position.x := (FMinX + FMaxX) / 2;
+      Position.y := (FMinY + FMaxY) / 2;
+      Color := FBrush.Color;
+    end;
+  end;
+
+  for i := 0 to Steps - 1 do
+  begin
+    //Angle := ((i - (i div SubSteps)) * PI) / ((Steps - 4) * 2);
+    Angle := ((i - (i div SubSteps)) * 2 * PI) / (Steps - 4);
+
+    // Get corner (starts at topleft, clockwise)
+    p.X := Round(CornerCenter[i div SubSteps].x - Cos(Angle) * FCornerWidth);
+    p.Y := Round(CornerCenter[i div SubSteps].y - Sin(Angle) * FCornerHeight);
+    p.Color := FPen.Color;
+
+    if FBrush.Style <> abClear then
+    begin
+      with Vertices[i + 1] do
+      begin
+        Position.x := p.X;
+        Position.y := p.Y;
+        Position.z := 0;
+        case FBrush.Style of
+          abSolid: Color := FBrush.Color;
+          abGradient: Color := FBrush.GradientColor;
+        end;
+      end;
+    end;
+
+    if FPen.Style <> apNone then
+      FLine.AddPoint(p);
+  end;
+
+  SetNormals(Vertices);
+
+  //Close line
+  p.X := round(FMinX);
+  p.Y := round(FMinY + FCornerHeight);
+  p.Color := FPen.Color;
+  if FBrush.Style <> abClear then
+  begin
+    with Vertices[Steps] do
+    begin
+      Position := AdVector3(p.X, p.Y, 0);
+      case FBrush.Style of
+        abSolid: Vertices[steps].Color := FBrush.Color;
+        abGradient: Vertices[steps].Color := FBrush.GradientColor;
+      end;
+      Normal := AdVector3(0, 0, -1);
+    end;
+
+    if FBrush.Texture <> nil then
+      GenerateTextureCoords(Vertices);
+
+    FMesh.PrimitiveCount := Steps - 1;
+
+    FMesh.Vertices := Vertices;
+    FMesh.Indices := nil;
+    FMesh.Update;
+    FMesh.Matrix := AdMatrix_Identity;
+    FMesh.Texture := FBrush.Texture;
+  end;
+
+  if FPen.Style <> apNone then
+  begin
+    FLine.AddPoint(p);
+    FLine.Generate;
+  end;
+end;
+
+procedure TAdCanvasRoundedQuadObject.Update(AItem: TAdCanvasObject);
+begin
+  FCornerWidth := TAdCanvasRoundedQuadObject(AItem).CornerWidth;
+  FCornerHeight := TAdCanvasRoundedQuadObject(AItem).CornerHeight;
+  inherited;
+end;
+
+{ TAdCanvasRingQuadObject }
+
+function TAdCanvasRingQuadObject.CompareTo(
+  AItem: TAdCanvasObject): TAdCanvasUpdateState;
+begin
+  if (AItem is TAdCanvasRingQuadObject) then
+  begin
+    Result := inherited CompareTo(AItem);
+    if (Result = usEqual) then
+    begin
+      if (TAdCanvasRingQuadObject(AItem).RingWidth <> FRingWidth) and (TAdCanvasRingQuadObject(AItem).RingHeight <> FRingHeight) then
+        Result := usUpdate;
+    end;
+  end else
+    Result := usDelete;
+end;
+
+constructor TAdCanvasRingQuadObject.Create(AAppl: TAd2dApplication);
+var
+  i: Integer;
+begin
+  inherited;
+
+  FRects[0] := FMesh;
+  for i := Low(FRects) + 1 to High(FRects) do
+    FRects[i] := Appl.CreateMesh;
+  FInnerLine := TAdCanvasLine.Create(Appl);
+end;
+
+destructor TAdCanvasRingQuadObject.Destroy;
+var
+  i : Integer;
+begin
+  for i := Low(FRects) + 1 to High(FRects) do
+    FRects[i].Free;
+  FInnerLine.Free;
+  inherited;
+end;
+
+procedure TAdCanvasRingQuadObject.Draw;
+var
+  i: Integer;
+begin
+  //Draw rectangle
+  if (FBrush.Style <> abClear) then
+  begin
+    for i := Low(FRects) to High(FRects) do
+      FRects[i].Draw(FBrush.BlendMode,FDrawMode);
+  end;
+
+  //Draw outer line
+  if (FPen.Style <> apNone) then
+  begin
+    FLine.Draw;
+    FInnerLine.Draw;
+  end;
+end;
+
+procedure TAdCanvasRingQuadObject.Generate;
+var
+  SelfPen : TAdPen;
+  SelfBrush : TAdBrush;
+  i: Integer;
+  p:TAdLinePoint;
+  Vertices : array [0..3] of TAdVertexArray;
+begin
+  //Copy pen and brush if necessary
+  if not FOwnPen then
+  begin
+    FOwnPen := true;
+
+    SelfPen := FPen;
+    FPen := TAdPen.Create;
+    FPen.Assign(SelfPen);
+
+    SelfBrush := FBrush;
+    FBrush := TAdBrush.Create;
+    FBrush.Assign(SelfBrush);
+  end;
+
+  if (FPen.Style <> apNone) then
+  begin
+    // Outerline
+
+    //Set line object properties if necessary
+    if (FLine.Points.Count < 4) then
+    begin
+      if FLine.Points.Count > 0 then
+      begin
+        FLine.Free;
+        FLine := TAdCanvasLine.Create(FAppl);
+      end;
+
+      FLine.Pen := FPen;
+      for i := 0 to 3 do
+      begin
+        p.X := round(FQuad.p[i].X);
+        p.Y := round(FQuad.p[i].Y);
+        p.Color := FPen.Color;
+        FLine.AddPoint(p)
+      end;
+
+      //Close line
+      p.X := round(FQuad.p[0].X);
+      p.Y := round(FQuad.p[0].Y);
+      p.Color := FPen.Color;
+      FLine.AddPoint(p);
+    end
+    else
+    begin
+      FLine.Points.StartIteration;
+      for i := 0 to 3 do
+      begin
+        p.X := round(FQuad.p[i].X);
+        p.Y := round(FQuad.p[i].Y);
+        p.Color := FPen.Color;
+        PAdLinePoint(FLine.Points.GetCurrent)^ := p;
+      end;
+
+      //Clsoe line
+      p.X := round(FQuad.p[0].X);
+      p.Y := round(FQuad.p[0].Y - trunc(Pen.Width / 2));
+      p.Color := FPen.Color;
+      PAdLinePoint(FLine.Points.GetCurrent)^ := p;
+    end;
+
+    // Innerline
+
+    //Set line object properties if necessary
+    FInnerLine.Free;
+    FInnerLine := TAdCanvasLine.Create(FAppl);
+
+    FInnerLine.Pen := FPen;
+    for i := 0 to 3 do
+    begin
+      if (i = 0) or (i = 3) then
+        p.X := round(FQuad.p[i].X + FRingWidth)
+      else
+        p.X := round(FQuad.p[i].X - FRingWidth);
+
+      if i <= 1 then
+        p.Y := round(FQuad.p[i].Y + FRingHeight)
+      else
+        p.Y := round(FQuad.p[i].Y - FRingHeight);
+      p.Color := FPen.Color;
+      FInnerLine.AddPoint(p)
+    end;
+
+    //Close line
+    p.X := round(FQuad.p[0].X + FRingWidth);
+    p.Y := round(FQuad.p[0].Y + FRingHeight);
+    p.Color := FPen.Color;
+    FInnerLine.AddPoint(p);
+
+    FLine.Generate;
+    FInnerLine.Generate;
+  end;
+
+  if (FBrush.Style <> abClear) then
+  begin
+    // Draw rects
+    if (FBrush.Texture = nil) or (FBrush.TextureMode <> tmStretchAlign) then
+    begin
+      SetLength(vertices[0], 4);
+      SetLength(vertices[1], 4);
+      SetLength(vertices[2], 4);
+      SetLength(vertices[3], 4);
+
+      FDrawMode := adTriangleStrips;
+
+      vertices[0][0].Position := AdVector3(FQuad.p[0].x, FQuad.p[0].y, 0);
+      vertices[0][0].Color := FQuad.c[0];
+      vertices[0][1].Position := AdVector3(FQuad.p[0].x + FRingWidth, FQuad.p[0].y, 0);
+      vertices[0][1].Color := FQuad.c[1];
+      vertices[0][2].Position := AdVector3(FQuad.p[0].x, FQuad.p[3].y, 0);
+      vertices[0][2].Color := FQuad.c[3];
+      vertices[0][3].Position := AdVector3(FQuad.p[0].x + FRingWidth, FQuad.p[3].y, 0);
+      vertices[0][3].Color := FQuad.c[2];
+
+      vertices[1][0].Position := AdVector3(FQuad.p[0].x + FRingWidth, FQuad.p[3].y - FRingHeight, 0);
+      vertices[1][0].Color := FQuad.c[0];
+      vertices[1][1].Position := AdVector3(FQuad.p[2].x - FRingWidth, FQuad.p[3].y - FRingHeight, 0);
+      vertices[1][1].Color := FQuad.c[1];
+      vertices[1][2].Position := AdVector3(FQuad.p[0].x + FRingWidth, FQuad.p[3].y, 0);
+      vertices[1][2].Color := FQuad.c[3];
+      vertices[1][3].Position := AdVector3(FQuad.p[2].x - FRingWidth, FQuad.p[3].y, 0);
+      vertices[1][3].Color := FQuad.c[2];
+
+      vertices[2][0].Position := AdVector3(FQuad.p[1].x - FRingWidth, FQuad.p[0].y, 0);
+      vertices[2][0].Color := FQuad.c[0];
+      vertices[2][1].Position := AdVector3(FQuad.p[1].x, FQuad.p[0].y, 0);
+      vertices[2][1].Color := FQuad.c[1];
+      vertices[2][2].Position := AdVector3(FQuad.p[1].x - FRingWidth, FQuad.p[3].y, 0);
+      vertices[2][2].Color := FQuad.c[3];
+      vertices[2][3].Position := AdVector3(FQuad.p[1].x, FQuad.p[3].y, 0);
+      vertices[2][3].Color := FQuad.c[2];
+
+      vertices[3][0].Position := AdVector3(FQuad.p[0].x + FRingWidth, FQuad.p[0].y, 0);
+      vertices[3][0].Color := FQuad.c[0];
+      vertices[3][1].Position := AdVector3(FQuad.p[1].x - FRingWidth, FQuad.p[0].y, 0);
+      vertices[3][1].Color := FQuad.c[1];
+      vertices[3][2].Position := AdVector3(FQuad.p[0].x + FRingWidth, FQuad.p[0].y + FRingHeight, 0);
+      vertices[3][2].Color := FQuad.c[3];
+      vertices[3][3].Position := AdVector3(FQuad.p[1].x - FRingWidth, FQuad.p[0].y + FRingHeight, 0);
+      vertices[3][3].Color := FQuad.c[2];
+
+      for i := Low(FRects) to High(FRects) do
+      begin
+        if FBrush.Texture <> nil then
+          GenerateTextureCoords(vertices[i]);
+        FRects[i].PrimitiveCount := 2;
+      end;
+    end
+    else
+    begin
+      SetLength(vertices[0],6);
+      SetLength(vertices[1],6);
+      SetLength(vertices[2],6);
+      SetLength(vertices[3],6);
+
+      vertices[0][0].Position := AdVector3(FMinX + FWidth / 2, FMinY + FHeight / 2, 0);
+      vertices[0][0].Color := FQuad.c[0];
+      vertices[0][0].Texture := AdVector2(0.5,0.5);
+      vertices[0][1].Position := AdVector3(FQuad.p[0].x,FQuad.p[0].y, 0);
+      vertices[0][1].Color := FQuad.c[0];
+      vertices[0][1].Texture := AdVector2(0,0);
+      vertices[0][2].Position := AdVector3(FQuad.p[1].x,FQuad.p[1].y, 0);
+      vertices[0][2].Color := FQuad.c[1];
+      vertices[0][2].Texture := AdVector2(1,0);
+      vertices[0][3].Position := AdVector3(FQuad.p[2].x,FQuad.p[2].y, 0);
+      vertices[0][3].Color := FQuad.c[2];
+      vertices[0][3].Texture := AdVector2(1,1);
+      vertices[0][4].Position := AdVector3(FQuad.p[3].x,FQuad.p[3].y, 0);
+      vertices[0][4].Color := FQuad.c[3];
+      vertices[0][4].Texture := AdVector2(0,1);
+      vertices[0][5].Position := AdVector3(FQuad.p[0].x,FQuad.p[0].y, 0);
+      vertices[0][5].Color := FQuad.c[0];
+      vertices[0][5].Texture := AdVector2(0,0);
+
+      for i := Low(FRects) to High(FRects) do
+      begin
+        FRects[i].PrimitiveCount := 4;
+      end;
+
+      FDrawMode := adTriangleFan;
+    end;
+
+    for i := Low(FRects) to High(FRects) do
+    begin
+      SetNormals(Vertices[i]);
+      FRects[i].Vertices := Vertices[i];
+      FRects[i].Indices := nil;
+      FRects[i].Update;
+      FRects[i].Matrix := AdMatrix_Identity;
+      FRects[i].Texture := FBrush.Texture;
+    end;
+  end;
+end;
+
+procedure TAdCanvasRingQuadObject.Update(AItem: TAdCanvasObject);
+begin
+  FRingWidth := TAdCanvasRingQuadObject(AItem).RingWidth;
+  FRingHeight := TAdCanvasRingQuadObject(AItem).RingHeight;
+  inherited;
 end;
 
 end.
