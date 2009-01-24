@@ -16,8 +16,9 @@ interface
 
 uses
   Dialogs, SysUtils, Forms, Types, Classes, 
-  AdPNG, AdDraws, AdClasses, AdPerformanceCounter, AdSetupDlg, AdConsts, AdTypes;
-
+  AdPNG, AdDraws, AdClasses, AdPerformanceCounter, AdSetupDlg, AdConsts, AdTypes,
+  AdCanvas;
+  
 type
   TForm1 = class(TForm)
     procedure FormCreate(Sender: TObject);
@@ -33,8 +34,6 @@ var
   Form1: TForm1;
 
 implementation
-
-uses AdCanvas;
 
 {$R *.dfm}
 
@@ -98,7 +97,7 @@ begin
     //colors here
     AdDraw.ClearSurface(AdCol24_White);
 
-    AdDraw.BeginScene;
+    AdDraw.BeginScene;        
 
     //Place all your drawing code between these two lines
 
