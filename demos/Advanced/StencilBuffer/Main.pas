@@ -125,8 +125,8 @@ begin
 
     AdDraw.Options := AdDraw.Options - [aoAlphaMask];
 
-    AdImage.DrawEx(AdDraw, AdRect(0, 0, ClientWidth, ClientHeight),
-      AdRect(0, 0, ClientWidth, ClientHeight), 0, 0, 0, 255, bmAlpha);
+    AdImage.DrawEx(AdDraw, AdRectEx(0, 0, ClientWidth, ClientHeight),
+      AdRectEx(0, 0, ClientWidth, ClientHeight), 0, 0, 0, 255, bmAlpha);
 
     AdDraw.Options := AdDraw.Options - [aoStencilBuffer];
 
