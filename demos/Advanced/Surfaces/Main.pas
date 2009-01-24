@@ -39,9 +39,12 @@ begin
     Rectangle(0, 0, Surface.Scene.Width, Surface.Scene.Height);
     Textout(0, 64, 'Andorra 2D!!!');
     Release;   
-  end;
+  end;  
   AdImage.Draw(Surface, 0, 0, 0);
 end;
+
+var
+  i: integer = 0;
 
 procedure TAdAppl.Idle(Sender: TObject; var Done: boolean);
 begin
@@ -49,26 +52,34 @@ begin
   begin
     AdPerCounter.Calculate;
 
+
     AdDraw.ClearSurface(0);
-    AdDraw.BeginScene;
 
-    AdSurface.ClearSurface(0);
-
+    AdDraw.BeginScene;    
+    if i = 0 then
+    begin
+      AdSurface.ClearSurface(Ad_ARGB(0, 255, 255, 255));
+      DrawScene(AdSurface);
+      i := 1;
+    end;
     DrawScene(AdDraw);
-
-    DrawScene(AdSurface);
-
-    AdSurface.Image.Draw(AdDraw, mx, my, 0);
-
     AdDraw.EndScene;
+
+    AdDraw.BeginScene;
+    AdSurface.Image.Draw(AdDraw, mx, my, 0);
+    AdDraw.EndScene;
+
     AdDraw.Flip;
   end;
+
+  Done := false;
 end;
 
 procedure TAdAppl.MouseMove(Sender: TObject; Shift: TAdShiftState; X,
   Y: integer);
 begin
   mx := x; my := y;
+  i := 0;
 end;
 
 procedure TAdAppl.Run;

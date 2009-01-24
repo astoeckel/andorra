@@ -132,7 +132,7 @@ type
        TAdPluginPropertyList.}
       procedure ReadProperties(ADllLoader: TAdDllLoader);
       {Writes all set properties into a created Andorra 2D application. If a
-       property does not exists, nothing will happen. The WriteProperties
+       property does not exiss, nothing will happen. The WriteProperties
        is normally automatically be called by TAdDraw.}
       procedure WriteProperties(AAppl: TAd2DApplication);
 
@@ -759,15 +759,15 @@ type
    in order to save the precalculated pattern images.}
   TAdRectList = class(TAdList)
     private
-     	function GetItem(AIndex:integer):TAdRect;
-     	procedure SetItem(AIndex:integer;AItem:TAdRect);
+     	function GetItem(AIndex:integer):TAdRectEx;
+     	procedure SetItem(AIndex:integer;AItem:TAdRectEx);
     protected
       procedure Notify(Ptr: Pointer; Action: TListNotification);override;
     public
       {Read/Write access to the rectangles.}
-     	property Items[AIndex:integer]:TAdRect read GetItem write SetItem;default;
+     	property Items[AIndex:integer]:TAdRectEx read GetItem write SetItem;default;
       {Add a rectangle to the list.}
-      procedure Add(ARect:TAdRect);
+      procedure Add(ARect:TAdRectEx);
   end;
 
   {TAdCustomImage is the base image class. Images are objects, that manage
@@ -789,7 +789,7 @@ type
       FLastColor:TAndorraColor;
       FAlpha:byte;
       FDetails:integer;
-      FSrcRect:TAdRect;
+      FSrcRect:TAdRectEx;
       FFilter: TAd2dTextureFilter;
 
       procedure SetFilter(AValue: TAd2dTextureFilter);
@@ -809,8 +809,11 @@ type
       FOwnTexture:boolean;
       FTexture:TAdCustomTexture;
       Rects:TAdRectList;
-      procedure DrawMesh(DestApp:TAdSurface;DestRect,SourceRect:TAdRect;Rotation:integer;
-        RotCenterX,RotCenterY:single;BlendMode:TAd2DBlendMode);
+      procedure DrawMesh(DestApp:TAdSurface;
+        DestRect, SourceRect:TAdRectEx;
+        Rotation:Single;
+        RotCenterX, RotCenterY: Single;
+        BlendMode:TAd2DBlendMode);
       procedure BuildVertices;
       procedure SetSrcRegion;
       procedure CreatePatternRects;
@@ -841,7 +844,7 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure Draw(Dest:TAdSurface;X,Y,PatternIndex:integer);
+      procedure Draw(Dest: TAdSurface; X, Y: Single; PatternIndex: integer);
 
       {Draws the image to the specified rectangular region. All positions are
         relative to the coordinate system of the scene of the surface.
@@ -856,7 +859,7 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure StretchDraw(Dest:TAdSurface; const DestRect:TAdRect;
+      procedure StretchDraw(Dest:TAdSurface; const DestRect:TAdRectEx;
         PatternIndex:integer);
 
       {Draws the image to the specified rectangular region using additive
@@ -874,7 +877,7 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawAdd(Dest: TAdSurface; const DestRect: TAdRect;
+      procedure DrawAdd(Dest: TAdSurface; const DestRect: TAdRectEx;
         PatternIndex: Integer; Alpha: Integer);
 
       {Draws the image to the specified rectangular region using alpha blending.
@@ -892,7 +895,7 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawAlpha(Dest: TAdSurface; const DestRect: TAdRect;
+      procedure DrawAlpha(Dest: TAdSurface; const DestRect: TAdRectEx;
         PatternIndex: Integer; Alpha: Integer);
 
       {Draws the image to the specified rectangular region. This special blend
@@ -912,7 +915,7 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawMask(Dest: TAdSurface; const DestRect: TAdRect; PatternIndex: Integer;
+      procedure DrawMask(Dest: TAdSurface; const DestRect: TAdRectEx; PatternIndex: Integer;
         Alpha: Integer);
 
       {Draws the image to the specified rectangular region. The image can be
@@ -940,8 +943,8 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawRotate(Dest: TAdSurface; X, Y, Width, Height: Integer;
-        PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
+      procedure DrawRotate(Dest: TAdSurface; X, Y, Width, Height: Single;
+        PatternIndex: Integer; CenterX, CenterY, Angle: Single);
 
       {Draws the image to the specified rectangular region. The image can be
        rotated around a user defined rotation center. The image is drawn using
@@ -969,8 +972,8 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawRotateAdd(Dest: TAdSurface; X, Y, Width, Height: Integer;
-        PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer;
+      procedure DrawRotateAdd(Dest: TAdSurface; X, Y, Width, Height: Single;
+        PatternIndex: Integer; CenterX, CenterY, Angle: Single;
         Alpha: Integer);
 
       {Draws the image to the specified rectangular region. The image can be
@@ -999,8 +1002,8 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawRotateAlpha(Dest: TAdSurface; X, Y, Width, Height: integer;
-        PatternIndex: integer; CenterX, CenterY: double; Angle: integer;
+      procedure DrawRotateAlpha(Dest: TAdSurface; X, Y, Width, Height: Single;
+        PatternIndex: integer; CenterX, CenterY, Angle: Single;
         Alpha: integer);
 
       {Draws the image to the specified rectangular region. The image can be
@@ -1030,8 +1033,8 @@ type
        @seealso(PatternHeight)
        @seealso(SkipWidth)
        @seealso(SkipHeight)}
-      procedure DrawRotateMask(Dest: TAdSurface; X, Y, Width, Height: integer;
-        PatternIndex: integer; CenterX, CenterY: double; Angle: integer;
+      procedure DrawRotateMask(Dest: TAdSurface; X, Y, Width, Height: Single;
+        PatternIndex: integer; CenterX, CenterY, Angle: Single;
         Alpha: integer);
 
       {The DrawEx function can be used to draw a specific part of an image with
@@ -1062,8 +1065,8 @@ type
        @seealso(TAd2dBlendMode)
        @seealso(GetPatternRect)
       }
-      procedure DrawEx(Dest: TAdSurface; SourceRect, DestRect: TAdRect;
-        CenterX, CenterY: double; Angle: integer; Alpha: integer;
+      procedure DrawEx(Dest: TAdSurface; SourceRect, DestRect: TAdRectEx;
+        CenterX, CenterY, Angle: Single; Alpha: integer;
         BlendMode: TAd2dBlendMode);
 
       {If you make any changes to the texture or set a new one, call restore to
@@ -1080,8 +1083,8 @@ type
       {Initialize creates a new mesh object.}
       procedure Initialize;
 
-      {Returns the texture rectangle of a pattern. ANr is clamped to [0;PatternCount]}
-      function GetPatternRect(ANr: integer):TAdRect;
+      {Returns the texture rectangle of a pattern. ANr is clamped to [0;PatternCount-1]}
+      function GetPatternRect(ANr: integer):TAdRectEx;
       
       {Returns the parent TAdDraw you've set in the constructor.}
       property Parent: TAdDraw read FParent write FParent;
@@ -1615,31 +1618,32 @@ end;
 
 { TRectList }
 
-procedure TAdRectList.Add(ARect: TAdRect);
-var ar:PAdRect;
+procedure TAdRectList.Add(ARect: TAdRectEx);
+var
+  ar:PAdRectEx;
 begin
   new(ar);
   ar^ := ARect;
   inherited Add(ar);
 end;
 
-function TAdRectList.GetItem(AIndex:integer):TAdRect;
+function TAdRectList.GetItem(AIndex:integer):TAdRectEx;
 begin
-  result := PAdRect(inherited Items[AIndex])^;
+  result := PAdRectEx(inherited Items[AIndex])^;
 end;
 
 procedure TAdRectList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   //Free reserved memory
   if Action = lnDeleted then
-    Dispose(PAdRect(Ptr));
+    Dispose(PAdRectEx(Ptr));
 
   inherited;
 end;
 
-procedure TAdRectList.SetItem(AIndex:integer;AItem:TAdRect);
+procedure TAdRectList.SetItem(AIndex:integer; AItem:TAdRectEx);
 begin
-  PAdRect(inherited Items[AIndex])^ := AItem;
+  PAdRectEx(inherited Items[AIndex])^ := AItem;
 end;   
 
 { TAdCustomImage }
@@ -1653,7 +1657,7 @@ begin
   FParent := AAdDraw;
   FParent.RegisterNotifyEvent(Notify);
   Rects := TAdRectList.Create;
-  FSrcRect := AdRect(0, 0, 0, 0);
+  FSrcRect := AdRectEx(0, 0, 0, 0);
   FColor := RGB(255, 255, 255);
   FAlpha := 255;
   FPatternStop := 0;
@@ -1674,7 +1678,7 @@ begin
 end;
 
 procedure TAdCustomImage.DrawMesh(DestApp: TAdSurface; DestRect,
-  SourceRect: TAdRect; Rotation: integer; RotCenterX, RotCenterY: single;
+  SourceRect: TAdRectEx; Rotation: Single; RotCenterX, RotCenterY: Single;
   BlendMode: TAd2DBlendMode);
 var
   mat1,mat2:TAdMatrix;
@@ -1684,7 +1688,7 @@ begin
   if DestApp <> nil then
     DestApp.Activate;
 
-  if (not CompareRects(SourceRect,FSrcRect)) then
+  if (not CompareRects(SourceRect, FSrcRect)) then
   begin
     FSrcRect := SourceRect;
     SetSrcRegion;
@@ -1754,7 +1758,7 @@ end;
 procedure TAdCustomImage.SetSrcRegion;
 var
   texw, texh: integer;
-  rectw, recth: integer;
+  rectw, recth: Single;
   mat: TAdMatrix;
 
 begin
@@ -1858,7 +1862,7 @@ begin
     begin
       for ax := 0 to ((FWidth+FSkipWidth) div (PatternWidth+FSkipWidth)) - 1 do
       begin
-        Rects.Add(AdBounds(
+        Rects.Add(AdBoundsEx(
           ax*(PatternWidth+FSkipWidth),ay*(PatternHeight+FSkipHeight),
           FPatternWidth,FPatternHeight));
       end;
@@ -1866,21 +1870,24 @@ begin
   end
   else
   begin
-    Rects.Add(AdRect(0,0,FWidth,FHeight));
+    Rects.Add(AdRectEx(0,0,FWidth,FHeight));
   end;
 end;
 
-procedure TAdCustomImage.Draw(Dest:TAdSurface;X,Y,PatternIndex:integer);
+procedure TAdCustomImage.Draw(Dest:TAdSurface; X, Y: Single;
+  PatternIndex: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex),
+    
+    DrawMesh(Dest, AdRectEx(X, Y, X + Width, Y + Height),
+    GetPatternRect(PatternIndex),
       0, 0, 0, bmAlpha);
   end;
 end;
 
-procedure TAdCustomImage.DrawAdd(Dest: TAdSurface; const DestRect: TAdRect;
+procedure TAdCustomImage.DrawAdd(Dest: TAdSurface; const DestRect: TAdRectEx;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
@@ -1890,7 +1897,7 @@ begin
   end;
 end;
 
-procedure TAdCustomImage.DrawAlpha(Dest: TAdSurface; const DestRect: TAdRect;
+procedure TAdCustomImage.DrawAlpha(Dest: TAdSurface; const DestRect: TAdRectEx;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
@@ -1900,7 +1907,7 @@ begin
   end;
 end;
 
-procedure TAdCustomImage.DrawMask(Dest: TAdSurface; const DestRect: TAdRect;
+procedure TAdCustomImage.DrawMask(Dest: TAdSurface; const DestRect: TAdRectEx;
   PatternIndex, Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
@@ -1910,55 +1917,55 @@ begin
   end;
 end;
 
-procedure TAdCustomImage.DrawRotate(Dest: TAdSurface; X, Y, Width, Height,
-  PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
+procedure TAdCustomImage.DrawRotate(Dest: TAdSurface; X, Y, Width, Height: Single;
+  PatternIndex: Integer; CenterX, CenterY, Angle: Single);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(255);
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
+    DrawMesh(Dest, AdRectEx(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
      CenterX, CenterY, bmAlpha);
   end;
 end;
 
 procedure TAdCustomImage.DrawRotateAdd(Dest: TAdSurface; X, Y, Width,
-  Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
+  Height: Single; PatternIndex: Integer; CenterX, CenterY, Angle: Single;
   Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
+    DrawMesh(Dest, AdRectEx(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
       CenterX, CenterY, bmAdd);
   end;
 end;
 
 procedure TAdCustomImage.DrawRotateAlpha(Dest: TAdSurface; X, Y, Width,
-  Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
+  Height: Single; PatternIndex: Integer; CenterX, CenterY, Angle: Single;
   Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
+    DrawMesh(Dest, AdRectEx(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex), Angle,
       CenterX,CenterY,bmAlpha);
   end;
 end;
 
 procedure TAdCustomImage.DrawRotateMask(Dest: TAdSurface; X, Y, Width,
-  Height, PatternIndex: Integer; CenterX, CenterY: Double; Angle,
+  Height: Single; PatternIndex: Integer; CenterX, CenterY, Angle: Single;
   Alpha: Integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
     SetCurrentColor(Alpha);
-    DrawMesh(Dest, AdRect(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex),
+    DrawMesh(Dest, AdRectEx(X,Y,X+Width,Y+Height), GetPatternRect(PatternIndex),
       Angle, CenterX, CenterY, bmMask);
   end;
 end;
 
 procedure TAdCustomImage.DrawEx(Dest: TAdSurface; SourceRect,
-  DestRect: TAdRect; CenterX, CenterY:double; Angle, Alpha: Integer;
+  DestRect: TAdRectEx; CenterX, CenterY, Angle: Single; Alpha: Integer;
   BlendMode: TAd2dBlendMode);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
@@ -1968,7 +1975,7 @@ begin
   end;
 end;
 
-procedure TAdCustomImage.StretchDraw(Dest: TAdSurface; const DestRect: TAdRect; PatternIndex: integer);
+procedure TAdCustomImage.StretchDraw(Dest: TAdSurface; const DestRect: TAdRectEx; PatternIndex: integer);
 begin
   if (Texture.Texture.Loaded) and (AdMesh <> nil) then
   begin
@@ -1990,7 +1997,7 @@ begin
   CreatePatternRects;
 
   //Reset source rectangle
-  FSrcRect := AdRect(0, 0, 0, 0);
+  FSrcRect := AdRectEx(0, 0, 0, 0);
 
   //Save the last color of the image
   FLastColor := GetColor;
@@ -2128,12 +2135,12 @@ begin
   result := Rects.Count - PatternStop;
 end;
 
-function TAdCustomImage.GetPatternRect(ANr: Integer):TAdRect;
+function TAdCustomImage.GetPatternRect(ANr: Integer):TAdRectEx;
 begin
   if (ANr >= 0) and (ANr < Rects.Count) then
     result := Rects[ANr]
   else
-    result := AdRect(0, 0, GetWidth, GetHeight);
+    result := AdRectEx(0, 0, GetWidth, GetHeight);
 end;
 
 { TAdImage }

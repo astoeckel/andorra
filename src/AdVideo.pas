@@ -196,7 +196,7 @@ begin
     FImage.Restore;
     
   //Draw the image to the destination rectangle
-  FImage.StretchDraw(ASurface, DestinationRect(ADestRect), 0);
+  FImage.StretchDraw(ASurface, AdRectEx(DestinationRect(ADestRect)), 0);
 end;
 
 procedure TAdCustomVideoPlayer.Notify(ASender: TObject;

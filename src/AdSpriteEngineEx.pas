@@ -37,7 +37,7 @@ type
       FRotation:single;
       FViewPort:TAdRect;
       FChanged:boolean;
-      FOurSurfaceRect: TAdRect;
+      FOurSurfaceRect: TAdRectEx;
       procedure SetZoom(AValue:single);
       procedure SetRotation(AValue:single);
       procedure SetViewPort(AValue:TAdRect);
@@ -221,8 +221,8 @@ begin
   begin
     with result do
     begin
-      X := round((p.X - Base.Left) * FZoom + Base.Left) + SurfaceRect.Left;
-      Y := round((p.Y - Base.Top) * FZoom + Base.Top) + SurfaceRect.Top;
+      X := round((p.X - Base.Left) * FZoom + Base.Left + SurfaceRect.Left);
+      Y := round((p.Y - Base.Top) * FZoom + Base.Top + SurfaceRect.Top);
     end;
   end;
 end;

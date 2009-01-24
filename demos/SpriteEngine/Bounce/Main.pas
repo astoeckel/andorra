@@ -436,7 +436,7 @@ begin
     Brush.Color := Ad_ARGB(round(Alpha/2),255,255,255);
     Brush.GradientColor := Ad_ARGB(0,255,255,255);
     Pen.Style := apNone;
-    Circle(BoundsRect.Left+round(Width/2),BoundsRect.Top+round(Height/2),300);
+    Circle(round(BoundsRect.Left+Width/2),round(BoundsRect.Top+Height/2),300);
     Release;
 
     Brush.BlendMode := bmAlpha;

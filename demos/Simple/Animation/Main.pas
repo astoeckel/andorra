@@ -156,7 +156,7 @@ begin
     AdDraw.BeginScene;
 
     //Draw the image on the calculated position with the calculated animation pattern
-    AdImageList.Find('figur').Draw(AdDraw,round(X),round(Y),round(Pattern));
+    AdImageList.Find('figur').Draw(AdDraw, X, Y, Round(Pattern));
 
     //Draw the FPS on the screen
     with AdDraw.Canvas do

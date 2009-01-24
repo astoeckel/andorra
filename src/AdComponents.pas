@@ -1303,24 +1303,24 @@ begin
   begin
     if (State = bsNormal) and (FImgNormal.Loaded) then
     begin
-      FImgNormal.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
+      FImgNormal.Picture.DrawAlpha(AdDraw, AdRectEx(Boundsrect), 0, Alpha);
     end;
     if (State = bsDown) and (FImgDown.Loaded) then
     begin
-      FImgDown.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
+      FImgDown.Picture.DrawAlpha(AdDraw, AdRectEx(Boundsrect), 0, Alpha);
     end;
     if (State = bsHover) and (FImgHover.Loaded) and (not down) then
     begin
-      FImgHover.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
+      FImgHover.Picture.DrawAlpha(AdDraw, AdRectEx(Boundsrect), 0, Alpha);
     end;
     if (State = bsHover) and (FImgCheckedHover.Loaded) and (down) then
     begin
-      FImgCheckedHover.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
+      FImgCheckedHover.Picture.DrawAlpha(AdDraw, AdRectEx(Boundsrect), 0, Alpha);
     end;
   end
   else
   begin
-    FImgDisabled.Picture.DrawAlpha(AdDraw,Boundsrect,0,Alpha);
+    FImgDisabled.Picture.DrawAlpha(AdDraw, AdRectEx(Boundsrect), 0, Alpha);
   end;
 
   inherited;
@@ -1831,7 +1831,7 @@ begin
   end;
   if FPicture.Loaded then
   begin
-    FPicture.Picture.DrawAlpha(AdDraw,DestinationRect,0,Alpha);
+    FPicture.Picture.DrawAlpha(AdDraw, AdRectEx(DestinationRect), 0, Alpha);
   end;
   inherited;
 end;

@@ -129,11 +129,14 @@ type
   TDXRenderTargetTexture = class(TAd2dRenderTargetTexture)
     private
       FParent:TDXApplication;
+      FSurface: IDirect3DSurface9;
     protected
       function GetLoaded:boolean;override;
     public
       constructor Create(AParent:TDXApplication);
       destructor Destroy;override;
+
+      property Surface: IDirect3DSurface9 read FSurface;
 
       procedure SetSize(AWidth, AHeight: integer; ABitDepth: TAdBitDepth);override;
       procedure FlushMemory;override;
@@ -522,17 +525,14 @@ begin
 end;
 
 procedure TDXApplication.SetRenderTarget(ATarget: TAd2dRenderTargetTexture);
-var
-  tex_surf: IDirect3DSurface9;
 begin
   if ATarget <> nil then
   begin
-   if FSetToOwnRenderTarget then
+    if FSetToOwnRenderTarget then
       Direct3DDevice9.GetRenderTarget(0, FOwnRenderTarget);
-
     FSetToOwnRenderTarget := false;
-    IDirect3DTexture9(ATarget.Texture).GetSurfaceLevel(0, tex_surf);
-    Direct3DDevice9.SetRenderTarget(0, tex_surf);
+
+    Direct3DDevice9.SetRenderTarget(0, TDXRenderTargetTexture(ATarget).Surface);
 
     FWidth := ATarget.BaseWidth;
     FHeight := ATarget.BaseHeight;
@@ -1222,6 +1222,7 @@ begin
   FHeight := 0;
   FBitDepth := ad32Bit;
   FTexture := nil;
+  FSurface := nil;
 end;
 
 function TDXRenderTargetTexture.GetLoaded: boolean;
@@ -1324,6 +1325,8 @@ begin
       FParent.Direct3DDevice9, w, h, 1,
       D3DUSAGE_RENDERTARGET,
       AFMT, D3DPOOL_DEFAULT, IDirect3dTexture9(FTexture));
+      
+    IDirect3DTexture9(FTexture).GetSurfaceLevel(0, FSurface);
 
     FWidth := w;
     FHeight := h;

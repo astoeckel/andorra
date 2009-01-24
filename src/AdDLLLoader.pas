@@ -27,6 +27,11 @@ uses
   SysUtils, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF},
   AdClasses, AdShaderClasses, AdMessages;
 
+{$IFDEF CPU64}
+type
+  THandle = int64;
+{$ENDIF}
+
 type
   {Exception class used for exceptions that occur in the dll loader class.}
   EAdDllLoaderException = class(Exception);

@@ -20,83 +20,61 @@
 unit Ad3DObj;
 
 {$IFDEF FPC}
-  {$MODE DELPHI}
+  {$MODE DELPHI}                                         ,
 {$ENDIF}
 
 interface
 
 uses
   Classes, Math,
-  AdTypes, AdClasses, AdMath, AdDraws, AdSpline;
+  AdTypes, AdClasses, AdMath, AdDraws, AdSpline, AdList;
 
 type
   TAdBPatch = array[0..3,0..3] of Word;
   TAdVectorArray = array of TAdVector3;
 
-  {TAdMesh is the base class for 3D objects in Andorra 2D. It wraps around the
-   TAd2dMesh interface and allows classes derived from TAdMesh to load their own
-   mesh data. It also provides properties that may be used to set the position,
-   scaling and the rotation of the object. Textures and materials may be applied
-   to the mesh.}
-  TAdMesh = class(TAdRenderingObject)
+  TAd3DSpaceObject = class;
+
+  TAd3DSpaceObjectList = class(TAdList)
+    private
+      FAutoFreeChildren: boolean;
+      function GetItem(AIndex: integer): TAd3DSpaceObject;
+      procedure SetItem(AIndex: integer; AValue: TAd3DSpaceObject);
+    protected
+      procedure Notify(ptr: Pointer; action: TListNotification);override;
+    public
+      property AutoFreeItems: boolean read FAutoFreeChildren write FAutoFreeChildren;
+      property Items[Index: integer]: TAd3DSpaceObject read GetItem write SetItem;default;
+  end;
+
+  TAd3DSpaceObject = class(TAdRenderingObject)
     private
       FX, FY, FZ: Single;
       FScaleX, FScaleY, FScaleZ: Single;
-      FRotX, FRotY, FRotZ: Single;       
-      FParent: TAdDraw;
-      FMesh: TAd2DMesh;
+      FRotX, FRotY, FRotZ: Single;
       FMatrix: TAdMatrix;
-      FTexture: TAdCustomTexture;
-      FDrawMode: TAd2dDrawMode;
+      FComposedMatrix: TAdMatrix;
       FMatrixChanged: boolean;
-      FMaterial: TAd2dMaterial;
-      FUseMaterial: boolean;
-
+      FParentMatrixChanged: boolean;
+      FParentObject: TAd3DSpaceObject;
+      FChildren: TAd3DSpaceObjectList;
       procedure SetCoeff(AIndex: integer; AValue: single);
-      procedure SetMatrix(AMatrix: TAdMatrix);
-      procedure SetTexture(ATexture: TAdCustomTexture);
-      procedure SetMaterial(AMaterial: TAd2dMaterial);
-      procedure SetUseMaterial(AValue: boolean);
-      procedure Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
     protected
-      procedure BuildMatrix;
-      procedure Initialize;
-      procedure Finalize;
-      
-      procedure LoadMeshData;virtual;abstract;
+      property MatrixChanged: boolean read FMatrixChanged write FMatrixChanged;
 
-      property Mesh: TAd2DMesh read FMesh;
-      property DrawMode: TAd2dDrawMode read FDrawMode write FDrawMode;
+      procedure ParentMatrixChanged;
+      procedure BuildMatrix;
+      function GetMatrix: TAdMatrix;virtual;
+      procedure SetMatrix(AMatrix: TAdMatrix);virtual;
+      procedure SetParentObject(AParentObject: TAd3DSpaceObject);
     public
-      {Creates a new instance of TAdMesh. The underlying TAd2dMesh structure is
-       created and filled with data by calling the "LoadMeshData" function that
-       has to be implemented by classes derived from TAdMesh.}
-      constructor Create(AParent: TAdDraw);virtual;
-      {Destroys the instance of TAdMesh.}
+      {Creates an instance of TAd3DSpaceObject and initializes the properties
+       to some default values.}
+      constructor Create;
+      {Destroys the instance of TAd3DSpaceObject.}
       destructor Destroy;override;
-      
-      {Draws the mesh on the specified surface.
-       @param(ASurface specifies the target surface. May be nil, if you want to
-         draw on the surface that is currently active.)
-       @param(ABlendMode specifies the blend mode the mesh should be drawn in.)}
-      procedure Draw(ASurface: TAdSurface; ABlendMode: TAd2dBlendMode = bmAlpha);virtual;
-      
-      {Pointer on the parent TAdDraw.}
-      property Parent: TAdDraw read FParent write FParent;
-      {The texture the loaded mesh should be texurized with. Please keep in mind
-       that TAdMesh is not capable of figuring out the texture coordinates that
-       match to your texture.}
-      property Texture: TAdCustomTexture read FTexture write SetTexture;
-      {Material represents the material of the mesh. "UseMaterial" is set to true
-       when storing data in "Material". Do not use the Pascal "with" operation when
-       writing data to material. It won't be properly stored. Use a temporary variable
-       instead.
-       @seealso(Material)}
-      property Material: TAd2dMaterial read FMaterial write SetMaterial;
-      {Set this to true if you want to use materials with this mesh. "UseMaterial"
-       is automatically set to true, when setting the "Material" property.
-       @seealso(UseMaterial)}
-      property UseMaterial: boolean read FUseMaterial write SetUseMaterial;
+
+      procedure Draw(ASurface: TAdSurface);virtual;
 
       {The X-value the mesh should be translated by.}
       property X: single index 0 read FX write SetCoeff;
@@ -117,7 +95,73 @@ type
       {Rotation around the Z-axis of the coordinate system.}
       property RotationZ: single index 8 read FRotZ write SetCoeff;
       {Returns the current translation matrix.}
-      property Matrix: TAdMatrix read FMatrix write SetMatrix;
+      property Matrix: TAdMatrix read GetMatrix write SetMatrix;
+      {The parent object in the 3D-object tree.}
+      property ParentObject: TAd3DSpaceObject read FParentObject write SetParentObject;
+      {A list that contains all children elements}
+      property Children: TAd3DSpaceObjectList read FChildren;
+  end;
+
+  {TAdMesh is the base class for 3D objects in Andorra 2D. It wraps around the
+   TAd2dMesh interface and allows classes derived from TAdMesh to load their own
+   mesh data. It also provides properties that may be used to set the position,
+   scaling and the rotation of the object. Textures and materials may be applied
+   to the mesh.}
+  TAdMesh = class(TAd3DSpaceObject)
+    private
+      FParent: TAdDraw;
+      FMesh: TAd2DMesh;
+      FTexture: TAdCustomTexture;
+      FDrawMode: TAd2dDrawMode;
+      FMaterial: TAd2dMaterial;
+      FUseMaterial: boolean;
+      FBlendMode: TAd2dBlendMode;
+
+      procedure SetTexture(ATexture: TAdCustomTexture);
+      procedure SetMaterial(AMaterial: TAd2dMaterial);
+      procedure SetUseMaterial(AValue: boolean);
+      procedure Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
+    protected
+      procedure Initialize;
+      procedure Finalize;
+      
+      procedure LoadMeshData;virtual;abstract;
+      procedure SetMatrix(AMatrix: TAdMatrix);override;
+
+      property Mesh: TAd2DMesh read FMesh;
+      property DrawMode: TAd2dDrawMode read FDrawMode write FDrawMode;
+    public
+      {Creates a new instance of TAdMesh. The underlying TAd2dMesh structure is
+       created and filled with data by calling the "LoadMeshData" function that
+       has to be implemented by classes derived from TAdMesh.}
+      constructor Create(AParent: TAdDraw);virtual;
+      {Destroys the instance of TAdMesh.}
+      destructor Destroy;override;
+      
+      {Draws the mesh on the specified surface.
+       @param(ASurface specifies the target surface. May be nil, if you want to
+         draw on the surface that is currently active.)}
+      procedure Draw(ASurface: TAdSurface);override;
+      
+      {Pointer on the parent TAdDraw.}
+      property Parent: TAdDraw read FParent write FParent;
+      {The texture the loaded mesh should be texurized with. Please keep in mind
+       that TAdMesh is not capable of figuring out the texture coordinates that
+       match to your texture.}
+      property Texture: TAdCustomTexture read FTexture write SetTexture;
+      {Material represents the material of the mesh. "UseMaterial" is set to true
+       when storing data in "Material". Do not use the Pascal "with" operation when
+       writing data to material. It won't be properly stored. Use a temporary variable
+       instead.
+       @seealso(Material)}
+      property Material: TAd2dMaterial read FMaterial write SetMaterial;
+      {Set this to true if you want to use materials with this mesh. "UseMaterial"
+       is automatically set to true, when setting the "Material" property.
+       @seealso(UseMaterial)}
+      property UseMaterial: boolean read FUseMaterial write SetUseMaterial;
+
+      {The blend mode the mesh is drawn in.}
+      property BlendMode: TAd2dBlendMode read FBlendMode write FBlendMode;
   end;
 
   {A simple plane.}
@@ -194,6 +238,15 @@ type
       procedure LoadMeshData;override;
   end;
 
+  TAdModel = class(TAd3DSpaceObject)
+    private
+    public
+      constructor Create(AParent: TAdDraw);
+      destructor Destroy;override;
+
+      procedure Draw(ASurface: TAdSurface);
+  end;
+
 
 implementation 
 
@@ -206,13 +259,11 @@ begin
   FParent := AParent;
   FParent.RegisterNotifyEvent(Notify);
 
-  //Set some presets
-  FX := 0; FY := 0; FZ := 0;
-  FScaleX := 1; FScaleY := 1; FScaleZ := 1;
-  FRotX := 0; FRotY := 0; FRotZ := 0;
-
   //Set the default draw mode
   FDrawMode := adTriangles;
+
+  //Set the default blend mode
+  FBlendMode := bmAlpha;
 
   FUseMaterial := false;
   FMaterial.Diffuse := Ad_ARGB(255, 255, 255, 255);
@@ -255,17 +306,17 @@ begin
   FMesh := nil;
 end;
 
-procedure TAdMesh.Draw(ASurface: TAdSurface; ABlendMode: TAd2dBlendMode);
+procedure TAdMesh.Draw(ASurface: TAdSurface);
 begin
-  if FMatrixChanged then
-    BuildMatrix;
+  //Get the object matrix
+  FMesh.Matrix := Matrix;
 
   //Activate the surface on which the mesh should be drawn
   if ASurface <> nil then
     ASurface.Activate;
     
   //Draw the mesh with the given paremeters
-  FMesh.Draw(ABlendMode, FDrawMode);
+  FMesh.Draw(FBlendMode, FDrawMode);
 end;
 
 procedure TAdMesh.Notify(Sender: TObject; AEvent: TAdSurfaceEventState);
@@ -276,25 +327,6 @@ begin
     seInitialized: Initialize;
     seFinalize: Finalize;
   end;
-end;
-
-procedure TAdMesh.SetCoeff(AIndex: integer; AValue: single);
-begin
-  //Set the mesh translation coefficient that has been changed
-  case AIndex of
-    0: FX := AValue;
-    1: FY := AValue;
-    2: FZ := AValue;
-    3: FScaleX := AValue;
-    4: FScaleY := AValue;
-    5: FScaleZ := AValue;
-    6: FRotX := AValue;
-    7: FRotY := AValue;
-    8: FRotZ := AValue;
-  end;
-
-  //Rebuild the model matrix of the object the next time the object is rendered
-  FMatrixChanged := true;
 end;
 
 procedure TAdMesh.SetMaterial(AMaterial: TAd2dMaterial);
@@ -320,7 +352,8 @@ end;
 
 procedure TAdMesh.SetMatrix(AMatrix: TAdMatrix);
 begin
-  FMatrix := AMatrix;
+  inherited;
+  
   FMesh.Matrix := AMatrix;
 end;
 
@@ -333,29 +366,6 @@ begin
     FMesh.Texture := nil
   else
     FMesh.Texture := ATexture.Texture;
-end;
-
-procedure TAdMesh.BuildMatrix;
-var
-  FMat1, FMat2: TAdMatrix;
-begin
-  //Calculate the rotation matrix
-  FMat1 := AdMatrix_Rotation(FRotX, FRotY, FRotZ);
-
-  //Calculate the scaling matrix
-  FMat2 := AdMatrix_Scale(FScaleX, FScaleY, FScaleZ);
-  
-  //Calculate the rotation+scale matrix
-  FMat1 := AdMatrix_Multiply(FMat1, FMat2);
-
-  //Calculate the translation matrix
-  FMat2 := AdMatrix_Translate(FX, FY, FZ);
-
-  //Calculate the rotation+scale+translation matrix
-  FMat1 := AdMatrix_Multiply(FMat1, FMat2);
-
-  Matrix := FMat1;
-  FMatrixChanged := false;
 end;
 
 { TAdCubeMesh }
@@ -924,6 +934,169 @@ begin
   end;
 
   LoadMeshData;
+end;
+
+{ TAd3DSpaceObject }
+
+constructor TAd3DSpaceObject.Create;
+begin
+  inherited Create;
+  
+  //Set some presets
+  FX := 0; FY := 0; FZ := 0;
+  FScaleX := 1; FScaleY := 1; FScaleZ := 1;
+  FRotX := 0; FRotY := 0; FRotZ := 0;
+
+  FMatrixChanged := true;
+  FParentMatrixChanged := true;
+
+  FChildren := TAd3DSpaceObjectList.Create;
+  FChildren.AutoFreeItems := false;
+end;
+
+destructor TAd3DSpaceObject.Destroy;
+begin
+  ParentObject := nil;
+  
+  FChildren.Free;
+  inherited;
+end;
+
+procedure TAd3DSpaceObject.Draw(ASurface: TAdSurface);
+var
+  i: Integer;
+begin
+  for i := 0 to Children.Count - 1 do
+    Children[i].Draw(ASurface);
+end;
+
+function TAd3DSpaceObject.GetMatrix: TAdMatrix;
+begin
+  if FMatrixChanged then
+    BuildMatrix;
+
+  if FParentObject = nil then  
+    result := FMatrix
+  else begin
+    if FParentMatrixChanged then
+    begin
+      FComposedMatrix := AdMatrix_Multiply(FMatrix, FParentObject.Matrix);
+      FParentMatrixChanged := false;
+    end;
+
+    result := FComposedMatrix;
+  end;
+end;
+
+procedure TAd3DSpaceObject.ParentMatrixChanged;
+var
+  i: Integer;
+begin
+  FParentMatrixChanged := true;
+
+  for i := 0 to FChildren.Count - 1 do
+    FChildren[i].ParentMatrixChanged;
+end;
+
+procedure TAd3DSpaceObject.BuildMatrix;
+var
+  FMat1, FMat2: TAdMatrix;
+  i: Integer;
+begin
+  //Calculate the rotation matrix
+  FMat1 := AdMatrix_Rotation(FRotX, FRotY, FRotZ);
+
+  //Calculate the scaling matrix
+  FMat2 := AdMatrix_Scale(FScaleX, FScaleY, FScaleZ);
+  
+  //Calculate the rotation+scale matrix
+  FMat1 := AdMatrix_Multiply(FMat1, FMat2);
+
+  //Calculate the translation matrix
+  FMat2 := AdMatrix_Translate(FX, FY, FZ);
+
+  //Calculate the rotation+scale+translation matrix
+  FMat1 := AdMatrix_Multiply(FMat1, FMat2);
+
+  Matrix := FMat1;
+
+  for i := 0 to FChildren.Count - 1 do
+    FChildren[i].ParentMatrixChanged;
+
+  FMatrixChanged := false;
+end;
+
+procedure TAd3DSpaceObject.SetCoeff(AIndex: integer; AValue: single);
+begin
+  //Set the mesh translation coefficient that has been changed
+  case AIndex of
+    0: FX := AValue;
+    1: FY := AValue;
+    2: FZ := AValue;
+    3: FScaleX := AValue;
+    4: FScaleY := AValue;
+    5: FScaleZ := AValue;
+    6: FRotX := AValue;
+    7: FRotY := AValue;
+    8: FRotZ := AValue;
+  end;
+
+  //Rebuild the model matrix of the object the next time the object is rendered
+  FMatrixChanged := true;
+end;
+
+procedure TAd3DSpaceObject.SetMatrix(AMatrix: TAdMatrix);
+begin
+  FMatrixChanged := false;
+  FMatrix := AMatrix;
+end;
+
+procedure TAd3DSpaceObject.SetParentObject(AParentObject: TAd3DSpaceObject);
+begin
+  if FParentObject <> nil then
+    FParentObject.Children.Remove(self);
+
+  if AParentObject <> nil then
+    AParentObject.Children.Add(self);
+
+  FParentObject := AParentObject;
+end;
+
+{ TAd3DSpaceObjectList }
+
+function TAd3DSpaceObjectList.GetItem(AIndex: integer): TAd3DSpaceObject;
+begin
+  result := inherited Items[AIndex];
+end;
+
+procedure TAd3DSpaceObjectList.Notify(ptr: Pointer; action: TListNotification);
+begin
+  if (action = lnDeleted) and FAutoFreeChildren then
+    TAd3DSpaceObject(ptr).Free;
+end;
+
+procedure TAd3DSpaceObjectList.SetItem(AIndex: integer;
+  AValue: TAd3DSpaceObject);
+begin
+  inherited Items[AIndex] := AValue;
+end;
+
+{ TAdModel }
+
+constructor TAdModel.Create(AParent: TAdDraw);
+begin
+  inherited Create;     
+end;
+
+destructor TAdModel.Destroy;
+begin
+
+  inherited;
+end;
+
+procedure TAdModel.Draw(ASurface: TAdSurface);
+begin
+
 end;
 
 end.

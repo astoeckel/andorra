@@ -18,7 +18,7 @@
 unit AdPixelTest;
 
 {$IFDEF FPC}
-  {$MODE Delphi}
+  {$MODE DELPHI}
 {$ENDIF}
 
 interface
@@ -33,7 +33,7 @@ type
    @param(ASurface the surface it should be drawn to)
    @param(AX, AY the top corner edge of the object where it should be drawn to.)}
   TAdCollisionTestDrawProc = procedure(AObj: TObject; ASurface: TAdRenderingSurface;
-    AX, AY: integer) of object;
+    AX, AY: Single) of object;
   {Callback procedure type. Used by TAdPixelCollisionTester to indicate that two
    objects collided.}
   TAdCollisionTestCollisionProc = procedure(AObj1, AObj2: TObject) of object;
@@ -90,8 +90,8 @@ type
          is called.)
        @seealso(TAdCollisionTestDrawProc)
        @seealso(TAdCollisionTestCollisionProc)}
-      procedure CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
-        AObj2: TObject; ABoundsRect2: TAdRect;
+      procedure CheckCollision(AObj1: TObject; ABoundsRect1: TAdRectEx;
+        AObj2: TObject; ABoundsRect2: TAdRectEx;
         ADrawCallback: TAdCollisionTestDrawProc;
         ACollisionCallback: TAdCollisionTestCollisionProc);
 
@@ -139,14 +139,14 @@ begin
   inherited;
 end;
 
-procedure TAdPixelCollisionTester.CheckCollision(AObj1: TObject; ABoundsRect1: TAdRect;
-  AObj2: TObject; ABoundsRect2: TAdRect;
+procedure TAdPixelCollisionTester.CheckCollision(AObj1: TObject; ABoundsRect1: TAdRectEx;
+  AObj2: TObject; ABoundsRect2: TAdRectEx;
   ADrawCallback: TAdCollisionTestDrawProc;
   ACollisionCallback: TAdCollisionTestCollisionProc);
 var
-  AOverlapRect: TAdRect;
+  AOverlapRect: TAdRectEx;
   ATestItem: PAdCollisionTesterItem;
-  w, h: integer;
+  w, h: Single;
 begin
   if CalcOverlapRect(AOverlapRect, ABoundsRect1, ABoundsRect2) then
   begin
@@ -160,7 +160,7 @@ begin
     w := AOverlapRect.Right - AOverlapRect.Left;
     h := AOverlapRect.Bottom - AOverlapRect.Top;
 
-    FSurface.Scene.Setup2DScene(w, h);
+    FSurface.Scene.Setup2DScene(round(w), round(h));
 
     //Setup stencil options. When a pixel is drawn, increment the stencil buffer
     FDraw.AdAppl.SetStencilOptions(1, $FFFF, asfAlways);

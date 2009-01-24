@@ -165,7 +165,7 @@ begin
     AnimStop := 15;
     X := Engine.SurfaceRect.Right+96;
   end;
-  Y := Random(Engine.SurfaceRect.Right-96);
+  Y := Random(round(Engine.SurfaceRect.Right-96));
 end;
 
 end.

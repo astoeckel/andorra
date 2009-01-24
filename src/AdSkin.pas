@@ -257,8 +257,8 @@ begin
             begin
               Self.Images[Images[AState]].DrawEx(
                 FParent,
-                AdRect(ImgSrcX1,ImgSrcY1,ImgSrcX2,ImgSrcY2),
-                AdRect(AX+X1,AY+Y1,AX+X2,AY+Y2),0.5,0.5,0,Alpha,
+                AdRectEx(ImgSrcX1,ImgSrcY1,ImgSrcX2,ImgSrcY2),
+                AdRectEx(AX+X1,AY+Y1,AX+X2,AY+Y2),0.5,0.5,0,Alpha,
                 bmAlpha);
             end;
           end;

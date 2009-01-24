@@ -535,8 +535,8 @@ begin
   Width := 120;
   Height := 120;
   
-  X := Engine.SurfaceRect.Right div 2;
-  Y := Engine.SurfaceRect.Bottom div 2;
+  X := Engine.SurfaceRect.Right / 2;
+  Y := Engine.SurfaceRect.Bottom / 2;
 
   FParticleSystem := TAdParticleSystem.Create(Engine.Surface.Parent);
 end;

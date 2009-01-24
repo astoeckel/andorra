@@ -125,7 +125,7 @@ type
       FSurfaceWidth, FSurfaceHeight: integer;
       FDone: boolean;
       procedure DrawSpriteProc(AObj: TObject; ASurface: TAdRenderingSurface;
-        AX, AY: integer);
+        AX, AY: Single);
       procedure SpriteCollisionProc(AObj1, AObj2: TObject);
       procedure SetSurfaceWidth(AValue: integer);
       procedure SetSurfaceHeight(AValue: integer);
@@ -171,7 +171,7 @@ type
     protected
       OldFieldCoords:TAdRect;
       DidCollision:boolean;
-      function GetBoundsRect:TAdRect;virtual;
+      function GetBoundsRect:TAdRectEx;virtual;
       function GetFieldCoords:TAdRect;virtual;
       function TestCollision(Sprite:TSprite):boolean;virtual;
       procedure DoMove(TimeGap:double);virtual;
@@ -235,7 +235,7 @@ type
      
       {Returns a rect which contains the relative coordinates (relative to the
        screen) of the sprite.}
-      property BoundsRect:TAdRect read GetBoundsRect;
+      property BoundsRect:TAdRectEx read GetBoundsRect;
       {Contains all child sprites.}
       property Items:TSpriteList read FList;
 
@@ -288,9 +288,9 @@ type
       FCollisionCount:integer;
       FCollisionSprite:TSprite;
       FCollisionDone:boolean;
-      FCollisionRect:TAdRect;
+      FCollisionRect:TAdRectEx;
     protected
-      FSurfaceRect:TAdRect;
+      FSurfaceRect:TAdRectEx;
       procedure SetSurface(AValue:TAdRenderingSurface);virtual;
     public
       //The count of sprites which collide to the collision sprite.
@@ -300,7 +300,7 @@ type
       //If this value is set to true, the collision aborts.
       property CollisionDone:boolean read FCollisionDone write FCollisionDone;
       //The rect the collision takes place in.
-      property CollisionRect:TAdRect read FCollisionRect write FCollisionRect;
+      property CollisionRect:TAdRectEx read FCollisionRect write FCollisionRect;
 
       //Creates an instance of TSprite
       constructor Create(AParent:TAdDraw);reintroduce;
@@ -312,7 +312,7 @@ type
       procedure Move(TimeGap: double);
 
       //The size of the surface.
-      property SurfaceRect:TAdRect read FSurfaceRect;
+      property SurfaceRect:TAdRectEx read FSurfaceRect;
     published
       //The parent addraw surface.
       property Surface:TAdRenderingSurface read FSurface write SetSurface;
@@ -393,7 +393,7 @@ type
       procedure SetColor(AValue:longint);virtual;
       procedure SetRotationCenterX(AValue: double);virtual;
       procedure SetRotationCenterY(AValue: double);virtual;
-      function GetBoundsRect:TAdRect;override;
+      function GetBoundsRect:TAdRectEx;override;
     public
       //Creates an instance of TImageSpriteEx
       constructor Create(AParent:TSprite);override;
@@ -420,7 +420,7 @@ type
       FCenter:boolean;
       procedure SetDepth(AValue:single);
     protected
-      function GetBoundsRect:TAdRect;override;
+      function GetBoundsRect:TAdRectEx;override;
       procedure DoDraw;override;
     public
       {Creates an instance of TBackgroundSprite}
@@ -454,7 +454,7 @@ type
     protected
       procedure DoDraw;override;
       procedure DoMove(TimeGap:double);override;
-      function GetBoundsRect:TAdRect;override;
+      function GetBoundsRect:TAdRectEx;override;
     public
       //Creates an instance of TParticleSprite
       constructor Create(AParent:TSprite);override;
@@ -514,7 +514,7 @@ procedure TSpriteList.GetSpritesAt(ASpriteList: TSpriteList; const AX,
   AY: Integer; const ASpriteClass: TSpriteClass);
 var
   i : Integer;
-  Rect : TAdRect;
+  Rect : TAdRectEx;
 begin
   if ASpriteList = nil then
     raise Exception.Create(MsgSpriteListIsNil);
@@ -593,9 +593,9 @@ begin
   FList.Clear;
 end; 
 
-function TSprite.GetBoundsRect: TAdRect;
+function TSprite.GetBoundsRect: TAdRectEx;
 begin
-  result := AdBounds(Round(WorldX),Round(WorldY),Round(Width),Round(Height));
+  result := AdBoundsEx(WorldX, WorldY, Width, Height);
 end;
 
 function TSprite.CountOfClass(AClass: TSpriteClass): integer;
@@ -628,7 +628,7 @@ end;
 
 function TSprite.GetSpriteAt(X, Y: integer): TSprite;
 var i:integer;
-    rect:TAdRect;
+    rect:TAdRectEx;
 begin
   result := nil;
   for i := Items.Count - 1 downto 0 do
@@ -805,7 +805,7 @@ begin
     begin
       if FEngine.CollisionSprite.CollisionTester = nil then
       begin
-        if  OverlapRect(FEngine.FCollisionRect,BoundsRect) and
+        if  OverlapRect(FEngine.FCollisionRect, BoundsRect) and
             TestCollision(FEngine.FCollisionSprite) then
         begin
           FEngine.FCollisionCount := FEngine.CollisionCount + 1;
@@ -1088,7 +1088,7 @@ end;
 
 procedure TSpriteEngine.Move(TimeGap: double);
 begin
-  FSurfaceRect := Surface.DisplayRect;
+  FSurfaceRect := AdRectEx(Surface.DisplayRect);
   inherited;
 end;
 
@@ -1097,7 +1097,7 @@ begin
   if (AValue <> nil) and (AValue <> FSurface) then
   begin
     FSurface := AValue;
-    FSurfaceRect := AValue.DisplayRect;
+    FSurfaceRect := AdRectEx(AValue.DisplayRect);
   end;
 end;
 
@@ -1125,7 +1125,7 @@ procedure TImageSprite.DoDraw;
 begin
   if FImage <> nil then
   begin
-    FImage.StretchDraw(Engine.Surface,BoundsRect,Trunc(AnimPos));
+    FImage.StretchDraw(Engine.Surface, BoundsRect, Trunc(AnimPos));
   end;
 end;
 
@@ -1270,10 +1270,10 @@ begin
   end;
 end;
 
-function TImageSpriteEx.GetBoundsRect: TAdRect;
+function TImageSpriteEx.GetBoundsRect: TAdRectEx;
 begin
   result :=
-    AdRect(
+    AdRectEx(
       WorldX + FBoundsRect.Left,
       WorldY + FBoundsRect.Top,
       WorldX + FBoundsRect.Right,
@@ -1405,17 +1405,18 @@ end;
 
 procedure TBackgroundSprite.DoDraw;
 var
-  SourceRect:TAdRect;
+  SourceRect:TAdRectEx;
   amx,amy:integer;
   ax,ay:double;
   
-  procedure MoveRect(mx,my:integer;var ARect:TAdRect);
+  procedure MoveRect(mx,my:integer; var ARect:TAdRectEx);
   begin
     ARect.Left := mx+ARect.Left;
     ARect.Top := my+ARect.Top;
     ARect.Right := mx+ARect.Right;
     ARect.Bottom := my+ARect.Bottom;
   end;
+  
 begin
   if FImage <> nil then
   begin
@@ -1425,7 +1426,7 @@ begin
     end
     else
     begin
-      SourceRect := AdBounds(0,0,Image.Width*XTiles,Image.Height*YTiles);
+      SourceRect := AdBoundsEx(0,0,Image.Width*XTiles,Image.Height*YTiles);
     end;
 
     ax := Engine.X;
@@ -1437,20 +1438,20 @@ begin
 
     if FCenter then
     begin
-      amx := amx-(SourceRect.Right-SourceRect.Left) div 2 + Image.Width div 2;
-      amy := amy-(SourceRect.Bottom-SourceRect.Top) div 2 + Image.Height div 2;
+      amx := amx-round(SourceRect.Right-SourceRect.Left) div 2 + Image.Width div 2;
+      amy := amy-round(SourceRect.Bottom-SourceRect.Top) div 2 + Image.Height div 2;
     end;
 
     MoveRect(amx,amy,SourceRect);
 
     Image.DrawEx(Engine.Surface,SourceRect,
-      AdRect(Engine.SurfaceRect.Left-1,Engine.SurfaceRect.Top-1,
-             Engine.SurfaceRect.Right,Engine.SurfaceRect.Bottom), 0, 0, 0, 255,
-             bmAlpha);
+      AdRectEx(Engine.SurfaceRect.Left-1,Engine.SurfaceRect.Top-1,
+               Engine.SurfaceRect.Right,Engine.SurfaceRect.Bottom),
+      0, 0, 0, 255, bmAlpha);
   end;
 end;
 
-function TBackgroundSprite.GetBoundsRect: TAdRect;
+function TBackgroundSprite.GetBoundsRect: TAdRectEx;
 begin
   result := Engine.SurfaceRect;
 end;      
@@ -1508,7 +1509,7 @@ begin
   FPartSys.Emit(ACount, round(FEmissionX), round(FEmissionY));
 end;
 
-function TParticleSprite.GetBoundsRect: TAdRect;
+function TParticleSprite.GetBoundsRect: TAdRectEx;
 var
   r:TAdRect;
   w,h:integer;
@@ -1516,7 +1517,7 @@ begin
   r := FPartSys.BoundsRect;
   w := r.Right - r.Left;
   h := r.Bottom - r.Top;
-  result := AdBounds(r.Left + round(WorldX), r.Top + round(WorldY), w, h);
+  result := AdBoundsEx(r.Left + round(WorldX), r.Top + round(WorldY), w, h);
   FWidth := w;
   FHeight := h;
 end;
@@ -1805,9 +1806,9 @@ begin
 end;
 
 procedure TAdSpritePixelCollisionTester.DrawSpriteProc(AObj: TObject;
-  ASurface: TAdRenderingSurface; AX, AY: integer);
+  ASurface: TAdRenderingSurface; AX, AY: Single);
 var
-  oldx, oldy: double;
+  oldx, oldy: Single;
   oldsurface: TAdRenderingSurface;
 begin
   with AObj as TSprite do

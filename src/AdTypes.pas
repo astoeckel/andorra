@@ -140,8 +140,8 @@ type
 
   {A point which contains its coordinates as float values}
   TAdPointEx = packed record
-    X: double;
-    Y: double;
+    X: Single;
+    Y: Single;
   end;
   {Pointer type of TAdPointEx}
   PAdPointEx = ^TAdPointEx;
@@ -158,7 +158,7 @@ type
   {A TAdRect with float values.}
   TAdRectEx = packed record
     case integer of
-      0: (Left, Top, Right, Bottom: Double);
+      0: (Left, Top, Right, Bottom: Single);
       1: (TopLeft:TAdPoint; BottomRight: TAdPointEx);
   end;
   {Pointer type of TAdRectEx}
@@ -285,7 +285,9 @@ function AdRect(X1,Y1,X2,Y2:LongInt):TAdRect;overload;{$IFDEF SUPPORTS_INLINE}in
 function AdRect(X1,Y1,X2,Y2:double):TAdRect;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
 {Returns a TAdRectEx}
-function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+function AdRectEx(X1,Y1,X2,Y2:double):TAdRectEx;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+{Returns a TAdRectEx}
+function AdRectEx(Rect: TAdRect):TAdRectEx;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
 {Returns a TAdPoint}
 function AdPoint(X,Y:LongInt):TAdPoint;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
@@ -293,14 +295,23 @@ function AdPoint(X,Y:LongInt):TAdPoint;overload;{$IFDEF SUPPORTS_INLINE}inline;{
 function AdPoint(X,Y:double):TAdPoint;overload;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
 {Returns true when the two rects have the same coordinates.}
-function CompareRects(const Rect1,Rect2:TAdRect):boolean;
+function CompareRects(const Rect1,Rect2:TAdRect):boolean;overload;
+{Returns true when the two rects have the same coordinates.}
+function CompareRects(const Rect1,Rect2:TAdRectEx; Epsilon: single = 0.0001):boolean;overload;
 {Returns true, when the two rects overlap themselves.}
-function OverlapRect(const Rect1, Rect2: TAdRect): boolean;
+function OverlapRect(const Rect1, Rect2: TAdRect): boolean;overload;
+{Returns true, when the two rects overlap themselves.}
+function OverlapRect(const Rect1, Rect2: TAdRectEx): boolean;overload;
 {Returns true, if the point lies within the rect}
-function InRect(const X, Y: integer; const Rect: TAdRect): boolean;
+function InRect(const X, Y: integer; const Rect: TAdRect): boolean;overload;
+{Returns true, if the point lies within the rect}
+function InRect(const X, Y: Single; const Rect: TAdRectEx): boolean;overload;
 {AO contains the intersection rectangle of the two rectangles. The function
  returns false if the two rectangles do not overlapp.}
-function CalcOverlapRect(out AO: TAdRect; const AR1, AR2: TAdRect): boolean;
+function CalcOverlapRect(out AO: TAdRect; const AR1, AR2: TAdRect): boolean;overload;
+{AO contains the intersection rectangle of the two rectangles. The function
+ returns false if the two rectangles do not overlapp.}
+function CalcOverlapRect(out AO: TAdRectEx; const AR1, AR2: TAdRectEx): boolean;overload;
 
 {Returns a vector with three components.}
 function AdVector3(AX,AY,AZ:double):TAdVector3;overload;
@@ -441,7 +452,27 @@ begin
   end;
 end;
 
+function AdRectEx(Rect: TAdRect):TAdRectEx;
+begin
+  with result do
+  begin
+    Left := Rect.Left;
+    Top := Rect.Top;
+    Right := Rect.Right;
+    Bottom := Rect.Bottom;
+  end;
+end;
+
 function OverlapRect(const Rect1, Rect2: TAdRect): Boolean;
+begin
+  Result:=
+    (Rect1.Left < Rect2.Right) and
+    (Rect1.Right > Rect2.Left) and
+    (Rect1.Top < Rect2.Bottom) and
+    (Rect1.Bottom > Rect2.Top);
+end;        
+
+function OverlapRect(const Rect1, Rect2: TAdRectEx): Boolean;
 begin
   Result:=
     (Rect1.Left < Rect2.Right) and
@@ -487,6 +518,43 @@ begin
     result := false;
 end;
 
+function CalcOverlapRect(out AO: TAdRectEx; const AR1, AR2: TAdRectEx): boolean;
+begin
+  if OverlapRect(AR1, AR2) then
+  begin
+    result := true;
+
+    //--------
+    //|A1----|----
+    //|  | AO|   |
+    //-------- A2|
+    //   |       |
+    //   ---------
+
+    if AR1.Left > AR2.Left then
+      AO.Left := AR1.Left
+    else
+      AO.Left := AR2.Left;
+
+    if AR1.Top > AR2.Top then
+      AO.Top := AR1.Top
+    else
+      AO.Top := AR2.Top;
+
+    if AR1.Bottom < AR2.Bottom then
+      AO.Bottom := AR1.Bottom
+    else
+      AO.Bottom := AR2.Bottom;
+
+    if AR1.Right < AR2.Right then
+      AO.Right := AR1.Right
+    else
+      AO.Right := AR2.Right;       
+
+  end else
+    result := false;
+end;
+
 function CompareRects(const Rect1,Rect2:TAdRect):boolean;
 begin
   result :=
@@ -496,12 +564,28 @@ begin
     (Rect1.Bottom = Rect2.Bottom);
 end;
 
+function CompareRects(const Rect1,Rect2:TAdRectEx; Epsilon: Single):boolean;
+begin
+  result :=
+    (Abs(Rect1.Left - Rect2.Left) < Epsilon) and
+    (Abs(Rect1.Right - Rect2.Right) < Epsilon) and
+    (Abs(Rect1.Top - Rect2.Top) < Epsilon) and
+    (Abs(Rect1.Bottom - Rect2.Bottom) < Epsilon);
+end;
+
 function InRect(const X, Y: integer; const Rect:TAdRect):boolean;
 begin
   result := (
-     (Y >= Rect.Top)  and (Y <= Rect.Bottom) and
+     (Y >= Rect.Top) and (Y <= Rect.Bottom) and
      (X >= Rect.Left) and (X <= Rect.Right));
-end;      
+end;
+
+function InRect(const X, Y: Single; const Rect:TAdRectEx):boolean;
+begin
+  result := (
+     (Y >= Rect.Top) and (Y <= Rect.Bottom) and
+     (X >= Rect.Left) and (X <= Rect.Right));
+end;
 
 function AdVector3(AX,AY,AZ:double):TAdVector3;
 begin

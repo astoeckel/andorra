@@ -25,6 +25,13 @@ uses
   SysUtils, Classes, {$IFDEF Win32}Windows{$ELSE}dynlibs{$ENDIF}, AdClasses,
   AdMessages;
 
+{$i inc_andorra.inc}
+
+{$IFDEF CPU64}
+type
+  THandle = int64;
+{$ENDIF}
+
 type
   {Exception that is raised when no plugin is found by the "DefaultPlugin" method.}
   EAdNoPluginFound = class(Exception);

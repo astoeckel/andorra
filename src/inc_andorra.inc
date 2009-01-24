@@ -19,6 +19,11 @@
 * Comment: Used to define some compiler switches
 }
 
+//Set the fpc specific cpu32 compiler define if we're using Delphi
+{$IFNDEF FPC}
+  {$DEFINE CPU32}
+{$ENDIF}
+
 {$DEFINE SUPPORTS_INLINE}
 {$IFNDEF FPC}
   {$IFDEF VER160}
