@@ -105,6 +105,12 @@ resourcestring
   { Sprite engine messages }
   MsgSpriteListIsNil = 'The given sprite list is nil';
 
+  { 3DS Loader}
+  Msg3DSInvalidChunkSize = 'The read chunk has a invalid length. The file may be ' +
+    'corrupted.';
+  Msg3DSInvalidChunkOrder = 'The chunks of this 3DS file are misordered. The file may be ' +
+    'corrupted.';
+
 implementation
 
 end.

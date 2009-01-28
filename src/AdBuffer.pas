@@ -554,6 +554,10 @@ end;
 
 destructor TAdBufferStreamAdapter.Destroy;
 begin
+  //Be sure that the adapted stream is at the specified position, when the adapter
+  //is freed.
+  FStream.Position := FPosition;
+
   FBuffer.Free;
   FreeMem(FMem);
   

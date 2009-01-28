@@ -77,13 +77,9 @@ begin
   Key.Value := AName;
   p := ClassMap.GetValue(Key);
   if p <> nil then
-  begin
-    result := TAdPersistentClass(p);
-  end
+    result := TAdPersistentClass(p)
   else
-  begin
     result := nil;
-  end;
   Key.Free;
 end;
 
@@ -123,9 +119,7 @@ begin
       FCount := FCount - 1;
     end;
     for j := 0 to p^.Count - 1 do
-    begin
       p^.Delete(0);
-    end;
     inc(p);
   end;
 

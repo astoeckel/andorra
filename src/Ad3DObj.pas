@@ -26,8 +26,9 @@ unit Ad3DObj;
 interface
 
 uses
-  Classes, Math,
-  AdTypes, AdClasses, AdMath, AdDraws, AdSpline, AdList;
+  SysUtils, Classes, Math,
+  AdPersistent,
+  AdTypes, AdClasses, AdMath, AdDraws, AdSpline, AdList, Ad3DModelLoaderClass;
 
 type
   TAdBPatch = array[0..3,0..3] of Word;
@@ -75,6 +76,8 @@ type
       destructor Destroy;override;
 
       procedure Draw(ASurface: TAdSurface);virtual;
+
+      procedure Clear(AFree: boolean = false);
 
       {The X-value the mesh should be translated by.}
       property X: single index 0 read FX write SetCoeff;
@@ -238,15 +241,38 @@ type
       procedure LoadMeshData;override;
   end;
 
+  TAdModelSubmesh = class(TAdMesh)
+    private
+      FVertices: TAdVertexArray;
+      FIndices: TAdIndexArray;
+      FLoaded: boolean;
+    protected
+      procedure LoadMeshData;override;
+    public
+      constructor Create(AParent: TAdDraw);override;
+      procedure LoadData(AData: TAd3DModelSubmeshData;
+        ATextures: TAdImageList; ALoader: TAd3DModelLoader);
+
+      property Loaded: boolean read FLoaded;
+  end;
+
   TAdModel = class(TAd3DSpaceObject)
+    private
+      FTextures: TAdImageList;
+      FParent: TAdDraw;
+    protected
+      procedure ParseSubMesh(ALoader: TAd3DModelLoader;
+        AData: TAd3DModelSubmeshData; ATarget: TAd3DSpaceObject);
+      procedure ParseLoaderData(ALoader: TAd3DModelLoader);
     public
       constructor Create(AParent: TAdDraw);
       destructor Destroy;override;
 
-{      procedure LoadFromFile(AFile: string);
-      procedure SaveToFile(AFile: string);
+      procedure LoadFromFile(AFile: string);
       procedure LoadFromStream(AStream: TStream);
-      procedure SaveToStream(AStream: TStream);         }
+
+      property Textures: TAdImageList read FTextures;
+      property Parent: TAdDraw read FParent write FParent;
   end;
 
 
@@ -970,6 +996,9 @@ procedure TAd3DSpaceObject.Draw(ASurface: TAdSurface);
 var
   i: Integer;
 begin
+  //Precalculate the matrix
+  GetMatrix;
+
   for i := 0 to Children.Count - 1 do
     Children[i].Draw(ASurface);
 end;
@@ -1066,6 +1095,19 @@ begin
   FParentObject := AParentObject;
 end;
 
+procedure TAd3DSpaceObject.Clear(AFree: boolean = false);
+var
+  i: integer;
+begin
+  //Recursively clear all children
+  for i := 0 to Children.Count - 1 do
+    Children[i].Clear(AFree);
+
+  //Clear this list
+  Children.AutoFreeItems := AFree;
+  Children.Clear;
+end;
+
 { TAd3DSpaceObjectList }
 
 function TAd3DSpaceObjectList.GetItem(AIndex: integer): TAd3DSpaceObject;
@@ -1089,13 +1131,142 @@ end;
 
 constructor TAdModel.Create(AParent: TAdDraw);
 begin
-  inherited Create;     
+  inherited Create;
+
+  FParent := AParent;     
+  FTextures := TAdImageList.Create(AParent);
 end;
 
 destructor TAdModel.Destroy;
 begin
+  FTextures.Free;
+  inherited;
+end;
+
+procedure TAdModel.LoadFromFile(AFile: string);
+var
+  fs: TFileStream;
+begin
+  fs := TFileStream.Create(AFile, fmOpenRead);
+  LoadFromStream(fs);
+  fs.Free;
+end;
+
+procedure TAdModel.LoadFromStream(AStream: TStream);
+var
+  i: integer;
+  inst: TAd3DModelLoader;
+  pos: int64;
+begin
+  //Free all loaded textures
+  FTextures.Clear;
+
+  //Clear all loaded meshes
+  Clear(true);
+
+  pos := AStream.Position;
+
+  //Try to find a model loader
+  for i := 0 to Registered3DModelLoaders.Count - 1 do
+  begin
+    //Seek back to the beginning of the stream
+    AStream.Position := pos;
+    inst := TAd3DModelLoaderClass(AdGetClass(Registered3DModelLoaders[i])).Create;
+    if inst.SupportsStream(AStream) then
+    begin
+      try
+        //Seek back to the beginning of the stream
+        AStream.Position := pos;
+        inst.LoadFromStream(AStream);
+        ParseLoaderData(inst);
+      finally
+        inst.Free;
+      end;
+
+      Break;
+    end else
+      inst.Free;
+  end;
+end;
+
+procedure TAdModel.ParseLoaderData(ALoader: TAd3DModelLoader);
+var
+  i: integer;
+begin
+  //Load textures
+  for i := 0 to ALoader.Textures.Count - 1 do
+    FTextures.Add(ALoader.Textures[i].Name).Texture.Texture.LoadFromBitmap(ALoader.Textures[i].Bitmap, ad32Bit);
+
+  FTextures.Clear;
+
+  for i := 0 to ALoader.Submeshs.Count - 1 do
+    ParseSubMesh(ALoader, ALoader.Submeshs[i], self);
+end;
+
+procedure TAdModel.ParseSubMesh(ALoader: TAd3DModelLoader;
+  AData: TAd3DModelSubmeshData; ATarget: TAd3DSpaceObject);
+var
+  submesh: TAdModelSubmesh;
+  i: integer;
+begin
+  submesh := TAdModelSubmesh.Create(Parent);
+  submesh.LoadData(AData, FTextures, ALoader);
+
+  //Add the object to the object tree
+  submesh.ParentObject := ATarget;
+
+  for i := 0 to AData.SubItems.Count - 1 do
+    ParseSubMesh(ALoader, AData.SubItems[i], submesh);
+end;
+
+{ TAdModelSubmesh }
+
+constructor TAdModelSubmesh.Create(AParent: TAdDraw);
+begin
+  FLoaded := false;
 
   inherited;
+
+  DrawMode := adTriangles;
+  Children.AutoFreeItems := true;
+end;
+
+procedure TAdModelSubmesh.LoadData(AData: TAd3DModelSubmeshData;
+  ATextures: TAdImageList; ALoader: TAd3DModelLoader);
+var
+  mat: TAd3DModelMaterial;
+  img: TAdImage;
+begin
+  FVertices := AData.Vertices;
+  FIndices := AData.Indices;
+
+  //The setter of the "Texture" property handles "nil" values
+  img := ATextures.Find(AData.TextureName);
+  if img <> nil then
+    Texture := img.Texture;
+
+  //Check whether the result of the "Find" function is nil
+  mat := ALoader.Materials.Find(AData.MaterialName);
+  if mat = nil then
+    UseMaterial := false
+  else
+    Material := mat.Material;
+
+  FLoaded := true;
+
+  LoadMeshData;
+end;
+
+procedure TAdModelSubmesh.LoadMeshData;
+begin
+  if FLoaded then
+  begin
+    //Store the generated vertex/index data
+    Mesh.Vertices := FVertices;
+    Mesh.Indices := FIndices;
+    Mesh.PrimitiveCount := Length(FIndices) div 3;
+    Mesh.Update;
+  end;
 end;
 
 end.
