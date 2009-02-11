@@ -68,6 +68,7 @@ type
       function InitDisplay(AProps:TAdDisplayProperties):boolean;override;
 
       procedure Run;override;
+      procedure Terminate;override;
   end;
 
 implementation
@@ -210,7 +211,7 @@ var
   Done:boolean;
 begin
   //Program main loop
-  while GetMessage(FMsg,0,0,0) do
+  while GetMessage(FMsg,0,0,0) and (not FClose) do
   begin
     TranslateMessage(FMsg);
     DispatchMessage(FMsg);
@@ -542,6 +543,12 @@ begin
   else
     Result := DefWindowProc(hWnd, uMsg, wParam, lParam);
   end;
+end;
+
+procedure TAdWin32Window.Terminate;
+begin
+  if FInitialized then
+    FClose := true;
 end;
 
 initialization

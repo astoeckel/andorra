@@ -19,7 +19,8 @@ unit Main;
 interface
 
 uses
-  AdFreeImage, AdStdWindow, AdClasses, AdEvents, AdDraws, AdTypes, AdFont,
+  SysUtils,
+  AdFreeImage, AdWin32Window, AdClasses, AdEvents, AdDraws, AdTypes, AdFont,
   AdDLLExplorer;
 
 type
@@ -90,7 +91,7 @@ begin
 
     with AdDraw.Canvas do
     begin
-      TextOut(MouseX, MouseY, 'Andorra 2D ['+AdDraw.DllName+','+AdDraw.Window.ClassName+']');
+      TextOut(MouseX, MouseY, 'Andorra 2D ['+ExtractFileName(AdDraw.DllName)+','+AdDraw.Window.ClassName+']');
       Release;
     end;
     

@@ -21,14 +21,14 @@ interface
 uses
   SysUtils, Classes, Dialogs,
   AdDraws, AdTypes, AdClasses, AdPerformanceCounter, AdStdWindow, AdSetupDlg,
-  AdPNG, Ad3DObj, AdEvents, AdConsts;
+  AdPNG, Ad3DObj, Ad3DS, AdEvents, AdConsts;
 
 type
   TAdAppl = class
     private
       AdPerCounter: TAdPerformanceCounter;
       AdDraw: TAdDraw;
-      AdMesh: TAdMesh;
+      AdMesh: TAd3DSpaceObject;
       AdLight: TAd2dLight;
 
       FMX, FMY: integer;
@@ -104,7 +104,11 @@ begin
       AdDraw.Window.Title := 'Andorra 2D Simple 3D';
 
       //Create a new "Teapot-Mesh"
-      AdMesh := TAdTeapotMesh.Create(AdDraw);
+      AdMesh := TAdModel.Create(AdDraw);
+      TAdModel(AdMesh).LoadFromFile(path + 'ape.3ds');
+      TAdModel(AdMesh).ScaleX := 10;
+      TAdModel(AdMesh).ScaleY := 10;
+      TAdModel(AdMesh).ScaleZ := 10;
 
       //Set the material of the teapot
       FMatIndex := -1;
@@ -168,7 +172,7 @@ begin
 
     //Activate the ZBuffer on to prevent the graphic engine from producing graphic
     //problems
-    AdDraw.Options := AdDraw.Options + [aoZBuffer, aoLight];
+    AdDraw.Options := AdDraw.Options + [aoZBuffer];
 
     //Rotate the mesh
     AdMesh.RotationX := AdMesh.RotationX + (AdPerCounter.TimeGap * dx);
@@ -182,7 +186,7 @@ begin
     SlowDownRotation;
 
     //Deactivate the ZBuffer again - we don't need it when drawing in the 2D mode
-    AdDraw.Options := AdDraw.Options - [aoZBuffer, aoLight];
+//    AdDraw.Options := AdDraw.Options - [aoZBuffer, aoLight];
 
     //Switch to the 2D Mode again
     AdDraw.Setup2DScene;
@@ -248,7 +252,7 @@ end;
 
 procedure TAdAppl.SetMaterial;
 begin
-  //Select the next material
+ { //Select the next material
   inc(FMatIndex);
   if FMatIndex > 6 then
     FMatIndex := 0;
@@ -261,7 +265,7 @@ begin
     4: AdMesh.Material := AdMat_Plastic_Blue;
     5: AdMesh.Material := AdMat_Plastic_Green;
     6: AdMesh.Material := AdMat_Plastic_Red;
-  end;
+  end;    }
 end;
 
 procedure TAdAppl.SlowDownRotation;

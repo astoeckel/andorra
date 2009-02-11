@@ -19,7 +19,8 @@ program Simple3D;
 
 uses
   SysUtils,
-  Main in 'Main.pas'{$IFDEF FPC}, LazOpenGLContext{$ENDIF};
+  Main in 'Main.pas',
+  Ad3DS in '..\..\..\src\Ad3DS.pas';
 
 var
   Appl: TAdAppl;
