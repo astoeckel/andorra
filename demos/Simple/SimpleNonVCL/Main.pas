@@ -21,7 +21,7 @@ interface
 uses
   SysUtils,
   AdFreeImage, AdWin32Window, AdClasses, AdEvents, AdDraws, AdTypes, AdFont,
-  AdDLLExplorer;
+  AdDLLExplorer, AdPerformanceCounter;
 
 type
   TAdAppl = class

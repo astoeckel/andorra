@@ -102,33 +102,37 @@ implementation
 { TAdPerformanceCounter }
 
 //Comment this define, if you don't want hardware timers to be used.
+
 {'$DEFINE USE_HW_TIMER}
 
 {$IFDEF WIN32}
-{$IFDEF USE_HW_TIMER}
 var
+  GetSafeTickCount : function : Double = nil;
   Frequency:int64 = 0;
 
-function QueryPerformanceCounter(var lpPerformanceCount: int64): boolean; stdcall; external 'kernel32.dll';
-function QueryPerformanceFrequency(var lpFrequency: int64): boolean; stdcall; external 'kernel32.dll';
+function  QueryPerformanceCounter(var lpPerformanceCount: int64): boolean; stdcall; external 'kernel32.dll';
+function  QueryPerformanceFrequency(var lpFrequency: int64): boolean; stdcall; external 'kernel32.dll';
+function  GetTickCount: LongInt; stdcall; external 'kernel32.dll';
 
-function GetTickCount:Double;
+function  GetSWTickCount: Double; inline;
+begin
+  Result := GetTickCount;
+end;
+
+function  GetHWTickCount: Double; inline;
 var
   ticks:int64;
 begin
-  if Frequency = 0 then
-    QueryPerformanceFrequency(Frequency);
-
   QueryPerformanceCounter(ticks);
-
   result := ticks * 1000 / Frequency;
 end;
-{$ELSE}
-function GetTickCount: LongInt; stdcall; external 'kernel32.dll';
-{$ENDIF}
 
 procedure Sleep(ms: Cardinal); stdcall; external 'kernel32.dll';
-
+{$ELSE}
+function GetSafeTickCount: LongInt;inline;
+begin
+  result := GetTickCount;
+end;
 {$ENDIF}
 
 constructor TAdPerformanceCounter.Create(ACreatePaused: boolean);
@@ -145,7 +149,7 @@ begin
   end;
 
   FTempTime := 0;
-  FLastTickCount := GetTickCount;
+  FLastTickCount := GetSafeTickCount;
   FInterpolate := true;
   FInterpolationFactor := 20;
   FMaximumTimeGap := 50;
@@ -171,7 +175,7 @@ var
   tc, td: double;
 begin
   //Calculate time difference
-  tc := GetTickCount;
+  tc := GetSafeTickCount;
   td := tc - FLastTickCount;
 
   //Limit framerate
@@ -235,5 +239,23 @@ begin
     FFirstTime := true;
   end;
 end;
+
+initialization
+
+{$IFDEF WIN32}
+{$IFDEF USE_HW_TIMER}
+// determine if hardware timer is available
+if (QueryPerformanceFrequency(Frequency)) then
+begin
+  // hardware timers is available
+  GetSafeTickCount  := GetHWTickCount;
+end
+else
+{$ENDIF}
+begin
+  // hardware timers is not available
+  GetSafeTickCount  := GetSWTickCount;
+end;
+{$ENDIF}
 
 end.

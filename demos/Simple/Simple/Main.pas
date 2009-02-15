@@ -97,7 +97,9 @@ begin
     //colors here
     AdDraw.ClearSurface(AdCol24_White);
 
-    AdDraw.BeginScene;        
+    AdDraw.BeginScene;
+
+    Caption := IntToStr(AdPerCounter.FPS);   
 
     //Place all your drawing code between these two lines
 
