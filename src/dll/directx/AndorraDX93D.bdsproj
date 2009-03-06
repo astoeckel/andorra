@@ -170,15 +170,7 @@
 			<VersionInfoKeys Name="ProductName">Andorra 2D</VersionInfoKeys>
 			<VersionInfoKeys Name="ProductVersion">0.4</VersionInfoKeys>
 			<VersionInfoKeys Name="Comments"></VersionInfoKeys>
-		</VersionInfoKeys>  
-    
-    
-    
-    
-    
-    
-    
-    <Excluded_Packages>
+		</VersionInfoKeys>  <Excluded_Packages>
       <Excluded_Packages Name="c:\programme\borland\bds\4.0\Bin\dclIndyCore100.bpl">Indy 10 Core Design Time</Excluded_Packages>
       <Excluded_Packages Name="c:\programme\borland\bds\4.0\Bin\dclsmp100.bpl">Borland Sample Components</Excluded_Packages>
       <Excluded_Packages Name="c:\programme\borland\bds\4.0\Bin\dclIndyProtocols100.bpl">Indy 10 Protocols Design Time</Excluded_Packages>

@@ -91,7 +91,7 @@ begin
   prop.PropViewName := 'Antialias';
   AddPropertyProc(ASender, prop);
 
-  prop.PropName := 'bckbuffercount';
+  prop.PropName := 'backbuffercount';
   prop.PropType := ptInteger;
   AddPropertyProc(ASender, prop);
 

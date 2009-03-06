@@ -535,7 +535,7 @@ begin
       FVSync := PBoolean(APProps^.PropValue)^   
     else if APProps^.PropName = 'adapterindex' then
       FAdapterIndex := PInteger(APProps^.PropValue)^
-    else if APProps^.PropName = 'bckbuffercount' then
+    else if APProps^.PropName = 'backbuffercount' then
       FBackbufferCount := PInteger(APProps^.PropValue)^;
             
     inc(APProps);
