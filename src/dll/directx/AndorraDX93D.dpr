@@ -73,7 +73,11 @@ begin
 
   prop.PropName := 'fullscreen_res';
   prop.PropType := ptResolution;
-  AddPropertyProc(ASender, prop);  
+  AddPropertyProc(ASender, prop);
+
+  prop.PropName := 'adapterindex';
+  prop.PropType := ptInteger;
+  AddPropertyProc(ASender, prop);
 
   //Write misc properties
   prop.PropGroup := 'Misc';
@@ -85,6 +89,10 @@ begin
 
   prop.PropName := 'antialias';
   prop.PropViewName := 'Antialias';
+  AddPropertyProc(ASender, prop);
+
+  prop.PropName := 'bckbuffercount';
+  prop.PropType := ptInteger;
   AddPropertyProc(ASender, prop);
 
   //Write capabilities

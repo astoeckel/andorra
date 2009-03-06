@@ -41,6 +41,10 @@ type
       FTextures: boolean;
       FMipmaps: boolean;
       FUsePixelShader: boolean;
+
+      FAdapterIndex: Integer;
+      FBackbufferCount: Integer;
+            
       procedure SetUsePixelShader(AValue: boolean);
     protected
       procedure WriteLog(ALogSeverity: TAd2dLogSeverity; AMessage: string);
@@ -209,6 +213,9 @@ begin
   FMipmaps := false;
   FTextures := true;
   FUsesMaterial := High(Cardinal);
+  
+  FAdapterIndex := D3DADAPTER_DEFAULT; // 0....n graphics card index
+  FBackbufferCount := 0;
 end;
 
 destructor TDXApplication.Destroy;
@@ -260,9 +267,12 @@ begin
   begin
     FWnd := AWnd;
 
+    WriteLog(lsInfo, 'adapterIndex=' + IntToStr(FAdapterIndex));
+    WriteLog(lsInfo, 'backbufferCount=' + IntToStr(FBackbufferCount));
+
     dtype := D3DDEVTYPE_HAL;
 
-    if Failed(Direct3D9.GetDeviceCaps(D3DADAPTER_DEFAULT, dtype, D3DCaps9)) then
+    if Failed(Direct3D9.GetDeviceCaps(FAdapterIndex, dtype, D3DCaps9)) then
     begin
       WriteLog(lsFatalError,'No connection to the default device.');
     end;
@@ -286,6 +296,9 @@ begin
       begin
         PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
       end;
+
+      BackbufferCount := FBackbufferCount;
+
       if not Windowed then
       begin
         BackBufferWidth := FResolution.Width;
@@ -300,7 +313,7 @@ begin
         else
           afmt := D3DFMT_X8R8G8B8;
         end;
-        if failed(Direct3D9.CheckDeviceType(D3DADAPTER_DEFAULT, dtype, afmt, afmt, false)) then
+        if failed(Direct3D9.CheckDeviceType(FAdapterIndex, dtype, afmt, afmt, false)) then
         begin
           WriteLog(lsWarning, 'The current device settings may be unsupportet.');
           WriteLog(lsInfo, 'Try to use other modes.');
@@ -314,14 +327,14 @@ begin
       end
       else
       begin
-        if Failed(Direct3D9.GetAdapterDisplayMode(D3DADAPTER_DEFAULT, d3ddm)) then
+        if Failed(Direct3D9.GetAdapterDisplayMode(FAdapterIndex, d3ddm)) then
         begin
           WriteLog(lsFatalError, 'Can not access current display settings. Try to run in fullscreen mode.');
           exit;
         end;
         afmt := d3ddm.Format;
       end;
-      if failed(Direct3D9.CheckDeviceType(D3DADAPTER_DEFAULT, dtype, afmt, afmt, false)) then
+      if failed(Direct3D9.CheckDeviceType(FAdapterIndex, dtype, afmt, afmt, false)) then
       begin
         WriteLog(lsFatalError, 'The current device settings are unsupportet. Try another adapter mode.');
         exit;
@@ -334,7 +347,7 @@ begin
       if FAntialias then
       begin
         MultisampleType := D3DMULTISAMPLE_NONMASKABLE;
-        Direct3D9.CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, dtype, afmt, Windowed, MultisampleType,  @level);
+        Direct3D9.CheckDeviceMultiSampleType(FAdapterIndex, dtype, afmt, Windowed, MultisampleType,  @level);
         MultisampleQuality := level - 1;
       end;
     end;
@@ -519,7 +532,12 @@ begin
     else if APProps^.PropName = 'antialias' then
       FAntialias := PBoolean(APProps^.PropValue)^
     else if APProps^.PropName = 'vsync' then
-      FVSync := PBoolean(APProps^.PropValue)^;
+      FVSync := PBoolean(APProps^.PropValue)^   
+    else if APProps^.PropName = 'adapterindex' then
+      FAdapterIndex := PInteger(APProps^.PropValue)^
+    else if APProps^.PropName = 'bckbuffercount' then
+      FBackbufferCount := PInteger(APProps^.PropValue)^;
+            
     inc(APProps);
   end;
 end;
