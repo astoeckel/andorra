@@ -354,7 +354,7 @@ begin
 
     CanAutoGenMipMaps :=
       (D3DCaps9.Caps2 and D3DCAPS2_CANAUTOGENMIPMAP > 0) and
-      (Direct3D9.CheckDeviceFormat(D3DADAPTER_DEFAULT, dtype, afmt, D3DUSAGE_AUTOGENMIPMAP, D3DRTYPE_TEXTURE, afmt) = D3D_OK);
+      (Direct3D9.CheckDeviceFormat(FAdapterIndex, dtype, afmt, D3DUSAGE_AUTOGENMIPMAP, D3DRTYPE_TEXTURE, afmt) = D3D_OK);
     if not CanAutoGenMipMaps then
     begin
       WriteLog(lsInfo, 'Device can not create mipmaps. Mipmaps will be disabled.');
@@ -365,7 +365,7 @@ begin
     FPresent := d3dpp;
 
     //Create device
-    hr := Direct3D9.CreateDevice(D3DADAPTER_DEFAULT,  dtype,
+    hr := Direct3D9.CreateDevice(FAdapterIndex,  dtype,
       TAdHandleWindowFramework(AWnd).Handle, vp, @d3dpp, Direct3DDevice9);
     if Failed(hr) then
     begin
