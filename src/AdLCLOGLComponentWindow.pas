@@ -122,9 +122,7 @@ end;
 procedure TAdLCLOGLComponentWindow.Run;
 begin
   if FInitialized then
-  begin
     Application.Run;
-  end;
 end;
 
 procedure TAdLCLOGLComponentWindow.Terminate;
@@ -135,9 +133,7 @@ end;
 procedure TAdLCLOGLComponentWindow.Swap;
 begin
   if FInitialized then
-  begin
     FContext.SwapBuffers;
-  end;
 end;
 
 procedure TAdLCLOGLComponentWindow.SetCursorVisible(AValue: Boolean);

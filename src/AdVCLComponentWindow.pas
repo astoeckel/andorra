@@ -144,9 +144,12 @@ begin
 
   if form <> nil then
   begin
-    form.Color := 0;
-    form.BorderIcons := [biSystemMenu];
-    form.Caption := Title;
+    if AProps.Mode <> dmDefault then
+    begin
+      form.Color := 0;
+      form.BorderIcons := [biSystemMenu];
+      form.Caption := Title;
+    end;
 
     if AProps.Mode = dmWindowed then
     begin
