@@ -84,6 +84,7 @@ type
   {--- 3D-Data ---}
 
   {A vector type which has two components.}
+type
   TAdVector2 = packed record
     {@exclude}
     x, y: single;
