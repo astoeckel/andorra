@@ -74,13 +74,11 @@ type
     ad32Bit = 32 //< The bit depth is 32 Bit
   );
   {$ELSE}
-  const
-    ad16Bit = 16;
-    ad32Bit = 32;
+  TAdBitDepth = byte;
 
-  type
-    TAdBitDepth = (
-      ad16Bit, ad32Bit);
+  const
+    ad16Bit: TAdBitDepth = 16;
+    ad32Bit: TAdBitDepth = 32;
   {$ENDIF}
 
   {--- 3D-Data ---}
