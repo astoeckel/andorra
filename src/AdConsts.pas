@@ -812,6 +812,15 @@ const
     Power: 100;
   );
 
+  //White plastic
+  AdMat_Plastic_Gray: TAd2dMaterial = (
+    Diffuse: (r: 128; g: 128; b: 128; a: 255);
+    Ambient: (r: 32; g: 32; b: 32; a: 255);
+    Specular: (r: 200; g: 200; b: 200; a: 255);
+    Emissive: (r: 0; g: 0; b: 0; a: 255);
+    Power: 100;
+  );
+
 
 implementation
 

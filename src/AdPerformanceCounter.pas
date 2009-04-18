@@ -104,7 +104,7 @@ implementation
 //Comment this define, if you don't want hardware timers to be used.
 
 {'$DEFINE USE_HW_TIMER}
-
+{$I andorra2d.inc}
 {$IFDEF WIN32}
 var
   GetSafeTickCount : function : Double = nil;
@@ -114,12 +114,12 @@ function  QueryPerformanceCounter(var lpPerformanceCount: int64): boolean; stdca
 function  QueryPerformanceFrequency(var lpFrequency: int64): boolean; stdcall; external 'kernel32.dll';
 function  GetTickCount: LongInt; stdcall; external 'kernel32.dll';
 
-function  GetSWTickCount: Double; inline;
+function  GetSWTickCount: Double;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 begin
   Result := GetTickCount;
 end;
 
-function  GetHWTickCount: Double; inline;
+function  GetHWTickCount: Double;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 var
   ticks:int64;
 begin
@@ -129,7 +129,7 @@ end;
 
 procedure Sleep(ms: Cardinal); stdcall; external 'kernel32.dll';
 {$ELSE}
-function GetSafeTickCount: LongInt;inline;
+function GetSafeTickCount: LongInt;{$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 begin
   result := GetTickCount;
 end;

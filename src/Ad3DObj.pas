@@ -27,7 +27,7 @@ interface
 
 uses
   SysUtils, Classes, Math,
-  AdPersistent,
+  AdPersistent, AdConsts,
   AdTypes, AdClasses, AdMath, AdDraws, AdSpline, AdList, Ad3DModelLoaderClass;
 
 type
@@ -1240,6 +1240,8 @@ begin
   FVertices := AData.Vertices;
   FIndices := AData.Indices;
 
+  RecomputeNormals(FIndices, FVertices);
+
   //The setter of the "Texture" property handles "nil" values
   img := ATextures.Find(AData.TextureName);
   if img <> nil then
@@ -1248,7 +1250,7 @@ begin
   //Check whether the result of the "Find" function is nil
   mat := ALoader.Materials.Find(AData.MaterialName);
   if mat = nil then
-    UseMaterial := false
+    Material := AdMat_Plastic_Gray
   else
     Material := mat.Material;
 

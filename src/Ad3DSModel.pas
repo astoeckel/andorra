@@ -282,6 +282,7 @@ begin
       
       FillChar(vert[i], SizeOf(TAdVertex), 0);
       vert[i].Position := vec;
+      vert[i].Position.z := -vec.z;
       PCardinal(@vert[i].Color)^ := $FFFFFFFF;
     end;
 

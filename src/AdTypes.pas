@@ -31,6 +31,13 @@ unit AdTypes;
 interface
 
 type
+  {$IFDEF DELPHI5_DOWN}
+  PByte = ^Byte;
+  PCardinal = ^Cardinal;
+  PWord = ^Word;
+  PLongWord = ^LongWord;
+  {$ENDIF}
+  
   {--- Bitmap structures ---}
   
   {Andorra 2Ds standard color type. Consists of four bytes for Red, Green, Blue and Alpha.}
