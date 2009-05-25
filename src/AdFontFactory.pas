@@ -98,6 +98,8 @@ type
         AShadowAlpha:byte=128; AShadowOffsetX:integer=0;
         AShadowOffsetY:integer=0; AShadowBlur:byte=0):TAdFont;overload;
 
+      procedure FreeFont(AFont: TAdFont);
+
       property AutoFreeFonts:boolean read FAutoFreeFonts write FAutoFreeFonts;
       property FontMap:TAdFontMap read FFontMap write SetFontMap;
       property LastKey:TAdFontDataKey read FLastKey;
@@ -127,6 +129,53 @@ begin
   //FOwnFontMap is set to false by FreeMemory
   FreeMemory;
   FFontMap := AValue;
+end;
+
+procedure TAdFontFactory.FreeFont(AFont: TAdFont);
+var
+  p: PAdLinkedList;
+  key: PAdMapPair;
+  fntkey: TAdFontDataKey;
+  i, c: integer;
+begin
+  Writeln('-->', Integer(Pointer(AFont)));
+
+  c := 0;
+  p := FFontMap.Data;
+  for i := 0 to FFontMap.Capacity - 1 do
+  begin
+    c := c + p^.Count;
+    inc(p);
+  end;
+
+  Writeln('Count: ', c);
+
+  Writeln;
+
+  p := FFontMap.Data;
+  for i := 0 to FFontMap.Capacity - 1 do
+  begin
+    Writeln(i);
+    p^.StartIteration;
+    while not p^.ReachedEnd do
+    begin
+      key := PAdMapPair(p^.GetCurrent);
+      Writeln('    ', Integer(Pointer(TAdFontDataKey(key^.Key).Font)));
+
+      if TAdFontDataKey(key^.Key).Font = AFont then
+      begin
+        //Free the attached font
+        fntkey := TAdFontDataKey(key^.Key);
+        fntkey.AutoFreeFont := true;
+        FFontMap.Remove(key^.Key);
+        fntkey.Free;
+
+        exit;
+      end;
+    end;
+    inc(p);
+  end;
+  Writeln('x');
 end;
 
 procedure TAdFontFactory.FreeMemory;
@@ -159,7 +208,7 @@ begin
   //Search for an entry with equal data
   fnt := TAdFontDataKey(FFontMap.GetValue(key));
 
-  if fnt = nil then
+  if (fnt = nil) and (RegisteredGenerators.Count > 0) then
   begin
     //An equal font was not found, generate a new one
     for i := 0 to RegisteredGenerators.Count-1 do
@@ -181,6 +230,8 @@ begin
           key.Font.CharPatterns := charpat;
           key.Font.Creator := key;
 
+          Writeln(':', Integer(Pointer(key.Font)));
+
           //Insert font into font map
           FFontMap.Insert(key, key);
 
@@ -200,8 +251,11 @@ begin
   else
   begin
     //An equal font already exists, free the generated key
-    result := fnt.Font;
-    FLastKey := fnt;
+    if fnt <> nil then
+    begin
+      result := fnt.Font;
+      FLastKey := fnt;
+    end;
     key.Free;
   end;
 end;
@@ -360,9 +414,7 @@ begin
   if FHasData then
   begin
     if FAutoFreeFont then
-    begin
       FFont.Free;
-    end;
     FreeMem(FMetaData, FMetaDataSize);
   end;
 

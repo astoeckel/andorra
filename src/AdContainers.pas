@@ -109,7 +109,7 @@ type
       procedure Rehash(ACapacity: integer);
     protected      
       FCount: integer;
-      procedure FreeMemory;
+      procedure FreeMemory(AFreeItems: boolean = false);
       property Data:Pointer read FData write FData;
     public
       {Creates a new instance of TAdMap. ACapacity specifies the size of the data array the elements are stored in.}
@@ -245,13 +245,9 @@ begin
   end;
 
   if PItem = nil then
-  begin
-    result := -1;
-  end
+    result := -1
   else
-  begin
     result := i;
-  end;    
 end;
 
 procedure TAdLinkedList.Insert(AIndex: integer; AItem: Pointer);
@@ -408,20 +404,31 @@ end;
 
 destructor TAdMap.Destroy;
 begin
-  FreeMemory;
+  FreeMemory(true);
   inherited;
 end;
 
-procedure TAdMap.FreeMemory;
+procedure TAdMap.FreeMemory(AFreeItems: boolean);
 var
-  i:integer;
-  PList:PAdLinkedList;
+  i: integer;
+  PList: PAdLinkedList;
+  PItem: PAdMapPair;
 begin
   if FData <> nil then
   begin
     PList := FData;
     for i := 0 to FCapacity-1 do
     begin
+      if AFreeItems then
+      begin
+        PList^.StartIteration;
+        while not PList^.ReachedEnd do
+        begin
+          PItem := PList^.GetCurrent;
+          Dispose(PItem);
+        end;
+      end;
+
       PList^.Free;
       inc(PList);
     end;
@@ -471,36 +478,27 @@ begin
   PList := FData;
   inc(PList,Pos);
 
-  with PList^ do
+  //Check wether key already exists - replace value if necessary
+  PList^.StartIteration;
+  while not PList^.ReachedEnd do
   begin
-    //Check wether key already exists - replace value if necessary
-    StartIteration;
-    while not ReachedEnd do
+    PItem := PAdMapPair(PList^.GetCurrent);
+    if PItem^.Key.Equal(AKey) then
     begin
-      PItem := PAdMapPair(GetCurrent);
-      if PItem^.Key.Equal(AKey) then
-      begin
-        PItem^.Value := AValue;
-        exit;
-      end;
-    end;
-
-    //Key not found, insert item
-    New(PItem);
-    PItem^.Key := AKey;
-    PItem^.Value := AValue;
-    Add(PItem);
-    result := true;
-  end;
-
-  if result then
-  begin
-    FCount := FCount + 1;
-    if FCount >= FCapacity * UpperRehashBound then
-    begin
-      Rehash(round(FCapacity * RehashFactor));
+      PItem^.Value := AValue;
+      exit;
     end;
   end;
+
+  //Key not found, insert item
+  New(PItem);
+  PItem^.Key := AKey;
+  PItem^.Value := AValue;
+  PList^.Add(PItem);    
+
+  FCount := FCount + 1;
+  if FCount >= FCapacity * UpperRehashBound then
+    Rehash(round(FCapacity * RehashFactor));
 end;
 
 procedure TAdMap.Rehash(ACapacity: integer);
@@ -513,7 +511,7 @@ var
 begin
   //Reserve new memory
   FMemSize := SizeOf(PAdLinkedList)*ACapacity;
-  GetMem(PTmp,FMemSize);
+  GetMem(PTmp, FMemSize);
 
   //Create lists
   PList2 := PTmp;
@@ -528,20 +526,17 @@ begin
   PList1 := FData;
   for i := 0 to FCapacity - 1 do
   begin
-    with PList1^ do
+    PList1^.StartIteration;
+    while not PList1^.ReachedEnd do
     begin
-      StartIteration;
-      while not ReachedEnd do
-      begin
-        PCurItem := GetCurrent;
+      PCurItem := PList1^.GetCurrent;
 
-        //Insert element
-        PList2 := PTmp;
-        Pos := (Abs(PCurItem^.Key.Hash) mod ACapacity);
-        Inc(PList2,Pos);
+      //Insert element
+      PList2 := PTmp;
+      Pos := (Abs(PCurItem^.Key.Hash) mod ACapacity);
+      Inc(PList2, Pos);
 
-        PList2^.Add(PCurItem);
-      end;
+      PList2^.Add(PCurItem);
     end;
     Inc(PList1);
   end;
@@ -566,27 +561,22 @@ begin
   Pos := (Abs(AKey.Hash) mod FCapacity);
   PList := FData;
   inc(PList,Pos);
-  
-  with PList^ do
+
+  PList^.StartIteration;
+  while not PList^.ReachedEnd do
   begin
-    StartIteration;
-    while not ReachedEnd do
+    PItem := PAdMapPair(PList^.GetCurrent);
+    if PItem^.Key.Equal(AKey) then
     begin
-      PItem := PAdMapPair(GetCurrent);
-      if PItem^.Key.Equal(AKey) then
-      begin
-        Remove(PItem);
-        Dispose(PItem);
-        result := true;
-        FCount := FCount - 1;
+      PList^.Remove(PItem);      
+      Dispose(PItem);
+      result := true;
+      FCount := FCount - 1;
 
-        if self.FCount < FCapacity * LowerRehashBound  then
-        begin
-          Rehash(round(FCapacity / RehashFactor));
-        end;
-
-        exit;
-      end;
+      if FCount < FCapacity * LowerRehashBound  then
+        Rehash(round(FCapacity / RehashFactor));
+        
+      exit;
     end;
   end;
 end;
